@@ -84,6 +84,8 @@ dependencies {
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.compose.material.icons.core)
     implementation(libs.coil.compose)
+    // Pack sprites and covers may be SVG (sanitized by the importer, docs/pack-format.md#images).
+    implementation(libs.coil.svg)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material.color.utilities)
 

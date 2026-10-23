@@ -68,6 +68,12 @@ class PreparedImport internal constructor(
 
     val isBundle: Boolean get() = bundle != null
 
+    /**
+     * The unpacked, verified files of [pack] while the import waits for the user (for previews: sprites and clips
+     * resolve against this folder like against an installed one). Null once the import is installed or discarded.
+     */
+    fun stagedFolder(pack: PackCandidate): File? = stagedPacks[pack.root]?.takeIf { !used.get() && it.isDirectory }
+
     /** Marks the import as used; false if it already was. */
     internal fun claim(): Boolean = used.compareAndSet(false, true)
 }
