@@ -1,6 +1,6 @@
 # 0015. Packs screen: import flow, errors in plain words and removal
 
-- Status: accepted (defaults open for the owner in the linked `question` issue)
+- Status: accepted (defaults open for the owner in #130)
 - Date: 2026-10-24
 - Issue: #27
 
@@ -40,7 +40,7 @@ codes, paths and validator messages sit behind "Show details for pack authors". 
 zip without a manifest ("This isn't a sound pack"), a newer format ("update Cucuto") and a Cucuto backup, recognised
 by peeking at the zip root for `backup.json` or `envelope.json` with `payload.bin` (only after `MANIFEST_MISSING`).
 
-**Defaults** (owner can override; see the `question` issue):
+**Defaults** (the owner can override them in #130):
 
 1. A bundle with one broken pack is rejected as a whole, as ADR 0008 and #83 settled.
 2. Bundle packs are all selected, except packs that would replace the same or a newer installed version: those start
