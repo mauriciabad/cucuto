@@ -1,0 +1,371 @@
+name: ci
+
+# One workflow for every check. It runs on every PR and every push to main; the `changes` job decides which jobs
+# actually run (path filtering), and `ci-ok` is the single required status check of the `main` ruleset. It passes
+# when every job passed or was skipped and fails when any failed or was cancelled, so agents can open a PR, run
+# `gh pr merge --auto --squash` and move on (see CLAUDE.md, Workflow).
+#
+# Gradle: gradle/actions/setup-gradle caches the Gradle home and build cache (written only from main, read on PRs)
+# and, when the GRADLE_ENCRYPTION_KEY secret is available, the configuration cache.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels its previous run; runs on main never cancel each other.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
+      web: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.web == 'true' }}
+      packs: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.packs == 'true' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            android:
+              - "android/**"
+              - "shared/**"
+              - "spec/**"
+              - "brand/tokens/**"
+              - "brand/app-icon/android-res/**"
+              - ".github/workflows/ci.yml"
+            web:
+              - "web/**"
+              - ".github/workflows/ci.yml"
+            packs:
+              - "tools/packer/**"
+              - "shared/**"
+              - "spec/**"
+              - "packs/**"
+              - ".github/workflows/ci.yml"
+
+  media-guard:
+    name: No media outside the allowlist
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check media paths
+        run: |
+          # Audio, image and zip files (packs are <name>.soundpack.zip, backups cucuto-backup-*.zip) may only live in these paths. Copyrighted content never enters the repo.
+          allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
+          ext='\.(ogg|opus|oga|mp3|m4a|aac|flac|wav|mid|midi|png|jpe?g|webp|gif|avif|jxl|svg|bmp|heic|heif|webm|mp4|mov|soundpack|zip)$'
+          bad=$(git ls-files | grep -iE "$ext" | grep -vE "$allow" || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Media files outside the allowlist (see CLAUDE.md):"
+            echo "$bad"
+            exit 1
+          fi
+          echo "Media allowlist OK"
+
+  # Android: `./gradlew build assembleDebugAndroidTest` split into three parallel jobs (assemble, unit tests, lint).
+  # Instrumented tests need a device: they are only compiled here.
+  android-assemble:
+    name: Android assemble (debug + release APKs)
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      # Debug and release APKs (R8, plus lintVital on release) and the instrumented test APKs.
+      - name: Assemble
+        run: ./gradlew assemble assembleDebugAndroidTest --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cucuto-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-assemble-reports
+          path: android/**/build/reports/
+          retention-days: 7
+
+  android-test:
+    name: Android unit tests and ktlint
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      # `check` minus Android Lint (own job): every module's unit tests (including every golden fixture in spec/
+      # through the pack importer) and ktlint (Spotless).
+      - name: Unit tests and ktlint
+        run: ./gradlew check -x lint --stacktrace
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-test-reports
+          path: |
+            android/**/build/reports/
+            android/**/build/test-results/
+          retention-days: 7
+
+  android-lint:
+    name: Android Lint
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Lint
+        run: ./gradlew lint --stacktrace
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-lint-reports
+          path: android/**/build/reports/
+          retention-days: 7
+
+  web:
+    name: Web check, lint, build, test
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check (svelte-check)
+        run: pnpm check
+
+      - name: Lint (Prettier + ESLint)
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Playwright smoke and accessibility tests
+        run: pnpm test
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: web/test-results/
+          retention-days: 7
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: web/build/
+
+  # packer (tools/packer): build and tests, including shared/pack-spec and every golden fixture in spec/fixtures.
+  # Demo packs (packs/): build each pack, the demo bundle and a repository index, and upload them as artifacts.
+  packs:
+    name: packer tests, demo packs and repository index
+    needs: changes
+    if: needs.changes.outputs.packs == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Build and test packer
+        working-directory: tools/packer
+        run: ./gradlew build installDist --build-cache --configuration-cache --stacktrace
+
+      - name: Build demo packs
+        run: |
+          packer=tools/packer/cli/build/install/packer/bin/packer
+          mkdir -p dist
+          for pack in packs/*/pack.yaml; do
+            "$packer" build "$(dirname "$pack")" -o dist/
+          done
+          "$packer" bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.0.0 \
+            --author "Cucuto contributors" --license CC0-1.0 \
+            --description "Every Cucuto demo pack in one file." \
+            --cover packs/chiptune-critters/cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
+          "$packer" validate --strict dist/*.soundpack.zip
+
+      - name: Build repository index
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          tools/packer/cli/build/install/packer/bin/packer index -o dist/repo \
+            --name "Cucuto demo packs" --homepage https://cucuto.mauri.app \
+            --description "Free CC0 packs made for Cucuto." dist/
+          tools/packer/cli/build/install/packer/bin/packer validate dist/repo/repository.json
+          (cd dist && sha256sum *.soundpack.zip | tee SHA256SUMS)
+
+      - name: Upload demo packs
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-packs
+          path: |
+            dist/*.soundpack.zip
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload repository
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-repository
+          path: dist/repo/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload packer distribution
+        uses: actions/upload-artifact@v7
+        with:
+          name: packer
+          path: tools/packer/cli/build/install/packer/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: packer-reports
+          path: |
+            tools/packer/**/build/reports/
+            tools/packer/**/build/test-results/
+          retention-days: 7
+
+  # Push to main only (never on PRs): publish the website built by the `web` job.
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: web
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  # The single required status check. Do not rename: the `main` ruleset requires a check named exactly `ci-ok`.
+  ci-ok:
+    name: ci-ok
+    needs: [changes, media-guard, android-assemble, android-test, android-lint, web, packs]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          if echo "$RESULTS" | jq -e 'any(.[]; .result == "failure" or .result == "cancelled")' > /dev/null; then
+            echo "::error::A required job failed or was cancelled."
+            exit 1
+          fi
