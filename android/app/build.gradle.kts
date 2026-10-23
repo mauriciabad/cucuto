@@ -52,6 +52,7 @@ dependencies {
     implementation(projects.core.backup)
     implementation(projects.core.haptics)
     implementation(projects.core.audio)
+    implementation(projects.core.jxl)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

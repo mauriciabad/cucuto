@@ -56,6 +56,19 @@ updates:
         patterns:
           - "*"
 
+  # The Rust crate of :core:jxl (jxl-rs behind JNI, ADR 0006). jxl-rs is 0.x and pinned exactly, so each bump is a
+  # PR of its own. CI rebuilds the library; the decoder tests need a device (android/core/jxl/README.md).
+  - package-ecosystem: cargo
+    directory: /android/core/jxl/rust
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    labels: ["area:android", "type:chore"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

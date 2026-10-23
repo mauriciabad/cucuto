@@ -40,7 +40,7 @@ validated with the full importer rules first; nothing is written if there is an 
 | `--normalize` | Loudness to -16 LUFS integrated, -1.5 dBTP (two-pass EBU R128 `loudnorm`) for clips and ringtones (ffmpeg). |
 | `--trim-silence` | Removes leading and trailing audio below -50 dBFS from clips; ringtones are left alone so loop points stay valid (ffmpeg). |
 | `--opus` | Transcodes audio to Ogg Opus `.ogg` (96 kb/s clips, 128 kb/s ringtones) and rewrites the manifest paths (ffmpeg). |
-| `--jxl` | Converts PNG and GIF losslessly, and JPEG by lossless transcoding, to JPEG XL (cjxl). SVG, WebP and AVIF are kept. |
+| `--jxl` | Converts PNG and GIF losslessly (`cjxl -d 0 -e 1`: fast to decode on the phone, ADR 0006), and JPEG by lossless transcoding, to JPEG XL (cjxl). SVG, WebP and AVIF are kept. |
 
 Without flags no media is touched. Re-encoding without `--opus` keeps each file's format.
 

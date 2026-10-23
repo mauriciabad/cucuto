@@ -6,28 +6,22 @@ import app.mauri.cucuto.packspec.Limits
 import java.io.File
 
 /**
- * [ImageProbe] with [ImageDecoder] (PNG, JPEG, WebP, GIF, AVIF; the first frame of animations). SVG has no platform
- * decoder: pack-spec parses it and applies the SVG safety rules, and the app renders it without scripting or network.
+ * [ImageProbe] with [ImageDecoder] (PNG, JPEG, WebP, GIF, AVIF; the first frame of animations). JPEG XL goes to
+ * [jxl], the jxl-rs decoder the app also displays it with (Android 17 has no platform decoder, ADR 0006). SVG has no
+ * platform decoder: pack-spec parses it and applies the SVG safety rules, and the app renders it without scripting or
+ * network.
  */
-class PlatformImageProbe : ImageProbe {
+class PlatformImageProbe(
+    private val jxl: ImageProbe = JxlImageProbe(),
+) : ImageProbe {
     override fun probe(
         file: File,
         format: FileFormat,
     ): ImageProbeResult =
-        when {
-            format == FileFormat.SVG -> {
-                ImageProbeResult.NotChecked("SVG is parsed and checked by the SVG safety rules")
-            }
-
-            // TODO(#77): Android 17 has no JPEG XL decoder (ADR 0006, spike #7). Test-decode JXL with the jxl-rs wrapper of
-            //  :core:jxl behind this probe once it exists; until then JXL gets the header checks of pack-spec only.
-            format == FileFormat.JXL && !ImageDecoder.isMimeTypeSupported(format.mimeType) -> {
-                ImageProbeResult.NotChecked("No JPEG XL decoder yet (#77)")
-            }
-
-            else -> {
-                decode(file)
-            }
+        when (format) {
+            FileFormat.SVG -> ImageProbeResult.NotChecked("SVG is parsed and checked by the SVG safety rules")
+            FileFormat.JXL -> jxl.probe(file, format)
+            else -> decode(file)
         }
 
     private fun decode(file: File): ImageProbeResult {
