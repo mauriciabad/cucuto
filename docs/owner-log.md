@@ -108,3 +108,11 @@ Answer: subagents are tied to their session; use /compact to keep them, or let t
 (Reboot after #101 landed; the device run verified both fixes and found a Diagnostics crash, fixed in the same follow-up PR.)
 
 > continue. resume agents and continue work
+
+## 2026-10-23 — Answer on #70 (website credit line and language)
+
+> 1 a anonimous
+> 2 multilingual, use english and spanish, and for the app too.
+
+Applied in #38: the footer stays anonymous; the website ships in English (root) and Spanish (`/es/`). The app's Spanish
+translation is #107.

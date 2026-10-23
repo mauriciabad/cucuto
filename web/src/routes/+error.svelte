@@ -1,25 +1,27 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import markUrl from '#lib/assets/cucuto-mark.svg';
 	import Seo from '#lib/components/Seo.svelte';
+	import { fill, localeFromPath, messages } from '#lib/i18n/index.js';
+	import { pageHref } from '#lib/i18n/links.js';
 
+	// 404.html is the SPA fallback, rendered in the browser: the language comes from the address.
+	const locale = $derived(localeFromPath(page.url.pathname));
+	const t = $derived(messages(locale).error);
 	const notFound = $derived(page.status === 404);
 </script>
 
-<Seo title={notFound ? 'Page not found' : 'Something went wrong'} />
+<Seo title={notFound ? t.notFoundTitle : t.otherTitle} />
 
 <div class="prose error">
 	<img src={markUrl} alt="" width="96" height="96" />
 	<h1 class="display-small emphasized">
-		{notFound ? 'Nobody’s home at this address' : 'Something went wrong'}
+		{notFound ? t.notFoundHeading : t.otherTitle}
 	</h1>
 	<p class="body-large on-surface-variant">
-		{notFound
-			? 'This page doesn’t exist. Check the address or start from the home page.'
-			: `The page couldn’t load (${page.status}). Try again in a moment.`}
+		{notFound ? t.notFoundText : fill(t.otherText, { status: page.status })}
 	</p>
-	<p><a class="button" href={resolve('/')}>Go to the home page</a></p>
+	<p><a class="button" href={pageHref('/', locale)}>{t.home}</a></p>
 </div>
 
 <style>
