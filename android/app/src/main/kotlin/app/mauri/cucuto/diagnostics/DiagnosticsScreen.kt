@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -208,7 +209,7 @@ private fun InfoCard(rows: List<Pair<String, String>>) {
 
 @Composable
 private fun DecisionRow(entry: DecisionLogEntity) {
-    val time = DateUtils.formatDateTime(null, entry.timestamp, DateUtils.FORMAT_SHOW_TIME)
+    val time = DateUtils.formatDateTime(LocalContext.current, entry.timestamp, DateUtils.FORMAT_SHOW_TIME)
     ListItem(
         overlineContent = { Text("$time · ${entry.packageName} · ${entry.hookMicros ?: 0} µs") },
         supportingContent = {
