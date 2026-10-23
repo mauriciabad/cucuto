@@ -20,7 +20,8 @@ notification sound and vibration per contact, using clips from user-imported sou
   over memory; cite the doc in the PR when a decision depends on it.
 - **Never commit copyrighted media.** Only CC0 demo content in `packs/`, brand assets in `brand/`, app resources and
   website assets. CI (`.github/workflows/media-guard.yml`) enforces an allowlist. No `.soundpack` files outside build output.
-- **Never hook the WhatsApp process.** The module is scoped to System Framework (`android`) only. Never throw inside
+- **Never hook the WhatsApp process.** The module is scoped to System Framework only (`system` in
+  `META-INF/xposed/scope.list`, which is `system_server` for modern modules; `android` would be wrong, see ADR 0002). Never throw inside
   `system_server`; every hook catches everything and degrades to WhatsApp's default tone.
 
 ## Repository layout
@@ -61,9 +62,18 @@ pack file extension `.soundpack` · backup `.cucuto-backup` · license GPL-3.0-o
 ## Builds
 
 - JDK 21 (Homebrew `openjdk@21`): `export JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home`
-- Android SDK at `~/Library/Android/sdk` (platform `android-37.0`, build-tools 37). The `android` CLI is installed.
-- Android: `cd android && ./gradlew build` · Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build`
+  (needed to launch the wrapper; the Gradle daemon and all modules use the JDK 21 toolchain, see
+  `android/gradle/gradle-daemon-jvm.properties`). CI uses Temurin 21.
+- Android SDK at `~/Library/Android/sdk` (platforms `android-37.0` and `android-37.2`, build-tools 37.0.0). The
+  `android` CLI is installed (`android sdk install platforms/android-37.2`).
+- Android: `cd android && ./gradlew build` (debug + release APKs, Lint, ktlint, unit tests) ·
+  `./gradlew spotlessApply` fixes formatting · versions live in `android/gradle/libs.versions.toml`, module setup in
+  `android/build-logic/` (ADR 0001). `compileSdk` is 37.2: `VibrationEffect.Builder` and friends are missing from
+  37.0. AGP 9 has built-in Kotlin: never apply `org.jetbrains.kotlin.android` (or kapt; use KSP).
+- Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build`
 - Device: owner's rooted Android 17 phone over adb (when connected). Device-only work is labeled `needs-device`.
+  Installing and launching `app.mauri.cucuto` is fine (the module is inert until enabled); never enable it in
+  LSPosed, change scopes or reboot without an explicit go-ahead.
 
 ## Owner log
 

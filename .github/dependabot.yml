@@ -1,0 +1,53 @@
+# Dependency updates (docs/decisions/0004-dependabot-for-dependency-updates.md).
+# Add `/web` to the npm entry once the website exists.
+version: 2
+
+updates:
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    labels: ["area:android", "type:chore"]
+    groups:
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"
+      androidx-and-agp:
+        patterns:
+          - "androidx.*"
+          - "com.android.tools.build*"
+      android-libraries:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    labels: ["area:ci", "type:chore"]
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /brand/tools
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: build
+      include: scope
+    labels: ["area:brand", "type:chore"]
+    groups:
+      brand-tools:
+        patterns:
+          - "*"

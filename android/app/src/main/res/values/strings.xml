@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">cucuto</string>
+    <string name="module_description">Gives each WhatsApp contact a voice: per-contact notification sounds and vibrations from your sound packs. Scope: System Framework only.</string>
+
+    <string name="navigate_back">Back</string>
+
+    <!-- Status -->
+    <string name="status_title">Status</string>
+    <string name="status_hero_title">Getting cucuto ready</string>
+    <string name="status_hero_body">This card turns green when everything works. Each check below lights up as its part of cucuto lands.</string>
+    <string name="status_checks_header">Checks</string>
+    <string name="status_check_module">Module active in system_server</string>
+    <string name="status_check_scope">LSPosed scope: System Framework only</string>
+    <string name="status_check_whatsapp">WhatsApp detected</string>
+    <string name="status_check_packs">At least one pack installed</string>
+    <string name="status_check_pending">Not checked yet</string>
+    <string name="status_screens_header">Preview screens</string>
+
+    <!-- Screens -->
+    <string name="screen_home">Home</string>
+    <string name="screen_home_body">Your chats with their character as avatar, plus recent senders waiting for a voice.</string>
+    <string name="screen_picker">Character picker</string>
+    <string name="screen_picker_body">A grid of characters grouped by pack. Tap to preview, tap again to assign.</string>
+    <string name="screen_contact">Contact detail</string>
+    <string name="screen_contact_body">The assigned character, its clip pool, ringtone, haptic override and a Simulate message button.</string>
+    <string name="screen_packs">Packs</string>
+    <string name="screen_packs_body">Installed packs, import from a file, create a pack, update and remove.</string>
+    <string name="screen_discover">Discover</string>
+    <string name="screen_discover_body">Browse pack repositories, preview and download packs.</string>
+    <string name="screen_haptics">Haptic editor</string>
+    <string name="screen_haptics_body">Drop presets on a timeline, drag envelope points and preview with the clip.</string>
+    <string name="screen_settings">Settings</string>
+    <string name="screen_settings_body">Global switch, backup and restore, and the decision log for every recent notification.</string>
+    <string name="placeholder_coming">Coming in %1$s</string>
+</resources>
