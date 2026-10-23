@@ -1,0 +1,8 @@
+# libxposed module descriptor (modern API; replaces the legacy AndroidManifest meta-data).
+# Name and description come from android:label / android:description in the manifest.
+minApiVersion=102
+targetApiVersion=102
+# staticScope=true: the scope in scope.list is exhaustive. Telecom runs inside system_server on
+# Android 17 (service-telecom.jar from the com.android.telephonycore APEX is on
+# SYSTEMSERVERCLASSPATH), so "system" is still the only scope needed. See docs/m9-report.md.
+staticScope=true

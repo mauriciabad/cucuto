@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cucuto M9 spike</string>
+    <string name="module_description">Throwaway M9 spike: observes Telecom\'s ringer and WhatsApp\'s call notifications in system_server. Swaps the phone-call ringtone only while debug.cucuto.m9.swap=1. Scope: System Framework.</string>
+</resources>

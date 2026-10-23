@@ -193,8 +193,8 @@ Where ringtones apply:
 | Call type | How | Notes |
 | --- | --- | --- |
 | Phone calls, fixed or rule-based variant | Android's per-contact ringtone (`ContactsContract.Contacts.CUSTOM_RINGTONE`) | Native; Telecom plays it and the Contacts app shows it. Needs `READ_CONTACTS` and `WRITE_CONTACTS`. Ringtone files are copied into the shared `Ringtones/cucuto/` folder through MediaStore so the system can play them. For rule-based variants the app rewrites the contact's ringtone at each boundary (time-of-day change, new season) with an exact alarm. |
-| Phone calls, random per call | Optional hook in Telecom's ringer | Telecom runs in the system process; swap the ringtone URI at ring time. This also allows a custom vibration per contact. Confirm the class, method and LSPosed scope in M0. |
-| WhatsApp calls | To be investigated in M0 | If WhatsApp's incoming-call notification carries the ringtone, the existing `system_server` hook can swap it. If WhatsApp plays the ringtone inside its own process, that would mean hooking WhatsApp, which conflicts with the "never touch WhatsApp" rule; fall back to guiding the user to WhatsApp's per-chat custom ringtone (one file, no variants). |
+| Phone calls, random per call | The app re-rolls the contact's ringtone after each call (no hook) | M9 spike (#50, [ADR 0023](decisions/0023-call-ringtones-native-first.md)): Telecom runs inside `system_server` (scope `system` covers it), but no hook is needed: the app rewrites `CUSTOM_RINGTONE` when a call ends, so the next call rings with a new variant. A per-contact call vibration rides on the ringtone URI's `vibration_uri` parameter (Android 17, enabled on Pixel). Telecom hooks (`Call.getRingtone()`, `Ringer.vibrateIfNeeded`) are prepared in `spikes/m9/` as a fallback only. |
+| WhatsApp calls | Guided per-chat ringtone (no hook) | M9 spike (#50): WhatsApp's calls are self-managed (Telecom does not ring) and its call channel has no sound, so WhatsApp rings inside its own process. Changing that would mean hooking WhatsApp, which the rules forbid. The app exports the ringtone to `Ringtones/cucuto/` and guides the user to WhatsApp's per-chat call ringtone (one file, no variants). |
 
 Contacts: each app contact links to an Android contact for phone ringtones. Match WhatsApp senders to Android contacts by phone number, and let the user confirm or pick manually.
 
@@ -583,7 +583,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 
 ### M9 — Ringtones (v1, before the M7 release)
 
-- [ ] Spike first: confirm Telecom's ringer hook point and scope for random-per-call, and find out how WhatsApp plays its call ringtone.
+- [x] Spike first: confirm Telecom's ringer hook point and scope for random-per-call, and find out how WhatsApp plays its call ringtone (static phase: [M9 report](m9-report.md), ADR 0023; device run pending).
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
 - [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
 - [ ] Album-cover ringtone picker with preview and variant chips; contact linking by phone number.
@@ -603,7 +603,7 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 | Group messages alert through the summary notification, not the child | Wrong or missing sender | M0 confirms which record alerts. If it is the summary, resolve the sender from the newest child in the same group. |
 | The process that plays notification sounds can't read our clip URI | Silence instead of a clip | Provider caller allowlist confirmed in M0. Fallback: have the module copy clips to a location that process can read. |
 | WhatsApp identifiers change (phone JIDs versus newer `@lid` IDs) | Assignments stop matching | Store every key seen for a contact; match on any. The "recent senders" feed makes reassignment one tap. |
-| WhatsApp plays its call ringtone inside its own process | No custom WhatsApp call ringtones without hooking WhatsApp | Treat WhatsApp call ringtones as best effort; phone-call ringtones work natively regardless. |
+| WhatsApp plays its call ringtone inside its own process (confirmed statically in M9) | No custom WhatsApp call ringtones without hooking WhatsApp | Treat WhatsApp call ringtones as best effort (guided per-chat ringtone); phone-call ringtones work natively regardless. |
 | Phone ringtone files deleted or moved by the user | Contacts fall back to the default ringtone | Keep ringtones in a dedicated `Ringtones/cucuto/` folder and re-check them on app start; repair automatically. |
 | JPEG XL decoding gaps (no built-in Android decoder assumed; Firefox needs a preference) | Missing sprites or site images | JXL is optional: bundle jxl-rs (ADR 0006), otherwise convert at import. On the site, serve `<picture>` with fallbacks. |
 | Malicious or broken pack repositories | Crashes, storage abuse, misleading content | Same validation as local imports, size and SHA-256 checks, redirect caps, warning when adding an unknown repository. |
