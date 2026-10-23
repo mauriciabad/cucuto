@@ -17,6 +17,7 @@ import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.routing.CharacterCatalog
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
 import app.mauri.cucuto.core.data.routing.RoutingSink
+import app.mauri.cucuto.core.data.routing.XposedFramework
 import app.mauri.cucuto.core.data.routing.XposedRoutingSink
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.InstalledCharacterDirectory
@@ -82,6 +83,8 @@ object DataModule {
 @InstallIn(SingletonComponent::class)
 interface DataBindings {
     @Binds fun routingSink(sink: XposedRoutingSink): RoutingSink
+
+    @Binds fun xposedFramework(sink: XposedRoutingSink): XposedFramework
 
     @Binds fun characterCatalog(catalog: PackManifestCatalog): CharacterCatalog
 

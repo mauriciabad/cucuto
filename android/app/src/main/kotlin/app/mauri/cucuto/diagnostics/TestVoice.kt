@@ -89,21 +89,22 @@ class TestVoice
             ) : Result
         }
 
-        private companion object {
+        companion object {
+            /** The generated test pack. The status card does not count it as an installed pack. */
             const val PACK_ID = "app.mauri.cucuto.devtest"
-            const val VERSION = "1.0.0"
-            const val CHARACTER_ID = "chirp"
-            const val SCAN = 20
+            private const val VERSION = "1.0.0"
+            private const val CHARACTER_ID = "chirp"
+            private const val SCAN = 20
 
             /** Three distinct two-note chirps, so the shuffle bag is audible. */
-            val TONES =
+            private val TONES =
                 listOf(
                     "up" to (660.0 to 990.0),
                     "down" to (990.0 to 660.0),
                     "high" to (880.0 to 1320.0),
                 )
 
-            val MANIFEST =
+            private val MANIFEST =
                 """
                 {
                   "formatVersion": 1,

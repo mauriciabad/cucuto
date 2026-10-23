@@ -23,12 +23,16 @@ data class ScreenInfo(
 
 /**
  * Link metadata for the Status screen and what placeholder screens show; null for the screens Status does not list
- * ([CucutoDestination.Status], [CucutoDestination.Diagnostics], [CucutoDestination.Gallery]). Home and the picker
- * are real screens (#25) but keep their entry for the Status links.
+ * ([CucutoDestination.Status], [CucutoDestination.Onboarding], [CucutoDestination.Diagnostics],
+ * [CucutoDestination.Gallery]). Home and the picker are real screens (#25) but keep their entry for the Status links.
  */
 fun CucutoDestination.screenInfo(): ScreenInfo? =
     when (this) {
-        CucutoDestination.Status, CucutoDestination.Diagnostics, CucutoDestination.Gallery -> {
+        CucutoDestination.Status,
+        CucutoDestination.Onboarding,
+        CucutoDestination.Diagnostics,
+        CucutoDestination.Gallery,
+        -> {
             null
         }
 

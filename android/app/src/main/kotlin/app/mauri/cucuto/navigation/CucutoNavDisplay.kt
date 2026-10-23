@@ -6,11 +6,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -25,6 +30,7 @@ import app.mauri.cucuto.picker.PickerScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.motion.SharedElementEntry
 import app.mauri.cucuto.ui.motion.SharedElementsHost
+import app.mauri.cucuto.ui.onboarding.OnboardingScreen
 import app.mauri.cucuto.ui.placeholder.PlaceholderScreen
 import app.mauri.cucuto.ui.status.StatusScreen
 import kotlinx.coroutines.flow.StateFlow
@@ -38,11 +44,29 @@ import kotlinx.coroutines.flow.filterNotNull
 fun CucutoNavDisplay(
     modifier: Modifier = Modifier,
     pendingImport: StateFlow<ImportSource?>? = null,
+    startViewModel: StartViewModel = hiltViewModel(),
 ) {
-    val backStack = rememberNavBackStack(CucutoDestination.Status)
+    val onboarded by startViewModel.onboarded.collectAsStateWithLifecycle()
+    // The first frame or two of a cold start, while the settings load: a plain surface instead of a wrong screen.
+    val start = onboarded?.let(::startDestination)
+    if (start == null) {
+        Surface(modifier.fillMaxSize()) {}
+        return
+    }
+    val backStack = rememberNavBackStack(start)
     val motion = MaterialTheme.motionScheme
     val navigate: (CucutoDestination) -> Unit = { backStack.add(it) }
     val goBack: () -> Unit = { backStack.removeLastOrNull() }
+    val finishOnboarding: () -> Unit = {
+        startViewModel.finishOnboarding()
+        // First run: onboarding is the only entry, so Status replaces it. Reopened from Status: just go back.
+        if (backStack.size > 1) {
+            backStack.removeLastOrNull()
+        } else {
+            backStack.add(CucutoDestination.Status)
+            backStack.removeAt(0)
+        }
+    }
 
     // A zip opened with Cucuto or shared to it goes to the Packs screen, which imports it (#27).
     LaunchedEffect(pendingImport) {
@@ -64,7 +88,7 @@ fun CucutoNavDisplay(
             transitionSpec = { motion.slideTransition(forward = true) },
             popTransitionSpec = { motion.slideTransition(forward = false) },
             predictivePopTransitionSpec = { motion.slideTransition(forward = false) },
-            entryProvider = entries(backStack, navigate, goBack),
+            entryProvider = entries(backStack, navigate, goBack, finishOnboarding),
         )
     }
 }
@@ -73,8 +97,12 @@ private fun entries(
     backStack: MutableList<NavKey>,
     navigate: (CucutoDestination) -> Unit,
     goBack: () -> Unit,
+    finishOnboarding: () -> Unit,
 ) = entryProvider<NavKey> {
     entry<CucutoDestination.Status> { StatusScreen(onNavigate = navigate) }
+    entry<CucutoDestination.Onboarding> {
+        OnboardingScreen(onFinish = finishOnboarding, resume = backStack.size == 1)
+    }
     entry<CucutoDestination.Home> {
         SharedElementEntry {
             HomeScreen(
