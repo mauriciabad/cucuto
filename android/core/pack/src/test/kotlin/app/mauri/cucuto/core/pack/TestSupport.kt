@@ -71,7 +71,7 @@ fun zipFolder(
 
 /**
  * The path of an archive fixture by its name without extension ("valid/minimal-pack"), whatever its extension
- * (`.soundpack.zip`, or the older `.soundpack`).
+ * (`.soundpack.zip`).
  */
 fun archiveFixture(stem: String): String {
     val dir = File(fixturesDir, stem.substringBeforeLast('/'))
@@ -85,7 +85,7 @@ fun archiveFixture(stem: String): String {
     return file.relativeTo(fixturesDir).invariantSeparatorsPath
 }
 
-/** A fixture as an archive: `.soundpack` files as they are, folders zipped into [tmp]. */
+/** A fixture as an archive: `.soundpack.zip` files as they are, folders zipped into [tmp]. */
 fun fixtureArchive(
     path: String,
     tmp: File,
