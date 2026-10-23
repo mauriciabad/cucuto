@@ -68,7 +68,7 @@ R	<package index>	<key>	<voice index or ->	<seed>	<flags>	<contactId>
   `e<at>,<initialSharpness or empty>,<intensity>,<sharpness>,<ms>[,<intensity>,<sharpness>,<ms>…]` for a basic
   envelope. A clip haptic is `-` (none) or a `c` timeline. `RoutingCodec.encodeHaptic` and `decodeHaptic` read
   and write one haptic in this syntax; the per-clip auto haptics stored next to installed packs use them
-  ([ADR 0010](decisions/0010-haptics-effects-and-auto-haptics.md)). `:core:haptics` turns haptics into
+  ([ADR 0012](decisions/0012-haptics-effects-and-auto-haptics.md)). `:core:haptics` turns haptics into
   `VibrationEffect`s.
 
 Example (tabs shown as spaces):
