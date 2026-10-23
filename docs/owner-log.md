@@ -19,3 +19,7 @@ issues are linked from here too.
 
 Resulting decisions: questions go to issues labeled `question`; Kotlin for all code and tooling (see `CLAUDE.md`);
 JPEG XL on Android evaluates jxl-rs first (spike issue); this log.
+
+> i added the dns :)
+
+Closed #54 after verifying `cucuto.mauri.app CNAME mauriciabad.github.io` (Cloudflare, DNS only).
