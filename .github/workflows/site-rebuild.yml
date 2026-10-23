@@ -1,0 +1,28 @@
+name: site-rebuild
+
+# A published release changes what the website shows (APK version, size and URL; the demo pack repository at
+# /repo/index.json), so rebuild and redeploy the site from main. ci.yml does the work: the github-pages environment
+# only deploys from main, not from the release tag this event runs on.
+#
+# Releases created by a workflow with GITHUB_TOKEN don't trigger this; such workflows dispatch ci.yml themselves
+# (see packs-release.yml).
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  actions: write
+
+jobs:
+  rebuild:
+    name: Rebuild the website on main
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch ci.yml (site only) on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" \
+            --ref "${{ github.event.repository.default_branch }}" -f site_only=true

@@ -37,7 +37,7 @@ SCREENSHOTS=1 pnpm exec playwright test screenshots   # full-page screenshots in
   (`.github/workflows/packs-release.yml`) is unpacked into `static/repo/`, served as `/repo/index.json`, the app's
   default pack repository, and rendered on the Packs page. Network errors never fail the build (previous data or an
   empty index is used). `CUCUTO_OFFLINE=1` skips the network; `CUCUTO_REPO_DIR=<packer index output>` uses a local
-  repository instead; `GITHUB_TOKEN` raises the API rate limit. Publishing an app release re-runs the deploy (`web.yml`
+  repository instead; `GITHUB_TOKEN` raises the API rate limit. Publishing an app release re-runs the deploy (`site-rebuild.yml`
   `release` trigger); `packs-release.yml` dispatches it after uploading the packs.
 - **Images (JPEG XL).** Import rasters with `?picture` (`?w=192&picture` to resize) and render them with
   `<Picture>`: a `<picture>` with JPEG XL first, then AVIF, then PNG, encoded at build time by `scripts/picture.ts`

@@ -12,7 +12,14 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Also started by site-rebuild.yml (release published) and packs-release.yml with site_only, so the website
+  # picks up new release data (APK version and size, /repo/index.json) and redeploys.
   workflow_dispatch:
+    inputs:
+      site_only:
+        description: "Only build, test and deploy the website (skip Android and packer)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -31,9 +38,9 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
+      android: ${{ (github.event_name == 'workflow_dispatch' && !inputs.site_only) || steps.filter.outputs.android == 'true' }}
       web: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.web == 'true' }}
-      packs: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.packs == 'true' }}
+      packs: ${{ (github.event_name == 'workflow_dispatch' && !inputs.site_only) || steps.filter.outputs.packs == 'true' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -203,6 +210,10 @@ jobs:
     defaults:
       run:
         working-directory: web
+    env:
+      # The build reads the latest app release and the newest packs-v* release from the GitHub Releases API
+      # (web/scripts/build-data.ts); the token only raises the rate limit.
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
 
@@ -219,6 +230,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Encoded images (JPEG XL, AVIF, PNG) keyed by their sources and the encoder settings (web/scripts/picture.ts).
+      - name: Cache encoded images
+        id: picture-cache
+        uses: actions/cache@v6
+        with:
+          path: web/node_modules/.cache/picture
+          key: picture-${{ hashFiles('web/src/lib/assets/images/**', 'web/scripts/picture.ts') }}
+
+      - name: Install cjxl (JPEG XL encoder)
+        if: steps.picture-cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libjxl-tools
+
       - name: Type-check (svelte-check)
         run: pnpm check
 
@@ -227,6 +250,9 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          # Fail instead of silently skipping JPEG XL when images need encoding.
+          PICTURE_REQUIRE_JXL: ${{ steps.picture-cache.outputs.cache-hit != 'true' && '1' || '' }}
 
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
@@ -332,11 +358,11 @@ jobs:
             tools/packer/**/build/test-results/
           retention-days: 7
 
-  # Push to main only (never on PRs): publish the website built by the `web` job.
+  # Push or dispatch on main only (never on PRs): publish the website built by the `web` job.
   deploy-pages:
     name: Deploy to GitHub Pages
     needs: web
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       pages: write

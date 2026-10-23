@@ -2,7 +2,7 @@ name: packs-release
 
 # Publishes the demo packs (packs/) as a GitHub Release: every pack and the demo bundle as *.soundpack.zip assets,
 # plus repository.zip, the `packer index` output (repository.json + previews) whose download URLs point at those
-# assets. The website build (web.yml) downloads repository.zip from the newest packs-v* release and serves it at
+# assets. The website build (ci.yml, web job) downloads repository.zip from the newest packs-v* release and serves it at
 # /repo/index.json, the app's default pack repository.
 #
 # Release: push a tag `packs-vN` (or run this workflow with that tag). The release is never marked "latest", so
@@ -50,7 +50,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      # Tests already ran in packs.yml on the way to main.
+      # Tests already ran in ci.yml (packs job) on the way to main.
       - name: Build packer
         working-directory: tools/packer
         run: ./gradlew installDist --stacktrace
@@ -113,4 +113,4 @@ jobs:
       - name: Rebuild the website
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run web.yml --ref "${{ github.event.repository.default_branch }}"
+        run: gh workflow run ci.yml --ref "${{ github.event.repository.default_branch }}" -f site_only=true
