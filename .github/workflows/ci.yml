@@ -60,6 +60,9 @@ jobs:
               - "web/**"
               # Rendered at /authors/pack-format/.
               - "docs/pack-format.md"
+              # The site's pack checker is shared/pack-spec compiled to JavaScript, tested with every fixture in spec/.
+              - "shared/**"
+              - "spec/**"
               - ".github/workflows/ci.yml"
             packs:
               - "tools/packer/**"
@@ -228,9 +231,46 @@ jobs:
           path: android/**/build/reports/
           retention-days: 7
 
+  # shared/pack-spec compiled to JavaScript for the website (ADR 0022): only the Kotlin compiler runs (no Node.js,
+  # npm or webpack). The `web` job downloads the module before it type-checks, builds and tests the site.
+  pack-spec-js:
+    name: pack-spec for the browser (Kotlin/JS)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: shared/pack-spec
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Compile the browser module
+        run: ./gradlew syncWebPackSpec --build-cache --configuration-cache --stacktrace
+
+      - name: Upload the browser module
+        uses: actions/upload-artifact@v7
+        with:
+          name: pack-spec-js
+          path: web/src/lib/pack-spec/generated/
+          if-no-files-found: error
+          retention-days: 7
+
   web:
     name: Web check, lint, build, test
-    needs: changes
+    # Explicit order: the site embeds the pack-spec module built by `pack-spec-js`.
+    needs: [changes, pack-spec-js]
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -261,6 +301,17 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Download the pack-spec browser module
+        uses: actions/download-artifact@v8
+        with:
+          name: pack-spec-js
+          path: web/src/lib/pack-spec/generated/
+
+      # Every golden fixture in spec/fixtures through the browser build, with the codes packer and the app report
+      # (their own jobs run the same fixtures on the JVM: packer's `check` and Android's :core:pack tests).
+      - name: Golden fixtures (browser build of pack-spec, Bun)
+        run: bun run test:unit
+
       # Encoded images (JPEG XL, AVIF, PNG) keyed by their sources and the encoder settings (web/scripts/picture.ts).
       - name: Cache encoded images
         id: picture-cache
@@ -284,6 +335,8 @@ jobs:
         env:
           # Fail instead of silently skipping JPEG XL when images need encoding.
           PICTURE_REQUIRE_JXL: ${{ steps.picture-cache.outputs.cache-hit != 'true' && '1' || '' }}
+          # Fail instead of building the site without its pack checker.
+          CUCUTO_REQUIRE_PACK_SPEC: "1"
 
       - name: Install Playwright browser
         run: bun run playwright install --with-deps chromium
@@ -412,7 +465,7 @@ jobs:
   # The single required status check. Do not rename: the `main` ruleset requires a check named exactly `ci-ok`.
   ci-ok:
     name: ci-ok
-    needs: [changes, media-guard, android-assemble, android-test, android-lint, web, packs]
+    needs: [changes, media-guard, android-assemble, android-test, android-lint, pack-spec-js, web, packs]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

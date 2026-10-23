@@ -1,24 +1,33 @@
 // Release-driven data (#39) and generated images (#40): the pack repository the site serves at /repo/index.json,
 // the Packs gallery built from it, the APK button and the <picture> sources.
 import { expect, test } from '@playwright/test';
-import { Ajv2020 } from 'ajv/dist/2020.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { packSpec, type PackSpecModule } from '../src/lib/pack-spec/core.ts';
 
-const spec = join(import.meta.dirname, '..', '..', 'spec');
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
+const packSpecModule = join(
+	import.meta.dirname,
+	'..',
+	'src',
+	'lib',
+	'pack-spec',
+	'generated',
+	'pack-spec.mjs'
+);
 
 const ADD_TO_APP = 'cucuto://repo/add?url=https://cucuto.mauri.app/repo/index.json';
 
-test('/repo/index.json validates against spec/repository.schema.json', async ({ request }) => {
+test('/repo/index.json passes the pack-spec repository rules', async ({ request }) => {
 	const response = await request.get('/repo/index.json');
 	expect(response.ok()).toBe(true);
 	const index = await response.json();
 
-	const ajv = new Ajv2020({ allErrors: true });
-	ajv.addSchema(readJson(join(spec, 'common.schema.json')));
-	const validate = ajv.compile(readJson(join(spec, 'repository.schema.json')));
-	expect(validate(index), JSON.stringify(validate.errors, null, 2)).toBe(true);
+	// The same Kotlin validator as packer and the app (src/lib/pack-spec), not a second JSON Schema implementation.
+	test.skip(!existsSync(packSpecModule), 'Pack validator not built (./gradlew syncWebPackSpec)');
+	const validator = packSpec((await import(packSpecModule)) as PackSpecModule);
+	const result = validator.validateDocument('repository', await response.body());
+	expect(result.issues, JSON.stringify(result.issues, null, 2)).toEqual([]);
 
 	// packer's own file name is served too, so the folder URL works as a repository as well.
 	expect(await (await request.get('/repo/repository.json')).json()).toEqual(index);

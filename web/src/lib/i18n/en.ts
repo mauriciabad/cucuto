@@ -370,6 +370,9 @@ export const en = {
 			'Then build, validate and, if you like, bundle several packs into one file. Optional flags normalize loudness, trim silence and convert to Opus and JPEG XL (they need <code>ffmpeg</code> and <code>cjxl</code>):',
 		packerMoreHtml:
 			'All commands and flags are in the <a href="{packerReadme}" rel="external">packer README</a>.',
+		checkTitle: 'Check a pack in your browser',
+		checkHtml:
+			'No Java at hand? Choose a pack file here. This page runs the same rules as the app and <code>packer</code> (the same code, compiled for the web) and reports the same codes. The file stays on your device: nothing is uploaded.',
 		hostTitle: 'Host your own repository',
 		hostIntroHtml:
 			'A pack repository is any HTTPS location that serves a <code>repository.json</code> index and the files it lists: GitHub Pages, Cloudflare Pages, a bucket or your own server. No server code needed. <code>packer index</code> writes a ready-to-upload folder with the index, small previews and the packs:',
@@ -456,9 +459,24 @@ export const en = {
 		title: 'Open a pack',
 		description: 'Open .soundpack.zip files with the Cucuto web app.',
 		leadHtml:
-			'Opening pack files (<code>.soundpack.zip</code>, or any pack <code>.zip</code>) here comes with the pack creator. For now, import packs in the Cucuto app on your phone.',
+			'Cucuto checks the pack files you open here (<code>.soundpack.zip</code>, or any pack <code>.zip</code>) with the same rules as the app, on your device. Previewing and editing them comes with the pack creator; to install a pack, import it in the Cucuto app on your phone.',
 		opened: 'You opened:',
 		browse: 'Browse free packs'
+	},
+	packCheck: {
+		choose: 'Choose pack files',
+		checking: 'Checking…',
+		valid: 'Ready to import',
+		validWithWarnings: 'Ready to import, with warnings',
+		invalid: 'The app would not import this file',
+		bundle: 'A bundle of {count} packs:',
+		pack: '{version} by {author}, characters: {count}',
+		error: 'error',
+		warning: 'warning',
+		codesHtml:
+			'Every code is explained in the <a href="{packFormat}#error-codes">pack format</a>. Details are in English.',
+		failed: 'The file could not be checked ({error}).',
+		unavailable: 'The pack checker is not part of this build of the site.'
 	},
 	error: {
 		notFoundTitle: 'Page not found',

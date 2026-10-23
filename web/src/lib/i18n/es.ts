@@ -360,6 +360,9 @@ export const es: Messages = {
 			'Luego constrúyelo, valídalo y, si quieres, agrupa varios packs en un solo archivo. Hay opciones para normalizar el volumen, recortar silencios y convertir a Opus y JPEG XL (necesitan <code>ffmpeg</code> y <code>cjxl</code>):',
 		packerMoreHtml:
 			'Todos los comandos y opciones están en el <a href="{packerReadme}" rel="external">README de packer</a> (en inglés).',
+		checkTitle: 'Comprueba un pack en el navegador',
+		checkHtml:
+			'¿No tienes Java a mano? Elige aquí un archivo de pack. Esta página aplica las mismas reglas que la app y <code>packer</code> (el mismo código, compilado para la web) y da los mismos códigos. El archivo no sale de tu dispositivo: no se sube nada.',
 		hostTitle: 'Aloja tu propio repositorio',
 		hostIntroHtml:
 			'Un repositorio de packs es cualquier ubicación HTTPS que sirva un índice <code>repository.json</code> y los archivos que lista: GitHub Pages, Cloudflare Pages, un bucket o tu propio servidor. Sin código de servidor. <code>packer index</code> genera una carpeta lista para subir con el índice, vistas previas pequeñas y los packs:',
@@ -451,9 +454,24 @@ export const es: Messages = {
 		title: 'Abrir un pack',
 		description: 'Abre archivos .soundpack.zip con la web app de Cucuto.',
 		leadHtml:
-			'Abrir archivos de packs (<code>.soundpack.zip</code>, o cualquier <code>.zip</code> de pack) aquí llegará con el creador de packs. De momento, importa los packs en la app Cucuto de tu móvil.',
+			'Cucuto comprueba los archivos de pack que abras aquí (<code>.soundpack.zip</code>, o cualquier <code>.zip</code> de pack) con las mismas reglas que la app, en tu dispositivo. Previsualizarlos y editarlos llegará con el creador de packs; para instalar un pack, impórtalo en la app Cucuto de tu móvil.',
 		opened: 'Has abierto:',
 		browse: 'Ver packs gratuitos'
+	},
+	packCheck: {
+		choose: 'Elegir archivos de pack',
+		checking: 'Comprobando…',
+		valid: 'Listo para importar',
+		validWithWarnings: 'Listo para importar, con avisos',
+		invalid: 'La app no importaría este archivo',
+		bundle: 'Una colección de {count} packs:',
+		pack: '{version} de {author}, personajes: {count}',
+		error: 'error',
+		warning: 'aviso',
+		codesHtml:
+			'Cada código se explica en el <a href="{packFormat}#error-codes">formato de pack</a>. Los detalles están en inglés.',
+		failed: 'No se ha podido comprobar el archivo ({error}).',
+		unavailable: 'El comprobador de packs no forma parte de esta versión de la web.'
 	},
 	error: {
 		notFoundTitle: 'Página no encontrada',

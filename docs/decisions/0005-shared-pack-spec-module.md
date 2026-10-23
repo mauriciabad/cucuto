@@ -72,3 +72,9 @@ So `shared/pack-spec` gains a browser target and the website (the PWA pack creat
 instead of a TypeScript validator; there is one implementation of the rules, run by packer, the app and the site
 against the same fixtures (#116). The site itself stays SvelteKit. How much more of the PWA creator can be shared
 Kotlin is spike #117.
+
+## Update (#116)
+
+Done in [ADR 0022](0022-pack-spec-in-the-browser.md): the module now also has a `js` target (Kotlin/JS, chosen over
+Kotlin/Wasm), with a small exported API and a common-code DEFLATE decoder for the browser. The website loads it from
+`web/src/lib/pack-spec/`, and CI runs every golden fixture through the browser build as well.

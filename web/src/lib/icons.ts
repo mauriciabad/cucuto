@@ -11,6 +11,7 @@ import database from '@material-symbols/svg-500/rounded/database.svg?raw';
 import doNotDisturb from '@material-symbols/svg-500/rounded/do_not_disturb_on.svg?raw';
 import download from '@material-symbols/svg-500/rounded/download.svg?raw';
 import edit from '@material-symbols/svg-500/rounded/edit.svg?raw';
+import errorIcon from '@material-symbols/svg-500/rounded/error-fill.svg?raw';
 import extension from '@material-symbols/svg-500/rounded/extension.svg?raw';
 import folderZip from '@material-symbols/svg-500/rounded/folder_zip.svg?raw';
 import groups from '@material-symbols/svg-500/rounded/groups.svg?raw';
@@ -35,6 +36,7 @@ import stop from '@material-symbols/svg-500/rounded/stop-fill.svg?raw';
 import terminal from '@material-symbols/svg-500/rounded/terminal.svg?raw';
 import translate from '@material-symbols/svg-500/rounded/translate.svg?raw';
 import visibilityOff from '@material-symbols/svg-500/rounded/visibility_off.svg?raw';
+import warning from '@material-symbols/svg-500/rounded/warning-fill.svg?raw';
 
 const sources = {
 	android,
@@ -48,6 +50,7 @@ const sources = {
 	'do-not-disturb': doNotDisturb,
 	download,
 	edit,
+	error: errorIcon,
 	extension,
 	'folder-zip': folderZip,
 	groups,
@@ -71,7 +74,8 @@ const sources = {
 	stop,
 	terminal,
 	translate,
-	'visibility-off': visibilityOff
+	'visibility-off': visibilityOff,
+	warning
 };
 
 export type IconName = keyof typeof sources;

@@ -1,12 +1,29 @@
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { existsSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import { picture } from './scripts/picture.ts';
+
+// The pack validator (shared/pack-spec compiled to JavaScript, src/lib/pack-spec/) is optional locally, so the site
+// builds without a JDK; CI builds it first and sets CUCUTO_REQUIRE_PACK_SPEC=1 so it is never silently left out.
+const packSpecModule = new URL('./src/lib/pack-spec/generated/pack-spec.mjs', import.meta.url);
+if (!existsSync(packSpecModule)) {
+	if (process.env.CUCUTO_REQUIRE_PACK_SPEC === '1') {
+		throw new Error(
+			'Missing src/lib/pack-spec/generated/: run ./gradlew syncWebPackSpec in shared/pack-spec'
+		);
+	}
+	console.warn(
+		'Pack validator not built (run ./gradlew syncWebPackSpec in shared/pack-spec); the site omits it.'
+	);
+}
 
 export default defineConfig({
 	build: {
 		// Keep font files as files (the CSP allows fonts from our origin only, not data: URIs).
-		assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined)
+		assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined),
+		// The pack validator (src/lib/pack-spec) is one ~730 kB chunk (about 220 kB gzipped), loaded only on use.
+		chunkSizeWarningLimit: 800
 	},
 	plugins: [
 		// `?picture` imports: JPEG XL + AVIF + PNG at build time, rendered by <Picture> (#40).

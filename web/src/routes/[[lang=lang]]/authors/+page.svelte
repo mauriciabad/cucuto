@@ -4,6 +4,7 @@
 	import Code from '#lib/components/Code.svelte';
 	import Html from '#lib/components/Html.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import PackCheck from '#lib/components/PackCheck.svelte';
 	import Seo from '#lib/components/Seo.svelte';
 	import { localeFromPath, messages } from '#lib/i18n/index.js';
 	import { pageHref } from '#lib/i18n/links.js';
@@ -17,6 +18,7 @@
 		{ id: 'whats-in-a-pack', title: t.whatTitle },
 		{ id: 'make', title: t.makeTitle },
 		{ id: 'packer', title: t.packerTitle },
+		{ id: 'check', title: t.checkTitle },
 		{ id: 'host', title: t.hostTitle },
 		{ id: 'rights', title: t.rightsTitle },
 		{ id: 'spec', title: t.specTitle }
@@ -125,6 +127,10 @@ site/repo/
 	<p><Html text={t.packerCommandsHtml} /></p>
 	<Code code={commands} />
 	<p><Html text={t.packerMoreHtml} /></p>
+
+	<h2 id="check" class="headline-small">{t.checkTitle}</h2>
+	<p><Html text={t.checkHtml} /></p>
+	<PackCheck />
 
 	<h2 id="host" class="headline-small">{t.hostTitle}</h2>
 	<p><Html text={t.hostIntroHtml} /></p>

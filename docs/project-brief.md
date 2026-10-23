@@ -387,7 +387,7 @@ In the website (PWA):
 - Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews.
 - Haptic patterns are edited visually. Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
 
-Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. One Kotlin implementation (`shared/pack-spec`) validates everywhere: in `packer`, in the app, and on the website compiled to WebAssembly/JavaScript (owner, #60: option 1; #116). It runs against the same fixtures in CI, so a pack made anywhere imports everywhere. Whether more of the PWA creator can be shared Kotlin (Kotlin/Wasm) is spike #117.
+Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. One Kotlin implementation (`shared/pack-spec`) validates everywhere: in `packer`, in the app, and on the website compiled to JavaScript (owner, #60: option 1; Kotlin/JS rather than Wasm per ADR 0022, #116). It runs against the same fixtures in CI, so a pack made anywhere imports everywhere. Whether more of the PWA creator can be shared Kotlin (Kotlin/Wasm) is spike #117.
 
 ## Haptics
 

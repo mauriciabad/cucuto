@@ -13,6 +13,7 @@ bun run check     # svelte-check (types, a11y warnings fail the run)
 bun run lint      # Prettier + ESLint (flat config)
 bun run build     # static site in build/
 bun run test      # Playwright smoke + axe tests against the built site (bun run playwright install chromium first)
+bun run test:unit # every golden fixture in spec/fixtures through the pack validator (needs the module, below)
 SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in test-results/screenshots/
 ```
 
@@ -63,5 +64,11 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   (cjxl for JPEG XL, sharp for AVIF/PNG) and cached in `node_modules/.cache/picture`. Install cjxl with
   `brew install jpeg-xl`; without it the JPEG XL source is skipped with a warning (CI installs `libjxl-tools` and sets
   `PICTURE_REQUIRE_JXL=1`). Sources live in `src/lib/assets/images/`.
+- **Pack validator (#116, ADR 0022).** Pack checks use `shared/pack-spec`, the Kotlin rules of packer and the app,
+  compiled to JavaScript; never a TypeScript port. Build it with JDK 21: `cd ../shared/pack-spec && ./gradlew
+  syncWebPackSpec` writes `src/lib/pack-spec/generated/` (ignored by version control). `src/lib/pack-spec/` types it
+  and loads it lazily (`loadPackSpec()`); `PackCheck.svelte` is the UI, on `/authors/#check` and `/open/`. Without the
+  module the site still builds and the checker says it is not included; CI builds it in the `pack-spec-js` job and
+  sets `CUCUTO_REQUIRE_PACK_SPEC=1`, which makes `vite.config.ts` fail without it.
 - **TypeScript 6.** TypeScript 7 is out, but SvelteKit 3, svelte-check and typescript-eslint still declare
   `typescript@^6` as their peer, so the site stays on 6.x until they support 7.

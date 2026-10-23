@@ -163,7 +163,7 @@ lowercase slugs of the source names (`My Clip.WAV` becomes `clips/my-clip.wav`).
 
 | Module | Contents |
 | --- | --- |
-| [`../../shared/pack-spec/`](../../shared/pack-spec) | Kotlin Multiplatform validation core (`commonMain` has no JVM APIs) plus JVM adapters, shared with `android/core/pack` and included with `includeBuild` ([ADR 0005](../../docs/decisions/0005-shared-pack-spec-module.md)). Its tests, which run every golden fixture, run with packer's `./gradlew build`. |
+| [`../../shared/pack-spec/`](../../shared/pack-spec) | Kotlin Multiplatform validation core (`commonMain` has no JVM APIs) plus JVM adapters, shared with `android/core/pack` and included with `includeBuild` ([ADR 0005](../../docs/decisions/0005-shared-pack-spec-module.md)); its `js` target is the website's pack checker ([ADR 0022](../../docs/decisions/0022-pack-spec-in-the-browser.md)). Its tests, which run every golden fixture, run with packer's `./gradlew build`. |
 | `cli/` | The `packer` command (Clikt), `pack.yaml` mapping (kaml), deterministic zip writer, ffmpeg and cjxl integration, indexer. |
 
 Versions are in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
