@@ -1,0 +1,8 @@
+# libxposed module descriptor (modern API; replaces the legacy AndroidManifest meta-data).
+# Name and description come from android:label / android:description in the manifest.
+minApiVersion=102
+targetApiVersion=102
+# staticScope=true tells the framework the scope in scope.list is exhaustive, so the module
+# cannot be applied to apps outside it. This is the enforcement that keeps cucuto out of the
+# WhatsApp process: scope.list contains only "android" (System Framework).
+staticScope=true

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:description="@string/module_description"
+        android:icon="@android:drawable/sym_action_chat"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+
+        <!--
+          Modern libxposed modules are declared by META-INF/xposed/* (java_init.list, module.prop,
+          scope.list), not by AndroidManifest meta-data. android:label and android:description are
+          what the LSPosed manager shows for the module.
+        -->
+
+        <activity
+            android:name=".debugapp.DebugActivity"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Read-only clip provider. Exported so the system's notification sound player (SystemUI,
+          which hosts IRingtonePlayer) can open the clip. The spike logs every caller; see
+          ClipProvider.ENFORCE_CALLER and docs/m0-report.md for what production must do instead.
+        -->
+        <provider
+            android:name=".debugapp.ClipProvider"
+            android:authorities="app.mauri.cucuto.spike.clips"
+            android:exported="true"
+            android:grantUriPermissions="false"
+            android:readPermission="" />
+
+        <!-- Debug-only: lets the device session be driven from adb instead of by tapping. -->
+        <receiver
+            android:name=".debugapp.SpikeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="app.mauri.cucuto.spike.POST" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
