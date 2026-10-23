@@ -97,7 +97,7 @@ class PackImporterTest {
     @Test
     fun `reports progress for every step`() =
         runTest {
-            val source = ImportSource.of(fixtureArchive("valid/minimal-pack.soundpack", archives))
+            val source = ImportSource.of(fixtureArchive(archiveFixture("valid/minimal-pack"), archives))
             val events = importer().prepare(source).toList()
             val steps = events.filterIsInstance<ImportEvent.Progress>().map { it.progress::class }.distinct()
             assertEquals(
@@ -264,7 +264,7 @@ class PackImporterTest {
     @Test
     fun `invalid archives leave nothing behind`() =
         runTest {
-            val source = ImportSource.of(fixtureArchive("invalid/zip-slip.soundpack", archives))
+            val source = ImportSource.of(fixtureArchive(archiveFixture("invalid/zip-slip"), archives))
             val result = importer().prepare(source).result()
             assertEquals(listOf(ErrorCode.UNSAFE_PATH.name), (result as ImportResult.Invalid).report.errorCodes())
             assertNoLeftovers()

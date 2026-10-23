@@ -41,7 +41,7 @@ class PackImporterDeviceTest {
     fun importsEveryValidPackageFixture() =
         runTest {
             for (fixture in listOf(
-                "valid/minimal-pack.soundpack",
+                DeviceFixtures.archivePath("valid/minimal-pack"),
                 "valid/all-formats",
                 "valid/full-pack",
                 "valid/bundle",

@@ -24,6 +24,18 @@ object DeviceFixtures {
             assets.open(path).use { input -> out.outputStream().use { input.copyTo(it) } }
         }
 
+    /** The path of an archive fixture by its name without extension, whatever its extension. */
+    fun archivePath(stem: String): String {
+        val parent = stem.substringBeforeLast('/')
+        val name = stem.substringAfterLast('/')
+        return "$parent/" +
+            assets
+                .list(parent)
+                .orEmpty()
+                .filter { it.startsWith("$name.") }
+                .minBy { it.length }
+    }
+
     /** Zips a fixture folder to [dir], or copies a fixture archive. */
     fun archive(
         path: String,
