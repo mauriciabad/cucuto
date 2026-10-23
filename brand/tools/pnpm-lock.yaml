@@ -15,8 +15,8 @@ importers:
         specifier: 2.0.4
         version: 2.0.4
       paper:
-        specifier: 0.12.18
-        version: 0.12.18
+        specifier: 0.14.0
+        version: 0.14.0
 
 packages:
 
@@ -48,8 +48,8 @@ packages:
   pako@0.2.9:
     resolution: {integrity: sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA==}
 
-  paper@0.12.18:
-    resolution: {integrity: sha512-ZSLIEejQTJZuYHhSSqAf4jXOnii0kPhCJGAnYAANtdS72aNwXJ9cP95tZHgq1tnNpvEwgQhggy+4OarviqTCGw==}
+  paper@0.14.0:
+    resolution: {integrity: sha512-+CkS4bVg37vtsim2yonG0CMTboKwiNKyn3m+tnlaXZc2ltgh/2BvnY3sWeGX7+irtktpZGXK4M9/SJFxTpOl2w==}
     engines: {node: '>=8.0.0'}
 
   restructure@3.0.2:
@@ -101,7 +101,7 @@ snapshots:
 
   pako@0.2.9: {}
 
-  paper@0.12.18: {}
+  paper@0.14.0: {}
 
   restructure@3.0.2: {}
 
