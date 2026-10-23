@@ -136,4 +136,177 @@
     <string name="gallery_type_title_sample">Character picker</string>
     <string name="gallery_type_body">Tap a character to hear it, tap again to assign. Google Sans Flex, rounder for big text.</string>
     <string name="gallery_type_label">Import pack</string>
+
+    <!-- Packs screen (#27) -->
+    <string name="packs_import">Import</string>
+    <string name="packs_import_file">Import a pack</string>
+    <string name="packs_discover">Discover</string>
+    <string name="packs_website">Website</string>
+    <string name="packs_play_character">Play %1$s</string>
+    <string name="packs_summary">%1$s · %2$s</string>
+    <plurals name="packs_count">
+        <item quantity="one">%d pack</item>
+        <item quantity="other">%d packs</item>
+    </plurals>
+    <plurals name="packs_characters">
+        <item quantity="one">%d character</item>
+        <item quantity="other">%d characters</item>
+    </plurals>
+    <string name="packs_card_subtitle">%1$s · version %2$s</string>
+    <string name="packs_card_subtitle_used">%1$s · version %2$s · %3$s</string>
+    <plurals name="packs_used_by">
+        <item quantity="one">used by %d contact</item>
+        <item quantity="other">used by %d contacts</item>
+    </plurals>
+    <string name="packs_files_missing">This pack\'s files are missing. Import it again to fix it.</string>
+    <string name="packs_empty_title">No packs yet</string>
+    <string name="packs_empty_body">Sound packs bring the characters that speak for your contacts. Import a .soundpack.zip file from your phone, Google Drive or any other app.</string>
+    <string name="packs_get_free">Get free demo packs</string>
+    <string name="packs_more_title">Find more packs</string>
+    <string name="packs_more_body">Browse pack repositories in Discover, or download free packs from the Cucuto website and import them here.</string>
+    <string name="packs_by_author">by %1$s</string>
+    <string name="packs_fact_version">Version</string>
+    <string name="packs_fact_license">License</string>
+    <string name="packs_fact_size">Size</string>
+    <string name="packs_fact_source">Source</string>
+    <string name="packs_fact_contacts">Used by</string>
+    <string name="packs_source_local">Imported from a file</string>
+    <string name="packs_source_url">Downloaded from a link</string>
+    <string name="packs_source_repository">Downloaded from a pack repository</string>
+    <string name="packs_contacts_none">No contacts yet</string>
+    <plurals name="packs_contacts">
+        <item quantity="one">%d contact</item>
+        <item quantity="other">%d contacts</item>
+    </plurals>
+    <plurals name="packs_names_and_more">
+        <item quantity="one">%1$s and %2$d more</item>
+        <item quantity="other">%1$s and %2$d more</item>
+    </plurals>
+    <string name="packs_update_hint">To update this pack, import a newer version of its file. Your contacts keep their characters.</string>
+    <string name="packs_remove">Remove pack</string>
+    <string name="packs_remove_title">Remove %1$s?</string>
+    <plurals name="packs_remove_body">
+        <item quantity="one">Its %d character and its sounds are deleted from this phone.</item>
+        <item quantity="other">Its %d characters and their sounds are deleted from this phone.</item>
+    </plurals>
+    <plurals name="packs_remove_contacts">
+        <item quantity="one">%1$d contact uses its characters: %2$s.</item>
+        <item quantity="other">%1$d contacts use its characters: %2$s.</item>
+    </plurals>
+    <string name="packs_remove_keep">Keep their characters</string>
+    <string name="packs_remove_keep_body">They hear WhatsApp\'s own tone for now. Import this pack again and their characters come back.</string>
+    <string name="packs_remove_clear">Clear their characters</string>
+    <string name="packs_remove_clear_body">They go back to WhatsApp\'s own tone. You can pick new characters for them later.</string>
+    <string name="packs_remove_confirm">Remove</string>
+    <string name="packs_removed">%1$s removed</string>
+    <string name="packs_remove_failed">Couldn\'t remove %1$s. Try again.</string>
+    <string name="packs_installed_none">Nothing was installed.</string>
+    <plurals name="packs_installed_one">
+        <item quantity="one">%1$s is installed. Its %2$d character is ready to assign.</item>
+        <item quantity="other">%1$s is installed. Its %2$d characters are ready to assign.</item>
+    </plurals>
+    <plurals name="packs_installed_many">
+        <item quantity="one">%d pack is installed. Its characters are ready to assign.</item>
+        <item quantity="other">%d packs are installed. Their characters are ready to assign.</item>
+    </plurals>
+    <plurals name="packs_installed_skipped">
+        <item quantity="one">%d pack was skipped.</item>
+        <item quantity="other">%d packs were skipped.</item>
+    </plurals>
+
+    <!-- Import sheet (#27) -->
+    <string name="import_cancel">Cancel</string>
+    <string name="import_ok">OK</string>
+    <string name="import_pick_another">Choose another file</string>
+    <string name="import_step_reading">Reading the file…</string>
+    <string name="import_step_checking">Checking the pack…</string>
+    <string name="import_step_unpacking">Unpacking…</string>
+    <string name="import_step_testing">Testing sounds and pictures…</string>
+    <string name="import_step_installing">Installing…</string>
+    <plurals name="import_bundle_subtitle">
+        <item quantity="one">Bundle of %d pack</item>
+        <item quantity="other">Bundle of %d packs</item>
+    </plurals>
+    <string name="import_action_install">New · %1$s · %2$s</string>
+    <string name="import_action_update">Updates version %1$s to %2$s. Contacts keep their characters.</string>
+    <string name="import_action_reinstall">Version %1$s is already installed. Installing replaces it.</string>
+    <string name="import_action_downgrade">Version %1$s is installed. This file has the older version %2$s.</string>
+    <plurals name="import_orphaned">
+        <item quantity="one">This version drops a character that %d contact uses. That contact will hear WhatsApp\'s own tone.</item>
+        <item quantity="other">This version drops characters that %d contacts use. They will hear WhatsApp\'s own tone.</item>
+    </plurals>
+    <string name="import_install">Install</string>
+    <string name="import_update">Update</string>
+    <string name="import_reinstall">Replace</string>
+    <string name="import_downgrade">Install older version</string>
+    <plurals name="import_install_packs">
+        <item quantity="one">Install %d pack</item>
+        <item quantity="other">Install %d packs</item>
+    </plurals>
+    <plurals name="import_more_problems">
+        <item quantity="one">And %d more problem.</item>
+        <item quantity="other">And %d more problems.</item>
+    </plurals>
+    <plurals name="import_file_and_more">
+        <item quantity="one">%1$s and %2$d more file</item>
+        <item quantity="other">%1$s and %2$d more files</item>
+    </plurals>
+    <string name="import_details_show">Show details for pack authors</string>
+    <string name="import_details_hide">Hide details</string>
+    <string name="import_problem_backup_title">This is a Cucuto backup</string>
+    <string name="import_problem_backup_summary">Backups aren\'t sound packs. Restore it from Settings, under Backup and restore.</string>
+    <string name="import_problem_not_pack_title">This isn\'t a sound pack</string>
+    <string name="import_problem_not_pack_summary">Cucuto opens sound packs: zip files with a pack.json or bundle.json inside, usually named something.soundpack.zip. This zip has neither.</string>
+    <string name="import_problem_newer_title">Made for a newer Cucuto</string>
+    <string name="import_problem_newer_summary">This pack uses a newer pack format. Update Cucuto and import it again.</string>
+    <string name="import_problem_invalid_title">This pack can\'t be imported</string>
+    <string name="import_problem_invalid_summary">Nothing was installed. Whoever made the pack needs to fix this:</string>
+    <string name="import_problem_failed_title">Couldn\'t import the file</string>
+    <string name="import_failure_source_unreadable">Cucuto couldn\'t read the file. If it\'s in the cloud, check your connection and try again.</string>
+    <string name="import_failure_source_too_large">The file is larger than any pack can be.</string>
+    <string name="import_failure_not_enough_storage">There isn\'t enough free space on this phone to unpack it.</string>
+    <string name="import_failure_storage_error">Cucuto couldn\'t save the pack to this phone\'s storage.</string>
+    <string name="import_failure_not_prepared">This import expired. Choose the file again.</string>
+    <string name="import_failure_unexpected">Something went wrong. Try again, and if it keeps happening, report it with the details below.</string>
+
+    <!-- Pack format problems in plain words, one per code of spec/error-codes.json -->
+    <string name="error_archive_unreadable">The file is damaged or isn\'t a zip file. Try downloading it again.</string>
+    <string name="error_archive_unsupported">The zip uses something packs can\'t, such as a password or an unusual compression.</string>
+    <string name="error_compression_ratio_exceeded">The zip would unpack to a suspicious size, so it was blocked for safety.</string>
+    <string name="error_duplicate_entry">Two files in the zip have the same name.</string>
+    <string name="error_unsafe_path">A file in the zip points outside the pack, so it was blocked for safety.</string>
+    <string name="error_unsafe_entry">The zip contains a link or a special file. Packs hold only plain files.</string>
+    <string name="error_invalid_file_name">A file name uses characters packs can\'t use, or is too long.</string>
+    <string name="error_executable_file">The zip contains a program or script. Packs hold only sounds, pictures and text.</string>
+    <string name="error_unknown_file_type">The zip contains a kind of file packs can\'t hold.</string>
+    <string name="error_file_too_large">A file is larger than packs allow.</string>
+    <string name="error_too_many_files">The pack has too many files.</string>
+    <string name="error_unpacked_too_large">The pack is too large once unpacked.</string>
+    <string name="error_manifest_missing">There\'s no pack.json or bundle.json inside.</string>
+    <string name="error_manifest_ambiguous">The zip has both a pack.json and a bundle.json, so it can\'t be both.</string>
+    <string name="error_ignored_entry">Some system files, like .DS_Store, were skipped.</string>
+    <string name="error_large_pack">This is a large pack. It takes a lot of space on this phone.</string>
+    <string name="error_manifest_invalid_json">The pack\'s description file (pack.json) is damaged.</string>
+    <string name="error_format_version_unsupported">The pack was made for a newer version of Cucuto.</string>
+    <string name="error_schema_violation">The pack\'s description file (pack.json) has a missing or wrong value.</string>
+    <string name="error_duplicate_id">Two characters or packs have the same ID.</string>
+    <string name="error_file_missing">A sound or picture the pack lists is missing.</string>
+    <string name="error_file_type_mismatch">A file is used for the wrong thing, such as a picture where a sound should be.</string>
+    <string name="error_bundle_pack_missing">A pack the bundle lists is missing.</string>
+    <string name="error_bundle_layout_invalid">The bundle\'s folders are arranged wrongly.</string>
+    <string name="error_haptic_invalid">A vibration pattern in the pack is broken.</string>
+    <string name="error_when_invalid">A ringtone\'s time or season rule is broken.</string>
+    <string name="error_loop_points_invalid">A ringtone\'s loop points are wrong.</string>
+    <string name="error_license_not_spdx">The license isn\'t a standard license name, so it\'s shown as written.</string>
+    <string name="error_unreferenced_file">Some files aren\'t used by any character and were left out.</string>
+    <string name="error_media_undecodable">A sound or picture is damaged or can\'t be played on this phone.</string>
+    <string name="error_clip_duration_out_of_range">A notification sound is too short or too long. It must last 0.2 to 4 seconds.</string>
+    <string name="error_ringtone_duration_out_of_range">A ringtone is too short or too long. It must last 5 seconds to 6 minutes.</string>
+    <string name="error_image_too_large">A picture is too big. Pictures can be at most 512 pixels on each side.</string>
+    <string name="error_svg_unsafe">A picture (SVG) contains scripts or outside links, so it was blocked for safety.</string>
+    <string name="error_download_size_mismatch">The download is incomplete or changed. Try again.</string>
+    <string name="error_download_hash_mismatch">The download doesn\'t match what its source promised. Try again.</string>
+    <string name="error_backup_decryption_failed">The backup can\'t be opened. Check the password.</string>
+    <string name="error_pack_downgrade">A newer version of this pack is installed.</string>
+    <string name="error_pack_same_version">This version of the pack is already installed.</string>
 </resources>
