@@ -66,9 +66,12 @@ pack file extension `.soundpack` · backup `.cucuto-backup` · license GPL-3.0-o
   `android` CLI is installed (`android sdk install platforms/android-37.2`).
 - Android: `cd android && ./gradlew build` (debug + release APKs, Lint, ktlint, unit tests) ·
   `./gradlew spotlessApply` fixes formatting · versions live in `android/gradle/libs.versions.toml`, module setup in
-  `android/build-logic/` (ADR 0001)
+  `android/build-logic/` (ADR 0001). `compileSdk` is 37.2: `VibrationEffect.Builder` and friends are missing from
+  37.0. AGP 9 has built-in Kotlin: never apply `org.jetbrains.kotlin.android` (or kapt; use KSP).
 - Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build`
 - Device: owner's rooted Android 17 phone over adb (when connected). Device-only work is labeled `needs-device`.
+  Installing and launching `app.mauri.cucuto` is fine (the module is inert until enabled); never enable it in
+  LSPosed, change scopes or reboot without an explicit go-ahead.
 
 ## Owner log
 
