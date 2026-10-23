@@ -186,3 +186,7 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 > you can have more agents working in paralel
 
 (Lead added seven parallel streams: #121 clip cold start, #119/#84 pack-spec, #97 auto haptics, #44 release signing, #45 docs, #116/#49 pack-spec in the browser, #50 ringtone spike.)
+
+> the most important is to get the app working first
+
+(Lead focused the critical path: screen PRs #128/#132, then the end-to-end loop on the phone.)

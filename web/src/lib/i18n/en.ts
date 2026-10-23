@@ -271,12 +271,12 @@ export const en = {
 			{
 				title: 'Reboot',
 				textHtml:
-					'The module loads into Android’s system process at boot, so a full reboot is needed after enabling it or changing its scope.'
+					'The module loads into Android’s system process at boot, so a full reboot is needed after enabling it, changing its scope or updating Cucuto.'
 			},
 			{
 				title: 'Check the status card',
 				textHtml:
-					'Open Cucuto. The status card at the top checks that the module is active, the LSPosed scope is right, WhatsApp is installed and at least one pack is imported. Each failing check tells you how to fix it.'
+					'Open Cucuto. On first launch a setup guide walks you through these steps and ends with a test notification; you can reopen it from the status screen. The status card at the top checks that the module is active, the LSPosed scope is right, WhatsApp is installed and at least one pack is imported. Each failing check tells you how to fix it.'
 			},
 			{
 				title: 'Import a pack and assign characters',
@@ -305,6 +305,11 @@ export const en = {
 					'Cucuto only replaces a sound that was going to play. Check that the chat isn’t muted, that Do Not Disturb is off and that WhatsApp’s notification tone isn’t set to silent.'
 			},
 			{
+				q: 'The phone doesn’t boot after enabling the module.',
+				aHtml:
+					'Boot into your root manager’s safe mode (usually by pressing Volume Down during boot; check its documentation). It turns off every module, LSPosed included. Then uninstall Cucuto and reboot normally: LSPosed drops a module whose app is gone. More recovery options are in the <a href="{repo}/blob/main/docs/install.md#if-the-phone-does-not-boot" rel="external">install guide on GitHub</a>.'
+			},
+			{
 				q: 'Still stuck?',
 				aHtml:
 					'<a href="{issues}" rel="external">Open an issue on GitHub</a> with your Android build, your LSPosed version and what Diagnostics shows.'
@@ -328,7 +333,7 @@ export const en = {
 			{
 				icon: 'library-music',
 				title: 'Clips',
-				text: 'Short sounds, 0.2 to 4 seconds each. Ogg Opus is recommended; Ogg Vorbis, MP3, AAC, FLAC and WAV work too.'
+				text: 'Sounds of 0.2 to 30 seconds each; short ones work best. Ogg Opus is recommended; Ogg Vorbis, MP3, AAC, FLAC and WAV work too.'
 			},
 			{
 				icon: 'person-pin',

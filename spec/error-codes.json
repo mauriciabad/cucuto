@@ -33,7 +33,7 @@
     { "code": "LICENSE_NOT_SPDX", "severity": "warning", "stage": "references", "description": "The license is not an SPDX license expression; it is shown as free text." },
     { "code": "UNREFERENCED_FILE", "severity": "warning", "stage": "references", "description": "A media file is not referenced by any manifest and will not be installed." },
     { "code": "MEDIA_UNDECODABLE", "severity": "error", "stage": "media", "description": "An audio or image file does not match its extension's signature or its headers cannot be parsed." },
-    { "code": "CLIP_DURATION_OUT_OF_RANGE", "severity": "error", "stage": "media", "description": "A notification clip is shorter than 0.2 s or longer than 4 s (50 ms tolerance)." },
+    { "code": "CLIP_DURATION_OUT_OF_RANGE", "severity": "error", "stage": "media", "description": "A notification clip is shorter than 0.2 s or longer than 30 s (50 ms tolerance)." },
     { "code": "RINGTONE_DURATION_OUT_OF_RANGE", "severity": "error", "stage": "media", "description": "A ringtone is shorter than 5 s or longer than 6 min (50 ms tolerance)." },
     { "code": "IMAGE_TOO_LARGE", "severity": "error", "stage": "media", "description": "A bitmap image is wider or taller than 512 px." },
     { "code": "SVG_UNSAFE", "severity": "error", "stage": "media", "description": "An SVG contains scripts, event handlers, foreignObject, a DOCTYPE or entities, or references anything outside the file." },
