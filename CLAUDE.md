@@ -52,3 +52,8 @@ pack file extension `.soundpack` · backup `.cucuto-backup` · license GPL-3.0-o
 - Android SDK at `~/Library/Android/sdk` (platform `android-37.0`, build-tools 37). The `android` CLI is installed.
 - Android: `cd android && ./gradlew build` · Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build`
 - Device: owner's rooted Android 17 phone over adb (when connected). Device-only work is labeled `needs-device`.
+
+## Owner log
+
+Append every new owner prompt, message or answer **verbatim** to [`docs/owner-log.md`](docs/owner-log.md) (dated, with
+context) in the same PR or commit as the work it causes. Never paraphrase or delete entries.
