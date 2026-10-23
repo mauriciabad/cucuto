@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="false"
+        android:description="@string/module_description"
+        android:icon="@android:drawable/sym_call_incoming"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+
+        <!--
+          Modern libxposed modules are declared by META-INF/xposed/* (java_init.list, module.prop,
+          scope.list). No activity: the device session is driven from adb (run-on-device.main.kts).
+        -->
+
+        <!--
+          Read-only ringtone provider, exported so system_server (Telecom's local MediaPlayer) can
+          open it. It logs every caller and serves anyone: this is a spike measuring who calls.
+          The production provider allowlists uid 1000 and SystemUI (ADR 0010).
+        -->
+        <provider
+            android:name=".app.RingProvider"
+            android:authorities="app.mauri.cucuto.spike.m9.ring"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+    </application>
+</manifest>
