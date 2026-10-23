@@ -45,6 +45,10 @@ gradlePlugin {
             id = "cucuto.android.room"
             implementationClass = "app.mauri.cucuto.buildlogic.AndroidRoomConventionPlugin"
         }
+        register("kotlinLibrary") {
+            id = "cucuto.kotlin.library"
+            implementationClass = "app.mauri.cucuto.buildlogic.KotlinLibraryConventionPlugin"
+        }
         register("kotlinSerialization") {
             id = "cucuto.kotlin.serialization"
             implementationClass = "app.mauri.cucuto.buildlogic.KotlinSerializationConventionPlugin"
