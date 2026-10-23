@@ -415,10 +415,15 @@ private fun ProblemRow(
 private fun stepText(progress: ImportProgress?): Int =
     when (progress) {
         null, is ImportProgress.Copying -> R.string.import_step_reading
+
         ImportProgress.Validating -> R.string.import_step_checking
+
         is ImportProgress.Extracting -> R.string.import_step_unpacking
+
         is ImportProgress.Decoding -> R.string.import_step_testing
-        is ImportProgress.Installing -> R.string.import_step_installing
+
+        // Auto haptics run once the user confirmed: part of installing for them.
+        is ImportProgress.Analyzing, is ImportProgress.Installing -> R.string.import_step_installing
     }
 
 /** How far the current step is, or null when unknown. */
@@ -428,6 +433,7 @@ internal fun ImportProgress.fraction(): Float? =
         ImportProgress.Validating -> null
         is ImportProgress.Extracting -> ratio(done, total)
         is ImportProgress.Decoding -> ratio(done, total)
+        is ImportProgress.Analyzing -> ratio(done, total)
         is ImportProgress.Installing -> ratio(done, total)
     }?.coerceIn(0f, 1f)
 

@@ -19,6 +19,26 @@ internal object RoutingFixtures {
             ),
         )
 
+    /**
+     * An envelope shaped like an auto haptics analysis of a voiced clip (one event, up to 16 points, ending at zero
+     * intensity), different for every [seed]. Values are deliberately off [HapticGrid].
+     */
+    fun autoEnvelope(
+        seed: Int,
+        points: Int = 16,
+    ): Haptic.Custom {
+        val random = java.util.Random(seed.toLong())
+        val controlPoints =
+            (1..points).map { i ->
+                ControlPoint(
+                    milliIntensity = if (i == points) 0 else 150 + random.nextInt(851),
+                    milliSharpness = random.nextInt(1001),
+                    durationMs = 20 * (1 + random.nextInt(8)) + if (i == points) 5 else 0,
+                )
+            }
+        return Haptic.Custom(listOf(HapticEvent.Envelope(20 * random.nextInt(10), controlPoints, random.nextInt(1001))))
+    }
+
     fun voice(
         packId: String,
         characterId: String,

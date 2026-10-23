@@ -29,17 +29,21 @@ class RoutingCodecTest {
     @Test
     fun encodingIsLineBasedAndEscaped() {
         val lines = RoutingCodec.encode(sample).trimEnd('\n').split('\n')
-        assertEquals("cucuto-routing\t1\t1761000000123\t1\t2\t4\t7", lines[0])
+        assertEquals("cucuto-routing\t1\t1761000000123\t1\t2\t4\t7\t1", lines[0])
         assertEquals("P\tcom.whatsapp", lines[1])
         assertEquals("P\tcom.whatsapp.w4b", lines[2])
+        // The frog's and the bell's second clips share one envelope, stored once (off the grid: full syntax).
+        assertEquals("H\tce0,,700,500,80,0,300,40", lines[3])
         assertTrue(lines.any { it.startsWith("R\t1\tTab%09here, 100%25 new%0Aline%0D\t1\t") })
-        // Clip URIs share their folder once per voice.
+        // Clip URIs share their folder once per voice; clip haptics are references in a trailing field.
         val frog = lines.first { it.startsWith("V\tapp.mauri.demo.critters\tfrog\t") }
         val folder = "content://app.mauri.cucuto.clips/app.mauri.demo.critters/frog/characters/frog/clips/"
         assertTrue(
             frog,
-            frog.contains("\t$folder\t3\tclip-1.ogg\t1000\t-\tclip-2.ogg\t2000\tce0,,700,500,80,0,300,40\t"),
+            frog.endsWith("\t$folder\t3\tclip-1.ogg\t1000\t-\tclip-2.ogg\t2000\t-\tclip-3.ogg\t3000\t-\th-,0,-"),
         )
+        val owl = lines.first { it.startsWith("V\tapp.mauri.demo.critters\towl\t") }
+        assertTrue(owl, owl.endsWith("\tclip-1.ogg\t1000\t-"))
         assertTrue(
             frog,
             frog.contains("\tcp0,C,800;p120,T,1000;e220,300,1000,800,120,0,400,180;e600,,0,0,50;p900,L,0\t"),
@@ -67,7 +71,89 @@ class RoutingCodecTest {
             encoded
                 .replaceFirst("\nP\t", "\nX\tsomething a newer writer added\nP\t")
                 .replace(Regex("(?m)^(R\t.*)$"), "$1\tfuture-field")
+                .replace(Regex("(?m)^(V\t.*)$"), "$1\tfuture-field")
+                .replaceFirst("\t4\t7\t1\n", "\t4\t7\t1\tfuture-field\n")
         assertEquals(sample, RoutingCodec.decode(extended))
+    }
+
+    @Test
+    fun storesEachClipEnvelopeOnceInTheCompactForm() {
+        val envelope = HapticGrid.snap(RoutingFixtures.autoEnvelope(seed = 1, points = 16))
+        val other = HapticGrid.snap(RoutingFixtures.autoEnvelope(seed = 2, points = 3))
+
+        fun voice(
+            id: String,
+            clips: Int,
+        ) = RoutingFixtures.voice("app.mauri.demo.critters", id, clips).let { v ->
+            v.copy(clips = v.clips.mapIndexed { i, c -> c.copy(haptic = if (i == 0) envelope else other) })
+        }
+        val table = sample.copy(voices = listOf(voice("frog", 3), voice("frog", 2), voice("owl", 1)) + sample.voices)
+        val encoded = RoutingCodec.encode(table)
+        assertEquals(table, RoutingCodec.decode(encoded))
+
+        val lines = encoded.split('\n')
+        val dictionary = lines.filter { it.startsWith("H\t") }
+        // Two grid envelopes (compact) plus the sample's off-grid one.
+        assertEquals(3, dictionary.size)
+        assertTrue(dictionary[0], dictionary[0].startsWith("H\tz") && dictionary[0].length < 60)
+        assertTrue(lines[0].endsWith("\t3"))
+        // Clips reference the dictionary; their inline haptic fields stay empty for older readers.
+        assertTrue(lines.any { it.endsWith("\th0,1,1") })
+        assertTrue(lines.any { it.endsWith("\th0,1") })
+        assertTrue(lines.any { it.endsWith("\th0") })
+    }
+
+    @Test
+    fun readersFromBeforeTheDictionaryGetTablesWithoutClipEnvelopes() {
+        // What a version 1 reader without the dictionary sees: it skips H lines, trailing fields and extra header
+        // fields. Simulate it by removing them, then compare with the table minus clip haptics.
+        val oldView =
+            RoutingCodec
+                .encode(sample)
+                .replace(Regex("(?m)^H\t.*\n"), "")
+                .replace(Regex("\th[-0-9,]*(?=\n)"), "")
+                .replaceFirst("\t4\t7\t1\n", "\t4\t7\n")
+        val withoutClipHaptics =
+            sample.copy(voices = sample.voices.map { v -> v.copy(clips = v.clips.map { it.copy(haptic = null) }) })
+        assertEquals(withoutClipHaptics, RoutingCodec.decode(oldView))
+    }
+
+    @Test
+    fun readsInlineClipHapticsFromWritersBeforeTheDictionary() {
+        val old =
+            "cucuto-routing\t1\t5\t1\t1\t1\t1\n" +
+                "P\tcom.whatsapp\n" +
+                "V\tp.a\tc\ta\tcontent://x/\t2\ta.ogg\t1000\tce0,,700,500,80,0,300,40\tb.ogg\t1000\t-\n" +
+                "R\t0\tk@s.whatsapp.net\t0\t1\t0\t1\n"
+        val clips = RoutingCodec.decode(old).voices[0].clips
+        assertEquals(RoutingFixtures.voice("p.a", "c", 2).clips[1].haptic, clips[0].haptic)
+        assertNull(clips[1].haptic)
+    }
+
+    @Test
+    fun decodesTheDocumentedExample() {
+        // docs/routing-table.md, "Encoding".
+        val base = "content://app.mauri.cucuto.clips/app.mauri.demo.critters"
+        val example =
+            "cucuto-routing\t1\t1761000000123\t1\t1\t2\t2\t1\n" +
+                "P\tcom.whatsapp\n" +
+                "H\tz0,,_gCAgG\n" +
+                "V\tapp.mauri.demo.critters\tfrog\tcp0,C,800;e220,,1000,800,120,0,400,180" +
+                "\t$base/frog/characters/frog/clips/\t2\tribbit.ogg\t2000\t-\tcroak.ogg\t1000\t-\n" +
+                "V\tapp.mauri.demo.critters\towl\ta\t$base/owl/characters/owl/clips/" +
+                "\t2\thoot.ogg\t1000\t-\tsilence.ogg\t1000\t-\th0,-\n" +
+                "R\t0\t34600000001@s.whatsapp.net\t0\t42\t0\t1\n" +
+                "R\t0\t123456789012345@lid\t1\t42\t0\t1\n"
+        val table = RoutingCodec.decode(example)
+        val owl = table.resolve(WHATSAPP, "123456789012345@lid")!!.voice
+        assertEquals(
+            Haptic.Custom(
+                listOf(HapticEvent.Envelope(0, listOf(ControlPoint(1000, 508, 40), ControlPoint(0, 508, 120)))),
+            ),
+            owl.clips[0].haptic,
+        )
+        assertNull(owl.clips[1].haptic)
+        assertEquals(example, RoutingCodec.encode(table))
     }
 
     @Test
@@ -80,7 +166,16 @@ class RoutingCodecTest {
                 "cucuto-routing\t1",
                 "cucuto-routing\t0\t1\t1\t0\t0\t0\n",
                 // Header counts must match.
-                valid.replaceFirst("\t4\t7\n", "\t4\t8\n"),
+                valid.replaceFirst("\t4\t7\t1\n", "\t4\t8\t1\n"),
+                valid.replaceFirst("\t4\t7\t1\n", "\t4\t7\t2\n"),
+                // Clip haptic references: unknown index, wrong count, not a number.
+                valid.replace("\th-,0,-", "\th-,1,-"),
+                valid.replace("\th-,0,-", "\th-,0"),
+                valid.replace("\th-,0,-", "\th-,x,-"),
+                // A bad clip haptic in the dictionary.
+                valid.replace("H\tce0,,700,500,80,0,300,40", "H\ta"),
+                valid.replace("H\tce0,,700,500,80,0,300,40", "H\tz0,,AB"),
+                valid.replace("H\tce0,,700,500,80,0,300,40", "H\tz0,,A*A"),
                 // A route pointing past the voices.
                 valid.replace("R\t0\t34600000002@s.whatsapp.net\t1\t", "R\t0\t34600000002@s.whatsapp.net\t99\t"),
                 // A route pointing at an unknown package.

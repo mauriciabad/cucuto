@@ -2,6 +2,7 @@ package app.mauri.cucuto.core.haptics.auto
 
 import app.mauri.cucuto.core.haptics.HapticCapabilities
 import app.mauri.cucuto.core.routing.Haptic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -32,22 +33,31 @@ class AutoHaptics(
 
     /**
      * Analyses [clipPaths] (paths from `pack.json`, relative to [packDir]) and writes the result to [packDir]
-     * ([AutoHapticFile.write]). Clips that cannot be decoded are left out, so a later run can retry them.
+     * ([AutoHapticFile.write]). Clips that cannot be decoded or analysed are left out, so a later run can retry
+     * them. Only the first [AutoHapticAnalyzer.MAX_DURATION_MS] of each clip is decoded, however long it is.
+     *
+     * @param progress Called with the number of clips done so far and the total, before each clip and at the end.
      */
     suspend fun analyzePack(
         packDir: File,
         clipPaths: Collection<String>,
+        progress: suspend (done: Int, total: Int) -> Unit = { _, _ -> },
     ): AutoHapticSet =
         withContext(dispatcher) {
-            val clips = LinkedHashMap<String, Haptic.Custom?>(clipPaths.size * 2)
-            for (path in clipPaths.distinct()) {
+            val paths = clipPaths.distinct()
+            val clips = LinkedHashMap<String, Haptic.Custom?>(paths.size * 2)
+            paths.forEachIndexed { i, path ->
                 ensureActive()
+                progress(i, paths.size)
                 try {
                     clips[path] = analyze(File(packDir, path))
-                } catch (_: IOException) {
-                    // Skipped: the clip keeps WhatsApp's vibration in auto mode.
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Skipped (IOException from the decoder, or an analyser bug): auto keeps WhatsApp's vibration.
                 }
             }
+            progress(paths.size, paths.size)
             val set =
                 AutoHapticSet(AutoHapticAnalyzer.VERSION, options.maxControlPoints, options.minControlPointMs, clips)
             AutoHapticFile.write(packDir, set)
