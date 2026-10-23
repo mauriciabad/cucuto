@@ -64,15 +64,25 @@ generation. Tap **Post test notification** (allow notifications if asked).
   `NNus` should be well under 5000; a `Slow playSound` warning is a finding.
 - `adb shell dumpsys vibrator_manager | grep -A3 -i "app.mauri.cucuto"`: a short effect with usage NOTIFICATION.
 - Within ~10 s the Diagnostics screen shows a `SWAPPED` decision and "Module in system_server: Reported … Hooks:
-  playSound, playVibration".
+  playSound, playVibration". The module log prints `Delivered N decision events to the app` once after boot (and
+  again after any failed delivery).
 
 **Diagnose:**
+
+- No sound and no `alert app.mauri.cucuto` line: Android's notification cooldown muted the post before the hook
+  ran. Check `adb logcat -b events -d | grep notification_alert | grep cucuto`: the last two numbers are the
+  politeness state and the mute reason; `2,32768` means muted by cooldown. Avalanche (2 min after boot, airplane
+  mode off or a profile becoming available) mutes every non-exempt app; the self-test is posted as a reminder,
+  which is exempt. The per-app cooldown mutes a post less than 10 s after the previous one, so the app refuses to
+  post the test sooner ("Wait N seconds"); within a minute it plays at reduced volume (state `1`).
 
 - Default sound plays and the module log shows the swap: SystemUI could not open the clip. Check
   `adb logcat -d | grep -i -E "cucuto|RingtonePlayer|SecurityException"` (the provider refuses everyone except uid
   1000 and `com.android.systemui`).
 - No decision appears in the app but the log shows the alert: event delivery failed. Look for
-  `events` warnings in the module log.
+  `Delivering N decision events failed` warnings in the module log (at most one a minute); each names the reason.
+  The app side can be checked without the module: `su 1000 -c "content call --uri content://app.mauri.cucuto.events
+  --method report --extra v:i:1"` must print `Bundle[{accepted=0}]`.
 
 ## 3. Real WhatsApp messages
 

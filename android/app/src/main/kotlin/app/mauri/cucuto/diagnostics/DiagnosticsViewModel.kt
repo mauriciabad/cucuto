@@ -39,6 +39,11 @@ sealed interface DiagnosticsMessage {
 
     data object NotificationsBlocked : DiagnosticsMessage
 
+    /** Android would mute a test posted this soon after the previous one (notification cooldown). */
+    data class TestTooSoon(
+        val seconds: Int,
+    ) : DiagnosticsMessage
+
     data object NoSender : DiagnosticsMessage
 
     data class VoiceAssigned(
@@ -85,7 +90,11 @@ class DiagnosticsViewModel
 
         fun postTestNotification() =
             run {
-                if (notifier.post()) DiagnosticsMessage.TestPosted else DiagnosticsMessage.NotificationsBlocked
+                when (val result = notifier.post()) {
+                    SelfTestNotifier.Result.Posted -> DiagnosticsMessage.TestPosted
+                    SelfTestNotifier.Result.Blocked -> DiagnosticsMessage.NotificationsBlocked
+                    is SelfTestNotifier.Result.TooSoon -> DiagnosticsMessage.TestTooSoon(result.seconds)
+                }
             }
 
         fun assignTestVoice() =

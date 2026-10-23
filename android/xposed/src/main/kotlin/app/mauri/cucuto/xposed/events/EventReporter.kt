@@ -1,6 +1,8 @@
 package app.mauri.cucuto.xposed.events
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -26,11 +28,15 @@ internal class EventReporter(
     private val status: () -> ModuleStatus,
     private val onError: (String, Throwable?) -> Unit,
     private val onQueuedListener: (DecisionEvent) -> Unit = {},
+    private val onDelivered: (count: Int) -> Unit = {},
     private val queue: EventQueue = EventQueue(),
 ) {
     private val thread = HandlerThread("cucuto-events", Process.THREAD_PRIORITY_BACKGROUND)
     private val handler: Handler by lazy { Handler(thread.looper) }
     private val deliver = Runnable { deliver() }
+
+    /** Whether the last attempt failed (or none succeeded yet), so the next success is worth one log line. */
+    private var lastFailed = true
 
     /** Starts the background thread. Call once, outside the notification path. */
     fun start() {
@@ -100,6 +106,8 @@ internal class EventReporter(
                     false
                 }
             queue.completed(batch, ok)
+            if (ok && lastFailed) onDelivered(batch.size)
+            lastFailed = !ok
             if (!queue.isEmpty) schedule()
         } catch (t: Throwable) {
             onError("Decision event delivery crashed", t)
@@ -107,29 +115,82 @@ internal class EventReporter(
     }
 }
 
+/** Why a batch was not delivered. Carries no stack trace: the reason is the whole story, logged on one line. */
+internal class DeliveryRefused(
+    reason: String,
+) : Exception(reason) {
+    override fun fillInStackTrace(): Throwable = this
+}
+
 /**
- * [EventSender] that calls the app's event provider through the system context's `ContentResolver`.
+ * Decides whether the app that owns the event provider is the module's own app (pure, unit-tested): same package
+ * name, and the installed package holds every certificate that signed the module's APK. Returns null when it may
+ * receive events, otherwise the reason it may not.
  *
- * The provider is verified before every call: it must belong to the module's own APK ([moduleUid]), so that if
- * Cucuto were uninstalled while the module is still loaded, another app claiming the authority would receive
- * nothing. Starting the app's process for a call is the system's normal provider behaviour; [EventQueue] keeps that
- * to at most one wake-up per interval.
+ * This replaced a uid comparison: LSPosed builds the module's `ApplicationInfo` for `system_server` by parsing the
+ * APK file, so its `uid` is never the installed app's uid (device finding, issue #17).
+ */
+internal fun providerRefusal(
+    providerPackage: String?,
+    modulePackage: String?,
+    moduleSigners: List<ByteArray>?,
+    holdsCertificate: (ByteArray) -> Boolean,
+): String? =
+    when {
+        modulePackage.isNullOrEmpty() -> "the module's package name is unknown"
+        providerPackage != modulePackage -> "the event provider belongs to another package"
+        moduleSigners.isNullOrEmpty() -> "the module APK's signing certificate could not be read"
+        !moduleSigners.all(holdsCertificate) -> "the event provider's app is signed by another key"
+        else -> null
+    }
+
+/**
+ * [EventSender] that calls the app's event provider through the system context's `ContentResolver` (user 0, the
+ * system context's user).
+ *
+ * The provider is verified before every call ([providerRefusal]): it must belong to the module's package and be
+ * signed by the certificate that signed the module's APK, so that if Cucuto were uninstalled while the module is
+ * still loaded, another app claiming the authority would receive nothing. The certificate is read from the module's
+ * APK once ([prepare], right after boot, while that file still exists; an app update replaces it but the module
+ * keeps running until the next reboot). Every refusal throws [DeliveryRefused] so the reporter logs why. Starting
+ * the app's process for a call is the system's normal provider behaviour; [EventQueue] keeps that to at most one
+ * wake-up per interval.
  */
 internal class ProviderEventSender(
-    private val moduleUid: () -> Int?,
+    private val moduleInfo: () -> ApplicationInfo?,
 ) : EventSender {
     private val uri: Uri = Uri.parse("content://${EventContract.AUTHORITY}")
 
     @Volatile private var context: Context? = null
 
+    @Volatile private var moduleSigners: List<ByteArray>? = null
+
+    /** Reads the module APK's signing certificates now (background thread, after boot). Never throws. */
+    fun prepare() {
+        try {
+            val ctx = context() ?: return
+            signers(ctx)
+        } catch (_: Throwable) {
+            // Retried on the first delivery.
+        }
+    }
+
     override fun send(
         events: List<DecisionEvent>,
         status: ModuleStatus,
     ): Boolean {
-        val ctx = context ?: systemContext()?.also { context = it } ?: return false
-        val provider = ctx.packageManager.resolveContentProvider(EventContract.AUTHORITY, 0) ?: return false
-        val expectedUid = moduleUid()
-        if (expectedUid == null || provider.applicationInfo?.uid != expectedUid) return false
+        val ctx = context() ?: throw DeliveryRefused("no system context")
+        val pm = ctx.packageManager
+        val provider =
+            pm.resolveContentProvider(EventContract.AUTHORITY, PackageManager.ComponentInfoFlags.of(0))
+                ?: throw DeliveryRefused("the event provider is not installed for user 0")
+        val refusal =
+            providerRefusal(
+                providerPackage = provider.packageName,
+                modulePackage = moduleInfo()?.packageName,
+                moduleSigners = signers(ctx),
+            ) { cert -> pm.hasSigningCertificate(provider.packageName, cert, PackageManager.CERT_INPUT_RAW_X509) }
+        if (refusal != null) throw DeliveryRefused(refusal)
 
         val extras =
             Bundle().apply {
@@ -137,8 +198,34 @@ internal class ProviderEventSender(
                 putParcelableArrayList(EventContract.EXTRA_EVENTS, ArrayList(events.map { it.toMap().toBundle() }))
                 putBundle(EventContract.EXTRA_STATUS, status.toMap().toBundle())
             }
-        val result = ctx.contentResolver.call(uri, EventContract.METHOD_REPORT, null, extras) ?: return false
-        return result.getInt(EventContract.RESULT_ACCEPTED, -1) >= 0
+        val result =
+            ctx.contentResolver.call(uri, EventContract.METHOD_REPORT, null, extras)
+                ?: throw DeliveryRefused("the event provider returned no result")
+        val accepted = result.getInt(EventContract.RESULT_ACCEPTED, -1)
+        if (accepted < 0) throw DeliveryRefused("the event provider did not accept the batch")
+        return true
+    }
+
+    private fun context(): Context? = context ?: systemContext()?.also { context = it }
+
+    /** The certificates that signed the module's APK, read once from the file LSPosed loaded the module from. */
+    private fun signers(ctx: Context): List<ByteArray>? {
+        moduleSigners?.let { return it }
+        val module = moduleInfo() ?: return null
+        val apk = module.sourceDir ?: return null
+        val flags = PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
+        val pm = ctx.packageManager
+        // The installed package, if it is still the very APK the module was loaded from (no update since boot)...
+        val installed =
+            try {
+                pm.getPackageInfo(module.packageName, flags).takeIf { it.applicationInfo?.sourceDir == apk }
+            } catch (_: PackageManager.NameNotFoundException) {
+                null
+            }
+        // ...otherwise the APK file itself, while it still exists.
+        val signing = (installed ?: pm.getPackageArchiveInfo(apk, flags))?.signingInfo ?: return null
+        val certs = signing.apkContentsSigners.orEmpty().map { it.toByteArray() }
+        return certs.takeIf { it.isNotEmpty() }?.also { moduleSigners = it }
     }
 
     private companion object {

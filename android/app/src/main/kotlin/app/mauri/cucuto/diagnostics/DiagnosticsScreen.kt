@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -154,12 +155,37 @@ fun DiagnosticsScreen(
 @Composable
 private fun messageText(message: DiagnosticsMessage): String =
     when (message) {
-        DiagnosticsMessage.None -> stringResource(R.string.diag_post_test_hint)
-        DiagnosticsMessage.TestPosted -> stringResource(R.string.diag_post_test_posted)
-        DiagnosticsMessage.NotificationsBlocked -> stringResource(R.string.diag_post_test_blocked)
-        DiagnosticsMessage.NoSender -> stringResource(R.string.diag_test_voice_no_sender)
-        is DiagnosticsMessage.VoiceAssigned -> stringResource(R.string.diag_test_voice_assigned, message.label)
-        is DiagnosticsMessage.Failed -> stringResource(R.string.diag_failed, message.reason)
+        DiagnosticsMessage.None -> {
+            stringResource(R.string.diag_post_test_hint)
+        }
+
+        DiagnosticsMessage.TestPosted -> {
+            stringResource(R.string.diag_post_test_posted)
+        }
+
+        DiagnosticsMessage.NotificationsBlocked -> {
+            stringResource(R.string.diag_post_test_blocked)
+        }
+
+        is DiagnosticsMessage.TestTooSoon -> {
+            pluralStringResource(
+                R.plurals.diag_too_soon,
+                message.seconds,
+                message.seconds,
+            )
+        }
+
+        DiagnosticsMessage.NoSender -> {
+            stringResource(R.string.diag_test_voice_no_sender)
+        }
+
+        is DiagnosticsMessage.VoiceAssigned -> {
+            stringResource(R.string.diag_test_voice_assigned, message.label)
+        }
+
+        is DiagnosticsMessage.Failed -> {
+            stringResource(R.string.diag_failed, message.reason)
+        }
     }
 
 @Composable

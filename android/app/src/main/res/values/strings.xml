@@ -25,8 +25,12 @@
     <string name="diag_module_timing_value">%1$d decisions, %2$d over 5 ms, slowest %3$d µs, %4$d events dropped</string>
     <string name="diag_post_test">Post test notification</string>
     <string name="diag_post_test_hint">With the module active you hear a two-tone chirp and feel a click-tick instead of the default sound. Its decision appears below within about 10 seconds.</string>
-    <string name="diag_post_test_posted">Posted. Listen for the chirp; the decision appears below within about 10 seconds.</string>
+    <string name="diag_post_test_posted">Posted. Listen for the chirp (quieter within a minute of the last test); the decision appears below within about 10 seconds.</string>
     <string name="diag_post_test_blocked">Notifications are blocked for Cucuto. Allow them in the system settings.</string>
+    <plurals name="diag_too_soon">
+        <item quantity="one">Wait %d second: Android mutes notifications an app posts less than 10 seconds apart.</item>
+        <item quantity="other">Wait %d seconds: Android mutes notifications an app posts less than 10 seconds apart.</item>
+    </plurals>
     <string name="diag_switch">Cucuto voices</string>
     <string name="diag_switch_body">The global switch. Off: every chat keeps WhatsApp\'s own tone.</string>
     <string name="diag_test_voice">Give the latest sender a test voice</string>

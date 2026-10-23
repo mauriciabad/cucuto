@@ -1,5 +1,6 @@
 package app.mauri.cucuto.xposed
 
+import android.content.pm.ApplicationInfo
 import android.os.SystemClock
 import android.util.Log
 import app.mauri.cucuto.core.routing.RoutingContract
@@ -47,12 +48,14 @@ class CucutoModule : XposedModule() {
 
     override fun onSystemServerStarting(param: SystemServerStartingParam) {
         guarded("onSystemServerStarting") {
+            val sender = ProviderEventSender(moduleInfo = { moduleInfo() })
             val reporter =
                 EventReporter(
-                    sender = ProviderEventSender(moduleUid = { moduleUid() }),
+                    sender = sender,
                     status = { status() },
                     onError = { message, error -> moduleLog.warnRateLimited("events", message, error) },
                     onQueuedListener = { event -> moduleLog.info(describe(event)) },
+                    onDelivered = { count -> moduleLog.info("Delivered $count decision events to the app") },
                 )
             reporter.start()
             this.reporter = reporter
@@ -68,6 +71,8 @@ class CucutoModule : XposedModule() {
             this.hooks = hooks
             moduleLog.info("Hooks installed: ${hooks.installed}; missing: ${hooks.missing}")
             reporter.post { hooks.warmUp() }
+            // Reads the module APK's signing certificate while the file still exists (an app update replaces it).
+            reporter.post(delayMillis = ATTACH_FIRST_DELAY_MILLIS) { sender.prepare() }
 
             attachRouting(attempt = 0)
         }
@@ -103,9 +108,13 @@ class CucutoModule : XposedModule() {
         )
     }
 
-    private fun moduleUid(): Int? =
+    /**
+     * The module's `ApplicationInfo` as LSPosed built it by parsing the APK: package name and `sourceDir` are
+     * reliable, but its `uid` is not the installed app's uid (never compare uids with it).
+     */
+    private fun moduleInfo(): ApplicationInfo? =
         try {
-            moduleApplicationInfo.uid
+            moduleApplicationInfo
         } catch (_: Throwable) {
             null
         }

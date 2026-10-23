@@ -51,8 +51,14 @@ file must stay inside the pack version folder (no `..`, encoded separators or sy
 **Module → app events (#17).** A `ContentResolver.call("report")` from `system_server` to
 `content://app.mauri.cucuto.events`, whose provider accepts only uid 1000. Chosen over a protected broadcast because
 it is synchronous (the module knows whether the batch landed), needs no custom permission, and works from the
-system context without `sendBroadcastAsUser` warnings. Before each call the module checks that the provider belongs
-to its own APK (`getModuleApplicationInfo().uid`), so an app squatting the authority receives nothing. Delivery runs
+system context (user 0) without `sendBroadcastAsUser` warnings. Before each call the module checks that the
+provider belongs to its own app: same package name as `getModuleApplicationInfo()`, and the installed package
+holds every certificate that signed the APK the module was loaded from (read once after boot; an app update
+replaces the file but the loaded module keeps running until the next reboot), so an app squatting the authority
+receives nothing. The first version compared `getModuleApplicationInfo().uid` with the provider's uid; on the
+device that never matched, because LSPosed builds the module's `ApplicationInfo` for `system_server` by parsing
+the APK file, so its `uid` is not the installed app's (device finding, #17). Every refused or failed delivery is
+logged with its reason (rate-limited), and the first success after boot or after a failure is logged once. Delivery runs
 on a dedicated background `HandlerThread`: the hook only appends to a bounded queue (200, oldest dropped) and posts.
 Batches of up to 50 go out 2 s after the first event, at most once every 10 s, backing off from 30 s to 15 min on
 failure. Each event carries time, package, raw key, display name, group flag, sender, matched contact, outcome,
@@ -63,7 +69,12 @@ generation, counters) rides along with every batch for the Diagnostics screen.
 **Self-test.** The app's own notifications on channel `cucuto_self_test` are swapped for a synthesised chirp
 (`content://app.mauri.cucuto.clips/selftest/chirp.wav`; `selftest` can never be a pack ID) and a click-tick, so the
 Diagnostics screen can test hook, provider, haptics and event delivery without a WhatsApp message. Nothing else from
-the app's package is touched.
+the app's package is touched. Android's notification cooldown (politeness) mutes alerts before `playSound` is ever
+called (device finding, #15): during an "avalanche" (2 min after boot, airplane mode off, a profile becoming
+available) every non-exempt alert is muted, and an app's alert less than 10 s after its previous one is muted
+(`config_notifCooldownMuteMillis`; within 60 s it only plays quieter). So the test notification uses
+`CATEGORY_REMINDER` (avalanche-exempt at full volume, as WhatsApp's conversations are) and the app refuses to post
+it again within 12 s.
 
 **Debug test voice.** Until the assignment UI exists (M2/M3), debug builds offer "Give the latest sender a test
 voice" on the Diagnostics screen: it writes a generated three-chirp pack (`app.mauri.cucuto.devtest`) in the
