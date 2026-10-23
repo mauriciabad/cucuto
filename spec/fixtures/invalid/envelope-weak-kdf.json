@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "type": "encrypted-backup",
+  "cipher": "AES-256-GCM",
+  "kdf": { "name": "argon2id", "memoryKiB": 1024, "iterations": 1, "parallelism": 1, "salt": "c2FsdHNhbHRzYWx0c2FsdA==" },
+  "nonce": "bm9uY2Vub25jZW5v",
+  "payload": "payload.bin"
+}

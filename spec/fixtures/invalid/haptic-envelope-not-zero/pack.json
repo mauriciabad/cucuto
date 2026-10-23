@@ -1,0 +1,17 @@
+{
+  "formatVersion": 1,
+  "id": "app.mauri.fixtures.env-zero",
+  "name": "Fixture",
+  "version": "1.0.0",
+  "author": "Cucuto fixtures",
+  "license": "CC0-1.0",
+  "characters": [
+    {
+      "id": "beep",
+      "name": "Beep",
+      "sprite": "characters/beep/sprite.png",
+      "clips": [{ "file": "characters/beep/clips/beep.ogg" }],
+      "haptic": { "mode": "custom", "events": [{ "at": 0, "envelope": [{ "intensity": 1, "sharpness": 0.5, "ms": 200 }] }] }
+    }
+  ]
+}

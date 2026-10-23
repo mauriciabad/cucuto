@@ -1,0 +1,17 @@
+{
+  "formatVersion": 1,
+  "id": "app.mauri.fixtures.when",
+  "name": "Fixture",
+  "version": "1.0.0",
+  "author": "Cucuto fixtures",
+  "license": "CC0-1.0",
+  "characters": [
+    {
+      "id": "beep",
+      "name": "Beep",
+      "sprite": "characters/beep/sprite.png",
+      "clips": [{ "file": "characters/beep/clips/beep.ogg" }],
+      "ringtones": [{ "file": "characters/beep/ring.ogg", "when": { "time": { "from": "08:00", "to": "08:00" } } }]
+    }
+  ]
+}

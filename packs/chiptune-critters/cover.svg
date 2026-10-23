@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Chiptune critters</title>
+  <rect width="128" height="128" rx="24" fill="#311B92"/>
+  <g fill="#B388FF">
+    <rect x="14" y="16" width="4" height="4"/>
+    <rect x="104" y="12" width="4" height="4"/>
+    <rect x="62" y="8" width="3" height="3"/>
+    <rect x="16" y="62" width="3" height="3"/>
+    <rect x="112" y="56" width="3" height="3"/>
+    <rect x="72" y="26" width="4" height="4"/>
+  </g>
+  <path d="M30 24 L30 44 M30 24 L44 20 L44 40" stroke="#FFD740" stroke-width="4" fill="none" stroke-linecap="square"/>
+  <rect x="24" y="40" width="8" height="7" fill="#FFD740"/>
+  <rect x="38" y="36" width="8" height="7" fill="#FFD740"/>
+  <rect x="8" y="106" width="112" height="12" rx="4" fill="#4527A0"/>
+  <ellipse cx="64" cy="94" rx="40" ry="22" fill="#4CAF50"/>
+  <circle cx="46" cy="72" r="13" fill="#4CAF50"/>
+  <circle cx="82" cy="72" r="13" fill="#4CAF50"/>
+  <circle cx="46" cy="72" r="8" fill="#FFFFFF"/>
+  <circle cx="82" cy="72" r="8" fill="#FFFFFF"/>
+  <rect x="45" y="70" width="5" height="5" fill="#263238"/>
+  <rect x="81" y="70" width="5" height="5" fill="#263238"/>
+  <path d="M50 92 Q64 102 78 92" stroke="#1B5E20" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="98" cy="34" r="11" fill="#29B6F6"/>
+  <path d="M107 33 L116 36 L107 39 Z" fill="#FFB300"/>
+  <circle cx="101" cy="31" r="2.5" fill="#263238"/>
+  <path d="M90 36 Q86 44 94 44" fill="#0288D1"/>
+</svg>

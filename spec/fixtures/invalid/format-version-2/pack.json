@@ -1,0 +1,16 @@
+{
+  "formatVersion": 2,
+  "id": "app.mauri.fixtures.future",
+  "name": "Fixture",
+  "version": "1.0.0",
+  "author": "Cucuto fixtures",
+  "license": "CC0-1.0",
+  "characters": [
+    {
+      "id": "beep",
+      "name": "Beep",
+      "sprite": "characters/beep/sprite.png",
+      "clips": [{ "file": "characters/beep/clips/beep.ogg" }]
+    }
+  ]
+}

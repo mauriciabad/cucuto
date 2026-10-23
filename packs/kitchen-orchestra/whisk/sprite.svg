@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Whisk</title>
+  <ellipse cx="64" cy="122" rx="20" ry="4" fill="#000000" opacity="0.12"/>
+  <g fill="none" stroke="#90A4AE" stroke-width="4" stroke-linecap="round">
+    <path d="M60 84 Q20 56 34 22 Q64 0 94 22 Q108 56 68 84"/>
+    <path d="M62 84 Q36 54 48 22 Q64 10 80 22 Q92 54 66 84"/>
+    <path d="M64 84 L64 12"/>
+  </g>
+  <rect x="54" y="80" width="20" height="40" rx="9" fill="#A1887F"/>
+  <rect x="54" y="80" width="20" height="8" rx="3" fill="#8D6E63"/>
+  <circle cx="64" cy="48" r="21" fill="#FFB74D"/>
+  <circle cx="56" cy="44" r="6" fill="#FFFFFF"/>
+  <circle cx="72" cy="44" r="6" fill="#FFFFFF"/>
+  <circle cx="57" cy="45" r="3" fill="#263238"/>
+  <circle cx="73" cy="45" r="3" fill="#263238"/>
+  <path d="M56 55 Q64 62 72 55" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="48" cy="54" r="3.5" fill="#F48FB1" opacity="0.85"/>
+  <circle cx="80" cy="54" r="3.5" fill="#F48FB1" opacity="0.85"/>
+</svg>

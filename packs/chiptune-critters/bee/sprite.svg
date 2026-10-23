@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Bzz the bee</title>
+  <ellipse cx="64" cy="118" rx="38" ry="5" fill="#000000" opacity="0.12"/>
+  <ellipse cx="46" cy="38" rx="17" ry="24" fill="#B3E5FC" opacity="0.9" transform="rotate(-25 46 38)"/>
+  <ellipse cx="82" cy="38" rx="17" ry="24" fill="#B3E5FC" opacity="0.9" transform="rotate(25 82 38)"/>
+  <path d="M30 50 Q22 30 16 24 M44 44 Q42 26 38 18" stroke="#3E2723" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="16" cy="24" r="4" fill="#3E2723"/>
+  <circle cx="38" cy="18" r="4" fill="#3E2723"/>
+  <path d="M108 74 L122 78 L108 84 Z" fill="#3E2723"/>
+  <ellipse cx="64" cy="78" rx="48" ry="34" fill="#FFC107"/>
+  <path d="M66 45 Q74 78 66 111 Q74 112 82 109 Q90 78 82 47 Q74 44 66 45 Z" fill="#3E2723"/>
+  <path d="M96 52 Q102 78 96 104 Q101 101 104 96 Q108 78 104 60 Q101 55 96 52 Z" fill="#3E2723"/>
+  <circle cx="34" cy="70" r="8" fill="#FFFFFF"/>
+  <circle cx="54" cy="70" r="8" fill="#FFFFFF"/>
+  <circle cx="35" cy="71" r="4" fill="#263238"/>
+  <circle cx="55" cy="71" r="4" fill="#263238"/>
+  <circle cx="36.5" cy="69" r="1.4" fill="#FFFFFF"/>
+  <circle cx="56.5" cy="69" r="1.4" fill="#FFFFFF"/>
+  <path d="M36 88 Q45 96 54 88" stroke="#3E2723" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <circle cx="24" cy="84" r="5" fill="#F48FB1" opacity="0.85"/>
+</svg>

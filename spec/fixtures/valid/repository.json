@@ -1,0 +1,44 @@
+{
+  "formatVersion": 1,
+  "name": "Fixture repository",
+  "description": "Golden repository index.",
+  "homepage": "https://cucuto.mauri.app",
+  "generatedAt": "2026-10-23T12:00:00Z",
+  "packs": [
+    {
+      "id": "app.mauri.fixtures.minimal",
+      "type": "pack",
+      "packFormatVersion": 1,
+      "name": "Minimal pack",
+      "version": "1.0.0",
+      "author": "Cucuto fixtures",
+      "license": "CC0-1.0",
+      "tags": ["fixtures"],
+      "cover": "previews/app.mauri.fixtures.minimal/cover.png",
+      "characters": [
+        { "id": "beep", "name": "Beep", "sprite": "previews/app.mauri.fixtures.minimal/beep.png", "sample": "previews/app.mauri.fixtures.minimal/beep.ogg", "seedColor": "#4CAF50" }
+      ],
+      "sizeUnpacked": 2048,
+      "download": {
+        "url": "packs/app.mauri.fixtures.minimal-1.0.0.soundpack",
+        "size": 1834,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "id": "app.mauri.fixtures.bundle",
+      "type": "bundle",
+      "name": "Fixture bundle",
+      "version": "1.0.0",
+      "packs": [
+        { "id": "app.mauri.fixtures.bundle.first", "name": "Bundle first", "version": "1.0.0", "characters": [{ "id": "beep", "name": "Beep" }] },
+        { "id": "app.mauri.fixtures.bundle.second", "name": "Bundle second", "version": "1.0.0" }
+      ],
+      "download": {
+        "url": "https://github.com/mauriciabad/cucuto/releases/download/packs-v1/app.mauri.fixtures.bundle-1.0.0.soundpack",
+        "size": 4096,
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    }
+  ]
+}

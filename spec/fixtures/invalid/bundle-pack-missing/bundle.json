@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "type": "bundle",
+  "id": "app.mauri.fixtures.bundle-missing",
+  "name": "Missing pack",
+  "version": "1.0.0",
+  "packs": ["packs/first", "packs/ghost"]
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Glass</title>
+  <ellipse cx="64" cy="120" rx="34" ry="5" fill="#000000" opacity="0.12"/>
+  <path d="M34 10 L94 10 Q98 52 64 72 Q30 52 34 10 Z" fill="#E0F7FA" stroke="#00ACC1" stroke-width="3"/>
+  <path d="M37 30 L91 30 Q90 54 64 66 Q38 54 37 30 Z" fill="#4DD0E1"/>
+  <rect x="60" y="72" width="8" height="34" fill="#E0F7FA" stroke="#00ACC1" stroke-width="3"/>
+  <ellipse cx="64" cy="110" rx="26" ry="6" fill="#E0F7FA" stroke="#00ACC1" stroke-width="3"/>
+  <path d="M42 16 Q40 32 46 44" stroke="#FFFFFF" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="54" cy="40" r="6" fill="#FFFFFF"/>
+  <circle cx="74" cy="40" r="6" fill="#FFFFFF"/>
+  <circle cx="55" cy="41" r="3" fill="#263238"/>
+  <circle cx="75" cy="41" r="3" fill="#263238"/>
+  <path d="M56 51 Q64 58 72 51" stroke="#006064" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M106 18 L108 26 L116 28 L108 30 L106 38 L104 30 L96 28 L104 26 Z" fill="#FFD54F"/>
+  <path d="M18 60 L19 64 L23 65 L19 66 L18 70 L17 66 L13 65 L17 64 Z" fill="#FFD54F"/>
+</svg>

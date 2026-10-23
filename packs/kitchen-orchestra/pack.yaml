@@ -1,0 +1,51 @@
+# Source of the "Kitchen orchestra" demo pack (CC0-1.0).
+# Build:      tools/packer/cli/build/install/packer/bin/packer build packs/kitchen-orchestra
+# Regenerate: kotlin packs/generate.main.kts   (all sounds are synthesized with ffmpeg)
+id: app.mauri.demo.kitchen-orchestra
+name: Kitchen orchestra
+version: 1.0.0
+author: Cucuto contributors
+license: CC0-1.0
+homepage: https://cucuto.mauri.app
+description: The kitchen is warming up. A pot that bongs, a glass that tings, a whisk that shakes and a kettle that whistles.
+cover: cover.svg
+tags: [percussion, objects, demo]
+characters:
+  - id: pot
+    name: Bong the pot
+    sprite: pot/sprite.svg
+    seedColor: "#78909C"
+    clips: pot/clips/
+    # A heavy thud that rings out.
+    haptic:
+      - at: 0
+        initialSharpness: 0.1
+        envelope:
+          - { intensity: 1.0, sharpness: 0.1, ms: 40 }
+          - { intensity: 0.0, sharpness: 0.1, ms: 400 }
+  - id: glass
+    name: Ting the glass
+    sprite: glass/sprite.svg
+    seedColor: "#26C6DA"
+    clips: glass/clips/
+    haptic:
+      - { at: 0, preset: TICK, scale: 1.0 }
+      - { at: 150, preset: TICK, scale: 0.7 }
+  - id: whisk
+    name: Swish the whisk
+    sprite: whisk/sprite.svg
+    seedColor: "#FFB74D"
+    clips: whisk/clips/
+    haptic: auto
+  - id: kettle
+    name: Tootle the kettle
+    sprite: kettle/sprite.svg
+    seedColor: "#E57373"
+    clips:
+      - kettle/clips/whistle.ogg
+      - file: kettle/clips/bubble.ogg
+        label: Bubbling
+    haptic:
+      - { at: 0, preset: LOW_TICK, scale: 0.6 }
+      - { at: 120, preset: LOW_TICK, scale: 0.6 }
+      - { at: 240, preset: LOW_TICK, scale: 0.6 }

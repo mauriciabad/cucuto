@@ -1,0 +1,70 @@
+# Source of the "Chiptune critters" demo pack (CC0-1.0).
+# Build:      tools/packer/cli/build/install/packer/bin/packer build packs/chiptune-critters
+# Regenerate: kotlin packs/generate.main.kts   (all sounds are synthesized with ffmpeg)
+# Format:     tools/packer/README.md (pack.yaml) and docs/pack-format.md (pack.json)
+id: app.mauri.demo.chiptune-critters
+name: Chiptune critters
+version: 1.0.0
+author: Cucuto contributors
+license: CC0-1.0
+homepage: https://cucuto.mauri.app
+description: Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog also sings a pond song as a ringtone, bright by day and sleepy at night.
+cover: cover.svg
+tags: [chiptune, animals, demo]
+characters:
+  - id: frog
+    name: Bleep the frog
+    sprite: frog/sprite.svg
+    seedColor: "#4CAF50"
+    tags: [pond]
+    clips:
+      - file: frog/clips/ribbit.ogg
+        weight: 2
+      - frog/clips/croak.ogg
+      - frog/clips/hop.ogg
+    ringtones:
+      - file: frog/ringtones/pond-song-day.ogg
+        label: Pond song (day)
+        tags: [day]
+        when: day
+        loop: { startMs: 0, endMs: 8000 }
+      - file: frog/ringtones/pond-song-night.ogg
+        label: Pond song (night)
+        tags: [night]
+        when: night
+        fadeInMs: 1500
+    # Two hops: a click per blip of "ribbit".
+    haptic:
+      - { at: 0, preset: CLICK, scale: 0.9 }
+      - { at: 200, preset: CLICK, scale: 0.7 }
+  - id: bird
+    name: Tweet the bird
+    sprite: bird/sprite.svg
+    seedColor: "#29B6F6"
+    tags: [sky]
+    clips: bird/clips/
+    haptic:
+      - { at: 0, preset: TICK, scale: 0.6 }
+      - { at: 120, preset: TICK, scale: 0.6 }
+      - { at: 240, preset: TICK, scale: 0.8 }
+  - id: cat
+    name: Mew the cat
+    sprite: cat/sprite.svg
+    seedColor: "#FF9800"
+    tags: [home]
+    clips: cat/clips/
+    haptic: auto
+  - id: bee
+    name: Bzz the bee
+    sprite: bee/sprite.svg
+    seedColor: "#FFC107"
+    tags: [garden]
+    clips: bee/clips/
+    # A soft buzz that swells and fades.
+    haptic:
+      - at: 0
+        initialSharpness: 0.2
+        envelope:
+          - { intensity: 0.6, sharpness: 0.3, ms: 150 }
+          - { intensity: 0.4, sharpness: 0.3, ms: 300 }
+          - { intensity: 0.0, sharpness: 0.2, ms: 200 }

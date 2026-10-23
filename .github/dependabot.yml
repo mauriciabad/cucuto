@@ -26,6 +26,21 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: gradle
+    directory: /tools/packer
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    labels: ["area:packer", "type:chore"]
+    groups:
+      packer:
+        patterns:
+          - "*"
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

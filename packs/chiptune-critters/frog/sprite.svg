@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Bleep the frog</title>
+  <ellipse cx="64" cy="118" rx="38" ry="5" fill="#000000" opacity="0.12"/>
+  <ellipse cx="34" cy="110" rx="15" ry="7" fill="#388E3C"/>
+  <ellipse cx="94" cy="110" rx="15" ry="7" fill="#388E3C"/>
+  <ellipse cx="64" cy="80" rx="48" ry="34" fill="#4CAF50"/>
+  <ellipse cx="64" cy="92" rx="30" ry="17" fill="#A5D6A7"/>
+  <circle cx="40" cy="46" r="18" fill="#4CAF50"/>
+  <circle cx="88" cy="46" r="18" fill="#4CAF50"/>
+  <circle cx="40" cy="46" r="11" fill="#FFFFFF"/>
+  <circle cx="88" cy="46" r="11" fill="#FFFFFF"/>
+  <circle cx="42" cy="48" r="5.5" fill="#263238"/>
+  <circle cx="86" cy="48" r="5.5" fill="#263238"/>
+  <circle cx="44" cy="45" r="2" fill="#FFFFFF"/>
+  <circle cx="88" cy="45" r="2" fill="#FFFFFF"/>
+  <path d="M44 74 Q64 88 84 74" stroke="#1B5E20" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="32" cy="74" r="6" fill="#F48FB1" opacity="0.85"/>
+  <circle cx="96" cy="74" r="6" fill="#F48FB1" opacity="0.85"/>
+</svg>

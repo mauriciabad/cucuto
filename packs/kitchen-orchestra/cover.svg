@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Kitchen orchestra</title>
+  <rect width="128" height="128" rx="24" fill="#FFF3E0"/>
+  <path d="M0 96 H128 V104 Q128 128 104 128 H24 Q0 128 0 104 Z" fill="#FFE0B2"/>
+  <g fill="#FFCC80">
+    <rect x="0" y="96" width="16" height="16"/>
+    <rect x="32" y="96" width="16" height="16"/>
+    <rect x="64" y="96" width="16" height="16"/>
+    <rect x="96" y="96" width="16" height="16"/>
+    <rect x="16" y="112" width="16" height="16"/>
+    <rect x="48" y="112" width="16" height="16"/>
+    <rect x="80" y="112" width="16" height="16"/>
+  </g>
+  <rect x="18" y="44" width="12" height="8" rx="4" fill="#455A64"/>
+  <rect x="98" y="44" width="12" height="8" rx="4" fill="#455A64"/>
+  <path d="M28 38 L100 38 L96 90 Q94 96 88 96 L40 96 Q34 96 32 90 Z" fill="#78909C"/>
+  <rect x="24" y="32" width="80" height="10" rx="5" fill="#546E7A"/>
+  <circle cx="54" cy="62" r="6" fill="#FFFFFF"/>
+  <circle cx="74" cy="62" r="6" fill="#FFFFFF"/>
+  <circle cx="55" cy="63" r="3" fill="#263238"/>
+  <circle cx="75" cy="63" r="3" fill="#263238"/>
+  <path d="M54 76 Q64 84 74 76" stroke="#263238" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M44 24 Q40 16 44 10 M64 22 Q60 14 64 8 M84 24 Q80 16 84 10" stroke="#B0BEC5" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M110 12 L110 26" stroke="#E57373" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="106" cy="27" rx="5" ry="4" fill="#E57373"/>
+  <path d="M18 14 L18 28" stroke="#26C6DA" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="14" cy="29" rx="5" ry="4" fill="#26C6DA"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Mew the cat</title>
+  <ellipse cx="64" cy="118" rx="38" ry="5" fill="#000000" opacity="0.12"/>
+  <path d="M24 56 L28 12 L60 36 Z" fill="#FB8C00"/>
+  <path d="M104 56 L100 12 L68 36 Z" fill="#FB8C00"/>
+  <path d="M32 44 L34 24 L50 36 Z" fill="#F8BBD0"/>
+  <path d="M96 44 L94 24 L78 36 Z" fill="#F8BBD0"/>
+  <ellipse cx="64" cy="70" rx="46" ry="42" fill="#FF9800"/>
+  <path d="M54 32 Q64 42 74 32" stroke="#E65100" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <ellipse cx="64" cy="90" rx="22" ry="16" fill="#FFE0B2"/>
+  <circle cx="46" cy="64" r="9" fill="#FFFFFF"/>
+  <circle cx="82" cy="64" r="9" fill="#FFFFFF"/>
+  <ellipse cx="47" cy="65" rx="3" ry="5.5" fill="#263238"/>
+  <ellipse cx="83" cy="65" rx="3" ry="5.5" fill="#263238"/>
+  <circle cx="48.5" cy="62" r="1.4" fill="#FFFFFF"/>
+  <circle cx="84.5" cy="62" r="1.4" fill="#FFFFFF"/>
+  <path d="M59 80 L69 80 L64 86 Z" fill="#EC407A"/>
+  <path d="M64 86 Q58 94 52 90 M64 86 Q70 94 76 90" stroke="#5D4037" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M38 82 L12 76 M38 88 L12 90 M90 82 L116 76 M90 88 L116 90" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+</svg>
