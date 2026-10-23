@@ -2,7 +2,15 @@
 //   SCREENSHOTS=1 pnpm exec playwright test screenshots --project=desktop
 import { test } from '@playwright/test';
 
-const paths = ['/', '/packs/', '/install/', '/authors/', '/privacy/'];
+const paths = [
+	'/',
+	'/packs/',
+	'/install/',
+	'/authors/',
+	'/authors/pack-format/',
+	'/privacy/',
+	'/es/'
+];
 
 test.skip(!process.env.SCREENSHOTS, 'set SCREENSHOTS=1 to capture screenshots');
 

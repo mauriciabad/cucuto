@@ -57,6 +57,8 @@ jobs:
               - ".github/workflows/ci.yml"
             web:
               - "web/**"
+              # Rendered at /authors/pack-format/.
+              - "docs/pack-format.md"
               - ".github/workflows/ci.yml"
             packs:
               - "tools/packer/**"

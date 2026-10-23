@@ -2,8 +2,11 @@
 	// Target of the web app manifest's `file_handlers` entry: when the site is installed as an app, opening a
 	// .zip file (packs are <name>.soundpack.zip; the type comes from the contents) lands here. Previewing and editing packs arrives with the pack creator (#48).
 	import { onMount } from 'svelte';
-	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import Html from '#lib/components/Html.svelte';
 	import Seo from '#lib/components/Seo.svelte';
+	import { localeFromPath, messages } from '#lib/i18n/index.js';
+	import { pageHref } from '#lib/i18n/links.js';
 
 	interface LaunchParams {
 		files: ReadonlyArray<{ name: string }>;
@@ -12,6 +15,9 @@
 	interface LaunchQueue {
 		setConsumer(consumer: (params: LaunchParams) => void): void;
 	}
+
+	const locale = $derived(localeFromPath(page.url.pathname));
+	const t = $derived(messages(locale).open);
 
 	let names = $state<string[]>([]);
 
@@ -24,19 +30,16 @@
 	});
 </script>
 
-<Seo title="Open a pack" description="Open .soundpack.zip files with the Cucuto web app." />
+<Seo title={t.title} description={t.description} />
 
 <div class="prose">
 	<header class="page-header">
-		<h1 class="display-small emphasized">Open a pack</h1>
-		<p class="body-large">
-			Opening pack files (<code>.soundpack.zip</code>, or any pack <code>.zip</code>) here comes
-			with the pack creator. For now, import packs in the Cucuto app on your phone.
-		</p>
+		<h1 class="display-small emphasized">{t.title}</h1>
+		<p class="body-large"><Html text={t.leadHtml} /></p>
 	</header>
 
 	{#if names.length > 0}
-		<p>You opened:</p>
+		<p>{t.opened}</p>
 		<ul>
 			{#each names as name (name)}
 				<li><code>{name}</code></li>
@@ -44,5 +47,5 @@
 		</ul>
 	{/if}
 
-	<p><a href={resolve('packs/')}>Browse free packs</a></p>
+	<p><a href={pageHref('/packs/', locale)}>{t.browse}</a></p>
 </div>

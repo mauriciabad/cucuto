@@ -7,35 +7,55 @@
 	import '#lib/styles/app.css';
 
 	import { page } from '$app/state';
-	import { resolve } from '$app/paths';
 	import logoLight from '#lib/assets/cucuto-logo-light.svg';
 	import logoDark from '#lib/assets/cucuto-logo-dark.svg';
 	import markUrl from '#lib/assets/cucuto-mark.svg';
+	import Html from '#lib/components/Html.svelte';
 	import Icon from '#lib/components/Icon.svelte';
-	import { LICENSE_URL, REPO_URL } from '#lib/site.js';
+	import { LOCALES, LOCALE_INFO, localeFromPath, localizePath, messages } from '#lib/i18n/index.js';
+	import { pageHref, type PagePath } from '#lib/i18n/links.js';
+	import { REPO_URL } from '#lib/site.js';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
 
-	const nav = [
-		{ href: resolve('packs/'), label: 'Packs' },
-		{ href: resolve('install/'), label: 'Install' },
-		{ href: resolve('authors/'), label: 'Pack authors' },
-		{ href: resolve('privacy/'), label: 'Privacy' }
-	];
+	const locale = $derived(localeFromPath(page.url.pathname));
+	const t = $derived(messages(locale));
+	const other = $derived(LOCALES.find((l) => l !== locale) ?? locale);
+
+	// Prerendered pages get <html lang> from hooks.server.ts; keep it right after client-side navigation between
+	// languages and on the SPA fallback (404.html).
+	$effect(() => {
+		document.documentElement.lang = LOCALE_INFO[locale].htmlLang;
+	});
+	// The current page in the other language (pages exist in every language; unknown paths fall back to home).
+	const otherHref = $derived(
+		page.route.id ? localizePath(page.url.pathname, other) : pageHref('/', other)
+	);
+
+	const nav = $derived(
+		(
+			[
+				['/packs/', t.layout.nav.packs],
+				['/install/', t.layout.nav.install],
+				['/authors/', t.layout.nav.authors],
+				['/privacy/', t.layout.nav.privacy]
+			] satisfies Array<[PagePath, string]>
+		).map(([path, label]) => ({ href: pageHref(path, locale), label }))
+	);
 </script>
 
-<a class="skip-link" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">{t.layout.skipLink}</a>
 
 <header class="top-bar">
 	<div class="container top-bar-inner">
-		<a class="brand" href={resolve('/')} aria-label="Cucuto home">
+		<a class="brand" href={pageHref('/', locale)} aria-label={t.layout.homeLabel}>
 			<picture>
 				<source srcset={logoDark} media="(prefers-color-scheme: dark)" />
 				<img src={logoLight} alt="" width="137" height="32" />
 			</picture>
 		</a>
-		<nav aria-label="Main">
+		<nav aria-label={t.layout.navLabel}>
 			<ul>
 				{#each nav as item (item.href)}
 					<li>
@@ -48,9 +68,21 @@
 					</li>
 				{/each}
 				<li>
+					<a
+						class="language"
+						href={otherHref}
+						hreflang={LOCALE_INFO[other].htmlLang}
+						lang={LOCALE_INFO[other].htmlLang}
+						title={t.layout.switchTo}
+					>
+						<Icon name="translate" />
+						<span>{LOCALE_INFO[other].name}</span>
+					</a>
+				</li>
+				<li>
 					<a class="github" href={REPO_URL} rel="external">
 						<Icon name="code" />
-						<span>GitHub</span>
+						<span>{t.layout.github}</span>
 					</a>
 				</li>
 			</ul>
@@ -67,16 +99,15 @@
 		<div class="footer-brand">
 			<img src={markUrl} alt="" width="40" height="40" />
 			<p>
-				<strong>Cucuto</strong> is free software under the
-				<a href={LICENSE_URL} rel="external">GPL-3.0-or-later</a> license.
+				<Html text={t.layout.footerLicenseHtml} />
 				<br />
-				No third-party content ships with the app. Not affiliated with WhatsApp or Meta.
+				{t.layout.footerContent}
 			</p>
 		</div>
 		<ul class="footer-links">
-			<li><a href={REPO_URL} rel="external">Source on GitHub</a></li>
-			<li><a href={resolve('install/')}>Install guide</a></li>
-			<li><a href={resolve('privacy/')}>Privacy</a></li>
+			<li><a href={REPO_URL} rel="external">{t.layout.footerLinks.source}</a></li>
+			<li><a href={pageHref('/install/', locale)}>{t.layout.footerLinks.install}</a></li>
+			<li><a href={pageHref('/privacy/', locale)}>{t.layout.footerLinks.privacy}</a></li>
 		</ul>
 	</div>
 </footer>
@@ -175,7 +206,7 @@
 		color: var(--md-sys-color-on-secondary-container);
 	}
 
-	nav .github :global(.icon) {
+	nav :is(.github, .language) :global(.icon) {
 		width: 1.25rem;
 		height: 1.25rem;
 	}
@@ -237,7 +268,7 @@
 		flex: none;
 	}
 
-	.footer strong {
+	.footer :global(strong) {
 		color: var(--md-sys-color-on-surface);
 	}
 
@@ -250,7 +281,7 @@
 		list-style: none;
 	}
 
-	.footer a {
+	.footer :global(a) {
 		color: var(--md-sys-color-on-surface);
 	}
 </style>
