@@ -29,7 +29,10 @@ object Limits {
     const val MAX_BITMAP_SIDE_PX = 512
 
     const val CLIP_MIN_MS = 200L
-    const val CLIP_MAX_MS = 4_000L
+    const val CLIP_MAX_MS = 30_000L
+
+    /** Above this, the app and the pack creator show a gentle hint (long clips play to the end); never an error. */
+    const val LONG_CLIP_HINT_MS = 5_000L
     const val RINGTONE_MIN_MS = 5_000L
     const val RINGTONE_MAX_MS = 360_000L
     const val DURATION_TOLERANCE_MS = 50L

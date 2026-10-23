@@ -54,7 +54,8 @@ fun color(name: String, hex: String, size: Int, vararg codec: String): File {
 
 val clipOgg = opus("clip.ogg", 880, 0.5)
 val clipShort = opus("clip-short.ogg", 880, 0.1)
-val clipLong = opus("clip-long.ogg", 880, 5.0)
+val clipLong = opus("clip-long.ogg", 880, 31.0)
+val clipLongest = opus("clip-longest.ogg", 880, 30.0)
 val ringtoneOgg = run {
     val out = File(work, "ringtone.ogg")
     // Two alternating notes for 6 s.
@@ -215,6 +216,12 @@ File(root, "invalid").deleteRecursively()
 folder("valid/minimal-pack", "Smallest valid pack: one character, one PNG sprite, one Opus clip.") {
     text("pack.json", minimalManifest)
     beep()
+}
+
+folder("valid/longest-clip", "A 30 s clip, the longest a notification clip may be.") {
+    text("pack.json", pack("longest"))
+    media("characters/beep/sprite.png", spritePng)
+    media("characters/beep/clips/beep.ogg", clipLongest)
 }
 
 folder("valid/full-pack", "Every pack.json feature: cover, text files, animated sprite, seed colors, tags, weights, custom haptics, ringtones with variants, when conditions, loop points and fade-in.") {
@@ -688,7 +695,7 @@ folder("invalid/clip-too-short", "A 0.1 s clip.", listOf("CLIP_DURATION_OUT_OF_R
     media("characters/beep/sprite.png", spritePng)
     media("characters/beep/clips/beep.ogg", clipShort)
 }
-folder("invalid/clip-too-long", "A 5 s clip.", listOf("CLIP_DURATION_OUT_OF_RANGE")) {
+folder("invalid/clip-too-long", "A 31 s clip (the maximum is 30 s).", listOf("CLIP_DURATION_OUT_OF_RANGE")) {
     text("pack.json", pack("long"))
     media("characters/beep/sprite.png", spritePng)
     media("characters/beep/clips/beep.ogg", clipLong)

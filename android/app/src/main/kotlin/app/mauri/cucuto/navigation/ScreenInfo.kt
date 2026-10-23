@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import app.mauri.cucuto.R
+import app.mauri.cucuto.core.data.chats.ChatKey
 
 /** What a placeholder screen shows until the real screen lands in [milestone]. */
 data class ScreenInfo(
@@ -21,8 +22,9 @@ data class ScreenInfo(
 )
 
 /**
- * Placeholder metadata; null for the real screens ([CucutoDestination.Status], [CucutoDestination.Onboarding],
- * [CucutoDestination.Diagnostics], [CucutoDestination.Gallery]).
+ * Link metadata for the Status screen and what placeholder screens show; null for the screens Status does not list
+ * ([CucutoDestination.Status], [CucutoDestination.Onboarding], [CucutoDestination.Diagnostics],
+ * [CucutoDestination.Gallery]). Home and the picker are real screens (#25) but keep their entry for the Status links.
  */
 fun CucutoDestination.screenInfo(): ScreenInfo? =
     when (this) {
@@ -68,7 +70,7 @@ val PreviewDestinations: List<CucutoDestination> =
     listOf(
         CucutoDestination.Home,
         CucutoDestination.Picker(),
-        CucutoDestination.ContactDetail(contactKey = "com.whatsapp/demo"),
+        CucutoDestination.ContactDetail(chat = ChatKey("com.whatsapp", "demo")),
         CucutoDestination.Packs,
         CucutoDestination.Discover,
         CucutoDestination.HapticEditor(),

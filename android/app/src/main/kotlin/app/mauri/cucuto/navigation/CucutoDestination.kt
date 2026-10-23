@@ -1,6 +1,7 @@
 package app.mauri.cucuto.navigation
 
 import androidx.navigation3.runtime.NavKey
+import app.mauri.cucuto.core.data.chats.ChatKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -21,16 +22,16 @@ sealed interface CucutoDestination : NavKey {
     @Serializable
     data object Home : CucutoDestination
 
-    /** Character picker, optionally assigning to [contactKey]. */
+    /** Character picker assigning a voice to [chat], or only previewing characters when it is null. */
     @Serializable
     data class Picker(
-        val contactKey: String? = null,
+        val chat: ChatKey? = null,
     ) : CucutoDestination
 
-    /** Detail of one contact, keyed by `package + conversation key`. */
+    /** Detail of one chat, keyed by `package + conversation key`. */
     @Serializable
     data class ContactDetail(
-        val contactKey: String,
+        val chat: ChatKey,
     ) : CucutoDestination
 
     /** Installed packs. */
