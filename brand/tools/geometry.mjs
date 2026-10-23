@@ -141,11 +141,13 @@ export const beakGapPaths = (g = 1.6) =>
  * Small-size mark (favicons, 16–32 px): no door, a bigger bird, one solid beak and a bigger eye,
  * so the bird still reads when each grid unit is a third of a pixel.
  */
+export const SMALL_BEAK = [[29.5, 24.5], [44, 30], [29.5, 35.5]];
+export const SMALL_BEAK_R = [2, 2.2, 2];
 export const markSmallPaths = () => ({
   house: roundedPolygon([[24, 2.5], [45.5, 20.5], [45.5, 45.5], [2.5, 45.5], [2.5, 20.5]], [4, 3, 6, 6, 3]),
   opening: circle(22.5, 31, 12),
   head: circle(24.5, 31, 9),
-  beak: roundedPolygon([[29.5, 24.5], [44, 30], [29.5, 35.5]], [2, 2.2, 2]),
+  beak: roundedPolygon(SMALL_BEAK, SMALL_BEAK_R),
   eye: circle(26.5, 27.5, 2.8),
 });
 

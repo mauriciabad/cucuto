@@ -33,8 +33,10 @@ const MASKS = {
   circle: circlePath(54, 54, 36),
   squircle: 'M54 18C84 18 90 24 90 54S84 90 54 90 18 84 18 54 24 18 54 18Z',
   rounded: roundRect(18, 18, 72, 72, 16),
+  teardrop: 'M54 18A36 36 0 0 1 90 54V82A8 8 0 0 1 82 90H54A36 36 0 0 1 54 18Z',
   cookie: cookie(54, 54, 36, 9, 0.06),
 };
+const ICON_STAT = inner('app-icon/source/ic_stat_cucuto.svg');
 
 // Confetti: the assign particle burst, frozen.
 const burst = (cx, cy, R, colors, seed = 1) => {
@@ -144,22 +146,28 @@ section(460, '#FFFFFF', 'LOGO AND MARK', (y0) => {
 section(380, L.surfaceContainerLow, 'APP ICON  ·  ADAPTIVE + THEMED', (y0) => {
   const names = Object.keys(MASKS);
   names.forEach((n, i) => {
-    body += icon(PAD + i * 190, y0 + 96, 160, MASKS[n]);
-    body += label(n, PAD + i * 190 + 80, y0 + 290, { anchor: 'middle' });
+    body += icon(PAD + i * 150, y0 + 116, 130, MASKS[n]);
+    body += label(n, PAD + i * 150 + 65, y0 + 290, { anchor: 'middle' });
   });
   const themed = [
     { bg: '#3B2A20', fg: '#FFDBC9', name: 'themed, dark' },
     { bg: '#D7E8FF', fg: '#103A6B', name: 'themed, light' },
   ];
   themed.forEach((m, i) => {
-    body += icon(PAD + 800 + i * 190, y0 + 96, 160, MASKS.circle, m);
-    body += label(m.name, PAD + 800 + i * 190 + 80, y0 + 290, { anchor: 'middle' });
+    body += icon(PAD + 770 + i * 150, y0 + 116, 130, MASKS.circle, m);
+    body += label(m.name, PAD + 770 + i * 150 + 65, y0 + 290, { anchor: 'middle' });
   });
   [48, 32].forEach((s, i) => {
-    body += icon(PAD + 1200 + i * 90, y0 + 176 - s / 2, s, MASKS.circle);
-    body += label(`${s} dp`, PAD + 1200 + i * 90 + s / 2, y0 + 290, { anchor: 'middle' });
+    body += icon(PAD + 1080 + i * 70, y0 + 181 - s / 2, s, MASKS.circle);
+    body += label(`${s} dp`, PAD + 1080 + i * 70 + s / 2, y0 + 290, { anchor: 'middle' });
   });
-  body += label('108 dp canvas · 66 dp safe zone · VectorDrawable layers in brand/app-icon/android-res', PAD, y0 + 340);
+  // Status bar: ic_stat_cucuto at 24 dp (drawn at 2×) next to the clock, as Android shows it.
+  const sbX = PAD + 1240;
+  body += `<rect x="${sbX}" y="${y0 + 157}" width="228" height="48" rx="24" fill="${D.surface}"/>`;
+  body += t('9:41', { x: sbX + 24, y: y0 + 189, size: 22, wght: 600, ROND: 30, fill: D.onSurface });
+  [0, 1].forEach((i) => { body += at(sbX + 92 + i * 56, y0 + 157, 48, ICON_STAT, '0 0 24 24'); });
+  body += label('status bar · 24 dp', sbX + 114, y0 + 290, { anchor: 'middle' });
+  body += label('108 dp canvas · 66 dp safe zone · rings inside the 72 dp circle · VectorDrawables in brand/app-icon/android-res', PAD, y0 + 340);
 });
 
 // 4. Color
