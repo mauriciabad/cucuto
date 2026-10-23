@@ -5,6 +5,9 @@ plugins {
 }
 
 dependencies {
+    // The routing table format shared with the app: plain Kotlin, no dependencies.
+    implementation(projects.core.routing)
+
     // Provided by LSPosed at runtime; never bundled.
     compileOnly(libs.libxposed.api)
     testImplementation(libs.libxposed.api)
