@@ -53,14 +53,15 @@ Cucuto ships no content. The public repository never contains copyrighted media.
 
 ## Building
 
-Requirements: JDK 21, the Android SDK (platform `android-37.0`, build-tools 37) and, for the website, Node.js with pnpm.
+Requirements: JDK 21, the Android SDK (platform `android-37.0`, build-tools 37) and, for the website and the brand
+tools, [Bun](https://bun.com).
 
 ```sh
 # Android app and Xposed module
 cd android && ./gradlew build
 
 # Website and PWA pack creator
-cd web && pnpm install && pnpm build
+cd web && bun install && bun run build
 
 # Packer CLI
 cd tools/packer && ./gradlew build

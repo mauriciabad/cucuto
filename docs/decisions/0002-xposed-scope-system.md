@@ -40,3 +40,11 @@ Framework, and the hooks would never load in `system_server`.
 - The first on-device enablement (M0/M1, `needs-device`) must confirm LSPosed shows "System Framework" as the
   module's scope and that `onSystemServerStarting` logs after a reboot.
 - Docs that say "scope `android`" should be read as "System Framework".
+
+## Owner answer (2026-10-23, #67)
+
+> i dont understand the question or i dont have enough knowledge to answer. I dont care about backwards compatibility. I want it to work with the minimum intrusion possible, so we lower the risk of critical vulnerabilities/mistakes. Pick based on my preferences.
+
+`system` stays: it loads the module into `system_server` only, the single process the hooks need, which is the least
+intrusive scope that works. No compatibility entry for legacy Xposed (`android`) is added. The answer also became a
+project-wide principle, "minimum intrusion", recorded in the brief's constraints table and in `CLAUDE.md`.

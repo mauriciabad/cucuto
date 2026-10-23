@@ -495,10 +495,14 @@ A backup is a zip archive named `cucuto-backup-YYYY-MM-DD.zip` (same [archive ru
   backup" (each referenced by its pack entry's `included` path).
 - **Encrypted backup:** `envelope.json` ([`$defs/envelope`](../spec/backup.schema.json)) and `payload.bin`. The payload
   is the plain backup zip encrypted with AES-256-GCM: a 12-byte random nonce, a 128-bit tag appended to the
-  ciphertext, and the UTF-8 bytes of `cucuto-backup-v1` as additional authenticated data. The key is derived from the
-  passphrase with Argon2id (at least 19 MiB of memory and 2 iterations, as OWASP recommends; Cucuto writes 64 MiB,
-  3 iterations, parallelism 1) and a random salt of at least 16 bytes. A wrong passphrase or tampered file is
-  `BACKUP_DECRYPTION_FAILED`.
+  ciphertext, and the UTF-8 bytes of `cucuto-backup-v1` as additional authenticated data. The key is the 32-byte
+  output of Argon2id (version 1.3) over the UTF-8 bytes of the passphrase after Unicode NFC normalization (at least
+  19 MiB of memory and 2 iterations, as OWASP recommends; Cucuto writes 64 MiB, 3 iterations, parallelism 1) with a
+  random salt of at least 16 bytes. A wrong passphrase or tampered file is `BACKUP_DECRYPTION_FAILED`. Readers may
+  refuse memory costs they cannot afford (the app accepts up to 256 MiB).
+- **Included packs** of a full backup are valid `.soundpack.zip` files: a single pack, or for a bundle reference a
+  bundle holding the installed packs of that bundle. They may be rebuilt from the installed files, so their SHA-256
+  can differ from the reference's `sha256` (the file originally imported); readers validate them like any import.
 
 `backup.json` holds:
 
@@ -530,8 +534,8 @@ directly.
 - [`shared/pack-spec`](../shared/pack-spec) is the Kotlin implementation of every rule above, shared by packer and
   the Android importer (`android/core/pack`, see [ADR 0005](decisions/0005-shared-pack-spec-module.md) and
   [ADR 0008](decisions/0008-pack-importer.md)).
-- The website's TypeScript validator uses the same schemas (with a JSON Schema 2020-12 validator) and must report the
-  same codes.
+- The website validates with the same Kotlin code, `shared/pack-spec` compiled for the browser (owner decision on #60;
+  work in #116), so it reports the same codes by construction.
 - [`spec/fixtures/fixtures.json`](../spec/fixtures/fixtures.json) lists every golden fixture with its `kind`
   (`package`, `repository`, `backup`, `backup-envelope`), whether it is valid, and the exact sets of error and warning
   codes expected. Folders are unpacked packs or bundles; `.soundpack.zip` files are archives; `.json` files are documents.

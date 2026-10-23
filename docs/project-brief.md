@@ -30,9 +30,10 @@ These are fixed by the owner; design around them rather than reopening them.
 | Self-contained | No Tasker, MacroDroid, BuzzKill or other helper apps | One APK contains the app and its Xposed module. |
 | Target apps | WhatsApp (`com.whatsapp`) and WhatsApp Business (`com.whatsapp.w4b`) | Routing is keyed by package, so other messengers can be added later. Phone calls get ringtones through Android contacts. |
 | Coexistence | WaEnhancer X is installed and hooks WhatsApp | Do not hook the WhatsApp process. Stay in `system_server` to avoid clashes. |
+| Minimum intrusion | "I want it to work with the minimum intrusion possible, so we lower the risk of critical vulnerabilities/mistakes" (owner, #67) | Hook as little as possible, in as few processes as possible; fewest permissions, asked only when a feature needs them; read only what a feature uses. No backwards-compatibility code. When two designs work, pick the less intrusive one. |
 | License | GPL-3.0-or-later | Derived works must stay open source. Demo packs are CC0. |
 | Repository | One public monorepo on GitHub | Android app, website, packer tool, schemas and demo packs live together. |
-| Website | SvelteKit, fully static, at `cucuto.mauri.app` | No server. Deploy to GitHub Pages or Cloudflare Pages. |
+| Website | SvelteKit, fully static, at `cucuto.mauri.app` | No server. Deployed to GitHub Pages (owner, #55). Pack validation reuses the Kotlin `shared/pack-spec` compiled for the browser (owner, #60). JavaScript tooling runs on Bun (owner, #63). |
 | Images | Common formats accepted; JPEG XL (`.jxl`) preferred | Support PNG, JPEG, WebP, GIF, AVIF and JPEG XL. JXL is recommended and used for the project's own assets where practical. If JXL decoding becomes a burden on Android, drop it in the app and convert JXL to another format at import time. |
 | Open source | Public code, private content | No copyrighted media in the public repo, ever. Content arrives as imported packs. |
 | Quality bar | Game feel plus latest Material 3 Expressive | Sound, motion and haptics on every interaction, built to current Material and accessibility guidance. |
@@ -159,7 +160,7 @@ Bundle manifest example (`bundle.json`):
 
 Rules the importer enforces:
 
-- **Audio:** any common format Android plays: Ogg Opus, Ogg Vorbis, MP3, AAC/M4A, FLAC or WAV. Notification clips are 0.2 to 4 s; ringtones are 5 s to 6 min and loop by default, with optional loop points. Opus is recommended for size. The packer and the pack creator can trim silence and normalize loudness so clips sound consistent, but they never force a format.
+- **Audio:** any common format Android plays: Ogg Opus, Ogg Vorbis, MP3, AAC/M4A, FLAC or WAV. Notification clips are 0.2 to 30 s (owner update 2026-10-23, #75: more permissive so the limit does not hold creativity back; the code moves from 4 s in #119); ringtones are 5 s to 6 min and loop by default, with optional loop points. Opus is recommended for size. The packer and the pack creator can trim silence and normalize loudness so clips sound consistent, but they never force a format.
 - **Images:** PNG, JPEG, WebP, GIF, AVIF, JPEG XL or SVG, at most 512 px per side for bitmaps. Animated sprites can be GIF, animated WebP or animated JPEG XL. JPEG XL is recommended (it compresses pixel art losslessly and well); the tools can convert to it but never require it.
 - **Haptic:** `{"mode": "auto"}` derives a pattern from each clip at import time, or `{"mode": "custom", "events": [...]}` gives an explicit timeline (schema in the Haptics section).
 - **Limits:** up to 1 GB unpacked per pack and 2 GB per bundle (song packs are large), 5,000 files per pack, and a decompression ratio cap to block zip bombs. The importer warns before installing anything over 256 MB.
@@ -183,7 +184,7 @@ Packs can carry call ringtones too, so a contact gets one look and sound across 
 **Model.**
 
 - A character can carry a `ringtones` array next to its `clips`. A character can be a song (Bubblegum K.K. with its album cover), not only a creature.
-- **Variants** are ringtone entries of the same song: day and night versions, seasons, sped-up, underwater, "action", live versus radio. Each entry has free `tags` and an optional `when` condition (`time`: day, night or an hour range; `season`; `weekday`).
+- **Variants** are ringtone entries of the same song: day and night versions, seasons, sped-up, underwater, "action", live versus radio. Each entry has free `tags` and an optional `when` condition (`time`: day, night or an hour range; `season`; `weekday`). Day and night follow local sunrise and sunset, from the phone's coarse location or a place or hours the user sets (owner update 2026-10-23, #75; #118).
 - Per contact, the user picks the variant rule: one fixed variant, random per call, by time of day, by season, or follow the pack's `when` conditions.
 - **Linking:** assigning a character assigns both its notification clips and its ringtones. Users can also mix: messages from Pikachu, ringtone from K.K. Slider.
 
@@ -286,7 +287,7 @@ Tech and deployment:
 
 - SvelteKit with the static adapter; every route prerendered at build time.
 - The release version, APK size and download URL are fetched from the GitHub Releases API during the build. A release triggers a site rebuild.
-- Deploy from GitHub Actions to GitHub Pages (simplest, lives next to the repo) or Cloudflare Pages. The owner picks; the agent sets it up and documents the exact DNS record for `cucuto.mauri.app` once the repo exists.
+- Deploy from GitHub Actions to GitHub Pages (owner, #55; DNS: `cucuto.mauri.app CNAME mauriciabad.github.io`).
 - Large files (APK, `.soundpack.zip` files) live as GitHub Release assets, not in the site build; GitHub allows up to 2 GiB per release file. The site hosts only small preview files: sample clips, sprites, covers.
 - The build runs `packer index` over the demo packs and publishes `/repo/index.json`, so the site is also a pack repository that the app adds by default.
 
@@ -386,7 +387,7 @@ In the website (PWA):
 - Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews.
 - Haptic patterns are edited visually. Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
 
-Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. The app's Kotlin validator, the website's TypeScript validator and `packer` all run against the same fixtures in CI, so a pack made anywhere imports everywhere.
+Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. One Kotlin implementation (`shared/pack-spec`) validates everywhere: in `packer`, in the app, and on the website compiled to WebAssembly/JavaScript (owner, #60: option 1; #116). It runs against the same fixtures in CI, so a pack made anywhere imports everywhere. Whether more of the PWA creator can be shared Kotlin (Kotlin/Wasm) is spike #117.
 
 ## Haptics
 
@@ -472,9 +473,9 @@ The Android side is Kotlin, Jetpack Compose and the libxposed API 102 in one Gra
 | DI | Hilt | Keep the module code free of DI frameworks |
 | Audio in app | `SoundPool` for previews (the app is in the foreground, so Android 17's background limits do not apply) | Decoding with `MediaExtractor` and `MediaCodec` for the auto-haptic analysis |
 | Hooking | [libxposed API](https://github.com/libxposed/api) 102, `compileOnly` | `minApiVersion` and `targetApiVersion` 102; modules targeting 102 cannot call the legacy Xposed API, so don't |
-| Module scope | System Framework (`android`) only | Never scope WhatsApp |
+| Module scope | System Framework only: `system` in `scope.list`, which is `system_server` for modern modules ([ADR 0002](decisions/0002-xposed-scope-system.md); `android` would be wrong) | Never scope WhatsApp |
 | Root utilities | libsu | Optional: read WhatsApp's contact database, run diagnostics |
-| Website | SvelteKit (Svelte 5) with the static adapter, TypeScript, service worker and web app manifest for the PWA | Deployed by GitHub Actions to GitHub Pages or Cloudflare Pages |
+| Website | SvelteKit (Svelte 5) with the static adapter, TypeScript, service worker and web app manifest for the PWA; Bun for installs and scripts (owner, #63; #115) | Deployed by GitHub Actions to GitHub Pages (#55) |
 | Tests | JUnit and Turbine (unit), Compose UI tests, Playwright for the site, a device test checklist |  |
 | CI | GitHub Actions: Android build, lint and tests; web build; demo packs and repository index; media allowlist guard; release APK on tag |  |
 
@@ -505,7 +506,7 @@ Contact identity: the stable key is `package + conversation key`. Prefer the not
 
 ## Milestones and acceptance criteria
 
-Ten milestones, each ending in something the owner can install and try. M0 is a go/no-go gate: if a check fails, report back with findings before building further.
+Ten milestones, each ending in something the owner can install and try. M0 is a go/no-go gate: if a check fails, report back with findings before building further. Ringtones are part of v1 (owner, #59): M9 lands before the M7 release; only the pack creator (M8) follows in v1.1.
 
 ### M0 — Device spike (gate)
 
@@ -527,6 +528,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] Module hook swaps sound and vibration using the routing table. Random clip per message with a shuffle bag, so the same clip never plays twice in a row.
 - [ ] Unassigned contacts keep WhatsApp's default tone. A global switch turns everything off.
 - [ ] Hook adds no noticeable delay: under 5 ms of work on the notification path, all lookups from memory.
+- [ ] The clip starts at the same instant WhatsApp's own tone would, also when Cucuto's process is not running, and battery life is preserved: no wake-ups, wake locks or services of our own (owner, #88; measured in #121).
 
 ### M2 — Contacts and senders
 
@@ -561,7 +563,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] APK download wired to the latest GitHub Release; rebuild on every release.
 - [ ] Demo packs built in CI, published as release assets, indexed at `/repo/index.json` and set as the app's default repository.
 - [ ] JPEG XL images with generated fallbacks; scripted screenshots from the demo packs; slot ready for the explainer video from the video subagent.
-- [ ] Deployed to GitHub Pages or Cloudflare Pages, with the exact DNS record for `cucuto.mauri.app` handed to the owner.
+- [ ] Deployed to GitHub Pages (#55), with the exact DNS record for `cucuto.mauri.app` handed to the owner.
 
 ### M7 — Open-source release
 
@@ -577,9 +579,9 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] Duplicate-and-edit for installed packs.
 - [ ] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser.
 - [ ] "Host your own repository" helper that outputs a folder with `repository.json` and previews.
-- [ ] Golden test packs shared by the Kotlin validator, the TypeScript validator and `packer`, all green in CI.
+- [ ] Golden test packs run through `shared/pack-spec` on the JVM (packer), on Android and in the browser build used by the website, all green in CI (#116).
 
-### M9 — Ringtones
+### M9 — Ringtones (v1, before the M7 release)
 
 - [ ] Spike first: confirm Telecom's ringer hook point and scope for random-per-call, and find out how WhatsApp plays its call ringtone.
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
@@ -612,12 +614,14 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 
 Open questions for the owner (answer before M1 unless noted):
 
-1. Which GitHub account or organization owns the `cucuto` repo (it replaces `OWNER` in URLs).
-2. Hosting for the site: GitHub Pages or Cloudflare Pages (needed by M6).
-3. Default for group chats: one character per group, or per sender?
-4. Include WhatsApp Business from v1? The design supports it at no extra cost.
-5. Who hands the explainer video brief to the video subagent, and when: after M3, once the UI is final, is suggested.
-6. Should ringtones (M9) ship in v1, or follow in v1.1 like the pack creator?
+1. Which GitHub account or organization owns the `cucuto` repo (it replaces `OWNER` in URLs). **Settled:** `mauriciabad`.
+2. Hosting for the site: GitHub Pages or Cloudflare Pages (needed by M6). **Settled: GitHub Pages** (owner, #55).
+3. Default for group chats: one character per group, or per sender? **Settled: one character per group**, with "per sender" as a per-group option (owner, #56).
+4. Include WhatsApp Business from v1? The design supports it at no extra cost. **Settled: yes** (default accepted, #57).
+5. Who hands the explainer video brief to the video subagent, and when: after M3, once the UI is final, is suggested. **Settled: after M3**, with demo packs only (default accepted, #58).
+6. Should ringtones (M9) ship in v1, or follow in v1.1 like the pack creator? **Settled: v1** (owner, #59); M9 lands before the M7 release.
+
+Later owner answers are recorded in [`owner-log.md`](owner-log.md) and the linked `question` issues.
 
 Settled: name Cucuto (application ID app.mauri.cucuto, site cucuto.mauri.app), license GPL-3.0-or-later, libxposed API 102, monorepo, common image and audio formats with JPEG XL as the preferred image format, `.soundpack` as the file extension, replaced by `<name>.soundpack.zip` for packs and bundles and `cucuto-backup-YYYY-MM-DD.zip` for backups (owner update 2026-10-23: zip files always end in `.zip`; the type is detected from the contents).
 

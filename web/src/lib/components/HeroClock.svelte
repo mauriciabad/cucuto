@@ -43,6 +43,10 @@
 
 <script lang="ts">
 	import { MediaQuery } from 'svelte/reactivity';
+	import { page } from '$app/state';
+	import { localeFromPath, messages } from '#lib/i18n/index.js';
+
+	const t = $derived(messages(localeFromPath(page.url.pathname)).clock);
 
 	// SSR assumes motion is fine; the browser corrects it before anything plays.
 	const motion = new MediaQuery('(prefers-reduced-motion: no-preference)', true);
@@ -82,23 +86,14 @@
 {/snippet}
 
 {#if motion.current}
-	<button
-		type="button"
-		class="clock"
-		aria-label="Play the cuckoo clock animation again"
-		onclick={() => plays++}
-	>
+	<button type="button" class="clock" aria-label={t.replay} onclick={() => plays++}>
 		<!-- Re-creating the drawing restarts its CSS animations. -->
 		{#key plays}
 			{@render art()}
 		{/key}
 	</button>
 {:else}
-	<div
-		class="clock"
-		role="img"
-		aria-label="A cuckoo clock with its round door open and a bird singing"
-	>
+	<div class="clock" role="img" aria-label={t.still}>
 		{@render art()}
 	</div>
 {/if}

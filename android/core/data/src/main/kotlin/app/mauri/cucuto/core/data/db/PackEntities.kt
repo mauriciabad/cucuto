@@ -9,8 +9,12 @@ import androidx.room3.PrimaryKey
  * table reads characters from. The importer (`:core:pack`) writes a row after installing a pack.
  *
  * @property path Absolute path of the installed pack folder (holding `pack.json`), `files/packs/<id>/<version>/`.
- * @property sha256 SHA-256 (lowercase hex) of the `.soundpack` file that was imported.
+ * @property sha256 SHA-256 (lowercase hex) of the `.soundpack.zip` file that was imported (the bundle file for packs
+ *   that came in a bundle), or "" when unknown (packs written by debug tools).
+ * @property sizeBytes Size of that imported file in bytes.
  * @property bundleId ID of the bundle the pack came in, if any.
+ * @property bundleName Name of that bundle (`bundle.json`), for backups.
+ * @property bundleVersion Version of that bundle (`bundle.json`), for backups.
  */
 @Entity(tableName = "installed_packs")
 data class InstalledPackEntity(
@@ -26,6 +30,8 @@ data class InstalledPackEntity(
     val fileName: String? = null,
     val bundleId: String? = null,
     val installedAt: Long,
+    val bundleName: String? = null,
+    val bundleVersion: String? = null,
 )
 
 /** Where an installed pack came from (backup schema `packReference.source.type`). */
