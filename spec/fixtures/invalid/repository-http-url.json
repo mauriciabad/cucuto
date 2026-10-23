@@ -1,0 +1,14 @@
+{
+  "formatVersion": 1,
+  "name": "Fixture repository",
+  "packs": [
+
+    {
+      "id": "app.mauri.fixtures.minimal",
+      "type": "pack",
+      "name": "Minimal pack",
+      "version": "1.0.0",
+      "download": { "url": "http://example.com/minimal.soundpack", "size": 1834, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
+    }
+  ]
+}

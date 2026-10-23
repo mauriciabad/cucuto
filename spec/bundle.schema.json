@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cucuto.mauri.app/spec/v1/bundle.schema.json",
+  "title": "Cucuto bundle manifest (bundle.json)",
+  "description": "Manifest at the root of a .soundpack that holds several packs, each in its own folder with its own pack.json. Human spec: docs/pack-format.md.",
+  "type": "object",
+  "required": ["formatVersion", "type", "id", "name", "version", "packs"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "formatVersion": { "const": 1 },
+    "type": { "const": "bundle" },
+    "id": { "$ref": "common.schema.json#/$defs/packId" },
+    "name": { "$ref": "common.schema.json#/$defs/name" },
+    "version": { "$ref": "common.schema.json#/$defs/version" },
+    "author": { "$ref": "common.schema.json#/$defs/author" },
+    "license": { "$ref": "common.schema.json#/$defs/license" },
+    "homepage": { "$ref": "common.schema.json#/$defs/httpsUrl" },
+    "description": { "$ref": "common.schema.json#/$defs/description" },
+    "cover": { "$ref": "common.schema.json#/$defs/path" },
+    "tags": { "$ref": "common.schema.json#/$defs/tags" },
+    "packs": {
+      "description": "Folders (relative to the bundle root) that each contain a complete pack.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/path" }
+    }
+  },
+  "patternProperties": { "^x-": true },
+  "additionalProperties": false
+}

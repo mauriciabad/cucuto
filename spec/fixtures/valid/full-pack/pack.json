@@ -1,0 +1,63 @@
+{
+  "$schema": "https://cucuto.mauri.app/spec/v1/pack.schema.json",
+  "formatVersion": 1,
+  "type": "pack",
+  "id": "app.mauri.fixtures.full",
+  "name": "Full pack",
+  "version": "2.1.0-beta.1",
+  "author": "Cucuto fixtures",
+  "license": "CC0-1.0 OR MIT",
+  "homepage": "https://cucuto.mauri.app",
+  "description": "Exercises every field of pack format v1.",
+  "cover": "cover.svg",
+  "tags": ["fixtures", "test-pack"],
+  "x-generator": { "name": "generate.main.kts" },
+  "characters": [
+    {
+      "id": "robin",
+      "name": "Robin",
+      "description": "A small bird with two calls.",
+      "sprite": "characters/robin/sprite.svg",
+      "spriteAnimated": "characters/robin/sprite-anim.gif",
+      "seedColor": "#E65100",
+      "tags": ["bird"],
+      "clips": [
+        { "file": "characters/robin/clips/chirp.ogg", "label": "Chirp", "weight": 2 },
+        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5 }
+      ],
+      "haptic": {
+        "mode": "custom",
+        "events": [
+          { "at": 0, "preset": "CLICK", "scale": 0.8 },
+          { "at": 120, "preset": "TICK", "scale": 0.5 },
+          { "at": 220, "initialSharpness": 0.3, "envelope": [
+            { "intensity": 1.0, "sharpness": 0.8, "ms": 120 },
+            { "intensity": 0.0, "sharpness": 0.4, "ms": 180 }
+          ] },
+          { "at": 600, "preset": "LOW_TICK" }
+        ]
+      }
+    },
+    {
+      "id": "song",
+      "name": "Song",
+      "sprite": "characters/song/album.jxl",
+      "seedColor": "#1565C0",
+      "clips": [{ "file": "characters/song/clips/hook.flac", "label": "Hook" }],
+      "ringtones": [
+        { "file": "characters/song/ringtones/day.ogg", "label": "Day", "tags": ["live"], "when": { "time": "day" }, "loop": { "startMs": 0, "endMs": 5000 }, "fadeInMs": 500 },
+        { "file": "characters/song/ringtones/night.ogg", "label": "Night", "tags": ["radio"], "when": { "time": "night", "season": ["autumn", "winter"] }, "loop": false },
+        { "file": "characters/song/ringtones/day.ogg", "label": "Weekend mornings", "when": { "weekday": ["sat", "sun"], "time": { "from": "09:00", "to": "12:30" } }, "loop": { "startMs": 1000 }, "weight": 3 },
+        { "file": "characters/song/ringtones/night.ogg", "label": "Summer", "when": { "season": "summer" }, "loop": true }
+      ],
+      "haptic": { "mode": "none" }
+    },
+    {
+      "id": "ringer",
+      "name": "Ringer",
+      "sprite": "characters/ringer/sprite.webp",
+      "ringtones": [{ "file": "characters/ringer/ring.ogg" }],
+      "haptic": { "mode": "auto" }
+    }
+  ]
+}

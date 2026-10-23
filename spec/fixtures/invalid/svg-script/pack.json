@@ -1,0 +1,16 @@
+{
+  "formatVersion": 1,
+  "id": "app.mauri.fixtures.svg-script",
+  "name": "Fixture",
+  "version": "1.0.0",
+  "author": "Cucuto fixtures",
+  "license": "CC0-1.0",
+  "characters": [
+    {
+      "id": "beep",
+      "name": "Beep",
+      "sprite": "characters/beep/sprite.svg",
+      "clips": [{ "file": "characters/beep/clips/beep.ogg" }]
+    }
+  ]
+}

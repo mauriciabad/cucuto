@@ -1,0 +1,52 @@
+{
+  "formatVersion": 1,
+  "id": "app.mauri.fixtures.all-formats",
+  "name": "All formats",
+  "version": "1.0.0",
+  "author": "Cucuto fixtures",
+  "license": "CC0-1.0",
+  "characters": [
+    {
+      "id": "png-wav",
+      "name": "PNG and WAV",
+      "sprite": "characters/png/sprite.png",
+      "clips": [{ "file": "characters/png/clip.wav" }]
+    },
+    {
+      "id": "jpeg-m4a",
+      "name": "JPEG and M4A",
+      "sprite": "characters/jpeg/sprite.jpg",
+      "clips": [{ "file": "characters/jpeg/clip.m4a" }]
+    },
+    {
+      "id": "webp-aac",
+      "name": "WEBP and AAC",
+      "sprite": "characters/webp/sprite.webp",
+      "clips": [{ "file": "characters/webp/clip.aac" }]
+    },
+    {
+      "id": "gif-flac",
+      "name": "GIF and FLAC",
+      "sprite": "characters/gif/sprite.gif",
+      "clips": [{ "file": "characters/gif/clip.flac" }]
+    },
+    {
+      "id": "avif-ogg",
+      "name": "AVIF and OGG",
+      "sprite": "characters/avif/sprite.avif",
+      "clips": [{ "file": "characters/avif/clip.ogg" }]
+    },
+    {
+      "id": "jxl-mp3",
+      "name": "JXL and MP3",
+      "sprite": "characters/jxl/sprite.jxl",
+      "clips": [{ "file": "characters/jxl/clip.mp3" }]
+    },
+    {
+      "id": "svg-opus",
+      "name": "SVG and OPUS",
+      "sprite": "characters/svg/sprite.svg",
+      "clips": [{ "file": "characters/svg/clip.opus" }]
+    }
+  ]
+}

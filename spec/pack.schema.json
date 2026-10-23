@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cucuto.mauri.app/spec/v1/pack.schema.json",
+  "title": "Cucuto pack manifest (pack.json)",
+  "description": "Manifest at the root of a single-pack .soundpack, or of each pack folder inside a bundle. Human spec: docs/pack-format.md.",
+  "type": "object",
+  "required": ["formatVersion", "id", "name", "version", "author", "license", "characters"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "formatVersion": { "description": "Pack format version. This schema describes version 1.", "const": 1 },
+    "type": { "const": "pack" },
+    "id": { "$ref": "common.schema.json#/$defs/packId" },
+    "name": { "$ref": "common.schema.json#/$defs/name" },
+    "version": { "$ref": "common.schema.json#/$defs/version" },
+    "author": { "$ref": "common.schema.json#/$defs/author" },
+    "license": { "$ref": "common.schema.json#/$defs/license" },
+    "homepage": { "$ref": "common.schema.json#/$defs/httpsUrl" },
+    "description": { "$ref": "common.schema.json#/$defs/description" },
+    "cover": { "description": "Cover image (any supported image format). When absent, apps show the first character's sprite.", "$ref": "common.schema.json#/$defs/path" },
+    "tags": { "$ref": "common.schema.json#/$defs/tags" },
+    "characters": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/character" }
+    }
+  },
+  "patternProperties": { "^x-": true },
+  "additionalProperties": false,
+  "$defs": {
+    "character": {
+      "description": "A voice: a sprite, a pool of notification clips, optional ringtones and a default haptic. At least one clip or one ringtone is required.",
+      "type": "object",
+      "required": ["id", "name", "sprite"],
+      "properties": {
+        "id": { "description": "Unique within the pack and stable across versions: assignments refer to it.", "$ref": "common.schema.json#/$defs/slug" },
+        "name": { "$ref": "common.schema.json#/$defs/name" },
+        "description": { "$ref": "common.schema.json#/$defs/description" },
+        "sprite": { "description": "Static picture in any supported image format.", "$ref": "common.schema.json#/$defs/path" },
+        "spriteAnimated": { "description": "Optional animated picture: GIF, animated WebP or animated JPEG XL.", "$ref": "common.schema.json#/$defs/path" },
+        "seedColor": { "description": "Seed for the character's dynamic color scheme. When absent, apps extract one from the sprite.", "$ref": "common.schema.json#/$defs/color" },
+        "tags": { "$ref": "common.schema.json#/$defs/tags" },
+        "clips": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/clip" }
+        },
+        "ringtones": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/ringtone" }
+        },
+        "haptic": { "$ref": "#/$defs/haptic" }
+      },
+      "anyOf": [
+        { "required": ["clips"], "properties": { "clips": { "minItems": 1 } } },
+        { "required": ["ringtones"], "properties": { "ringtones": { "minItems": 1 } } }
+      ],
+      "patternProperties": { "^x-": true },
+      "additionalProperties": false
+    },
+    "clip": {
+      "description": "Notification clip, 0.2 to 4 s.",
+      "type": "object",
+      "required": ["file"],
+      "properties": {
+        "file": { "$ref": "common.schema.json#/$defs/path" },
+        "label": { "$ref": "common.schema.json#/$defs/name" },
+        "weight": { "description": "Relative probability when a clip is picked at random. Default 1.", "type": "number", "exclusiveMinimum": 0, "maximum": 100, "default": 1 }
+      },
+      "patternProperties": { "^x-": true },
+      "additionalProperties": false
+    },
+    "ringtone": {
+      "description": "Call ringtone, 5 s to 6 min. Several entries of the same song are variants.",
+      "type": "object",
+      "required": ["file"],
+      "properties": {
+        "file": { "$ref": "common.schema.json#/$defs/path" },
+        "label": { "$ref": "common.schema.json#/$defs/name" },
+        "tags": { "$ref": "common.schema.json#/$defs/tags" },
+        "when": { "$ref": "#/$defs/when" },
+        "loop": { "$ref": "#/$defs/loop" },
+        "fadeInMs": { "description": "Fade-in applied when the ringtone starts. Default 0.", "type": "integer", "minimum": 0, "maximum": 10000, "default": 0 },
+        "weight": { "description": "Relative probability for the 'random per call' variant rule. Default 1.", "type": "number", "exclusiveMinimum": 0, "maximum": 100, "default": 1 }
+      },
+      "patternProperties": { "^x-": true },
+      "additionalProperties": false
+    },
+    "loop": {
+      "description": "true (default): loop the whole file. false: play once. Object: loop between startMs and endMs (endMs defaults to the end of the file).",
+      "default": true,
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "properties": {
+            "startMs": { "type": "integer", "minimum": 0, "maximum": 360000 },
+            "endMs": { "type": "integer", "minimum": 1, "maximum": 360000 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "when": {
+      "description": "Condition under which a ringtone variant applies. All present keys must match (AND); a list matches any of its values (OR).",
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "time": {
+          "oneOf": [
+            { "description": "day is 07:00 to 19:00 local time, night is the rest.", "enum": ["day", "night"] },
+            {
+              "type": "object",
+              "required": ["from", "to"],
+              "properties": {
+                "from": { "$ref": "#/$defs/clockTime" },
+                "to": { "$ref": "#/$defs/clockTime" }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "season": {
+          "description": "Meteorological seasons, mirrored for the southern hemisphere by the app's hemisphere setting.",
+          "anyOf": [
+            { "$ref": "#/$defs/season" },
+            { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/season" } }
+          ]
+        },
+        "weekday": {
+          "anyOf": [
+            { "$ref": "#/$defs/weekday" },
+            { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/weekday" } }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "clockTime": {
+      "description": "Local wall-clock time HH:MM, 24-hour.",
+      "type": "string",
+      "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "season": { "enum": ["spring", "summer", "autumn", "winter"] },
+    "weekday": { "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] },
+    "haptic": {
+      "description": "Vibration played with the character's clips. Absent means auto. Custom events map one-to-one onto VibrationEffect.Builder: presets via addPreset, envelopes via addEnvelope with a BasicEnvelopeBuilder.",
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["auto", "custom", "none"] },
+        "events": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/hapticEvent" }
+        }
+      },
+      "if": { "properties": { "mode": { "const": "custom" } } },
+      "then": { "required": ["events"] },
+      "else": { "not": { "required": ["events"] } },
+      "patternProperties": { "^x-": true },
+      "additionalProperties": false
+    },
+    "hapticEvent": {
+      "oneOf": [
+        {
+          "description": "VibrationEffect.Preset at a start time.",
+          "type": "object",
+          "required": ["at", "preset"],
+          "properties": {
+            "at": { "$ref": "#/$defs/hapticTime" },
+            "preset": { "description": "VibrationEffect.Preset.PRESET_CLICK, PRESET_TICK or PRESET_LOW_TICK.", "enum": ["CLICK", "TICK", "LOW_TICK"] },
+            "scale": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Basic envelope (BasicEnvelopeBuilder) at a start time. The last control point must have intensity 0.",
+          "type": "object",
+          "required": ["at", "envelope"],
+          "properties": {
+            "at": { "$ref": "#/$defs/hapticTime" },
+            "initialSharpness": { "type": "number", "minimum": 0, "maximum": 1 },
+            "envelope": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "required": ["intensity", "sharpness", "ms"],
+                "properties": {
+                  "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "sharpness": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "ms": { "description": "Transition time from the previous control point.", "type": "integer", "minimum": 1, "maximum": 5000 }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "hapticTime": {
+      "description": "Start time in milliseconds from the start of the clip.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5000
+    }
+  }
+}

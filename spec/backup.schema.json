@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cucuto.mauri.app/spec/v1/backup.schema.json",
+  "title": "Cucuto backup (backup.json)",
+  "description": "Root manifest of a .cucuto-backup zip. An encrypted backup is a zip holding envelope.json ($defs/envelope) and payload.bin, the AES-256-GCM encrypted bytes of the plain backup zip. Human spec: docs/pack-format.md#backups.",
+  "type": "object",
+  "required": ["formatVersion", "createdAt", "app", "contacts", "packs", "repositories", "settings"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "formatVersion": { "const": 1 },
+    "createdAt": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "app": {
+      "type": "object",
+      "required": ["id", "versionName", "versionCode"],
+      "properties": {
+        "id": { "const": "app.mauri.cucuto" },
+        "versionName": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "versionCode": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "settings": {
+      "description": "App settings as key/value pairs. Keys are owned by the app; unknown keys are ignored on restore.",
+      "type": "object",
+      "maxProperties": 500
+    },
+    "repositories": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/repository" }
+    },
+    "packs": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": { "$ref": "#/$defs/packReference" }
+    },
+    "contacts": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": { "$ref": "#/$defs/contact" }
+    }
+  },
+  "patternProperties": { "^x-": true },
+  "additionalProperties": false,
+  "$defs": {
+    "repository": {
+      "type": "object",
+      "required": ["url", "auth"],
+      "properties": {
+        "url": { "description": "URL of repository.json or of the folder that holds it.", "$ref": "common.schema.json#/$defs/httpsUrl" },
+        "name": { "$ref": "common.schema.json#/$defs/name" },
+        "isDefault": { "type": "boolean", "default": false },
+        "enabled": { "type": "boolean", "default": true },
+        "auth": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "enum": ["none", "basic", "bearer"] },
+            "credentials": {
+              "description": "Present only in encrypted backups, and only when the user opted in.",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["username", "password"],
+                  "properties": { "username": { "type": "string", "maxLength": 512 }, "password": { "type": "string", "maxLength": 4096 } },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["token"],
+                  "properties": { "token": { "type": "string", "minLength": 1, "maxLength": 8192 } },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "packReference": {
+      "type": "object",
+      "required": ["id", "type", "version", "sha256", "source"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/packId" },
+        "type": { "description": "What the user imported: a pack, or a bundle whose selected packs are listed in 'packs'.", "enum": ["pack", "bundle"] },
+        "version": { "$ref": "common.schema.json#/$defs/version" },
+        "name": { "$ref": "common.schema.json#/$defs/name" },
+        "sha256": { "description": "SHA-256 of the .soundpack file that was imported.", "$ref": "common.schema.json#/$defs/sha256" },
+        "size": { "type": "integer", "minimum": 22 },
+        "packs": {
+          "description": "For bundles: IDs of the packs the user installed.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "common.schema.json#/$defs/packId" }
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "repositoryUrl"],
+              "properties": {
+                "type": { "const": "repository" },
+                "repositoryUrl": { "$ref": "common.schema.json#/$defs/httpsUrl" },
+                "downloadUrl": { "$ref": "common.schema.json#/$defs/httpsUrl" }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": { "const": "url" },
+                "downloadUrl": { "$ref": "common.schema.json#/$defs/httpsUrl" }
+              },
+              "required": ["type", "downloadUrl"],
+              "additionalProperties": false
+            },
+            {
+              "description": "Imported from a local file; the user picks it again on restore unless the backup includes it.",
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": { "const": "local" },
+                "fileName": { "type": "string", "maxLength": 255 }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "included": { "description": "Path of the .soundpack inside a full backup, for example packs/<id>-<version>.soundpack.", "$ref": "common.schema.json#/$defs/path" }
+      },
+      "patternProperties": { "^x-": true },
+      "additionalProperties": false
+    },
+    "characterRef": {
+      "type": "object",
+      "required": ["packId", "characterId"],
+      "properties": {
+        "packId": { "$ref": "common.schema.json#/$defs/packId" },
+        "characterId": { "$ref": "common.schema.json#/$defs/slug" }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "required": ["id", "keys"],
+      "properties": {
+        "id": { "description": "Opaque ID, unique within the backup.", "type": "string", "minLength": 1, "maxLength": 64 },
+        "displayName": { "type": "string", "maxLength": 200 },
+        "isGroup": { "type": "boolean", "default": false },
+        "phoneNumbers": {
+          "description": "E.164 numbers used to re-match Android contacts.",
+          "type": "array",
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^\\+[1-9][0-9]{4,14}$" }
+        },
+        "keys": {
+          "description": "Every messenger key seen for this contact; any of them matches on restore.",
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "required": ["package", "conversationKey"],
+            "properties": {
+              "package": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+$", "maxLength": 255 },
+              "conversationKey": { "type": "string", "minLength": 1, "maxLength": 512 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "androidContact": {
+          "type": "object",
+          "required": ["lookupKey"],
+          "properties": {
+            "lookupKey": { "type": "string", "minLength": 1, "maxLength": 1024 },
+            "displayName": { "type": "string", "maxLength": 200 }
+          },
+          "additionalProperties": false
+        },
+        "groupPolicy": { "description": "Groups only: one character for the whole group, or each sender's own character.", "enum": ["group", "per-sender"] },
+        "message": {
+          "allOf": [{ "$ref": "#/$defs/characterRef" }],
+          "properties": {
+            "packId": true,
+            "characterId": true,
+            "disabledClips": {
+              "description": "Clip files (paths from pack.json) the user switched off.",
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "common.schema.json#/$defs/path" }
+            },
+            "haptic": { "description": "Per-contact haptic override.", "$ref": "pack.schema.json#/$defs/haptic" }
+          },
+          "unevaluatedProperties": false
+        },
+        "ringtone": {
+          "allOf": [{ "$ref": "#/$defs/characterRef" }],
+          "required": ["rule"],
+          "properties": {
+            "packId": true,
+            "characterId": true,
+            "rule": {
+              "type": "object",
+              "required": ["mode"],
+              "properties": {
+                "mode": { "description": "fixed: one variant. random: per call. time / season: by time of day or season tags. pack: follow the pack's 'when' conditions.", "enum": ["fixed", "random", "time", "season", "pack"] },
+                "variant": { "description": "Ringtone file (path from pack.json) for mode fixed.", "$ref": "common.schema.json#/$defs/path" }
+              },
+              "if": { "properties": { "mode": { "const": "fixed" } } },
+              "then": { "required": ["variant"] },
+              "additionalProperties": false
+            }
+          },
+          "unevaluatedProperties": false
+        }
+      },
+      "patternProperties": { "^x-": true },
+      "additionalProperties": false
+    },
+    "envelope": {
+      "title": "Encrypted backup envelope (envelope.json)",
+      "type": "object",
+      "required": ["formatVersion", "type", "cipher", "kdf", "nonce", "payload"],
+      "properties": {
+        "formatVersion": { "const": 1 },
+        "type": { "const": "encrypted-backup" },
+        "cipher": { "description": "AES-256-GCM with a 128-bit tag appended to the ciphertext. Additional authenticated data: the UTF-8 bytes of 'cucuto-backup-v1'.", "const": "AES-256-GCM" },
+        "kdf": {
+          "type": "object",
+          "required": ["name", "memoryKiB", "iterations", "parallelism", "salt"],
+          "properties": {
+            "name": { "const": "argon2id" },
+            "memoryKiB": { "type": "integer", "minimum": 19456, "maximum": 4194304 },
+            "iterations": { "type": "integer", "minimum": 2, "maximum": 100 },
+            "parallelism": { "type": "integer", "minimum": 1, "maximum": 16 },
+            "salt": { "description": "Base64 (RFC 4648, padded) of at least 16 random bytes.", "type": "string", "pattern": "^[A-Za-z0-9+/]{22,}={0,2}$" }
+          },
+          "additionalProperties": false
+        },
+        "nonce": { "description": "Base64 of the 12-byte GCM nonce.", "type": "string", "pattern": "^[A-Za-z0-9+/]{16}$" },
+        "payload": { "const": "payload.bin" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

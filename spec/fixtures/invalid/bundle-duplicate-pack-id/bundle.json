@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "type": "bundle",
+  "id": "app.mauri.fixtures.bundle-dup",
+  "name": "Duplicate packs",
+  "version": "1.0.0",
+  "packs": ["packs/a", "packs/b"]
+}
