@@ -25,6 +25,8 @@ android {
 dependencies {
     // The routing table model and codec are part of this module's API (publisher state, builder output).
     api(projects.core.routing)
+    // Reads the auto haptics stored next to installed packs (AutoHapticFile) into the routing table.
+    implementation(projects.core.haptics)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.datastore.preferences)

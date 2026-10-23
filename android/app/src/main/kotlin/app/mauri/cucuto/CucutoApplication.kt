@@ -3,6 +3,7 @@ package app.mauri.cucuto
 import android.app.Application
 import app.mauri.cucuto.core.data.routing.RoutingPublisher
 import app.mauri.cucuto.core.jxl.JxlCoilDecoder
+import app.mauri.cucuto.packs.AutoHapticsRunner
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -17,11 +18,15 @@ class CucutoApplication :
     SingletonImageLoader.Factory {
     @Inject lateinit var routingPublisher: RoutingPublisher
 
+    @Inject lateinit var autoHaptics: AutoHapticsRunner
+
     override fun onCreate() {
         super.onCreate()
         // libxposed hands the framework service to the app at process start; from then on every database change
         // that affects routing is republished to the module.
         routingPublisher.start()
+        // Background: analyse clips of installed packs whose auto haptics are missing or stale (ADR 0020).
+        autoHaptics.start()
     }
 
     /**

@@ -10,15 +10,22 @@ public class RoutingFormatException(
  * Compact, versioned text encoding of a [RoutingTable]. Specified in `docs/routing-table.md`; summary:
  *
  * ```
- * cucuto-routing⇥1⇥<generation>⇥<enabled 0|1>⇥<packages>⇥<voices>⇥<routes>
+ * cucuto-routing⇥1⇥<generation>⇥<enabled 0|1>⇥<packages>⇥<voices>⇥<routes>⇥<clip haptics>
  * P⇥<package>                                                   one per package, referenced by index
- * V⇥<packId>⇥<characterId>⇥<haptic>⇥<uriBase>⇥<clips>{⇥<uriSuffix>⇥<milliWeight>⇥<clipHaptic|->}
+ * H⇥<clip haptic>                                               one per distinct clip envelope, referenced by index
+ * V⇥<packId>⇥<characterId>⇥<haptic>⇥<uriBase>⇥<clips>{⇥<uriSuffix>⇥<milliWeight>⇥<clipHaptic|->}[⇥h<index|->,…]
  * R⇥<package index>⇥<key>⇥<voice index|->⇥<seed>⇥<flags>⇥<contactId>
  * ```
  *
  * Lines end with `\n`, fields are separated by tabs, and strings escape only `%`, tab, CR and LF as `%25`, `%09`,
  * `%0D`, `%0A`. Haptics: `k` keep, `o` off, `a` auto, or `c` followed by `;`-separated events (`p<at>,<C|T|L>,<scale>`
  * or `e<at>,<initialSharpness or empty>,<intensity>,<sharpness>,<ms>…`), all integers (thousandths for fractions).
+ *
+ * Clip haptics (auto envelopes) are stored once each in `H` lines and referenced from the trailing `h` field of the
+ * voices that use them; the inline clip haptic fields stay `-`. A version 1 reader from before the dictionary skips
+ * `H` lines and trailing fields, so it still reads such a table, just without clip envelopes (auto then keeps
+ * WhatsApp's vibration). `H` lines use the full syntax or, for envelopes on [HapticGrid], a compact one:
+ * `z<at>,<initial sharpness level or empty>,<3 base-64 digits per point: intensity, sharpness, duration steps>`.
  *
  * Readers reject a higher format version and skip line types they do not know, so additive changes can stay in
  * version 1. Parsing is a single pass with no regular expressions, reflection or dependencies, so it runs cheaply
@@ -29,10 +36,19 @@ public object RoutingCodec {
     public const val FORMAT_VERSION: Int = 1
 
     private const val NONE = "-"
+    private const val CLIP_HAPTICS = 'h'
+    private const val COMPACT = 'z'
+
+    /** Base-64 digits of the compact clip haptic form: none of them is a separator or needs escaping. */
+    private const val DIGITS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
     public fun encode(table: RoutingTable): String {
         val packages = LinkedHashMap<String, Int>()
         for (route in table.routes) packages.getOrPut(route.packageName) { packages.size }
+        val clipHaptics = LinkedHashMap<Haptic.Custom, Int>()
+        for (voice in table.voices) {
+            for (clip in voice.clips) clip.haptic?.let { clipHaptics.getOrPut(it) { clipHaptics.size } }
+        }
 
         val out = StringBuilder(64 + table.voices.size * 160 + table.routes.size * 48)
         out
@@ -49,6 +65,8 @@ public object RoutingCodec {
             .append(table.voices.size)
             .tab()
             .append(table.routes.size)
+            .tab()
+            .append(clipHaptics.size)
             .append('\n')
 
         for (name in packages.keys) {
@@ -57,6 +75,12 @@ public object RoutingCodec {
                 .tab()
                 .escaped(name)
                 .append('\n')
+        }
+
+        for (haptic in clipHaptics.keys) {
+            out.append('H').tab()
+            if (HapticGrid.isOnGrid(haptic)) writeCompact(out, haptic) else writeHaptic(out, haptic)
+            out.append('\n')
         }
 
         for (voice in table.voices) {
@@ -81,8 +105,15 @@ public object RoutingCodec {
                     .tab()
                     .append(clip.milliWeight)
                     .tab()
-                val haptic = clip.haptic
-                if (haptic == null) out.append(NONE) else writeHaptic(out, haptic)
+                    .append(NONE)
+            }
+            if (voice.clips.any { it.haptic != null }) {
+                out.tab().append(CLIP_HAPTICS)
+                voice.clips.forEachIndexed { i, clip ->
+                    if (i > 0) out.append(',')
+                    val haptic = clip.haptic
+                    if (haptic == null) out.append(NONE) else out.append(clipHaptics.getValue(haptic))
+                }
             }
             out.append('\n')
         }
@@ -226,6 +257,66 @@ public object RoutingCodec {
         }
     }
 
+    /** The compact form of an on-grid clip haptic ([HapticGrid.isOnGrid]): `z<at>,<initial>,<points>[;…]`. */
+    private fun writeCompact(
+        out: StringBuilder,
+        haptic: Haptic.Custom,
+    ) {
+        out.append(COMPACT)
+        haptic.events.forEachIndexed { i, event ->
+            event as HapticEvent.Envelope
+            if (i > 0) out.append(';')
+            out.append(event.atMs).append(',')
+            if (event.milliInitialSharpness != HapticEvent.Envelope.DEFAULT_SHARPNESS) {
+                out.append(DIGITS[HapticGrid.level(event.milliInitialSharpness)])
+            }
+            out.append(',')
+            for (p in event.points) {
+                out
+                    .append(DIGITS[HapticGrid.level(p.milliIntensity)])
+                    .append(DIGITS[HapticGrid.level(p.milliSharpness)])
+                    .append(DIGITS[p.durationMs / HapticGrid.DURATION_STEP_MS])
+            }
+        }
+    }
+
+    /** A clip haptic from an `H` line: the compact form or a full `c` timeline. */
+    private fun parseClipHaptic(raw: String): Haptic.Custom {
+        if (raw.isEmpty() || raw[0] != COMPACT) {
+            return parseHaptic(raw) as? Haptic.Custom ?: throw RoutingFormatException("A clip haptic must be custom")
+        }
+        val events = ArrayList<HapticEvent>()
+        for (part in raw.substring(1).split(';')) {
+            val fields = part.split(',')
+            if (fields.size != 3 || fields[1].length > 1 || fields[2].isEmpty() || fields[2].length % 3 != 0) {
+                throw RoutingFormatException("Bad compact envelope '$part'")
+            }
+            val digits = fields[2]
+            val points =
+                (digits.indices step 3).map { i ->
+                    ControlPoint(
+                        HapticGrid.value(digit(digits[i])),
+                        HapticGrid.value(digit(digits[i + 1])),
+                        digit(digits[i + 2]) * HapticGrid.DURATION_STEP_MS,
+                    )
+                }
+            val initial =
+                if (fields[1].isEmpty()) {
+                    HapticEvent.Envelope.DEFAULT_SHARPNESS
+                } else {
+                    HapticGrid.value(digit(fields[1][0]))
+                }
+            events += HapticEvent.Envelope(fields[0].toInt(), points, initial)
+        }
+        return Haptic.Custom(events)
+    }
+
+    private fun digit(c: Char): Int {
+        val value = DIGITS.indexOf(c)
+        if (value < 0) throw RoutingFormatException("Bad digit '$c'")
+        return value
+    }
+
     private fun parseHaptic(raw: String): Haptic {
         if (raw.length == 1) {
             when (raw[0]) {
@@ -301,6 +392,7 @@ public object RoutingCodec {
         val packages: Int,
         val voices: Int,
         val routes: Int,
+        val clipHaptics: Int,
     )
 
     /** Single-pass cursor over the encoded text. */
@@ -324,6 +416,8 @@ public object RoutingCodec {
                     packages = count(),
                     voices = count(),
                     routes = count(),
+                    // Added with the clip haptic dictionary; tables written before it have no H lines.
+                    clipHaptics = if (pos < s.length && s[pos] != '\n') count() else 0,
                 )
             endLine()
             return header
@@ -334,6 +428,7 @@ public object RoutingCodec {
             val packages = ArrayList<String>(header.packages)
             val voices = ArrayList<Voice>(header.voices)
             val routes = ArrayList<Route>(header.routes)
+            val clipHaptics = ArrayList<Haptic.Custom>(header.clipHaptics)
             while (pos < s.length) {
                 when (s[pos]) {
                     'P' -> {
@@ -342,9 +437,15 @@ public object RoutingCodec {
                         endLine()
                     }
 
+                    'H' -> {
+                        type()
+                        clipHaptics += parseClipHaptic(field())
+                        endLine()
+                    }
+
                     'V' -> {
                         type()
-                        voices += voice()
+                        voices += voice(clipHaptics)
                         endLine()
                     }
 
@@ -359,16 +460,21 @@ public object RoutingCodec {
                     }
                 }
             }
-            if (packages.size != header.packages || voices.size != header.voices || routes.size != header.routes) {
+            if (packages.size != header.packages ||
+                voices.size != header.voices ||
+                routes.size != header.routes ||
+                clipHaptics.size != header.clipHaptics
+            ) {
                 throw RoutingFormatException(
-                    "Counts differ from the header: ${packages.size}/${voices.size}/${routes.size}, " +
-                        "expected ${header.packages}/${header.voices}/${header.routes}",
+                    "Counts differ from the header: " +
+                        "${packages.size}/${voices.size}/${routes.size}/${clipHaptics.size}, expected " +
+                        "${header.packages}/${header.voices}/${header.routes}/${header.clipHaptics}",
                 )
             }
             return RoutingTable(header.generation, header.enabled, voices, routes)
         }
 
-        private fun voice(): Voice {
+        private fun voice(dictionary: List<Haptic.Custom>): Voice {
             val packId = string()
             val characterId = string()
             val haptic = parseHaptic(field())
@@ -388,6 +494,20 @@ public object RoutingCodec {
                         }
                     }
                 clips += Clip(uri, weight, clipHaptic)
+            }
+            // Trailing fields: the clip haptic references, and anything a newer writer added (skipped).
+            while (pos < s.length && s[pos] != '\n') {
+                val extra = field()
+                if (extra.isEmpty() || extra[0] != CLIP_HAPTICS) continue
+                val refs = extra.substring(1).split(',')
+                if (refs.size != count) throw RoutingFormatException("Expected $count clip haptics, found ${refs.size}")
+                refs.forEachIndexed { i, ref ->
+                    if (ref != NONE) {
+                        val index = ref.toInt()
+                        if (index !in dictionary.indices) throw RoutingFormatException("Unknown clip haptic $index")
+                        clips[i] = clips[i].copy(haptic = dictionary[index])
+                    }
+                }
             }
             return Voice(packId, characterId, clips, haptic)
         }

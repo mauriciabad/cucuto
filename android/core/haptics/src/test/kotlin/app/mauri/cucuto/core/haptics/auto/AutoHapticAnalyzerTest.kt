@@ -89,6 +89,17 @@ class AutoHapticAnalyzerTest {
     }
 
     @Test
+    fun longClipsOnlyHaveTheirStartAnalysed() {
+        // Notification clips can last up to 30 s (#119): the work and the envelope stay bounded by the first 2 s.
+        val samples = signal(Triple(30_000, 0.5, 440.0))
+        val frames = AutoHapticAnalyzer.frames(samples, rate)
+        assertEquals(AutoHapticAnalyzer.MAX_DURATION_MS / AutoHapticAnalyzer.FRAME_MS, frames.size)
+        val envelope = envelopeOf(samples)
+        assertTrue(envelope.points.sumOf { it.durationMs } <= AutoHapticAnalyzer.MAX_DURATION_MS)
+        assertTrue(envelope.points.size <= AutoHapticAnalyzer.MAX_CONTROL_POINTS)
+    }
+
+    @Test
     fun soundStartingTooLateHasNoHaptic() {
         val samples = signal(Triple(1990, 0.0, 0.0), Triple(500, 0.8, 440.0))
         assertNull(AutoHapticAnalyzer.analyze(samples, rate))

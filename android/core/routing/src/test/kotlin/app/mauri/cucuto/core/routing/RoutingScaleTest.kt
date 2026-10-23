@@ -26,6 +26,52 @@ class RoutingScaleTest {
         assertTrue(encoded.length < RoutingContract.MAX_ENCODED_CHARS * 2 / 3)
     }
 
+    /**
+     * Issue #98: the same user with auto haptics everywhere. Every clip of the 120 characters has its own analysed
+     * 16-point envelope (the worst case; real clips often need fewer points). The app snaps them to [HapticGrid],
+     * so each is stored once, in about 55 characters, and voices refer to them by index.
+     */
+    @Test
+    fun autoEnvelopesOnEveryClipStillFit() {
+        val withEnvelopes = buildLargeTable(autoEnvelopes = true)
+        val encoded = RoutingCodec.encode(withEnvelopes)
+        val inline =
+            withEnvelopes.voices.sumOf { v ->
+                v.clips.sumOf { c ->
+                    c.haptic?.let { RoutingCodec.encodeHaptic(it).length }
+                        ?: 0
+                }
+            }
+        println(
+            "Routing table with ${withEnvelopes.voices.sumOf {
+                it.clips.size
+            }} clip envelopes: ${encoded.length} chars " +
+                "(the envelopes alone would take $inline chars inline, in the full syntax)",
+        )
+        assertEquals(withEnvelopes, RoutingCodec.decode(encoded))
+        assertTrue(
+            "Encoded table is ${encoded.length} chars",
+            encoded.length < RoutingContract.MAX_ENCODED_CHARS * 7 / 8,
+        )
+        assertTrue(
+            "Inline envelopes would fit, so the dictionary is pointless",
+            inline > RoutingContract.MAX_ENCODED_CHARS,
+        )
+    }
+
+    @Test
+    fun decodesWithEnvelopesQuickly() {
+        val table = buildLargeTable(autoEnvelopes = true)
+        val encoded = RoutingCodec.encode(table)
+        repeat(10) { RoutingCodec.decode(encoded) }
+        val runs = 10
+        val start = System.nanoTime()
+        repeat(runs) { RoutingCodec.decode(encoded) }
+        val perDecodeMs = (System.nanoTime() - start) / runs / 1_000_000.0
+        println("Decode with envelopes: %.2f ms".format(perDecodeMs))
+        assertTrue("Decoding took $perDecodeMs ms", perDecodeMs < 100)
+    }
+
     @Test
     fun decodesQuickly() {
         val encoded = RoutingCodec.encode(table)
@@ -62,12 +108,19 @@ class RoutingScaleTest {
         }
     }
 
-    private fun buildLargeTable(): RoutingTable {
+    private fun buildLargeTable(autoEnvelopes: Boolean = false): RoutingTable {
         val characters = 120
         val voices =
             (0 until characters)
                 .map { c ->
-                    RoutingFixtures.voice("io.github.creator$c.pack", "character-$c", clips = 12)
+                    val voice = RoutingFixtures.voice("io.github.creator$c.pack", "character-$c", clips = 12)
+                    if (!autoEnvelopes) return@map voice
+                    voice.copy(
+                        clips =
+                            voice.clips.mapIndexed { i, clip ->
+                                clip.copy(haptic = HapticGrid.snap(RoutingFixtures.autoEnvelope(c * 12 + i)))
+                            },
+                    )
                 }.toMutableList()
         val routes = ArrayList<Route>()
         for (contact in 0 until 500) {
@@ -76,7 +129,19 @@ class RoutingScaleTest {
             if (contact % 9 == 0) {
                 // Personal clip toggles or a haptic override make a voice of their own.
                 val base = voices[voice]
-                voices += base.copy(clips = base.clips.drop(2), haptic = RoutingFixtures.frogCustom)
+                voices +=
+                    if (autoEnvelopes && contact % 2 == 0) {
+                        // Clip toggles only: still auto, sharing the character's clip envelopes.
+                        base.copy(clips = base.clips.drop(2))
+                    } else if (autoEnvelopes) {
+                        // A custom override: the app leaves clip envelopes out, the module would not use them.
+                        base.copy(
+                            clips = base.clips.drop(2).map { it.copy(haptic = null) },
+                            haptic = RoutingFixtures.frogCustom,
+                        )
+                    } else {
+                        base.copy(clips = base.clips.drop(2), haptic = RoutingFixtures.frogCustom)
+                    }
                 voice = voices.lastIndex
             }
             val seed = contact * 31

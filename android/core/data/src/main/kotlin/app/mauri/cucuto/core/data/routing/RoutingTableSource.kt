@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 /**
  * The routing table as a flow: it emits a new table whenever contacts, keys, assignments, installed packs or the
- * global switch change, and only when the resulting table differs.
+ * global switch change, or the catalog re-reads a pack (new auto haptics), and only when the resulting table differs.
  */
 class RoutingTableSource
     @Inject
@@ -28,11 +28,17 @@ class RoutingTableSource
             val rows: List<RoutingRow>,
             val packs: List<InstalledPackEntity>,
             val enabled: Boolean,
+            val catalogRevision: Long,
         )
 
         val tables: Flow<RoutingTable> =
-            combine(contactDao.observeRoutingRows(), installedPackDao.observeAll(), settings.enabled, ::Inputs)
-                .distinctUntilChanged()
+            combine(
+                contactDao.observeRoutingRows(),
+                installedPackDao.observeAll(),
+                settings.enabled,
+                builder.catalogRevisions,
+                ::Inputs,
+            ).distinctUntilChanged()
                 .map { inputs -> builder.build(inputs.rows, inputs.packs.associateBy { it.packId }, inputs.enabled) }
                 .distinctUntilChanged()
     }
