@@ -95,3 +95,21 @@ recorded in `installed_packs`, which the routing table reads.
 - Release builds shrink `:xposed` with R8; only the entry class is kept by name. The module reflects only on framework
   classes, never on its own.
 - End-to-end confirmation on the phone is a supervised session: [`docs/device-testing.md`](../device-testing.md).
+
+## Owner answer (2026-10-23, #88)
+
+> I dont understand the question not the changes in behaveour. i want the notifications to play at the same instant they play in stock whatsapp. and i also want to preserve baterylife.  i close the issue because i feel like my answer wont be educated, if i find out an unexpected behaveour because of this, you can revisit this
+
+The owner closed the issue, so the delivery default stands (batches, at most one app wake-up per 10 s). The comment
+sets two requirements for the whole notification path, now an M1 acceptance criterion in the brief:
+
+- **Same instant as stock WhatsApp.** Event delivery complies: the hook only queues and posts, and the Binder call
+  runs later on the `cucuto-events` thread, so `playSound` and `playVibration` never wait for it. The gap is elsewhere:
+  SystemUI opens the clip from `ClipProvider`, and when Cucuto's process is not running Android cold-starts it
+  (Hilt graph, `RoutingPublisher.start()`) before the first byte is served, while the vibration from `system_server`
+  is not delayed. Not measured yet; #121 measures it on the device and removes the cold start from the sound path if
+  it is noticeable.
+- **Battery.** Delivery uses `Handler.postAtTime` on `uptimeMillis`: no alarm, no wake lock, no service, so it never
+  wakes the phone and only runs while the CPU is already awake after an alert. Its cost is at most one process start
+  and a Room write per 10 s during active chats. #121 checks it with batterystats and, if it shows, defers delivery
+  while the screen is off.

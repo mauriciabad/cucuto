@@ -67,6 +67,34 @@ class MigrationTest {
         }
 
     @Test
+    fun version2KeepsInstalledPacksAndAddsBundleColumns() =
+        runTest {
+            file.delete()
+            helper.createDatabase(1).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO installed_packs (packId, version, name, path, sha256, sizeBytes, source, bundleId, " +
+                        "installedAt) VALUES ('com.example.songs.day', '1.0.0', 'Day', '/p', '', 10, 'LOCAL', " +
+                        "'com.example.songs', 1)",
+                )
+            }
+            helper.runMigrationsAndValidate(2, listOf(CucutoMigrations.MIGRATION_1_2)).close()
+            val db =
+                Room
+                    .databaseBuilder(ApplicationProvider.getApplicationContext(), CucutoDatabase::class.java, file.path)
+                    .setDriver(AndroidSQLiteDriver())
+                    .addMigrations(*CucutoMigrations.ALL)
+                    .build()
+            try {
+                val pack = db.installedPackDao().get("com.example.songs.day")!!
+                assertEquals("com.example.songs", pack.bundleId)
+                assertEquals(null, pack.bundleName)
+                assertEquals(null, pack.bundleVersion)
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun dataWrittenAtVersion1SurvivesOpeningWithRoom() =
         runTest {
             file.delete()

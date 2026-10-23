@@ -14,7 +14,15 @@ notification sound and vibration per contact, using clips from user-imported sou
   leaves it open** to change it; the lead then applies the answer, copies it verbatim into the owner log and closes the
   issue. Check open `question` issues for new owner comments at the start of every session.
 - **Kotlin always.** All Android, tooling and scripting code is Kotlin (Gradle Kotlin DSL; `*.main.kts` scripts instead of
-  Python or shell where practical). No Java sources. The website is SvelteKit + TypeScript (owner decision in the brief).
+  Python or shell where practical). No Java sources. The website is SvelteKit + TypeScript (owner decision in the brief),
+  but it reuses Kotlin where that saves a second implementation: pack validation comes from `shared/pack-spec`
+  compiled for the browser, never a TypeScript port (owner, #60; #116). JavaScript tooling runs on Bun, not Node
+  (owner, #63; migration in #115, until it lands the commands below still say `pnpm`).
+- **Minimum intrusion** (owner, #67): "I want it to work with the minimum intrusion possible, so we lower the risk of
+  critical vulnerabilities/mistakes." Hook as little as possible, as late as possible, in as few processes as
+  possible; ask for the fewest permissions, only when a feature needs them; read no more of a notification than the
+  feature uses. Backwards compatibility is not a goal: no compatibility code for older Android, LSPosed or
+  libxposed versions, no legacy fallbacks. When two designs work, pick the less intrusive one.
 - **Latest stable versions.** Check current versions when adding a dependency (official release notes, Maven Central,
   npm). Record them in `android/gradle/libs.versions.toml` or `package.json`. Betas only where the brief allows
   (Compose Material 3 1.5.0 for Expressive).
@@ -71,6 +79,14 @@ pack files `*.soundpack.zip` · backups `cucuto-backup-YYYY-MM-DD.zip` (always e
 - Milestones M0–M9 mirror the brief. Labels: `area:*`, `type:*`, `question`, `blocked`, `needs-device`.
 - Architecture decisions go in `docs/decisions/` (short ADRs: context, decision, consequences).
 - Keep PRs focused; run the relevant build and tests before pushing.
+- **Dependencies: update them whenever you are spawned** (owner, #68: the owner expects to stop maintaining the code
+  once the feature set works, so every agent session is a maintenance opportunity). At the start of any task, check
+  for open Dependabot PRs and outdated versions in the area you touch (`android/gradle/libs.versions.toml`,
+  `package.json` files, GitHub Actions, the Gradle wrapper). If updating is cheap (no API migration, builds and tests
+  stay green), do it **in parallel, in a separate PR** (`build(deps): …`, its own branch), or merge the green
+  Dependabot PR. If it is not cheap (a major version with breaking changes), open or update a `type:chore` issue with
+  what blocks it and carry on with your task. Never mix dependency bumps into a feature PR. Dependabot keeps
+  proposing updates (ADR 0004).
 
 ## Builds
 

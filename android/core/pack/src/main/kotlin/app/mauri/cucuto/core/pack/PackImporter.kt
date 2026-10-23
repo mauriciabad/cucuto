@@ -38,6 +38,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.security.MessageDigest
 import java.util.UUID
 
 /**
@@ -176,6 +177,10 @@ class PackImporter(
         private val archive = File(workDir, "${UUID.randomUUID()}.zip")
         private var stagingDir: File? = null
 
+        /** SHA-256 (lowercase hex) and size of the source, computed while copying it. */
+        private var archiveSha256 = ""
+        private var archiveSize = 0L
+
         suspend fun run(): ImportResult {
             var ready = false
             try {
@@ -296,6 +301,8 @@ class PackImporter(
                     bundle = bundle,
                     packs = candidates,
                     report = ValidationReport(validated.issues + decodeIssues + runtimeWarnings),
+                    archiveSha256 = archiveSha256,
+                    archiveSizeBytes = archiveSize,
                     stagingDir = stagingDir!!,
                     stagedPacks = staged,
                 ),
@@ -315,6 +322,7 @@ class PackImporter(
                     throw SourceReadException(e)
                 }
             var copied = 0L
+            val digest = MessageDigest.getInstance("SHA-256")
             input.use {
                 FileOutputStream(archive).use { out ->
                     val buffer = ByteArray(COPY_BUFFER_BYTES)
@@ -332,6 +340,7 @@ class PackImporter(
                         copied += n
                         if (copied > MAX_ARCHIVE_BYTES) throw SourceTooLargeException()
                         out.write(buffer, 0, n)
+                        digest.update(buffer, 0, n)
                         if (copied - reported >= PROGRESS_STEP_BYTES) {
                             reported = copied
                             progress(ImportProgress.Copying(copied, sizeHint))
@@ -339,6 +348,8 @@ class PackImporter(
                     }
                 }
             }
+            archiveSha256 = digest.digest().joinToString("") { "%02x".format(it) }
+            archiveSize = copied
             progress(ImportProgress.Copying(copied, copied))
         }
 

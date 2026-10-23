@@ -15,6 +15,18 @@ SCREENSHOTS=1 pnpm exec playwright test screenshots   # full-page screenshots in
 
 ## Notes
 
+- **Pages.** Home, Packs, Install guide, For pack authors (plus `/authors/pack-format/`, which renders
+  `docs/pack-format.md` at build time with marked: GitHub-style heading anchors, relative links rewritten to the
+  repository), Privacy, and `/open/` (the PWA file handler stub). Keep the copy true to the app: the privacy page
+  cites the code it describes, and anything not built yet is labeled "planned".
+- **Languages (#70).** English at the root, Spanish under `/es/`. Every page lives in `src/routes/[[lang=lang]]/`
+  (matcher in `src/params.ts`), so one component serves both; the copy is in `src/lib/i18n/en.ts` and `es.ts` (typed
+  as the same shape, so a missing translation fails `pnpm check`). Keys ending in `Html` hold inline markup and
+  `{placeholder}` links (`src/lib/i18n/links.ts`); render them with `<Html>`. Link to pages with
+  `pageHref('/install/', locale)`. `hooks.server.ts` sets `<html lang>`; `Seo` adds `hreflang` alternates. The pack
+  format spec stays English-only.
+- **Screenshot and video slots.** The home page has placeholders for the scripted screenshots (#41) and the
+  explainer video (#42); replace them there.
 - **Brand.** Tokens, logos, icons, the OG image and the door-open animation are copies of files in `brand/`. Rebuild
   the brand, then run `pnpm sync:brand` and commit the result. `colors.css` and `typography.css` are not formatted by
   Prettier so the copies stay identical.
