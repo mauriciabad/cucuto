@@ -190,3 +190,11 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 > the most important is to get the app working first
 
 (Lead focused the critical path: screen PRs #128/#132, then the end-to-end loop on the phone.)
+
+> do you really need to reboot? i dont think so
+
+(Right: the module already held the assignment loaded at boot, so the end-to-end check only needed an incoming message. The live-update bug went to a debug agent instead.)
+
+> unfortunately it is late at night and noone will probably text me
+
+(Lead left a passive log watch for the first real alert and started #26 "Simulate message", so voices can be tested without incoming messages, plus #139.)
