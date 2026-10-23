@@ -318,7 +318,7 @@ export const es: Messages = {
 			{
 				icon: 'library-music',
 				title: 'Clips',
-				text: 'Sonidos cortos, de 0,2 a 4 segundos cada uno. Se recomienda Ogg Opus; también valen Ogg Vorbis, MP3, AAC, FLAC y WAV.'
+				text: 'Sonidos de 0,2 a 30 segundos cada uno; los cortos funcionan mejor. Se recomienda Ogg Opus; también valen Ogg Vorbis, MP3, AAC, FLAC y WAV.'
 			},
 			{
 				icon: 'person-pin',

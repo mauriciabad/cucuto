@@ -328,7 +328,7 @@ export const en = {
 			{
 				icon: 'library-music',
 				title: 'Clips',
-				text: 'Short sounds, 0.2 to 4 seconds each. Ogg Opus is recommended; Ogg Vorbis, MP3, AAC, FLAC and WAV work too.'
+				text: 'Sounds of 0.2 to 30 seconds each; short ones work best. Ogg Opus is recommended; Ogg Vorbis, MP3, AAC, FLAC and WAV work too.'
 			},
 			{
 				icon: 'person-pin',
