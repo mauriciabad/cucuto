@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Pack repositories are fetched over HTTPS. Only this module touches the network; the Xposed module never does. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+</manifest>
