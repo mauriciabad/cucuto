@@ -23,3 +23,9 @@ JPEG XL on Android evaluates jxl-rs first (spike issue); this log.
 > i added the dns :)
 
 Closed #54 after verifying `cucuto.mauri.app CNAME mauriciabad.github.io` (Cloudflare, DNS only).
+
+> everytime you write in github  it has to be clear it is not me and that it is an AI
+
+Added an AI banner to all 60 issues and the #54 comment; agents now start every GitHub text with the banner and author
+commits as `Claude (AI agent)` (rule in `CLAUDE.md`). The first five commits on `main` were authored under the owner's
+name before this rule; they carry the `Co-Authored-By: Claude` trailer and were left as is to avoid rewriting history.

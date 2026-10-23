@@ -40,6 +40,16 @@ pack file extension `.soundpack` · backup `.cucuto-backup` · license GPL-3.0-o
 
 ## Workflow
 
+- **Everything an agent writes on GitHub must say it is AI, not the owner.** Issues, PRs, comments, reviews and
+  releases start with this banner:
+
+  ```markdown
+  > [!NOTE]
+  > 🤖 Written by an AI agent (Claude), not by the repository owner.
+  ```
+
+  Commits are authored as `Claude (AI agent) <noreply@anthropic.com>` (set with `git config user.name/user.email` in
+  each clone or worktree) and keep the `Co-Authored-By` trailer.
 - Work from GitHub issues. Branch `<type>/<issue>-<slug>` (e.g. `feat/12-pack-importer`), Conventional Commits
   (`feat(pack): …`, `fix(xposed): …`, `docs: …`, `ci: …`), PR with `Closes #N`. Squash-merge.
 - Milestones M0–M9 mirror the brief. Labels: `area:*`, `type:*`, `question`, `blocked`, `needs-device`.
