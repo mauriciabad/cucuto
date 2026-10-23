@@ -53,6 +53,8 @@ sealed interface PublishState {
  * to Remote Preferences. A table equal to what is already published is not written again, so app restarts do not
  * make the module reparse.
  *
+ * After every publication, [ClipMirror.retain] deletes mirrored clips the module can no longer play.
+ *
  * Call [start] once from `Application.onCreate` (libxposed delivers the service binder at process start).
  */
 @Singleton
@@ -61,6 +63,7 @@ class RoutingPublisher
     constructor(
         private val source: RoutingTableSource,
         private val sink: RoutingSink,
+        private val mirror: ClipMirror,
         private val clock: WallClock,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
@@ -98,6 +101,7 @@ class RoutingPublisher
                 val published = RoutingCodec.decodeOrNull(sink.read())
                 if (published != null && published.copy(generation = 0) == table.copy(generation = 0)) {
                     _state.value = published.toState(RoutingCodec.encode(published).length)
+                    mirror.retain(published)
                     return
                 }
                 val generation = maxOf(clock.now(), (published?.generation ?: 0) + 1)
@@ -110,6 +114,7 @@ class RoutingPublisher
                 }
                 sink.write(encoded, generation)
                 _state.value = stamped.toState(encoded.length)
+                mirror.retain(stamped)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

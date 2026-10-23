@@ -18,7 +18,10 @@ object Targets {
     /** Channel of the test notification; nothing else from [SELF_PACKAGE] is touched. */
     const val SELF_TEST_CHANNEL: String = "cucuto_self_test"
 
-    /** Clip the provider synthesises for the self-test. `selftest` is not a valid pack ID, so it cannot collide. */
+    /**
+     * Clip the provider synthesises for the self-test, used when the table names no mirrored copy
+     * ([RoutingTable.selfTestClip], ADR 0018). `selftest` is not a valid pack ID, so it cannot collide.
+     */
     const val SELF_TEST_CLIP: String = "content://app.mauri.cucuto.clips/selftest/chirp.wav"
 
     /** A two-beat signature (the M0 spike's): a firm click, then a lighter tick. */
@@ -67,7 +70,7 @@ class AlertRouter(
         table: RoutingTable,
     ): Decision? {
         val pkg = snapshot.packageName
-        if (pkg == Targets.SELF_PACKAGE) return selfTest(snapshot)
+        if (pkg == Targets.SELF_PACKAGE) return selfTest(snapshot, table)
         if (pkg !in Targets.MESSENGERS) return null
 
         val identity = ConversationKeys.identify(snapshot)
@@ -120,14 +123,17 @@ class AlertRouter(
         )
     }
 
-    private fun selfTest(snapshot: NotificationSnapshot): Decision? {
+    private fun selfTest(
+        snapshot: NotificationSnapshot,
+        table: RoutingTable,
+    ): Decision? {
         if (snapshot.channelId != Targets.SELF_TEST_CHANNEL) return null
         return Decision(
             outcome = Outcome.SWAPPED,
             packageName = snapshot.packageName,
             identity = ConversationIdentity(listOf(SELF_TEST_KEY), false, "Cucuto self-test", null, null),
             matchedKey = SELF_TEST_KEY,
-            clipUri = Targets.SELF_TEST_CLIP,
+            clipUri = table.selfTestClip ?: Targets.SELF_TEST_CLIP,
             haptic = Targets.SELF_TEST_HAPTIC,
             detail = "self-test",
         )

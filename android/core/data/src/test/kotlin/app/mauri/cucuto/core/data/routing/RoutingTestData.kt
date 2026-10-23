@@ -5,6 +5,7 @@ import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
+import app.mauri.cucuto.core.routing.RoutingTable
 
 internal const val CRITTERS = "app.mauri.demo.critters"
 
@@ -56,5 +57,30 @@ internal class FakeCatalog(
     ): CatalogCharacter? {
         lookups++
         return characters[pack.packId]?.get(characterId)
+    }
+}
+
+/** A mirror that "copies" the clips in [mirrored] to `file:///mirror/…` and records every [retain]. */
+internal class FakeMirror(
+    private val mirrored: Set<String> = emptySet(),
+    private val selfTest: String? = null,
+) : ClipMirror {
+    val retained = mutableListOf<RoutingTable>()
+
+    override suspend fun clipUri(
+        pack: InstalledPackEntity,
+        characterId: String,
+        file: String,
+    ): String =
+        if (file in mirrored) {
+            "file:///mirror/${pack.packId}/${pack.version}/$file"
+        } else {
+            ProviderClips.clipUri(pack, characterId, file)
+        }
+
+    override suspend fun selfTestUri(): String? = selfTest
+
+    override suspend fun retain(table: RoutingTable) {
+        retained += table
     }
 }

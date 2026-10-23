@@ -26,7 +26,7 @@ public object RoutingContract {
     public const val MAX_ENCODED_CHARS: Int = 256 * 1024
 
     /**
-     * The clip URI the module hands to the notification sound player:
+     * The clip provider's URI for a clip, used when the clip is not mirrored (ADR 0018):
      * `content://app.mauri.cucuto.clips/<packId>/<characterId>/<file>`, where `file` is the clip's path from
      * `pack.json`. Pack IDs, character IDs and pack paths only use URI-safe characters (pack format "IDs" and
      * `common.schema.json#/$defs/path`), so nothing needs escaping.

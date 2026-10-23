@@ -33,8 +33,15 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
 - **Haptic**: `Keep` (leave WhatsApp's vibration), `Off` (no vibration), `Auto` (each clip's own envelope; clips
   without one behave like `Keep`) or `Custom` (presets and basic envelopes, one-to-one with
   `VibrationEffect.Builder`). Pack mode `none` maps to `Keep`; a per-contact override of `none` maps to `Off`.
-- **Clip URIs** are `content://app.mauri.cucuto.clips/<packId>/<characterId>/<file>`, where `file` is the clip's
-  path from `pack.json`. Pack IDs, character IDs and pack paths are URI-safe by construction.
+- **Clip URIs** are what SystemUI opens, chosen per clip by the app
+  ([ADR 0018](decisions/0018-clip-mirror-for-instant-sounds.md)):
+  `file:///storage/emulated/0/Android/media/app.mauri.cucuto/clips/<packId>/<version>/<file>` when the clip is
+  mirrored to shared storage (SystemUI reads it without starting Cucuto's process), otherwise the clip provider's
+  `content://app.mauri.cucuto.clips/<packId>/<characterId>/<file>`. `file` is the clip's path from `pack.json`.
+  Pack IDs, versions, character IDs and pack paths are URI-safe by construction. The module passes the URI through
+  unchanged.
+- **Self-test clip**: the mirrored Diagnostics chirp (`…/clips/selftest/chirp.wav`), or absent, in which case the
+  module plays the provider's `content://app.mauri.cucuto.clips/selftest/chirp.wav`.
 
 Lookup (`RoutingTable.resolve(package, conversationKey, senderKey)`):
 
@@ -53,12 +60,15 @@ thousandths.
 
 ```text
 cucuto-routing	1	<generation>	<enabled 0|1>	<package count>	<voice count>	<route count>
+S	<self-test clip URI>                                    optional, at most once
 P	<package>
 V	<packId>	<characterId>	<haptic>	<uriBase>	<clip count>	{<uriSuffix>	<milliWeight>	<clipHaptic or ->}
 R	<package index>	<key>	<voice index or ->	<seed>	<flags>	<contactId>
 ```
 
 - Line 1 is the header. `generation` is the publication time in milliseconds (strictly increasing per device).
+- The optional `S` line (added in #121, right after the header) is the self-test clip. Readers that predate it
+  skip it and keep the provider's chirp.
 - `P` lines list packages; routes refer to them by index (order of appearance).
 - `V` lines list voices; routes refer to them by index. Each clip URI is `uriBase + uriSuffix`; the writer uses the
   longest common folder of the voice's clips as `uriBase`.

@@ -16,7 +16,9 @@ import java.io.FileNotFoundException
  * Read-only clip provider (issue #16): `content://app.mauri.cucuto.clips/<packId>/<characterId>/<clip path>`.
  *
  * The module swaps WhatsApp's notification sound for one of these URIs, and SystemUI's ringtone player opens it
- * (M0). The provider is exported because SystemUI must reach it, so it guards itself:
+ * (M0). Since ADR 0018 this is the fallback: clips that [MediaClipMirror] copied to shared storage are published as
+ * `file://` paths, which SystemUI opens without starting this process. The provider is exported because SystemUI
+ * must reach it, so it guards itself:
  *
  * - **Callers:** only the system (uid 1000) and `com.android.systemui`, checked on every call with
  *   `Binder.getCallingUid()` and `PackageManager.getPackagesForUid()` ([ClipAccess]). Everyone else, including

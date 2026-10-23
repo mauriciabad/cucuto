@@ -8,6 +8,13 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!--
+        The clip mirror (ADR 0018) checks that SystemUI, which opens notification sounds, can read shared storage.
+    -->
+    <queries>
+        <package android:name="com.android.systemui" />
+    </queries>
+
+    <!--
         Android backup and device transfer are off (res/xml/data_extraction_rules.xml).
         android:description is also what LSPosed shows as the module description.
     -->

@@ -178,6 +178,18 @@ class AlertRouterTest {
     }
 
     @Test
+    fun selfTestPlaysTheMirroredChirpWhenTheTableNamesOne() {
+        val mirrored = "file:///storage/emulated/0/Android/media/app.mauri.cucuto/clips/selftest/chirp.wav"
+        val decision =
+            router.decide(
+                snapshot(null, pkg = Targets.SELF_PACKAGE, channel = Targets.SELF_TEST_CHANNEL),
+                table().copy(selfTestClip = mirrored),
+            )!!
+        assertEquals(mirrored, decision.clipUri)
+        assertEquals(Targets.SELF_TEST_HAPTIC, decision.haptic)
+    }
+
+    @Test
     fun selfTestWorksEvenWhenTheGlobalSwitchIsOff() {
         // It checks the hook, not the routing; WhatsApp stays untouched either way.
         val decision =

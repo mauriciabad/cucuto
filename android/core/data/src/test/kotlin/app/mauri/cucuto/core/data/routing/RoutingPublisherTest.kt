@@ -43,6 +43,7 @@ class RoutingPublisherTest {
     private lateinit var packs: InstalledPackRepository
     private val clock = FakeClock()
     private val sink = FakeSink()
+    private val mirror = FakeMirror()
 
     @Before
     fun setUp() {
@@ -63,8 +64,13 @@ class RoutingPublisherTest {
                 ) { folder.newFile("settings.preferences_pb").also { it.delete() } },
             )
         val source =
-            RoutingTableSource(db.contactDao(), db.installedPackDao(), settings, RoutingTableBuilder(FakeCatalog()))
-        return RoutingPublisher(source, sink, clock, scope) to settings
+            RoutingTableSource(
+                db.contactDao(),
+                db.installedPackDao(),
+                settings,
+                RoutingTableBuilder(FakeCatalog(), mirror),
+            )
+        return RoutingPublisher(source, sink, mirror, clock, scope) to settings
     }
 
     @Test
@@ -123,6 +129,8 @@ class RoutingPublisherTest {
             assertEquals(generations.distinct(), generations)
             val state = publisher.state.value as PublishState.Published
             assertEquals(generations.last(), state.generation)
+            // The mirror only keeps what the module can still play.
+            assertEquals(RoutingCodec.decode(sink.writes.value.last()), mirror.retained.last())
         }
 
     @Test
