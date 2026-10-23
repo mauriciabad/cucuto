@@ -24,14 +24,14 @@
 	});
 </script>
 
-<Seo title="Open a pack" description="Open .soundpack files with the cucuto web app." />
+<Seo title="Open a pack" description="Open .soundpack files with the Cucuto web app." />
 
 <div class="prose">
 	<header class="page-header">
 		<h1 class="display-small emphasized">Open a pack</h1>
 		<p class="body-large">
 			Opening <code>.soundpack</code> files here comes with the pack creator. For now, import packs in
-			the cucuto app on your phone.
+			the Cucuto app on your phone.
 		</p>
 	</header>
 

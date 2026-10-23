@@ -16,7 +16,7 @@
 
 <Seo
 	title="Privacy"
-	description="The cucuto website has no analytics, no cookies and no tracking. The app has no accounts and no analytics."
+	description="The Cucuto website has no analytics, no cookies and no tracking. The app has no accounts and no analytics."
 />
 
 <div class="prose">
@@ -54,7 +54,7 @@
 
 	<h2 class="headline-small">The app</h2>
 	<p>
-		cucuto has no accounts, no ads and no analytics. Your contacts, assignments and packs stay on
+		Cucuto has no accounts, no ads and no analytics. Your contacts, assignments and packs stay on
 		your phone. The app only goes online to reach the pack repositories in your list (this site’s is
 		there by default): to show their packs, check for updates and download the packs you choose.
 	</p>

@@ -30,7 +30,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 				await page.goto(path);
 
 				await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
-				await expect(page).toHaveTitle(/cucuto/);
+				await expect(page).toHaveTitle(/Cucuto/);
 				await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
 				await expect(page.getByRole('contentinfo')).toContainText('GPL-3.0-or-later');
 
@@ -78,7 +78,7 @@ test('serves a web app manifest with maskable icons', async ({ request }) => {
 	const response = await request.get('/manifest.webmanifest');
 	expect(response.ok()).toBe(true);
 	const manifest = await response.json();
-	expect(manifest.name).toBe('cucuto');
+	expect(manifest.name).toBe('Cucuto');
 	expect(manifest.icons.some((icon: { purpose: string }) => icon.purpose === 'maskable')).toBe(
 		true
 	);

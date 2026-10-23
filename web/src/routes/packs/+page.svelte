@@ -24,7 +24,7 @@
 
 <Seo
 	title="Packs"
-	description="Free sound packs for cucuto: characters with clips and vibrations, ready to import."
+	description="Free sound packs for Cucuto: characters with clips and vibrations, ready to import."
 />
 
 <div class="container">

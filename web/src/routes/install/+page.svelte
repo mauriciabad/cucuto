@@ -6,7 +6,7 @@
 
 <Seo
 	title="Install guide"
-	description="Install cucuto on a rooted Android 17 phone: APK, LSPosed module with System Framework scope, reboot, status checks."
+	description="Install Cucuto on a rooted Android 17 phone: APK, LSPosed module with System Framework scope, reboot, status checks."
 />
 
 <div class="prose">
@@ -30,9 +30,9 @@
 		<li>
 			<h2 class="title-large">Enable the module in LSPosed</h2>
 			<p>
-				Open the LSPosed manager, go to <strong>Modules</strong>, turn on <strong>cucuto</strong>
+				Open the LSPosed manager, go to <strong>Modules</strong>, turn on <strong>Cucuto</strong>
 				and set its scope to <strong>System Framework</strong> only. Do not add WhatsApp to the scope:
-				cucuto never hooks the WhatsApp app.
+				Cucuto never hooks the WhatsApp app.
 			</p>
 		</li>
 		<li>
@@ -54,7 +54,7 @@
 			<h2 class="title-large">Import a pack and assign characters</h2>
 			<p>
 				Import a <code>.soundpack</code> file, then pick a chat and tap a character. Keep WhatsApp’s own
-				notification tone and vibration turned on: cucuto replaces them per contact.
+				notification tone and vibration turned on: Cucuto replaces them per contact.
 			</p>
 		</li>
 	</ol>

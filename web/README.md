@@ -1,4 +1,4 @@
-# cucuto website
+# Cucuto website
 
 The static site at [cucuto.mauri.app](https://cucuto.mauri.app): SvelteKit 3 (Svelte 5 runes), TypeScript, Vite 8,
 `adapter-static` with every route prerendered, deployed to GitHub Pages by `.github/workflows/web.yml`.

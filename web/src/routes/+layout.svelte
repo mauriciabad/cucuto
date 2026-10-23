@@ -29,7 +29,7 @@
 
 <header class="top-bar">
 	<div class="container top-bar-inner">
-		<a class="brand" href={resolve('/')} aria-label="cucuto home">
+		<a class="brand" href={resolve('/')} aria-label="Cucuto home">
 			<picture>
 				<source srcset={logoDark} media="(prefers-color-scheme: dark)" />
 				<img src={logoLight} alt="" width="137" height="32" />
@@ -67,7 +67,7 @@
 		<div class="footer-brand">
 			<img src={markUrl} alt="" width="40" height="40" />
 			<p>
-				<strong>cucuto</strong> is free software under the
+				<strong>Cucuto</strong> is free software under the
 				<a href={LICENSE_URL} rel="external">GPL-3.0-or-later</a> license.
 				<br />
 				No third-party content ships with the app. Not affiliated with WhatsApp or Meta.

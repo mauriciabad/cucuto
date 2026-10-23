@@ -7,7 +7,7 @@
 
 <Seo
 	title="For pack authors"
-	description="Make sound packs for cucuto: the open .soundpack format, the packer tool and hosting your own pack repository."
+	description="Make sound packs for Cucuto: the open .soundpack format, the packer tool and hosting your own pack repository."
 />
 
 <div class="prose">

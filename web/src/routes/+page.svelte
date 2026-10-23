@@ -30,7 +30,7 @@
 		{
 			icon: 'android',
 			title: REQUIREMENTS.android,
-			text: 'cucuto is built for Android 17 (API 37) only. Older versions are not supported.'
+			text: 'Cucuto is built for Android 17 (API 37) only. Older versions are not supported.'
 		},
 		{
 			icon: 'lock',
@@ -45,18 +45,18 @@
 		{
 			icon: 'notifications-active',
 			title: 'WhatsApp or WhatsApp Business',
-			text: 'Leave WhatsApp’s own tone and vibration on: cucuto swaps them per contact.'
+			text: 'Leave WhatsApp’s own tone and vibration on: Cucuto swaps them per contact.'
 		}
 	];
 
 	const faq: Array<{ q: string; a: string }> = [
 		{
-			q: 'Does cucuto come with sounds from shows or games?',
+			q: 'Does Cucuto come with sounds from shows or games?',
 			a: 'No. The app ships empty and no copyrighted content ships with it. You import sound packs yourself; the official repository only hosts free demo packs (CC0). You are responsible for the packs you import.'
 		},
 		{
 			q: 'Why does it need root?',
-			a: 'On Android 17 a normal app can’t reliably play sounds from the background, and copying WhatsApp’s notifications would mean duplicates and clutter. With root, cucuto swaps the sound and vibration on WhatsApp’s own notification, so mute, Do Not Disturb and ringer mode keep working exactly as usual.'
+			a: 'On Android 17 a normal app can’t reliably play sounds from the background, and copying WhatsApp’s notifications would mean duplicates and clutter. With root, Cucuto swaps the sound and vibration on WhatsApp’s own notification, so mute, Do Not Disturb and ringer mode keep working exactly as usual.'
 		},
 		{
 			q: 'Does it modify WhatsApp?',
@@ -72,7 +72,7 @@
 		},
 		{
 			q: 'Is it free? Does it collect data?',
-			a: 'cucuto is free and open source under GPL-3.0-or-later. It has no accounts, no ads and no analytics. Neither does this website.'
+			a: 'Cucuto is free and open source under GPL-3.0-or-later. It has no accounts, no ads and no analytics. Neither does this website.'
 		}
 	];
 </script>
@@ -85,7 +85,7 @@
 			<p class="eyebrow">An LSPosed module for Android 17</p>
 			<h1 class="display-large emphasized">{PITCH}</h1>
 			<p class="lead body-large">
-				cucuto plays a different character’s sound and vibration for each WhatsApp contact, like a
+				Cucuto plays a different character’s sound and vibration for each WhatsApp contact, like a
 				cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss.
 			</p>
 			<div class="actions">
@@ -128,7 +128,7 @@
 	<div class="container">
 		<h2 id="requirements-title" class="headline-large">Requirements</h2>
 		<p class="section-lead on-surface-variant">
-			cucuto is a power-user tool. Check that your phone has all of these before you install it.
+			Cucuto is a power-user tool. Check that your phone has all of these before you install it.
 		</p>
 		<ul class="requirements">
 			{#each requirements as item (item.title)}

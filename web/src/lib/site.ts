@@ -1,8 +1,8 @@
 export const SITE_URL = 'https://cucuto.mauri.app';
-export const SITE_NAME = 'cucuto';
+export const SITE_NAME = 'Cucuto';
 export const PITCH = 'Give each contact a voice.';
 export const DESCRIPTION =
-	'cucuto plays a different character’s sound and vibration for each WhatsApp contact, so you know who wrote before you look. For rooted Android 17 with LSPosed.';
+	'Cucuto plays a different character’s sound and vibration for each WhatsApp contact, so you know who wrote before you look. For rooted Android 17 with LSPosed.';
 
 export const REPO_URL = 'https://github.com/mauriciabad/cucuto';
 /** Until the release-driven build lands (#39), the button points to the latest release page. */

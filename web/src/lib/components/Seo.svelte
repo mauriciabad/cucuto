@@ -33,7 +33,7 @@
 	<meta property="og:image:height" content="630" />
 	<meta
 		property="og:image:alt"
-		content="The cucuto logo: a tangerine cuckoo clock house with its round door open and a bird singing."
+		content="The Cucuto logo: a tangerine cuckoo clock house with its round door open and a bird singing."
 	/>
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
