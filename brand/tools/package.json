@@ -1,0 +1,23 @@
+{
+  "name": "cucuto-brand-tools",
+  "private": true,
+  "type": "module",
+  "description": "Generates the cucuto color tokens (Material Color Utilities), logos, icons, motion demo, UI sounds and previews.",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "tokens": "node generate-tokens.mjs > /dev/null",
+    "assets": "node build-brand.mjs",
+    "motion": "node build-motion.mjs",
+    "sounds": "node build-sounds.mjs",
+    "preview": "node build-preview.mjs",
+    "build": "pnpm tokens && pnpm assets && pnpm motion && pnpm sounds && pnpm preview"
+  },
+  "dependencies": {
+    "@material/material-color-utilities": "0.4.0",
+    "fontkit": "2.0.4",
+    "paper": "0.12.18"
+  }
+}
