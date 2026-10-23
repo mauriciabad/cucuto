@@ -87,6 +87,24 @@ generation. Tap **Post test notification** (allow notifications if asked).
   The app side can be checked without the module: `su 1000 -c "content call --uri content://app.mauri.cucuto.events
   --method report --extra v:i:1"` must print `Bundle[{accepted=0}]`.
 
+## 2b. Status card and onboarding (#24)
+
+On a fresh install Cucuto opens on the onboarding flow; after it (or from Status → **Setup guide**) the Status card
+shows four checks. What each reads ([ADR 0015](decisions/0015-status-checks-and-onboarding.md)):
+
+- Before enabling: module "Not enabled", scope "Cucuto can read its scope once the module is enabled".
+- Enabled, before the reboot: "Enabled in LSPosed, but not loaded into the system yet" (if LSPosed hands Cucuto its
+  service before the reboot) or still "Not enabled".
+- After the reboot, before any alert: "Enabled, but the module has not reported since this boot" with **Post test
+  notification**; scope "LSPosed reports System Framework and nothing else".
+- After the self-test (about 10 s): module passes with "Hooks: playSound, playVibration". With WhatsApp installed and
+  a pack imported (the debug test voice does not count) the card turns green with the success sound, the door
+  opening and a particle burst.
+
+**Look for:** the scope line really comes from LSPosed (`getScope()` returns `[system]`), and the module line never
+asks for a reboot right after one. If it does, `getRunningTargets()` does not list `system_server` as expected:
+record what LSPosed returns (a finding for #24).
+
 ## 3. Real WhatsApp messages
 
 Have someone send a 1:1 message and a group message (WhatsApp in the background, chats not muted).

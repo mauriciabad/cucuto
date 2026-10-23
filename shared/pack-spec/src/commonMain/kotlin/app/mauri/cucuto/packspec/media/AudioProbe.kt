@@ -1,6 +1,7 @@
 package app.mauri.cucuto.packspec.media
 
 import app.mauri.cucuto.packspec.FileFormat
+import app.mauri.cucuto.packspec.zip.RandomAccessInput
 
 /**
  * Reads the duration of an audio file from its container headers, without decoding samples. Returns null when the
@@ -8,7 +9,12 @@ import app.mauri.cucuto.packspec.FileFormat
  * test-decode with the platform decoder at import.
  */
 object AudioProbe {
-    fun durationMs(format: FileFormat, b: ByteArray): Long? = try {
+    fun durationMs(format: FileFormat, b: ByteArray): Long? = durationMs(format, Bytes.of(b))
+
+    /** The same as for a byte array, reading only the parts of [input] the headers point to. */
+    fun durationMs(format: FileFormat, input: RandomAccessInput): Long? = Bytes.of(input)?.let { durationMs(format, it) }
+
+    private fun durationMs(format: FileFormat, b: Bytes): Long? = try {
         when (format) {
             FileFormat.OGG -> ogg(b)
             FileFormat.WAV -> wav(b)
@@ -22,7 +28,7 @@ object AudioProbe {
         null
     }
 
-    private fun ogg(b: ByteArray): Long? {
+    private fun ogg(b: Bytes): Long? {
         if (!b.startsWith("OggS") || b.size < 28) return null
         val segments = b[26].toInt() and 0xFF
         val payload = 27 + segments
@@ -44,7 +50,7 @@ object AudioProbe {
         return null
     }
 
-    private fun wav(b: ByteArray): Long? {
+    private fun wav(b: Bytes): Long? {
         if (!b.startsWith("RIFF") || !b.startsWith("WAVE", 8)) return null
         var p = 12
         var byteRate = 0L
@@ -66,7 +72,7 @@ object AudioProbe {
         return null
     }
 
-    private fun flac(b: ByteArray): Long? {
+    private fun flac(b: Bytes): Long? {
         if (!b.startsWith("fLaC") || b.size < 42) return null
         if (b[4].toInt() and 0x7F != 0) return null // first block must be STREAMINFO
         val s = 8
@@ -87,7 +93,7 @@ object AudioProbe {
 
     private class Mp3Frame(val length: Int, val samples: Int, val rate: Int, val mpeg1: Boolean, val mono: Boolean)
 
-    private fun mp3Frame(b: ByteArray, p: Int): Mp3Frame? {
+    private fun mp3Frame(b: Bytes, p: Int): Mp3Frame? {
         if (p + 4 > b.size) return null
         val h = b.be32(p)
         if (h ushr 21 != 0x7FFL) return null
@@ -114,14 +120,14 @@ object AudioProbe {
         return if (length < 4) null else Mp3Frame(length, samples, rate, mpeg1, mono)
     }
 
-    private fun skipId3v2(b: ByteArray): Int {
+    private fun skipId3v2(b: Bytes): Int {
         if (!b.startsWith("ID3") || b.size < 10) return 0
         val size = ((b[6].toInt() and 0x7F) shl 21) or ((b[7].toInt() and 0x7F) shl 14) or ((b[8].toInt() and 0x7F) shl 7) or (b[9].toInt() and 0x7F)
         val footer = if (b[5].toInt() and 0x10 != 0) 10 else 0
         return 10 + size + footer
     }
 
-    private fun mp3(b: ByteArray): Long? {
+    private fun mp3(b: Bytes): Long? {
         var p = skipId3v2(b)
         // Find the first frame that is followed by another valid frame.
         val limit = minOf(b.size, p + 64 * 1024)
@@ -155,7 +161,7 @@ object AudioProbe {
 
     private val AAC_RATES = intArrayOf(96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350)
 
-    private fun adts(b: ByteArray): Long? {
+    private fun adts(b: Bytes): Long? {
         var p = skipId3v2(b)
         var samples = 0L
         var rate = 0
@@ -172,7 +178,7 @@ object AudioProbe {
         return if (samples == 0L || rate == 0) null else samples * 1000 / rate
     }
 
-    private fun mp4(b: ByteArray): Long? {
+    private fun mp4(b: Bytes): Long? {
         if (b.size < 12 || !b.startsWith("ftyp", 4)) return null
         val moov = Boxes.find(b, 0, b.size, "moov") ?: return null
         val mvhd = Boxes.find(b, moov.first, moov.last + 1, "mvhd") ?: return null
@@ -186,8 +192,12 @@ object AudioProbe {
 
 /** ISO-BMFF box walking shared by MP4 and AVIF. */
 internal object Boxes {
+    fun find(b: ByteArray, start: Int, end: Int, type: String): IntRange? = find(Bytes.of(b), start, end, type)
+
+    fun findAll(b: ByteArray, start: Int, end: Int, type: String): List<IntRange> = findAll(Bytes.of(b), start, end, type)
+
     /** Content range (excluding the header) of the first box of [type] directly inside [start, end). */
-    fun find(b: ByteArray, start: Int, end: Int, type: String): IntRange? {
+    fun find(b: Bytes, start: Int, end: Int, type: String): IntRange? {
         var p = start
         while (p + 8 <= end) {
             var size = b.be32(p)
@@ -200,7 +210,7 @@ internal object Boxes {
         return null
     }
 
-    fun findAll(b: ByteArray, start: Int, end: Int, type: String): List<IntRange> {
+    fun findAll(b: Bytes, start: Int, end: Int, type: String): List<IntRange> {
         val out = mutableListOf<IntRange>()
         var p = start
         while (p + 8 <= end) {

@@ -12,6 +12,8 @@ android {
 
     defaultConfig {
         applicationId = "app.mauri.cucuto"
+        // Defaults for local and CI builds. Releases take both from the tag (`-Pcucuto.version`, release.yml):
+        // versionCode = MAJOR * 1_000_000 + MINOR * 1_000 + PATCH (ADR 0021, docs/releasing.md).
         versionCode = 1
         versionName = "0.1.0"
     }
@@ -26,6 +28,15 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    testOptions {
+        // Robolectric needs the merged resources (strings) for the Compose UI tests.
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            // Robolectric's Android 16+ runtime touches FileDescriptor internals that JDK 21 hides by default.
+            it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
         }
     }
 
@@ -80,11 +91,23 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigationevent.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.compose.material.icons.core)
     implementation(libs.coil.compose)
+    // Pack sprites and covers may be SVG (sanitized by the importer, docs/pack-format.md#images).
+    implementation(libs.coil.svg)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material.color.utilities)
+
+    // Compose UI tests on the JVM (Robolectric) live in src/testDebug: the test activity comes from the
+    // debug-only ui-test-manifest.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.androidx.test.espresso.core)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

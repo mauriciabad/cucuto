@@ -32,6 +32,11 @@ class SeenSenderRepository
     ) {
         fun observeRecent(limit: Int = 50): Flow<List<SeenSenderEntity>> = dao.observeRecent(limit)
 
+        suspend fun get(
+            packageName: String,
+            conversationKey: String,
+        ): SeenSenderEntity? = dao.get(packageName, conversationKey)
+
         /**
          * Records one alerting notification.
          *

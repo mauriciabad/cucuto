@@ -109,6 +109,9 @@ pack files `*.soundpack.zip` · backups `cucuto-backup-YYYY-MM-DD.zip` (always e
 - Kotlin scripts (`*.main.kts`) need the `kotlin` CLI (Homebrew `kotlin`, 2.4.21). Media tools: `ffmpeg` (libopus),
   `cjxl`/`djxl` (`jpeg-xl`), `cwebp` (`webp`), `rsvg-convert` (`librsvg`). Regenerate fixtures with
   `kotlin spec/fixtures/generate.main.kts` and demo pack sounds with `kotlin packs/generate.main.kts`.
+- Releases: pushing a `vX.Y.Z` tag on `main` runs `release.yml` (signed APK, version from the tag, website rebuild);
+  see `docs/releasing.md`. The release signing key and its secrets belong to the owner: agents never create, read or
+  set them.
 - Device: owner's rooted Android 17 phone over adb (when connected). Device-only work is labeled `needs-device`.
   Installing and launching `app.mauri.cucuto` is fine (the module is inert until enabled); never enable it in
   LSPosed, change scopes or reboot without an explicit go-ahead.

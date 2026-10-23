@@ -5,7 +5,10 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
-/** `cucuto.android.application`: the single APK. Android 17 only, arm64-v8a only, R8 in release. */
+/**
+ * `cucuto.android.application`: the single APK. Android 17 only, arm64-v8a only, R8 in release; release version and
+ * signing from the tag and the environment ([configureReleaseBuild]).
+ */
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
@@ -27,6 +30,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     checkDependencies = true
                 }
             }
+            configureReleaseBuild()
         }
     }
 }

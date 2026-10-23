@@ -8,9 +8,13 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!--
-        The clip mirror (ADR 0018) checks that SystemUI, which opens notification sounds, can read shared storage.
+        Package visibility (Android 11+): the status card checks that WhatsApp or WhatsApp Business is installed, and
+        the clip mirror (ADR 0018) checks that SystemUI, which opens notification sounds, can read shared storage.
+        Only these packages, never QUERY_ALL_PACKAGES.
     -->
     <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
         <package android:name="com.android.systemui" />
     </queries>
 
@@ -36,6 +40,35 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                "Open with" and the share sheet for packs and bundles (#27, ADR 0007). Packs are plain zips, so these
+                match every zip; the importer decides from the contents what the file is and says so plainly.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+            </intent-filter>
+            <!-- Fallback for apps that report application/octet-stream: match a .zip name. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:pathAdvancedPattern=".*\\.[zZ][iI][pP]" />
             </intent-filter>
         </activity>
 

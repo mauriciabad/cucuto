@@ -298,6 +298,22 @@ class PackValidator(private val checkMedia: Boolean = true) {
         fun media(refs: List<Reference>) {
             for ((path, pathRefs) in refs.groupBy { it.path }) {
                 val format = files[path] ?: continue
+                if (format.kind == FileKind.AUDIO) {
+                    // Audio files can be large: the probes read only the parts the headers point to.
+                    val ms = try {
+                        source.useFile(path, format.maxBytes) { AudioProbe.durationMs(format, it) }
+                    } catch (e: PackReadException) {
+                        sink.add(e.code, e.message ?: "Unreadable", file = path)
+                        continue
+                    }
+                    if (ms == null) {
+                        sink.add(ErrorCode.MEDIA_UNDECODABLE, "Not a readable ${format.name} file", file = path)
+                        continue
+                    }
+                    durations[path] = ms
+                    checkDuration(path, ms, pathRefs)
+                    continue
+                }
                 val bytes = try {
                     source.read(path, format.maxBytes)
                 } catch (e: PackReadException) {
@@ -305,15 +321,6 @@ class PackValidator(private val checkMedia: Boolean = true) {
                     continue
                 }
                 when {
-                    format.kind == FileKind.AUDIO -> {
-                        val ms = AudioProbe.durationMs(format, bytes)
-                        if (ms == null) {
-                            sink.add(ErrorCode.MEDIA_UNDECODABLE, "Not a readable ${format.name} file", file = path)
-                            continue
-                        }
-                        durations[path] = ms
-                        checkDuration(path, ms, pathRefs)
-                    }
                     format == FileFormat.SVG -> when (val r = SvgSafety.check(bytes)) {
                         is SvgSafety.Result.Unsafe -> sink.add(ErrorCode.SVG_UNSAFE, r.reason, file = path)
                         is SvgSafety.Result.Malformed -> sink.add(ErrorCode.MEDIA_UNDECODABLE, "Not a readable SVG: ${r.reason}", file = path)

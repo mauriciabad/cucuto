@@ -114,6 +114,13 @@ class PackImporter(
         if (import.claim()) withContext(ioDispatcher + NonCancellable) { store.deleteStaging(import.stagingDir) }
     }
 
+    /**
+     * Removes every version of the pack [id] from the store. Serialized with [install], so a removal never races an
+     * import of the same pack. Returns false when it was not installed.
+     */
+    suspend fun uninstall(id: String): Boolean =
+        withContext(ioDispatcher) { installLock.withLock { store.uninstall(id) } }
+
     /** Deletes leftovers of imports interrupted by process death. Call once at startup, before any import. */
     suspend fun deleteLeftovers() =
         withContext(ioDispatcher) {
@@ -390,19 +397,19 @@ class PackImporter(
                     if (!target.canonicalFile.toPath().startsWith(packCanonical)) {
                         return listOf(Issue(ErrorCode.UNSAFE_PATH, "Path leaves the pack folder", file = archivePath))
                     }
-                    val bytes =
-                        try {
-                            zip.read(archivePath, format.maxBytes)
-                        } catch (e: PackReadException) {
-                            return listOf(Issue(e.code, e.message ?: "Unreadable", file = archivePath))
-                        }
                     val parent = target.parentFile
                     if (parent != null && !parent.isDirectory && !parent.mkdirs()) {
                         throw IOException("Cannot create $parent")
                     }
-                    FileOutputStream(target).use { out ->
-                        out.write(bytes)
-                        out.fd.sync()
+                    // Streamed in chunks, as audio files can be up to 100 MiB. A read error can come after some chunks
+                    // were written; the staging folder goes away with everything in it.
+                    try {
+                        FileOutputStream(target).use { out ->
+                            zip.copyTo(archivePath, format.maxBytes) { b, off, n -> out.write(b, off, n) }
+                            out.fd.sync()
+                        }
+                    } catch (e: PackReadException) {
+                        return listOf(Issue(e.code, e.message ?: "Unreadable", file = archivePath))
                     }
                 }
             }

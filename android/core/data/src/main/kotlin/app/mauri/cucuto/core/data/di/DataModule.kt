@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import app.mauri.cucuto.core.data.chats.ChatDirectory
+import app.mauri.cucuto.core.data.chats.RoomChatDirectory
 import app.mauri.cucuto.core.data.db.AssignmentDao
 import app.mauri.cucuto.core.data.db.ContactDao
 import app.mauri.cucuto.core.data.db.CucutoDatabase
@@ -15,7 +17,10 @@ import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.routing.CharacterCatalog
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
 import app.mauri.cucuto.core.data.routing.RoutingSink
+import app.mauri.cucuto.core.data.routing.XposedFramework
 import app.mauri.cucuto.core.data.routing.XposedRoutingSink
+import app.mauri.cucuto.core.data.voices.CharacterDirectory
+import app.mauri.cucuto.core.data.voices.InstalledCharacterDirectory
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -79,5 +84,11 @@ object DataModule {
 interface DataBindings {
     @Binds fun routingSink(sink: XposedRoutingSink): RoutingSink
 
+    @Binds fun xposedFramework(sink: XposedRoutingSink): XposedFramework
+
     @Binds fun characterCatalog(catalog: PackManifestCatalog): CharacterCatalog
+
+    @Binds fun chatDirectory(directory: RoomChatDirectory): ChatDirectory
+
+    @Binds fun characterDirectory(directory: InstalledCharacterDirectory): CharacterDirectory
 }

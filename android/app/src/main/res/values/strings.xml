@@ -46,15 +46,102 @@
 
     <!-- Status -->
     <string name="status_title">Status</string>
+    <string name="status_hero_loading">Checking Cucuto…</string>
     <string name="status_hero_title">Getting Cucuto ready</string>
-    <string name="status_hero_body">This card turns green when everything works. Each check below lights up as its part of Cucuto lands.</string>
-    <string name="status_checks_header">Checks</string>
+    <plurals name="status_hero_progress">
+        <item quantity="one">%1$d of %2$d check passes. The card turns green when all of them do.</item>
+        <item quantity="other">%1$d of %2$d checks pass. The card turns green when all of them do.</item>
+    </plurals>
+    <string name="status_ready_title">Cu-cu! All set</string>
+    <string name="status_ready_body">Every check passes. Contacts with a character now sound like it when they message you.</string>
+    <string name="status_door_closed">The cuckoo-clock door is closed: Cucuto is not ready yet</string>
+    <string name="status_door_open">The cuckoo-clock door is open and the bird calls: Cucuto is ready</string>
+    <string name="status_checking">Checking…</string>
+    <string name="status_outcome_pass">Passed</string>
+    <string name="status_outcome_fail">Needs attention</string>
+    <string name="status_outcome_unknown">Cannot check from the app</string>
     <string name="status_check_module">Module active in system_server</string>
     <string name="status_check_scope">LSPosed scope: System Framework only</string>
     <string name="status_check_whatsapp">WhatsApp detected</string>
     <string name="status_check_packs">At least one pack installed</string>
-    <string name="status_check_pending">Not checked yet</string>
+    <string name="status_module_active">The module has reported from system_server since this boot. Hooks: %1$s.</string>
+    <string name="status_module_active_update">The module is active, but it still runs the version from before your last Cucuto update. Reboot to load the new one.</string>
+    <string name="status_module_hooks_missing">The module is loaded, but these hooks could not be installed on this Android build: %1$s. WhatsApp\'s own tone plays. Open Diagnostics and report it on GitHub.</string>
+    <string name="status_module_awaiting">Enabled, but the module has not reported since this boot. Post a test notification: with the module active you hear a two-tone chirp instead of the default sound.</string>
+    <string name="status_module_reboot">Enabled in LSPosed, but not loaded into the system yet. Reboot your phone.</string>
+    <string name="status_module_reboot_update">Cucuto was updated since the last boot, and the system still runs the old module. Reboot your phone.</string>
+    <string name="status_module_unsupported">%1$s cannot run Cucuto: it does not offer Remote Preferences. Cucuto needs LSPosed with libxposed API 102.</string>
+    <string name="status_module_not_enabled">Not enabled. In the LSPosed manager, turn on Cucuto with System Framework as its scope, then reboot.</string>
+    <string name="status_scope_ok">LSPosed reports System Framework and nothing else.</string>
+    <string name="status_scope_inferred">The module runs in system_server, so System Framework is in its scope. LSPosed keeps other apps out of Cucuto\'s scope.</string>
+    <string name="status_scope_missing">System Framework is not in the scope, so the module never loads. In LSPosed, open Modules, then Cucuto, tick System Framework and reboot.</string>
+    <string name="status_scope_missing_others">System Framework is not in the scope, so the module never loads. In LSPosed, open Modules, then Cucuto, tick System Framework, untick %1$s and reboot.</string>
+    <string name="status_scope_extra">Also scoped to %1$s. Cucuto only needs System Framework and must never hook other apps: untick them in LSPosed and reboot.</string>
+    <string name="status_scope_unknown">Cucuto can read its scope once the module is enabled. To check by hand: in LSPosed, open Modules, then Cucuto. Only System Framework should be ticked.</string>
+    <string name="status_whatsapp_found">Found %1$s.</string>
+    <string name="status_whatsapp_disabled">%1$s is installed but disabled. Enable it in the system settings.</string>
+    <string name="status_whatsapp_missing">Install WhatsApp or WhatsApp Business. Cucuto gives voices to their notifications.</string>
+    <string name="status_whatsapp_name" translatable="false">WhatsApp</string>
+    <string name="status_whatsapp_business_name" translatable="false">WhatsApp Business</string>
+    <string name="status_list_separator">, </string>
+    <plurals name="status_packs_installed">
+        <item quantity="one">%d pack installed.</item>
+        <item quantity="other">%d packs installed.</item>
+    </plurals>
+    <string name="status_packs_none">Cucuto ships empty. Import a pack file, or get free packs from the website.</string>
+    <string name="status_action_self_test">Post test notification</string>
+    <string name="status_action_diagnostics">Open Diagnostics</string>
+    <string name="status_action_install_guide">Install guide</string>
+    <string name="status_action_get_whatsapp">Get WhatsApp</string>
+    <string name="status_action_app_settings">Open app settings</string>
+    <string name="status_action_import_pack">Import a pack</string>
+    <string name="status_action_get_packs">Free packs</string>
+    <string name="status_action_unavailable">No app on this phone can open that.</string>
+    <string name="status_self_test_posted">Posted. Listen for the chirp; this check turns green within about 10 seconds.</string>
+    <string name="status_setup_guide">Setup guide</string>
     <string name="status_screens_header">Preview screens</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_done">Done</string>
+    <string name="onboarding_later">Finish later</string>
+    <string name="onboarding_step">Step %1$d of %2$d</string>
+    <string name="onboarding_open_install_guide">Open the install guide</string>
+    <string name="onboarding_door_play">Open the door</string>
+    <string name="onboarding_door_description">Cucuto\'s cuckoo clock: a little door opens and a bird calls</string>
+
+    <string name="onboarding_welcome_title">Give every contact a voice</string>
+    <string name="onboarding_welcome_body">When someone messages you on WhatsApp, your phone plays a clip from the character you picked for them, with its own vibration.</string>
+    <string name="onboarding_welcome_point_packs">Characters come from sound packs you import. Cucuto ships empty.</string>
+    <string name="onboarding_welcome_point_android">Android still decides when to ring: muted chats, Do Not Disturb and silent mode work as before.</string>
+    <string name="onboarding_welcome_point_private">Everything stays on your phone. No account, no analytics.</string>
+
+    <string name="onboarding_requirements_title">Before you start</string>
+    <string name="onboarding_requirements_body">Cucuto needs:</string>
+    <string name="onboarding_requirement_android">Android 17</string>
+    <string name="onboarding_requirement_root">A rooted phone. Cucuto does not root it for you.</string>
+    <string name="onboarding_requirement_lsposed">LSPosed with libxposed API 102, already working</string>
+    <string name="onboarding_risks_title">The honest part: risks</string>
+    <string name="onboarding_risks_body">Cucuto runs a small module inside system_server, the core of Android. That is what makes it reliable, and also what makes it risky.</string>
+    <string name="onboarding_risk_bootloop">A bug in a system module can crash Android or stop the phone from booting. Cucuto catches every error and falls back to WhatsApp\'s tone, but no code is perfect.</string>
+    <string name="onboarding_risk_root">Root and LSPosed weaken Android\'s security and can break banking apps, Google Play Integrity and your warranty. That is true of every LSPosed module.</string>
+    <string name="onboarding_risk_updates">An Android update can move the code Cucuto hooks. The module then stops swapping sounds and WhatsApp\'s tone plays until Cucuto is updated.</string>
+    <string name="onboarding_risk_privacy">To pick a voice, the module reads who sent each WhatsApp notification (name and chat ID). That stays in Cucuto\'s private storage on this phone.</string>
+    <string name="onboarding_risk_recovery">Know how to recover before you enable it: the install guide explains how to turn the module or LSPosed off if the phone does not boot.</string>
+
+    <string name="onboarding_enable_title">Enable the module</string>
+    <string name="onboarding_enable_body">Open the LSPosed manager, go to Modules and turn on Cucuto. Its scope is System Framework, already selected. Do not add WhatsApp or any other app: Cucuto never hooks them.</string>
+    <string name="onboarding_enable_hint">These checks update when you come back to Cucuto. LSPosed may only tell Cucuto after the reboot.</string>
+
+    <string name="onboarding_reboot_title">Reboot</string>
+    <string name="onboarding_reboot_body">The module loads into Android at boot, so restart your phone now. Afterwards, open Cucuto again: setup continues here.</string>
+
+    <string name="onboarding_test_title">Post the self-test</string>
+    <string name="onboarding_test_body">Tap the button and listen. With the module active, you hear a two-tone rising chirp and feel a short click-tick instead of the default sound. Cucuto turns green within about 10 seconds.</string>
+    <string name="onboarding_test_success">Cu-cu! Cucuto is working. Next, import a pack and give your first contact a voice.</string>
+    <string name="onboarding_test_default_sound">Heard the default sound? The module is not active yet: check the steps before, or open the install guide.</string>
 
     <!-- Screens -->
     <string name="screen_home">Home</string>
@@ -72,6 +159,57 @@
     <string name="screen_settings">Settings</string>
     <string name="screen_settings_body">Global switch, backup and restore, and the decision log for every recent notification.</string>
     <string name="placeholder_coming">Coming in %1$s</string>
+
+    <!-- Chats (shared by Home and the character picker) -->
+    <string name="chat_unnamed">Unnamed chat</string>
+    <string name="chat_unnamed_group">Unnamed group</string>
+    <string name="chat_open_label">Choose a voice</string>
+
+    <!-- Home -->
+    <string name="home_search_hint">Search chats and characters</string>
+    <string name="home_search_clear">Clear search</string>
+    <string name="home_filter_header">Filter by pack</string>
+    <string name="home_recent_header">Recent senders</string>
+    <string name="home_recent_body">They messaged you and have no voice yet. Tap one to choose.</string>
+    <string name="home_recent_hide">Hide</string>
+    <string name="home_recent_hide_label">Hide from recent senders</string>
+    <string name="home_chats_header">Chats</string>
+    <string name="home_chat_voice">%1$s · %2$s</string>
+    <string name="home_chat_no_voice">No voice yet: WhatsApp\'s tone</string>
+    <string name="home_chat_voice_missing">Voice missing: its pack was removed</string>
+    <string name="home_chat_group">Group · %1$s</string>
+    <string name="home_empty_title">No chats yet</string>
+    <string name="home_empty_body">When someone messages you on WhatsApp, they show up here. Tap them to give them a voice.</string>
+    <string name="home_empty_door">A closed cuckoo-clock door, waiting for someone to call</string>
+    <string name="home_no_matches">No chats match</string>
+    <string name="home_no_packs_title">No sound packs yet</string>
+    <string name="home_no_packs_body">Import a sound pack to get characters to choose from.</string>
+    <string name="home_open_packs">Open Packs</string>
+    <string name="home_fab">Assign a voice</string>
+    <string name="home_sheet_title">Who gets a voice?</string>
+    <string name="home_sheet_empty">Every chat has a voice. New senders show up here when they message you.</string>
+    <string name="home_loading">Loading chats</string>
+
+    <!-- Character picker -->
+    <string name="picker_title">Choose a voice</string>
+    <string name="picker_subtitle_for">For %1$s</string>
+    <string name="picker_subtitle_preview">Preview characters</string>
+    <string name="picker_hint">Tap a character to hear it. Tap it again to give it to this chat.</string>
+    <string name="picker_hint_preview">Tap a character to hear it. Open a chat from Home to give it a voice.</string>
+    <string name="picker_speaks_as">Speaks as %1$s</string>
+    <string name="picker_no_voice">No voice yet: WhatsApp\'s tone</string>
+    <string name="picker_assigned">%1$s now speaks for %2$s</string>
+    <string name="picker_tap_again">Tap again to assign</string>
+    <string name="picker_current">Current voice</string>
+    <string name="picker_state_selected">Selected</string>
+    <string name="picker_state_playing">Playing</string>
+    <string name="picker_preview_label">Preview</string>
+    <string name="picker_assign_label">Assign</string>
+    <string name="picker_remove">Remove voice</string>
+    <string name="picker_failed">Couldn\'t save the voice. Try again.</string>
+    <string name="picker_empty_title">No characters yet</string>
+    <string name="picker_empty_body">Import a sound pack to fill this grid.</string>
+    <string name="picker_loading">Loading characters</string>
 
     <!-- Design gallery (debug builds): the theme, shape and feedback building blocks for screen work. -->
     <string name="screen_gallery">Design gallery</string>
@@ -136,4 +274,177 @@
     <string name="gallery_type_title_sample">Character picker</string>
     <string name="gallery_type_body">Tap a character to hear it, tap again to assign. Google Sans Flex, rounder for big text.</string>
     <string name="gallery_type_label">Import pack</string>
+
+    <!-- Packs screen (#27) -->
+    <string name="packs_import">Import</string>
+    <string name="packs_import_file">Import a pack</string>
+    <string name="packs_discover">Discover</string>
+    <string name="packs_website">Website</string>
+    <string name="packs_play_character">Play %1$s</string>
+    <string name="packs_summary">%1$s · %2$s</string>
+    <plurals name="packs_count">
+        <item quantity="one">%d pack</item>
+        <item quantity="other">%d packs</item>
+    </plurals>
+    <plurals name="packs_characters">
+        <item quantity="one">%d character</item>
+        <item quantity="other">%d characters</item>
+    </plurals>
+    <string name="packs_card_subtitle">%1$s · version %2$s</string>
+    <string name="packs_card_subtitle_used">%1$s · version %2$s · %3$s</string>
+    <plurals name="packs_used_by">
+        <item quantity="one">used by %d contact</item>
+        <item quantity="other">used by %d contacts</item>
+    </plurals>
+    <string name="packs_files_missing">This pack\'s files are missing. Import it again to fix it.</string>
+    <string name="packs_empty_title">No packs yet</string>
+    <string name="packs_empty_body">Sound packs bring the characters that speak for your contacts. Import a .soundpack.zip file from your phone, Google Drive or any other app.</string>
+    <string name="packs_get_free">Get free demo packs</string>
+    <string name="packs_more_title">Find more packs</string>
+    <string name="packs_more_body">Browse pack repositories in Discover, or download free packs from the Cucuto website and import them here.</string>
+    <string name="packs_by_author">by %1$s</string>
+    <string name="packs_fact_version">Version</string>
+    <string name="packs_fact_license">License</string>
+    <string name="packs_fact_size">Size</string>
+    <string name="packs_fact_source">Source</string>
+    <string name="packs_fact_contacts">Used by</string>
+    <string name="packs_source_local">Imported from a file</string>
+    <string name="packs_source_url">Downloaded from a link</string>
+    <string name="packs_source_repository">Downloaded from a pack repository</string>
+    <string name="packs_contacts_none">No contacts yet</string>
+    <plurals name="packs_contacts">
+        <item quantity="one">%d contact</item>
+        <item quantity="other">%d contacts</item>
+    </plurals>
+    <plurals name="packs_names_and_more">
+        <item quantity="one">%1$s and %2$d more</item>
+        <item quantity="other">%1$s and %2$d more</item>
+    </plurals>
+    <string name="packs_update_hint">To update this pack, import a newer version of its file. Your contacts keep their characters.</string>
+    <string name="packs_remove">Remove pack</string>
+    <string name="packs_remove_title">Remove %1$s?</string>
+    <plurals name="packs_remove_body">
+        <item quantity="one">Its %d character and its sounds are deleted from this phone.</item>
+        <item quantity="other">Its %d characters and their sounds are deleted from this phone.</item>
+    </plurals>
+    <plurals name="packs_remove_contacts">
+        <item quantity="one">%1$d contact uses its characters: %2$s.</item>
+        <item quantity="other">%1$d contacts use its characters: %2$s.</item>
+    </plurals>
+    <string name="packs_remove_keep">Keep their characters</string>
+    <string name="packs_remove_keep_body">They hear WhatsApp\'s own tone for now. Import this pack again and their characters come back.</string>
+    <string name="packs_remove_clear">Clear their characters</string>
+    <string name="packs_remove_clear_body">They go back to WhatsApp\'s own tone. You can pick new characters for them later.</string>
+    <string name="packs_remove_confirm">Remove</string>
+    <string name="packs_removed">%1$s removed</string>
+    <string name="packs_remove_failed">Couldn\'t remove %1$s. Try again.</string>
+    <string name="packs_installed_none">Nothing was installed.</string>
+    <plurals name="packs_installed_one">
+        <item quantity="one">%1$s is installed. Its %2$d character is ready to assign.</item>
+        <item quantity="other">%1$s is installed. Its %2$d characters are ready to assign.</item>
+    </plurals>
+    <plurals name="packs_installed_many">
+        <item quantity="one">%d pack is installed. Its characters are ready to assign.</item>
+        <item quantity="other">%d packs are installed. Their characters are ready to assign.</item>
+    </plurals>
+    <plurals name="packs_installed_skipped">
+        <item quantity="one">%d pack was skipped.</item>
+        <item quantity="other">%d packs were skipped.</item>
+    </plurals>
+
+    <!-- Import sheet (#27) -->
+    <string name="import_cancel">Cancel</string>
+    <string name="import_ok">OK</string>
+    <string name="import_pick_another">Choose another file</string>
+    <string name="import_step_reading">Reading the file…</string>
+    <string name="import_step_checking">Checking the pack…</string>
+    <string name="import_step_unpacking">Unpacking…</string>
+    <string name="import_step_testing">Testing sounds and pictures…</string>
+    <string name="import_step_installing">Installing…</string>
+    <plurals name="import_bundle_subtitle">
+        <item quantity="one">Bundle of %d pack</item>
+        <item quantity="other">Bundle of %d packs</item>
+    </plurals>
+    <string name="import_action_install">New · %1$s · %2$s</string>
+    <string name="import_action_update">Updates version %1$s to %2$s. Contacts keep their characters.</string>
+    <string name="import_action_reinstall">Version %1$s is already installed. Installing replaces it.</string>
+    <string name="import_action_downgrade">Version %1$s is installed. This file has the older version %2$s.</string>
+    <plurals name="import_orphaned">
+        <item quantity="one">This version drops a character that %d contact uses. That contact will hear WhatsApp\'s own tone.</item>
+        <item quantity="other">This version drops characters that %d contacts use. They will hear WhatsApp\'s own tone.</item>
+    </plurals>
+    <string name="import_install">Install</string>
+    <string name="import_update">Update</string>
+    <string name="import_reinstall">Replace</string>
+    <string name="import_downgrade">Install older version</string>
+    <plurals name="import_install_packs">
+        <item quantity="one">Install %d pack</item>
+        <item quantity="other">Install %d packs</item>
+    </plurals>
+    <plurals name="import_more_problems">
+        <item quantity="one">And %d more problem.</item>
+        <item quantity="other">And %d more problems.</item>
+    </plurals>
+    <plurals name="import_file_and_more">
+        <item quantity="one">%1$s and %2$d more file</item>
+        <item quantity="other">%1$s and %2$d more files</item>
+    </plurals>
+    <string name="import_details_show">Show details for pack authors</string>
+    <string name="import_details_hide">Hide details</string>
+    <string name="import_problem_backup_title">This is a Cucuto backup</string>
+    <string name="import_problem_backup_summary">Backups aren\'t sound packs. Restore it from Settings, under Backup and restore.</string>
+    <string name="import_problem_not_pack_title">This isn\'t a sound pack</string>
+    <string name="import_problem_not_pack_summary">Cucuto opens sound packs: zip files with a pack.json or bundle.json inside, usually named something.soundpack.zip. This zip has neither.</string>
+    <string name="import_problem_newer_title">Made for a newer Cucuto</string>
+    <string name="import_problem_newer_summary">This pack uses a newer pack format. Update Cucuto and import it again.</string>
+    <string name="import_problem_invalid_title">This pack can\'t be imported</string>
+    <string name="import_problem_invalid_summary">Nothing was installed. Whoever made the pack needs to fix this:</string>
+    <string name="import_problem_failed_title">Couldn\'t import the file</string>
+    <string name="import_failure_source_unreadable">Cucuto couldn\'t read the file. If it\'s in the cloud, check your connection and try again.</string>
+    <string name="import_failure_source_too_large">The file is larger than any pack can be.</string>
+    <string name="import_failure_not_enough_storage">There isn\'t enough free space on this phone to unpack it.</string>
+    <string name="import_failure_storage_error">Cucuto couldn\'t save the pack to this phone\'s storage.</string>
+    <string name="import_failure_not_prepared">This import expired. Choose the file again.</string>
+    <string name="import_failure_unexpected">Something went wrong. Try again, and if it keeps happening, report it with the details below.</string>
+
+    <!-- Pack format problems in plain words, one per code of spec/error-codes.json -->
+    <string name="error_archive_unreadable">The file is damaged or isn\'t a zip file. Try downloading it again.</string>
+    <string name="error_archive_unsupported">The zip uses something packs can\'t, such as a password or an unusual compression.</string>
+    <string name="error_compression_ratio_exceeded">The zip would unpack to a suspicious size, so it was blocked for safety.</string>
+    <string name="error_duplicate_entry">Two files in the zip have the same name.</string>
+    <string name="error_unsafe_path">A file in the zip points outside the pack, so it was blocked for safety.</string>
+    <string name="error_unsafe_entry">The zip contains a link or a special file. Packs hold only plain files.</string>
+    <string name="error_invalid_file_name">A file name uses characters packs can\'t use, or is too long.</string>
+    <string name="error_executable_file">The zip contains a program or script. Packs hold only sounds, pictures and text.</string>
+    <string name="error_unknown_file_type">The zip contains a kind of file packs can\'t hold.</string>
+    <string name="error_file_too_large">A file is larger than packs allow.</string>
+    <string name="error_too_many_files">The pack has too many files.</string>
+    <string name="error_unpacked_too_large">The pack is too large once unpacked.</string>
+    <string name="error_manifest_missing">There\'s no pack.json or bundle.json inside.</string>
+    <string name="error_manifest_ambiguous">The zip has both a pack.json and a bundle.json, so it can\'t be both.</string>
+    <string name="error_ignored_entry">Some system files, like .DS_Store, were skipped.</string>
+    <string name="error_large_pack">This is a large pack. It takes a lot of space on this phone.</string>
+    <string name="error_manifest_invalid_json">The pack\'s description file (pack.json) is damaged.</string>
+    <string name="error_format_version_unsupported">The pack was made for a newer version of Cucuto.</string>
+    <string name="error_schema_violation">The pack\'s description file (pack.json) has a missing or wrong value.</string>
+    <string name="error_duplicate_id">Two characters or packs have the same ID.</string>
+    <string name="error_file_missing">A sound or picture the pack lists is missing.</string>
+    <string name="error_file_type_mismatch">A file is used for the wrong thing, such as a picture where a sound should be.</string>
+    <string name="error_bundle_pack_missing">A pack the bundle lists is missing.</string>
+    <string name="error_bundle_layout_invalid">The bundle\'s folders are arranged wrongly.</string>
+    <string name="error_haptic_invalid">A vibration pattern in the pack is broken.</string>
+    <string name="error_when_invalid">A ringtone\'s time or season rule is broken.</string>
+    <string name="error_loop_points_invalid">A ringtone\'s loop points are wrong.</string>
+    <string name="error_license_not_spdx">The license isn\'t a standard license name, so it\'s shown as written.</string>
+    <string name="error_unreferenced_file">Some files aren\'t used by any character and were left out.</string>
+    <string name="error_media_undecodable">A sound or picture is damaged or can\'t be played on this phone.</string>
+    <string name="error_clip_duration_out_of_range">A notification sound is too short or too long. It must last 0.2 to 30 seconds.</string>
+    <string name="error_ringtone_duration_out_of_range">A ringtone is too short or too long. It must last 5 seconds to 6 minutes.</string>
+    <string name="error_image_too_large">A picture is too big. Pictures can be at most 512 pixels on each side.</string>
+    <string name="error_svg_unsafe">A picture (SVG) contains scripts or outside links, so it was blocked for safety.</string>
+    <string name="error_download_size_mismatch">The download is incomplete or changed. Try again.</string>
+    <string name="error_download_hash_mismatch">The download doesn\'t match what its source promised. Try again.</string>
+    <string name="error_backup_decryption_failed">The backup can\'t be opened. Check the password.</string>
+    <string name="error_pack_downgrade">A newer version of this pack is installed.</string>
+    <string name="error_pack_same_version">This version of the pack is already installed.</string>
 </resources>

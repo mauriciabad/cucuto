@@ -21,7 +21,7 @@ is JVM-only and its 3.x line depends on Jackson 3, which is heavy for an Android
   audio durations and image sizes, the SVG safety check, SPDX expressions, SemVer, manifest models, and the staged
   `PackValidator` / `DocumentValidator`.
 - **`commonMain` uses no JVM APIs.** Platform work sits behind small interfaces: `PackSource` (files of a folder,
-  archive or memory), `RandomAccessInput` (archive bytes) and `RawInflater` (DEFLATE). `jvmMain` provides
+  archive or memory), `RandomAccessInput` (archive bytes) and `RawInflater` (DEFLATE, optionally streaming, #84). `jvmMain` provides
   `FolderPackSource`, `FileInput` and a `java.util.zip.Inflater` adapter, which also work on Android.
 - **Schemas are embedded at build time.** A Gradle task turns `spec/*.schema.json` and `spec/error-codes.json` into
   Kotlin string constants, so `spec/` stays the single source and common code needs no resources.
