@@ -74,8 +74,8 @@ no longer has.
 
 ## Consequences
 
-- The basic loop works end to end once a pack is installed. The import UI is the Packs screen (#27); until it
-  lands, debug builds can install the generated test voice from Diagnostics.
+- The basic loop works end to end once a pack is imported on the Packs screen (#27, ADR 0016), which Home and the
+  picker link to when no pack is installed.
 - `Chat` is a read model. The contact detail (#26) and per-sender group policy (#20) can reuse `ChatDirectory`.
 - Shared elements need a unique key per entry. A chat shown both in the strip and in the list shares only its strip
   avatar.
