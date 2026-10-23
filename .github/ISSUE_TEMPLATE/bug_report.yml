@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. cucuto needs **Android 17, root and LSPosed (libxposed API 102)**; please check those first.
+        Thanks for reporting. Cucuto needs **Android 17, root and LSPosed (libxposed API 102)**; please check those first.
         Never attach copyrighted audio or images. If the bug only happens with one pack, describe the pack instead of uploading it.
         Security problems go through [private vulnerability reporting](https://github.com/mauriciabad/cucuto/security/advisories/new), not here.
   - type: dropdown
@@ -38,7 +38,7 @@ body:
   - type: input
     id: app-version
     attributes:
-      label: cucuto version
+      label: Cucuto version
       description: Settings → About in the app (or the APK file name). For the packer, `packer --version`.
       placeholder: 0.1.0 (12)
     validations:

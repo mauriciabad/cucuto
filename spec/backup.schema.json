@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cucuto.mauri.app/spec/v1/backup.schema.json",
   "title": "Cucuto backup (backup.json)",
-  "description": "Root manifest of a .cucuto-backup zip. An encrypted backup is a zip holding envelope.json ($defs/envelope) and payload.bin, the AES-256-GCM encrypted bytes of the plain backup zip. Human spec: docs/pack-format.md#backups.",
+  "description": "Root manifest of a backup zip (named cucuto-backup-YYYY-MM-DD.zip; readers detect it by this file at the root, not by the name). An encrypted backup is a zip holding envelope.json ($defs/envelope) and payload.bin, the AES-256-GCM encrypted bytes of the plain backup zip. Human spec: docs/pack-format.md#backups.",
   "type": "object",
   "required": ["formatVersion", "createdAt", "app", "contacts", "packs", "repositories", "settings"],
   "properties": {
@@ -87,7 +87,7 @@
         "type": { "description": "What the user imported: a pack, or a bundle whose selected packs are listed in 'packs'.", "enum": ["pack", "bundle"] },
         "version": { "$ref": "common.schema.json#/$defs/version" },
         "name": { "$ref": "common.schema.json#/$defs/name" },
-        "sha256": { "description": "SHA-256 of the .soundpack file that was imported.", "$ref": "common.schema.json#/$defs/sha256" },
+        "sha256": { "description": "SHA-256 of the pack or bundle zip that was imported.", "$ref": "common.schema.json#/$defs/sha256" },
         "size": { "type": "integer", "minimum": 22 },
         "packs": {
           "description": "For bundles: IDs of the packs the user installed.",
@@ -128,7 +128,7 @@
             }
           ]
         },
-        "included": { "description": "Path of the .soundpack inside a full backup, for example packs/<id>-<version>.soundpack.", "$ref": "common.schema.json#/$defs/path" }
+        "included": { "description": "Path of the .soundpack.zip inside a full backup, for example packs/<id>-<version>.soundpack.zip.", "$ref": "common.schema.json#/$defs/path" }
       },
       "patternProperties": { "^x-": true },
       "additionalProperties": false

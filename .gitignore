@@ -7,8 +7,12 @@
 
 # Private content never leaves the machine
 private/
+# Packs and bundles (<name>.soundpack.zip) and backups (cucuto-backup-YYYY-MM-DD.zip), see ADR 0007.
+# Only the golden fixtures in spec/fixtures/ are committed.
+*.soundpack.zip
 *.soundpack
-!spec/fixtures/**/*.soundpack
+!spec/fixtures/**/*.soundpack.zip
+cucuto-backup-*.zip
 *.cucuto-backup
 
 # Build output

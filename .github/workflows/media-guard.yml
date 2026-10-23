@@ -16,9 +16,9 @@ jobs:
       - uses: actions/checkout@v7
       - name: Check media paths
         run: |
-          # Audio and image files may only live in these paths. Copyrighted content never enters the repo.
+          # Audio, image and zip files (packs are <name>.soundpack.zip, backups cucuto-backup-*.zip) may only live in these paths. Copyrighted content never enters the repo.
           allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
-          ext='\.(ogg|opus|oga|mp3|m4a|aac|flac|wav|mid|midi|png|jpe?g|webp|gif|avif|jxl|svg|bmp|heic|heif|webm|mp4|mov|soundpack)$'
+          ext='\.(ogg|opus|oga|mp3|m4a|aac|flac|wav|mid|midi|png|jpe?g|webp|gif|avif|jxl|svg|bmp|heic|heif|webm|mp4|mov|soundpack|zip)$'
           bad=$(git ls-files | grep -iE "$ext" | grep -vE "$allow" || true)
           if [ -n "$bad" ]; then
             echo "::error::Media files outside the allowlist (see CLAUDE.md):"

@@ -2,7 +2,7 @@
   "name": "cucuto-brand-tools",
   "private": true,
   "type": "module",
-  "description": "Generates the cucuto color tokens (Material Color Utilities), logos, icons, motion demo, UI sounds and previews.",
+  "description": "Generates the Cucuto color tokens (Material Color Utilities), logos, icons, motion demo, UI sounds and previews.",
   "license": "GPL-3.0-or-later",
   "engines": {
     "node": ">=22.15"

@@ -1,4 +1,4 @@
-// Generates the cucuto color tokens with the official Material Color Utilities.
+// Generates the Cucuto color tokens with the official Material Color Utilities.
 //   cd brand/tools && pnpm install && pnpm tokens
 // Outputs brand/tokens/colors.json, Color.kt and colors.css. Never edit those by hand: change this file and rerun.
 import { writeFileSync } from 'node:fs';
@@ -86,7 +86,7 @@ const tok = (hex) => ({ $type: 'color', $value: hex });
 const mapTokens = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, tok(v)]));
 const json = {
   $description: generatedNote,
-  seed: { ...tok(SEED), $description: 'cucuto brand seed, "cuckoo tangerine"' },
+  seed: { ...tok(SEED), $description: 'Cucuto brand seed, "cuckoo tangerine"' },
   meta: { $type: 'string', variant: { $value: VARIANT_NAME }, specVersion: { $value: SPEC }, platform: { $value: PLATFORM } },
   palette: Object.fromEntries(Object.entries(palettes).map(([k, v]) => [k, mapTokens(v)])),
   scheme: Object.fromEntries(Object.entries(schemes).map(([k, v]) => [k, mapTokens(v)])),
@@ -99,7 +99,7 @@ writeFileSync(`${outDir}colors.json`, `${JSON.stringify(json, null, 2)}\n`);
 // Color.kt: Compose fallbacks for when dynamic color is off.
 const kHex = (hex) => `Color(0xFF${hex.slice(1)})`;
 let kt = `// ${generatedNote}\npackage app.mauri.cucuto.ui.theme\n\nimport androidx.compose.material3.ColorScheme\nimport androidx.compose.material3.darkColorScheme\nimport androidx.compose.material3.lightColorScheme\nimport androidx.compose.ui.graphics.Color\n\n`;
-kt += `/** cucuto brand seed, "cuckoo tangerine". Feed it to a dynamic scheme when a seed is needed. */\nval CucutoSeed = ${kHex(SEED)}\n\n`;
+kt += `/** Cucuto brand seed, "cuckoo tangerine". Feed it to a dynamic scheme when a seed is needed. */\nval CucutoSeed = ${kHex(SEED)}\n\n`;
 kt += `/** Material 3 tonal palettes generated from [CucutoSeed]. */\nobject CucutoPalette {\n`;
 for (const [p, tones] of Object.entries(palettes)) {
   for (const [t, hex] of Object.entries(tones)) kt += `    val ${pascal(p)}${t} = ${kHex(hex)}\n`;

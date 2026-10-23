@@ -1,4 +1,4 @@
-# cucuto — agent guide
+# Cucuto — agent guide
 
 Cucuto gives each WhatsApp contact a voice: an LSPosed module in `system_server` swaps the
 notification sound and vibration per contact, using clips from user-imported sound packs. The full spec is
@@ -19,7 +19,7 @@ notification sound and vibration per contact, using clips from user-imported sou
   m3.material.io (Material 3 Expressive), libxposed API docs, svelte.dev. Prefer documented APIs and best practices
   over memory; cite the doc in the PR when a decision depends on it.
 - **Never commit copyrighted media.** Only CC0 demo content in `packs/`, brand assets in `brand/`, app resources and
-  website assets. CI (`.github/workflows/media-guard.yml`) enforces an allowlist. No `.soundpack` files outside build output.
+  website assets. CI (`.github/workflows/media-guard.yml`) enforces an allowlist. No pack (`*.soundpack.zip`) or backup (`cucuto-backup-*.zip`) files outside build output and `spec/fixtures/`.
 - **Never hook the WhatsApp process.** The module is scoped to System Framework only (`system` in
   `META-INF/xposed/scope.list`, which is `system_server` for modern modules; `android` would be wrong, see ADR 0002). Never throw inside
   `system_server`; every hook catches everything and degrades to WhatsApp's default tone.

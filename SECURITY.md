@@ -9,7 +9,7 @@ Advisories → Report a vulnerability). Do not open a public issue, pull request
 Include what is affected (app, Xposed module, website, packer, pack format), the version, steps to reproduce and, if you
 can, a minimal proof of concept. Never attach copyrighted media; build a test pack from your own or CC0 files.
 
-cucuto is a volunteer project. We aim to acknowledge reports within a week, keep you updated in the advisory, and credit
+Cucuto is a volunteer project. We aim to acknowledge reports within a week, keep you updated in the advisory, and credit
 you when the fix is released unless you prefer otherwise.
 
 ## Supported versions
@@ -23,7 +23,7 @@ Some things to keep in mind when looking for problems:
 
 - **The module runs inside `system_server`.** A crash there can restart the whole system, so any input that reaches the
   hook and can make it throw, hang or allocate without bounds is a security bug, not just a crash.
-- **Packs are untrusted input.** A `.soundpack` file (or plain `.zip`) may come from anyone. The importer must reject zip
+- **Packs are untrusted input.** A pack file (`*.soundpack.zip`, or any `.zip`) may come from anyone. The importer must reject zip
   slip (absolute paths, `..` segments), zip bombs, oversized or too many files, unknown and executable file types,
   duplicate pack IDs in bundles, and malformed manifests. SVGs must be sanitized (no scripts, no external references).
   Media decoders (audio, images, JPEG XL) are fed attacker-controlled bytes.

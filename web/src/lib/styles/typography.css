@@ -1,10 +1,10 @@
 /*
- * cucuto type scale for the website: Google Sans Flex (SIL OFL 1.1), self-hosted so the site makes no
+ * Cucuto type scale for the website: Google Sans Flex (SIL OFL 1.1), self-hosted so the site makes no
  * third-party requests (the privacy page promises none):
  *   pnpm add @fontsource-variable/google-sans-flex @fontsource-variable/google-sans-code
  *   import '@fontsource-variable/google-sans-flex/full.css'; // all axes, including ROND
  *   import '@fontsource-variable/google-sans-code';
- * Sizes and line heights follow the Material 3 baseline scale (rem = 16 px); weights and roundness are cucuto's.
+ * Sizes and line heights follow the Material 3 baseline scale (rem = 16 px); weights and roundness are Cucuto's.
  */
 
 :root {

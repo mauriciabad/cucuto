@@ -6,7 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-/** cucuto brand seed, "cuckoo tangerine". Feed it to a dynamic scheme when a seed is needed. */
+/** Cucuto brand seed, "cuckoo tangerine". Feed it to a dynamic scheme when a seed is needed. */
 val CucutoSeed = Color(0xFFFF6B2C)
 
 /** Material 3 tonal palettes generated from [CucutoSeed]. */

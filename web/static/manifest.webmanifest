@@ -24,7 +24,7 @@
 	"file_handlers": [
 		{
 			"action": "/open/",
-			"accept": { "application/vnd.cucuto.soundpack+zip": [".soundpack"] }
+			"accept": { "application/zip": [".zip"] }
 		}
 	]
 }

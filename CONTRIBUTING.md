@@ -1,4 +1,4 @@
-# Contributing to cucuto
+# Contributing to Cucuto
 
 Thanks for helping give each contact a voice. This guide covers how the repository is organized, how to build each part
 and the rules every change follows. The [project brief](docs/project-brief.md) is the source of truth for scope and
@@ -9,7 +9,7 @@ By contributing you agree that your work is licensed under [GPL-3.0-or-later](LI
 
 ## Repository layout
 
-cucuto is one monorepo:
+Cucuto is one monorepo:
 
 | Path | What | Stack |
 | --- | --- | --- |
@@ -37,14 +37,14 @@ Some folders appear as the milestones land; check the brief for the plan.
 
 ## Packs and media
 
-cucuto ships no content. The public repository never contains copyrighted media.
+Cucuto ships no content. The public repository never contains copyrighted media.
 
-- Audio and image files may only live in the paths allowed by [`media-guard`](.github/workflows/media-guard.yml):
+- Audio, image and zip files may only live in the paths allowed by [`media-guard`](.github/workflows/media-guard.yml):
   `packs/`, `brand/`, `spec/fixtures/`, Android `res/` and `assets/`, `web/static/`, `web/src/lib/assets/`, `docs/images/`
   and the packer's test resources. CI fails otherwise.
 - Demo packs in `packs/` must be **CC0-1.0**, and you must be able to show where every file came from (record the source
   in the pack's README or manifest). If in doubt, leave it out.
-- Never commit built `.soundpack` files (only golden fixtures in `spec/fixtures/`) or `.cucuto-backup` files. Keep
+- Never commit built `.soundpack.zip` files (only golden fixtures in `spec/fixtures/`) or backups (`cucuto-backup-*.zip`). Keep
   private experiments in `private/`, which is git-ignored.
 - Screenshots, videos and website previews use demo packs only.
 - Changes to the pack, bundle, repository or backup format start with a
@@ -68,7 +68,7 @@ cd tools/packer && ./gradlew build
 
 On macOS with Homebrew: `export JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home`.
 
-Running the module needs a rooted Android 17 device with LSPosed (libxposed API 102): enable cucuto in LSPosed with the
+Running the module needs a rooted Android 17 device with LSPosed (libxposed API 102): enable Cucuto in LSPosed with the
 System Framework scope and reboot. Work that can only be verified on a device is labeled `needs-device`.
 
 ## Workflow

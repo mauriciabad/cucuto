@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cucuto.mauri.app/spec/v1/bundle.schema.json",
   "title": "Cucuto bundle manifest (bundle.json)",
-  "description": "Manifest at the root of a .soundpack that holds several packs, each in its own folder with its own pack.json. Human spec: docs/pack-format.md.",
+  "description": "Manifest at the root of a .soundpack.zip that holds several packs, each in its own folder with its own pack.json. Human spec: docs/pack-format.md.",
   "type": "object",
   "required": ["formatVersion", "type", "id", "name", "version", "packs"],
   "properties": {

@@ -48,7 +48,7 @@ fun main(args: Array<String>) = Packer().subcommands(Build(), Validate(), Bundle
 
 class Packer : CliktCommand(name = "packer") {
     override fun help(context: Context) =
-        "Builds, validates and indexes Cucuto sound packs (.soundpack). Pack format: docs/pack-format.md."
+        "Builds, validates and indexes Cucuto sound packs (.soundpack.zip). Pack format: docs/pack-format.md."
 
     override fun run() = Unit
 }
@@ -88,14 +88,26 @@ private fun CliktCommand.validateOrFail(label: String, pack: AssembledPack): Pac
     return validation.content!!
 }
 
-private fun outputFile(output: Path?, id: String, version: String): Path {
-    val name = "$id-$version.soundpack"
+/**
+ * Where `build` and `bundle` write: `<id>-<version>.soundpack.zip` in the current folder, in [output] when it is a
+ * folder (or has no `.zip` name), or [output] itself when it ends in `.zip`. Archives always end in `.zip`
+ * (ADR 0007); a bare `.soundpack` name is refused.
+ */
+private fun CliktCommand.outputFile(output: Path?, id: String, version: String): Path {
+    val name = "$id-$version$PACK_SUFFIX"
     return when {
         output == null -> Path(name)
-        output.isDirectory() || !(output.name.endsWith(".soundpack") || output.name.endsWith(".zip")) -> output.resolve(name)
-        else -> output
+        output.isDirectory() -> output.resolve(name)
+        output.name.endsWith(".zip", ignoreCase = true) -> output
+        output.name.endsWith(".soundpack", ignoreCase = true) -> {
+            echo("error: $output must end in .zip (for example ${output.name}.zip)", err = true); throw ProgramResult(2)
+        }
+        else -> output.resolve(name)
     }
 }
+
+/** File name suffix for packs and bundles (ADR 0007). Readers accept any `.zip` and detect the type from its contents. */
+const val PACK_SUFFIX = ".soundpack.zip"
 
 private fun CliktCommand.reportWritten(file: Path, pack: AssembledPack) {
     echo("Wrote $file (${pack.files.size} files, ${file.fileSize()} bytes, sha256 ${Indexer.sha256(file)})")
@@ -103,10 +115,10 @@ private fun CliktCommand.reportWritten(file: Path, pack: AssembledPack) {
 
 class Build : CliktCommand(name = "build") {
     override fun help(context: Context) =
-        "Builds a .soundpack from a folder with pack.yaml (or pack.json). Validates the result and writes a reproducible zip."
+        "Builds a .soundpack.zip from a folder with pack.yaml (or pack.json). Validates the result and writes a reproducible zip."
 
     private val source by argument(help = "Folder with pack.yaml or pack.json, or a pack.yaml file").path(mustExist = true)
-    private val output by option("-o", "--output", help = "Output .soundpack file or folder (default: <id>-<version>.soundpack here)").path()
+    private val output by option("-o", "--output", help = "Output .soundpack.zip file or folder (default: <id>-<version>.soundpack.zip here)").path()
     private val processing by ProcessingOptions()
 
     override fun run() {
@@ -128,9 +140,9 @@ class Build : CliktCommand(name = "build") {
 
 class Bundle : CliktCommand(name = "bundle") {
     override fun help(context: Context) =
-        "Combines packs (source folders or .soundpack files) into one bundle .soundpack. Each pack goes to packs/<pack id>/."
+        "Combines packs (source folders or .soundpack.zip files) into one bundle .soundpack.zip. Each pack goes to packs/<pack id>/."
 
-    private val inputs by argument(help = "Pack folders (pack.yaml or pack.json) or .soundpack files").path(mustExist = true).multiple(required = true)
+    private val inputs by argument(help = "Pack folders (pack.yaml or pack.json) or pack archives (.zip)").path(mustExist = true).multiple(required = true)
     private val id by option("--id", help = "Bundle ID, reverse-domain (for example io.github.me.all-packs)").required()
     private val bundleName by option("--name", help = "Bundle name").required()
     private val version by option("--version", help = "Bundle version (semver)").required()
@@ -140,7 +152,7 @@ class Bundle : CliktCommand(name = "bundle") {
     private val homepage by option("--homepage")
     private val tags by option("--tag", help = "Tag (repeatable)").multiple()
     private val cover by option("--cover", help = "Cover image").path(mustExist = true)
-    private val output by option("-o", "--output", help = "Output .soundpack file or folder").path()
+    private val output by option("-o", "--output", help = "Output .soundpack.zip file or folder").path()
     private val processing by ProcessingOptions()
 
     override fun run() {
@@ -182,7 +194,7 @@ class Bundle : CliktCommand(name = "bundle") {
 
 class Validate : CliktCommand(name = "validate") {
     override fun help(context: Context) =
-        "Validates .soundpack files, unpacked pack or bundle folders, pack.yaml sources, repository indexes and backups. " +
+        "Validates pack and bundle archives (any .zip), unpacked pack or bundle folders, pack.yaml sources, repository indexes and backups. " +
             "Prints stable error codes (spec/error-codes.json). Exit code 1 if anything is invalid."
 
     private val paths by argument(help = "Files or folders").path(mustExist = true).multiple(required = true)
@@ -265,12 +277,12 @@ class Index : CliktCommand(name = "index") {
         "Writes a pack repository folder: repository.json, previews/ (covers, sprites, sample clips) and packs/ " +
             "(unless --download-base-url points elsewhere), with sizes and SHA-256 hashes."
 
-    private val inputs by argument(help = ".soundpack files, or folders containing them").path(mustExist = true).multiple(required = true)
+    private val inputs by argument(help = "Pack and bundle archives (.zip), or folders containing them").path(mustExist = true).multiple(required = true)
     private val output by option("-o", "--output", help = "Repository folder to write").path().required()
     private val repoName by option("--name", help = "Repository name").required()
     private val description by option("--description")
     private val homepage by option("--homepage", help = "https URL")
-    private val downloadBaseUrl by option("--download-base-url", help = "Absolute URL where the .soundpack files are hosted (for example a GitHub release)")
+    private val downloadBaseUrl by option("--download-base-url", help = "Absolute URL where the .soundpack.zip files are hosted (for example a GitHub release)")
     private val generatedAt by option("--generated-at", help = "RFC 3339 UTC timestamp to record (default: SOURCE_DATE_EPOCH if set, else omitted)")
 
     override fun run() {

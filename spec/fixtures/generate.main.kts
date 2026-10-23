@@ -359,10 +359,10 @@ folder(
     text("__MACOSX/._pack.json", "resource fork")
 }
 
-archive("valid/minimal-pack.soundpack", "The minimal pack as a zip archive, written the way packer writes archives.", bytes = zip(minimalEntries()))
+archive("valid/minimal-pack.soundpack.zip", "The minimal pack as a zip archive, written the way packer writes archives.", bytes = zip(minimalEntries()))
 
 archive(
-    "valid/archive-with-directories.soundpack",
+    "valid/archive-with-directories.soundpack.zip",
     "Zip with explicit directory entries and a stored manifest (as made by common zip tools).",
     bytes = zip(
         listOf(
@@ -396,7 +396,7 @@ document("valid/repository.json", "repository", "Repository index with a pack an
       ],
       "sizeUnpacked": 2048,
       "download": {
-        "url": "packs/app.mauri.fixtures.minimal-1.0.0.soundpack",
+        "url": "packs/app.mauri.fixtures.minimal-1.0.0.soundpack.zip",
         "size": 1834,
         "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
       }
@@ -411,7 +411,7 @@ document("valid/repository.json", "repository", "Repository index with a pack an
         { "id": "app.mauri.fixtures.bundle.second", "name": "Bundle second", "version": "1.0.0" }
       ],
       "download": {
-        "url": "https://github.com/mauriciabad/cucuto/releases/download/packs-v1/app.mauri.fixtures.bundle-1.0.0.soundpack",
+        "url": "https://github.com/mauriciabad/cucuto/releases/download/packs-v1/app.mauri.fixtures.bundle-1.0.0.soundpack.zip",
         "size": 4096,
         "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
       }
@@ -432,7 +432,7 @@ val backupJson = """
   ],
   "packs": [
     { "id": "app.mauri.demo.chiptune-critters", "type": "pack", "version": "1.0.0", "sha256": "2222222222222222222222222222222222222222222222222222222222222222", "size": 40000, "source": { "type": "repository", "repositoryUrl": "https://cucuto.mauri.app/repo/repository.json" } },
-    { "id": "com.example.private.songs", "type": "bundle", "version": "3.0.0", "packs": ["com.example.private.songs.day"], "sha256": "3333333333333333333333333333333333333333333333333333333333333333", "source": { "type": "local", "fileName": "songs.soundpack" } }
+    { "id": "com.example.private.songs", "type": "bundle", "version": "3.0.0", "packs": ["com.example.private.songs.day"], "sha256": "3333333333333333333333333333333333333333333333333333333333333333", "source": { "type": "local", "fileName": "songs.soundpack.zip" } }
   ],
   "contacts": [
     {
@@ -470,33 +470,33 @@ document("valid/envelope.json", "backup-envelope", "Encrypted backup envelope wi
 
 // ================================================================== invalid: archive
 
-archive("invalid/archive-not-zip.soundpack", "Plain text renamed to .soundpack.", listOf("ARCHIVE_UNREADABLE"), bytes = "This is not a zip archive.\n".toByteArray())
-archive("invalid/archive-truncated.soundpack", "A valid archive cut in half (no central directory).", listOf("ARCHIVE_UNREADABLE"), bytes = zip(minimalEntries()).let { it.copyOf(it.size / 2) })
+archive("invalid/archive-not-zip.soundpack.zip", "Plain text renamed to .soundpack.zip.", listOf("ARCHIVE_UNREADABLE"), bytes = "This is not a zip archive.\n".toByteArray())
+archive("invalid/archive-truncated.soundpack.zip", "A valid archive cut in half (no central directory).", listOf("ARCHIVE_UNREADABLE"), bytes = zip(minimalEntries()).let { it.copyOf(it.size / 2) })
 archive(
-    "invalid/archive-encrypted.soundpack", "An entry with the encryption flag set.", listOf("ARCHIVE_UNSUPPORTED"),
+    "invalid/archive-encrypted.soundpack.zip", "An entry with the encryption flag set.", listOf("ARCHIVE_UNSUPPORTED"),
     bytes = zip(minimalEntries().map { if (it.name.endsWith(".ogg")) ZipEntrySpec(it.name, it.data, flags = 0x0801) else it }),
 )
 archive(
-    "invalid/archive-bzip2.soundpack", "An entry declaring bzip2 compression (method 12).", listOf("ARCHIVE_UNSUPPORTED"),
+    "invalid/archive-bzip2.soundpack.zip", "An entry declaring bzip2 compression (method 12).", listOf("ARCHIVE_UNSUPPORTED"),
     bytes = zip(minimalEntries().map { if (it.name.endsWith(".png")) ZipEntrySpec(it.name, it.data, method = 12) else it }),
 )
 archive(
-    "invalid/archive-zip-bomb.soundpack", "8 MiB of zeros compressed about 1000:1 (decompression ratio cap).", listOf("COMPRESSION_RATIO_EXCEEDED"),
+    "invalid/archive-zip-bomb.soundpack.zip", "8 MiB of zeros compressed about 1000:1 (decompression ratio cap).", listOf("COMPRESSION_RATIO_EXCEEDED"),
     bytes = zip(minimalEntries() + ZipEntrySpec("README.txt", ByteArray(8 * 1024 * 1024), deflate = true)),
 )
 archive(
-    "invalid/archive-crc-mismatch.soundpack", "pack.json with a wrong CRC-32.", listOf("ARCHIVE_UNREADABLE"),
+    "invalid/archive-crc-mismatch.soundpack.zip", "pack.json with a wrong CRC-32.", listOf("ARCHIVE_UNREADABLE"),
     bytes = zip(minimalEntries().map { if (it.name == "pack.json") ZipEntrySpec(it.name, it.data, deflate = true, crcOverride = 0x12345678) else it }),
 )
-archive("invalid/zip-slip.soundpack", "An entry escaping the target folder with '..'.", listOf("UNSAFE_PATH"), bytes = zip(minimalEntries() + ZipEntrySpec("../evil.txt", "owned\n".toByteArray())))
-archive("invalid/zip-absolute-path.soundpack", "An entry with an absolute path.", listOf("UNSAFE_PATH"), bytes = zip(minimalEntries() + ZipEntrySpec("/tmp/evil.txt", "owned\n".toByteArray())))
-archive("invalid/zip-backslash.soundpack", "An entry using Windows separators to escape.", listOf("UNSAFE_PATH"), bytes = zip(minimalEntries() + ZipEntrySpec("..\\evil.txt", "owned\n".toByteArray())))
+archive("invalid/zip-slip.soundpack.zip", "An entry escaping the target folder with '..'.", listOf("UNSAFE_PATH"), bytes = zip(minimalEntries() + ZipEntrySpec("../evil.txt", "owned\n".toByteArray())))
+archive("invalid/zip-absolute-path.soundpack.zip", "An entry with an absolute path.", listOf("UNSAFE_PATH"), bytes = zip(minimalEntries() + ZipEntrySpec("/tmp/evil.txt", "owned\n".toByteArray())))
+archive("invalid/zip-backslash.soundpack.zip", "An entry using Windows separators to escape.", listOf("UNSAFE_PATH"), bytes = zip(minimalEntries() + ZipEntrySpec("..\\evil.txt", "owned\n".toByteArray())))
 archive(
-    "invalid/zip-symlink.soundpack", "A Unix symbolic link entry pointing outside the pack.", listOf("UNSAFE_ENTRY"),
+    "invalid/zip-symlink.soundpack.zip", "A Unix symbolic link entry pointing outside the pack.", listOf("UNSAFE_ENTRY"),
     bytes = zip(minimalEntries() + ZipEntrySpec("characters/beep/clips/link.ogg", "/etc/passwd".toByteArray(), unixMode = 0xA1FF)),
 )
 archive(
-    "invalid/zip-duplicate-entry.soundpack", "Two entries whose paths differ only in case.", listOf("DUPLICATE_ENTRY"),
+    "invalid/zip-duplicate-entry.soundpack.zip", "Two entries whose paths differ only in case.", listOf("DUPLICATE_ENTRY"),
     bytes = zip(minimalEntries() + ZipEntrySpec("characters/beep/clips/BEEP.ogg", clipOgg.readBytes())),
 )
 
@@ -780,10 +780,10 @@ val repoEntry = """
       "type": "pack",
       "name": "Minimal pack",
       "version": "1.0.0",
-      "download": { "url": "packs/minimal.soundpack", "size": 1834, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
+      "download": { "url": "packs/minimal.soundpack.zip", "size": 1834, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
     }"""
 
-document("invalid/repository-http-url.json", "repository", "A download over plain http.", repo(repoEntry.replace("packs/minimal.soundpack", "http://example.com/minimal.soundpack")), listOf("SCHEMA_VIOLATION"))
+document("invalid/repository-http-url.json", "repository", "A download over plain http.", repo(repoEntry.replace("packs/minimal.soundpack.zip", "http://example.com/minimal.soundpack.zip")), listOf("SCHEMA_VIOLATION"))
 document("invalid/repository-duplicate-id.json", "repository", "The same pack ID listed twice.", repo("$repoEntry,$repoEntry"), listOf("DUPLICATE_ID"))
 document(
     "invalid/repository-bundle-without-packs.json", "repository", "A bundle entry without its packs list.",

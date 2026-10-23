@@ -1,6 +1,6 @@
 # M0 device spike — report
 
-Milestone M0 is the go/no-go gate for cucuto's root-first design (issues #9–#12).
+Milestone M0 is the go/no-go gate for Cucuto's root-first design (issues #9–#12).
 
 **Status: provisional GO.** Every question M0 can answer without executing code on the owner's
 phone is answered, and all of them came back favourable: the hook points exist on this exact
@@ -171,7 +171,7 @@ Consequences for cucuto:
 - **`setOnlyAlertOnce` re-posts** are handled at 64.
 - **Group child vs summary** is decided at 1024 via `Notification.suppressAlertingDueToGrouping()`,
   which implements the `GROUP_ALERT_*` contract. **Whichever record survives to `playSound` is the
-  one that alerts**, so cucuto reads the sender off exactly that record and never has to guess.
+  one that alerts**, so Cucuto reads the sender off exactly that record and never has to guess.
   Whether WhatsApp's groups alert on the child or the summary in practice is the one thing here
   that still needs observing on-device.
 
@@ -188,7 +188,7 @@ argument is safe — but anything stateful we attach to a record must survive th
 
 WhatsApp posts conversation notifications with a shortcut ID set to the chat JID, and
 `NotificationRecord.isConversation()` on this build requires MessagingStyle plus a shortcut for
-any app targeting SDK 30+ — which WhatsApp does. So for every notification cucuto cares about, a
+any app targeting SDK 30+ — which WhatsApp does. So for every notification Cucuto cares about, a
 shortcut ID is present. It is readable two ways, and the spike logs both so they can be compared:
 
 - `record.getSbn().getNotification().getShortcutId()`
@@ -301,11 +301,11 @@ reflection, which the spike does. Recommendation in §8.
 
 Structurally disjoint, and now enforced rather than merely intended:
 
-- cucuto's `META-INF/xposed/scope.list` contains only `android`, and `module.prop` sets
+- Cucuto's `META-INF/xposed/scope.list` contains only `android`, and `module.prop` sets
   `staticScope=true`, which tells the framework the scope is exhaustive. The LSPosed manager
   should therefore not even *offer* WhatsApp as a target. (If it does, that is a finding — the
   owner-action checklist asks for it to be reported.)
-- WaEnhancer hooks `com.whatsapp`; cucuto hooks `android`. Different processes, no shared hook
+- WaEnhancer hooks `com.whatsapp`; Cucuto hooks `android`. Different processes, no shared hook
   sites, no ordering interaction.
 - Both run on the same framework at API 102, and WaEnhancer already proves that level works on
   this phone.

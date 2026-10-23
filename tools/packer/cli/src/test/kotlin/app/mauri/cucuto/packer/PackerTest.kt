@@ -31,8 +31,8 @@ class PackerTest {
     @Test
     fun `demo packs build, validate and are reproducible`(@TempDir tmp: Path) {
         for (src in demoPacks) {
-            val a = tmp.resolve("a/${src.fileName}.soundpack")
-            val b = tmp.resolve("b/${src.fileName}.soundpack")
+            val a = tmp.resolve("a/${src.fileName}.soundpack.zip")
+            val b = tmp.resolve("b/${src.fileName}.soundpack.zip")
             assertEquals(0, packer("build", src.toString(), "-o", a.toString()).statusCode)
             assertEquals(0, packer("build", src.toString(), "-o", b.toString()).statusCode)
             assertArrayEquals(a.readBytes(), b.readBytes(), "$src is not reproducible")
@@ -70,7 +70,9 @@ class PackerTest {
     fun `bundle and index`(@TempDir tmp: Path) {
         val packs = tmp.resolve("packs")
         for (src in demoPacks) assertEquals(0, packer("build", src.toString(), "-o", packs.toString()).statusCode)
-        val bundle = packs.resolve("app.mauri.demo.all-1.0.0.soundpack")
+        // Packs and bundles are always written as <id>-<version>.soundpack.zip (ADR 0007).
+        assertTrue(packs.resolve("app.mauri.demo.chiptune-critters-1.0.0.soundpack.zip").toFile().isFile)
+        val bundle = packs.resolve("app.mauri.demo.all-1.0.0.soundpack.zip")
         val result = packer(
             "bundle", "--id", "app.mauri.demo.all", "--name", "Cucuto demo packs", "--version", "1.0.0",
             "--license", "CC0-1.0", "--cover", demoPacks[0].resolve("cover.svg").toString(), "-o", bundle.toString(),
@@ -99,13 +101,24 @@ class PackerTest {
     @Test
     fun `validate reports codes and exit status`() {
         val fixtures = repo.resolve("spec/fixtures")
-        val ok = packer("validate", fixtures.resolve("valid/minimal-pack.soundpack").toString())
+        val ok = packer("validate", fixtures.resolve("valid/minimal-pack.soundpack.zip").toString())
         assertEquals(0, ok.statusCode, ok.output)
-        val bad = packer("validate", "--json", fixtures.resolve("invalid/zip-slip.soundpack").toString())
+        val bad = packer("validate", "--json", fixtures.resolve("invalid/zip-slip.soundpack.zip").toString())
         assertEquals(1, bad.statusCode)
         assertTrue("UNSAFE_PATH" in bad.output, bad.output)
         val warnings = packer("validate", "--strict", fixtures.resolve("valid/with-warnings").toString())
         assertEquals(1, warnings.statusCode)
+    }
+
+    @Test
+    fun `output names always end in zip`(@TempDir tmp: Path) {
+        val bare = packer("build", demoPacks[0].toString(), "-o", tmp.resolve("x.soundpack").toString())
+        assertEquals(2, bare.statusCode, bare.output)
+        assertTrue(tmp.toFile().listFiles()!!.isEmpty())
+        // Any .zip name is taken as is; the type is detected from the contents, not the name.
+        val plain = tmp.resolve("plain.zip")
+        assertEquals(0, packer("build", demoPacks[0].toString(), "-o", plain.toString()).statusCode)
+        assertEquals(0, packer("validate", plain.toString()).statusCode)
     }
 
     @Test

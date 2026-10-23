@@ -46,7 +46,7 @@
 					</p>
 					<a class="button small" href={pack.download.url} rel="external">
 						<Icon name="download" />
-						Download .soundpack
+						Download .soundpack.zip
 					</a>
 				</li>
 			{/each}

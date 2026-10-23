@@ -27,7 +27,7 @@ SCREENSHOTS=1 pnpm exec playwright test screenshots   # full-page screenshots in
   natively. Link with `resolve('install/')` from `$app/paths`.
 - **404.** `adapter-static` writes the SPA fallback to `404.html`, which GitHub Pages serves for unknown paths.
 - **PWA.** `static/manifest.webmanifest` plus `src/service-worker/index.ts`, which precaches the app shell and every
-  prerendered page. The manifest's `file_handlers` entry opens `.soundpack` files on `/open/`, a stub until the pack
+  prerendered page. The manifest's `file_handlers` entry opens `.zip` files (`application/zip`; packs are `<name>.soundpack.zip`) on `/open/`, a stub until the pack
   creator (#48).
 - **Motion.** `src/lib/styles/motion.css` turns the brand's spring tokens into CSS `linear()` easings. Everything
   respects `prefers-reduced-motion`.

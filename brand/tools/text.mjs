@@ -18,7 +18,7 @@ if (!existsSync(FONT_FILE)) {
 const base = fontkit.openSync(FONT_FILE);
 const cache = new Map();
 
-/** Google Sans Flex instance; defaults are the cucuto UI settings (fully round). */
+/** Google Sans Flex instance; defaults are the Cucuto UI settings (fully round). */
 function instance({ wght = 400, ROND = 100, opsz, wdth = 100, size }) {
   const o = opsz ?? Math.max(6, Math.min(144, size));
   const key = `${wght}/${ROND}/${o}/${wdth}`;

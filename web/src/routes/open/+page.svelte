@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Target of the web app manifest's `file_handlers` entry: when the site is installed as an app, opening a
-	// .soundpack file lands here. Previewing and editing packs arrives with the pack creator (#48).
+	// .zip file (packs are <name>.soundpack.zip; the type comes from the contents) lands here. Previewing and editing packs arrives with the pack creator (#48).
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import Seo from '#lib/components/Seo.svelte';
@@ -24,14 +24,14 @@
 	});
 </script>
 
-<Seo title="Open a pack" description="Open .soundpack files with the Cucuto web app." />
+<Seo title="Open a pack" description="Open .soundpack.zip files with the Cucuto web app." />
 
 <div class="prose">
 	<header class="page-header">
 		<h1 class="display-small emphasized">Open a pack</h1>
 		<p class="body-large">
-			Opening <code>.soundpack</code> files here comes with the pack creator. For now, import packs in
-			the Cucuto app on your phone.
+			Opening pack files (<code>.soundpack.zip</code>, or any pack <code>.zip</code>) here comes
+			with the pack creator. For now, import packs in the Cucuto app on your phone.
 		</p>
 	</header>
 
