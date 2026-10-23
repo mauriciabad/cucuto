@@ -1,5 +1,5 @@
 // Builds every logo, app icon and web icon from the hand-made geometry in geometry.mjs.
-//   cd brand/tools && pnpm install && pnpm build
+//   cd brand/tools && bun install && bun run build
 import { readFileSync } from 'node:fs';
 import { circle } from './geometry.mjs';
 import { subtract, pathData, transform, bounds } from './boolean.mjs';

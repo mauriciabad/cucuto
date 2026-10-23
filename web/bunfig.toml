@@ -1,0 +1,3 @@
+[run]
+# Run package.json scripts and their CLIs (vite, svelte-check, eslint, ...) on the Bun runtime, not Node.
+bun = true
