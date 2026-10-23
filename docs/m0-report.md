@@ -11,7 +11,7 @@ device, which is deliberately not done here.
 **Why the device phase is not done.** The owner is away and unreachable, and the device is their
 daily-driver phone. Loading a new hook into `system_server` risks a boot loop, and the person who
 could notice a bad state or physically recover the phone is by construction absent. The device
-work is therefore packaged as a short supervised session: see issue #13 and
+work is therefore packaged as a short supervised session: see issue #65 and
 `spikes/m0/run-on-device.main.kts`. Everything below marked **pending-device** is a prediction
 with its evidence, not a result — do not treat it as verified.
 
@@ -328,7 +328,7 @@ module enabled. That is the single most important thing to watch in the supervis
 3. **Resolve by name + arity, degrade to no-op**, and surface "hook not active" in the app's status
    screen as the brief plans.
 4. **Ship the recovery ladder with the module**, not just in an agent's head. It is in
-   `spikes/m0/run-on-device.main.kts recover` and reproduced in issue #13.
+   `spikes/m0/run-on-device.main.kts recover` and reproduced in issue #65.
 
 ### Correctness
 
@@ -385,7 +385,7 @@ output is reproduced in §1 and `docs/device.md`.
 
 ## 10. What the supervised session must confirm
 
-Tracked as issue #13 (`owner-action` + `needs-device`). In short:
+Tracked as issue #65 (`owner-action` + `needs-device`). In short:
 
 ```
 cd spikes/m0

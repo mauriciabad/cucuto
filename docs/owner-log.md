@@ -48,5 +48,5 @@ code that is never loaded, and a scripted supervised session for the owner to ru
 `dumpsys notification` was taken in any form.
 
 Resulting work: `spikes/m0/`, `docs/device.md`, `docs/m0-report.md` (verdict: provisional GO),
-PR referencing #9–#12, and issue #13 (`owner-action`, `needs-device`) with the device checklist.
+PR referencing #9–#12, and issue #65 (`owner-action`, `needs-device`) with the device checklist.
 The phone was not modified.
