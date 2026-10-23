@@ -60,3 +60,17 @@ Owner available: running the supervised M0 device session (#61 option 2, #65).
 > Cucuto is meant to be written with capital C in prose text
 
 Overrides the brief's "Write the name in lowercase": prose uses **Cucuto**; identifiers (repo, application ID, domain, file names, code) and the logo wordmark stay lowercase. Rule added to `CLAUDE.md`; prose sweep tracked in an issue.
+
+> System Framework is ticked and rebooted
+
+> i allow you all future commands on my phone with adb
+
+Added `Bash(adb *)` to `.claude/settings.local.json` (local, not committed).
+
+> do the interactions yourself with the phone
+
+Agent verifies playback via dumpsys and waits for naturally arriving WhatsApp messages (never sends from the owner's accounts).
+
+> you want me to ask a friend to message me? i dont understand what you want for me
+
+Clarified: nothing needed; ordinary incoming WhatsApp messages complete the M0 observation passively.
