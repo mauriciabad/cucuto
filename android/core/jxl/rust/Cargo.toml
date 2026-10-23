@@ -1,0 +1,31 @@
+[package]
+name = "cucuto-jxl"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+description = "JPEG XL decoding for the Cucuto Android app (:core:jxl): jxl-rs behind a small JNI layer"
+repository = "https://github.com/mauriciabad/cucuto"
+publish = false
+
+[lib]
+name = "cucuto_jxl"
+crate-type = ["cdylib"]
+
+[dependencies]
+# jxl-rs, the JPEG XL decoder Chrome and Firefox ship (BSD-3-Clause). Its API is 0.x and changes between minor
+# versions, so it is pinned to the exact release validated by the spike (ADR 0006); Dependabot proposes bumps.
+jxl = "=0.8.0"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = { version = "=0.22.4", default-features = false }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+debug = false
+# Unwind, not abort: a panic in jxl-rs on a hostile file must become a Java exception, never kill the app. Every JNI
+# entry point runs under catch_unwind (lib.rs `guard` plus jni's `EnvUnowned::with_env`). `abort` would save about
+# 125 KB (7%) of the library but turn any decoder bug into a crash. See android/core/jxl/README.md.
+panic = "unwind"

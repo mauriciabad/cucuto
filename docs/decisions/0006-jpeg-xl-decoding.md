@@ -4,6 +4,8 @@
 - Date: 2026-10-23
 - Issue: #7 (spike), follow-up #77
 - Prototype: [`spikes/jxl/`](../../spikes/jxl/README.md)
+- Implementation: [`android/core/jxl/`](../../android/core/jxl/README.md) (#77). Packs keep the 512 px limit: the
+  decoder rejects larger images from their header by default, with 2048 px as its hard ceiling.
 
 ## Context
 

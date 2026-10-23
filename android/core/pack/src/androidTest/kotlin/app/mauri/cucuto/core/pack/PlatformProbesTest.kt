@@ -65,19 +65,29 @@ class PlatformProbesTest {
                 "valid/all-formats/characters/webp/sprite.webp" to ImageProbeResult.Decoded(16, 16),
                 "valid/all-formats/characters/gif/sprite.gif" to ImageProbeResult.Decoded(16, 16),
                 "valid/all-formats/characters/avif/sprite.avif" to ImageProbeResult.Decoded(64, 64),
+                // JPEG XL: jxl-rs through :core:jxl (no platform decoder on Android 17).
+                "valid/all-formats/characters/jxl/sprite.jxl" to ImageProbeResult.Decoded(16, 16),
+                "valid/full-pack/characters/song/album.jxl" to ImageProbeResult.Decoded(16, 16),
                 "invalid/image-too-large/characters/beep/sprite.png" to ImageProbeResult.Decoded(600, 600),
             )
         for ((path, result) in expected) {
             assertEquals(path, result, image.probe(DeviceFixtures.file(path, dir), FileFormat.of(path)!!))
         }
-        // No platform decoders: SVG (safety rules in pack-spec) and, until #77, JPEG XL.
-        for (path in listOf(
-            "valid/all-formats/characters/jxl/sprite.jxl",
-            "valid/all-formats/characters/svg/sprite.svg",
-        )) {
-            val result = image.probe(DeviceFixtures.file(path, dir), FileFormat.of(path)!!)
-            assertTrue("$path: $result", result is ImageProbeResult.NotChecked)
-        }
+        // No platform decoder: SVG (safety rules in pack-spec).
+        val svg = "valid/all-formats/characters/svg/sprite.svg"
+        val result = image.probe(DeviceFixtures.file(svg, dir), FileFormat.SVG)
+        assertTrue("$svg: $result", result is ImageProbeResult.NotChecked)
+    }
+
+    @Test
+    fun rejectsJxlThatIsNotJxl() {
+        // A PNG renamed to .jxl, and a JPEG XL file cut in half.
+        val png = DeviceFixtures.file("valid/all-formats/characters/png/sprite.png", dir)
+        assertTrue(image.probe(png, FileFormat.JXL) is ImageProbeResult.Undecodable)
+        val jxl = DeviceFixtures.file("valid/all-formats/characters/jxl/sprite.jxl", dir)
+        val half = java.io.File(dir, "half.jxl").apply { writeBytes(jxl.readBytes().let { it.copyOf(it.size / 2) }) }
+        val result = image.probe(half, FileFormat.JXL)
+        assertTrue(result.toString(), result is ImageProbeResult.Undecodable)
     }
 
     @Test

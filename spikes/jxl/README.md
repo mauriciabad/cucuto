@@ -5,6 +5,11 @@ sprites and covers (up to 512 px, static and animated)? The decision and the num
 [ADR 0006](../../docs/decisions/0006-jpeg-xl-decoding.md). Production code is written fresh in the
 `android/` project; nothing here is imported from it.
 
+> **Production code lives in [`:core:jxl`](../../android/core/jxl/README.md)** (issue #77): the same shape (jxl-rs
+> behind about five JNI functions, frames straight into a `Bitmap`, a Coil 3 decoder with a just-in-time animated
+> drawable), rewritten with size limits on the header, panic poisoning, color space tagging, cancellation, a
+> cacheable Gradle task and device tests. This spike is kept as the record of the measurements; it is not built by CI.
+
 ## What it contains
 
 - `rust/`: crate `cucuto-jxl` (GPL-3.0-or-later). It wraps [jxl-rs](https://github.com/libjxl/jxl-rs)

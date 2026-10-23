@@ -17,6 +17,8 @@ android {
 dependencies {
     // The pack format rules shared with packer: the included build in shared/pack-spec (ADR 0005).
     api("app.mauri.cucuto:pack-spec")
+    // JPEG XL test-decoding at import (JxlImageProbe), with the same decoder the app displays sprites with.
+    implementation(projects.core.jxl)
     implementation(libs.kotlinx.coroutines.core)
 
     androidTestImplementation(libs.androidx.test.runner)

@@ -74,7 +74,7 @@ jobs:
       - name: Check media paths
         run: |
           # Audio, image and zip files (packs are <name>.soundpack.zip, backups cucuto-backup-*.zip) may only live in these paths. Copyrighted content never enters the repo.
-          allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
+          allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|android/core/[^/]+/src/[^/]+/(res|assets|resources)/|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
           ext='\.(ogg|opus|oga|mp3|m4a|aac|flac|wav|mid|midi|png|jpe?g|webp|gif|avif|jxl|svg|bmp|heic|heif|webm|mp4|mov|soundpack|zip)$'
           bad=$(git ls-files | grep -iE "$ext" | grep -vE "$allow" || true)
           if [ -n "$bad" ]; then
@@ -108,6 +108,30 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      # :core:jxl builds its Rust crate (jxl-rs behind JNI, ADR 0006) with cargo-ndk; only this job packages it
+      # (unit tests and lint never need the library). Kept fast and cached:
+      # - the Rust toolchain and the Android target come from android/core/jxl/rust/rust-toolchain.toml (rustup is
+      #   preinstalled on the runner), cargo-ndk is a prebuilt binary, NDK r30 comes from sdkmanager;
+      # - rust-cache keeps ~/.cargo and the crate's target/, so a crate change recompiles incrementally;
+      # - the cargoNdk task is cacheable, so with an unchanged crate the Gradle build cache restores the library and
+      #   cargo does not run at all.
+      - name: Set up Rust toolchain (rust-toolchain.toml)
+        working-directory: android/core/jxl/rust
+        run: rustup toolchain install
+
+      - name: Set up cargo-ndk
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk@4.1.2
+
+      - name: Install NDK r30
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;30.0.16248370" > /dev/null
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: android/core/jxl/rust -> target
 
       # Debug and release APKs (R8, plus lintVital on release) and the instrumented test APKs.
       - name: Assemble

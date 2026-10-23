@@ -137,7 +137,9 @@ class MediaTools(private val log: (String) -> Unit) {
         val src = work.resolve("img-${path.hashCode().toUInt()}.$ext").also { it.writeBytes(content.bytes()) }
         val out = work.resolve("img-${path.hashCode().toUInt()}.jxl")
         val args = mutableListOf("cjxl", "--quiet", src.toString(), out.toString())
-        if (format != FileFormat.JPEG) args += listOf("-d", "0", "-e", "7")
+        // Lossless at effort 1: about 2x the bytes of the default effort 7 (still about 1 KB per sprite) but 5x faster to
+        // decode on the phone (ADR 0006). JPEG is transcoded losslessly, which needs no effort setting.
+        if (format != FileFormat.JPEG) args += listOf("-d", "0", "-e", "1")
         run(args)
         val newPath = path.substringBeforeLast('.') + ".jxl"
         log("  image  $path -> $newPath")
