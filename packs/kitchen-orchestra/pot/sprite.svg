@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Pot</title>
+  <ellipse cx="64" cy="120" rx="40" ry="5" fill="#000000" opacity="0.12"/>
+  <path d="M44 24 Q38 16 44 8 M64 22 Q58 14 64 6 M84 24 Q78 16 84 8" stroke="#B0BEC5" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <rect x="6" y="58" width="22" height="10" rx="5" fill="#455A64"/>
+  <rect x="100" y="58" width="22" height="10" rx="5" fill="#455A64"/>
+  <path d="M22 48 L106 48 L100 108 Q98 116 90 116 L38 116 Q30 116 28 108 Z" fill="#78909C"/>
+  <rect x="16" y="40" width="96" height="12" rx="6" fill="#546E7A"/>
+  <circle cx="64" cy="34" r="7" fill="#37474F"/>
+  <path d="M32 60 L34 100" stroke="#CFD8DC" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="50" cy="74" r="8" fill="#FFFFFF"/>
+  <circle cx="78" cy="74" r="8" fill="#FFFFFF"/>
+  <circle cx="51" cy="75" r="4" fill="#263238"/>
+  <circle cx="79" cy="75" r="4" fill="#263238"/>
+  <circle cx="52.5" cy="73" r="1.4" fill="#FFFFFF"/>
+  <circle cx="80.5" cy="73" r="1.4" fill="#FFFFFF"/>
+  <path d="M52 92 Q64 102 76 92" stroke="#263238" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <circle cx="40" cy="88" r="5" fill="#F48FB1" opacity="0.8"/>
+  <circle cx="88" cy="88" r="5" fill="#F48FB1" opacity="0.8"/>
+</svg>
