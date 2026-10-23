@@ -1,4 +1,4 @@
-# 0010. Haptic effects, fallbacks and auto haptics
+# 0012. Haptic effects, fallbacks and auto haptics
 
 - Status: accepted
 - Date: 2026-10-23
