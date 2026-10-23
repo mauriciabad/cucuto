@@ -35,7 +35,7 @@ class PackValidation(val report: ValidationReport, val content: PackContent?, va
  */
 class PackValidator(private val checkMedia: Boolean = true) {
 
-    /** Validates a `.soundpack` / `.zip` archive. */
+    /** Validates a pack or bundle archive (any `.zip`; the type comes from the manifest at the root, not the file name). */
     fun validateArchive(input: RandomAccessInput, inflater: RawInflater): PackValidation {
         val opened = ZipArchive.open(input, inflater)
         val archive = opened.source

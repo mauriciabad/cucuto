@@ -1,13 +1,13 @@
 name: Feature request
-description: Suggest an idea or an improvement for cucuto.
+description: Suggest an idea or an improvement for Cucuto.
 labels: ["type:feature"]
 body:
   - type: markdown
     attributes:
       value: |
         Please search existing issues first. Read the [project brief](https://github.com/mauriciabad/cucuto/blob/main/docs/project-brief.md)
-        for the scope: cucuto is root-only (Android 17 + LSPosed), has no backend, accounts or analytics, and never bundles
-        copyrighted content. Changes to the `.soundpack` format have their own template.
+        for the scope: Cucuto is root-only (Android 17 + LSPosed), has no backend, accounts or analytics, and never bundles
+        copyrighted content. Changes to the `.soundpack.zip` format have their own template.
   - type: dropdown
     id: part
     attributes:

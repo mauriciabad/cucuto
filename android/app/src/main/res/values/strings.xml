@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">cucuto</string>
+    <string name="app_name" translatable="false">Cucuto</string>
     <string name="module_description">Gives each WhatsApp contact a voice: per-contact notification sounds and vibrations from your sound packs. Scope: System Framework only.</string>
 
     <string name="navigate_back">Back</string>
 
     <!-- Status -->
     <string name="status_title">Status</string>
-    <string name="status_hero_title">Getting cucuto ready</string>
-    <string name="status_hero_body">This card turns green when everything works. Each check below lights up as its part of cucuto lands.</string>
+    <string name="status_hero_title">Getting Cucuto ready</string>
+    <string name="status_hero_body">This card turns green when everything works. Each check below lights up as its part of Cucuto lands.</string>
     <string name="status_checks_header">Checks</string>
     <string name="status_check_module">Module active in system_server</string>
     <string name="status_check_scope">LSPosed scope: System Framework only</string>

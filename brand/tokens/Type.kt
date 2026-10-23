@@ -1,4 +1,4 @@
-// cucuto type scale: Google Sans Flex (SIL OFL 1.1) mapped onto the Material 3 type roles.
+// Cucuto type scale: Google Sans Flex (SIL OFL 1.1) mapped onto the Material 3 type roles.
 // Drop into android/app/src/main/java/app/mauri/cucuto/ui/theme/ and add the variable font as
 // android/app/src/main/res/font/google_sans_flex.ttf (subset it first, see brand/README.md#typography).
 package app.mauri.cucuto.ui.theme
@@ -56,7 +56,7 @@ private fun style(
 private const val EMPHASIS = 200
 
 /**
- * Sizes and line heights are the Material 3 baseline type scale; weights and roundness are cucuto's.
+ * Sizes and line heights are the Material 3 baseline type scale; weights and roundness are Cucuto's.
  * Use the emphasized roles for hero moments: the character name when it is assigned, onboarding headlines,
  * the status card when everything turns green.
  */

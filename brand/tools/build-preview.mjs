@@ -80,7 +80,7 @@ const burst = (cx, cy, R, colors, seed = 1) => {
   b += t(tag, { x: X + 2, y: 400, size: fit(tag, 46, { wght: 650 }), wght: 650, ROND: 100, fill: BRAND.walnut });
   const sub = 'Open-source Android app · cucuto.mauri.app';
   b += t(sub, { x: X + 3, y: 450, size: fit(sub, 24, { wght: 500 }), wght: 500, ROND: 60, fill: L.onSurfaceVariant });
-  write('web/source/og-image.svg', svgDoc(`0 0 ${W} ${H}`, b, { title: 'cucuto: give each contact a voice' }));
+  write('web/source/og-image.svg', svgDoc(`0 0 ${W} ${H}`, b, { title: 'Cucuto: give each contact a voice' }));
   png('web/source/og-image.svg', 'web/og-image.png', W);
   jxl('web/og-image.png', 'web/og-image.jxl', { lossless: false });
 }
@@ -105,7 +105,7 @@ section(400, L.surface, null, (y0) => {
   body += at(PAD - 6, y0 + 70, 0, '');
   body += `<svg x="${PAD}" y="${y0 + 80}" width="760" height="${(760 * 48) / LOGO_W}" viewBox="0 0 ${LOGO_W} 48">${markBody()}<path d="${wordmarkInLogo}" fill="${BRAND.walnut}"/></svg>`;
   body += t('Give each contact a voice.', { x: 900, y: y0 + 150, size: 44, wght: 700, ROND: 100, fill: BRAND.walnut });
-  body += t('cucuto (koo-KOO-toe) is Catalan cucut, the cuckoo.', { x: 900, y: y0 + 200, size: 22, wght: 450, ROND: 30, fill: L.onSurfaceVariant });
+  body += t('Cucuto (koo-KOO-toe) is Catalan cucut, the cuckoo.', { x: 900, y: y0 + 200, size: 22, wght: 450, ROND: 30, fill: L.onSurfaceVariant });
   body += t('Like a cuckoo clock, it announces who is there:', { x: 900, y: y0 + 232, size: 22, wght: 450, ROND: 30, fill: L.onSurfaceVariant });
   body += t('the little door pops open and their character sings.', { x: 900, y: y0 + 264, size: 22, wght: 450, ROND: 30, fill: L.onSurfaceVariant });
   body += t('Brand guide  ·  brand/README.md', { x: 900, y: y0 + 330, size: 18, wght: 600, ROND: 70, fill: L.primary });
@@ -263,7 +263,7 @@ section(150, BRAND.night, null, (y0) => {
     body += t(c, { x: x + w / 2, y: y0 + 74, size: 17, wght: 650, ROND: 100, fill: i === chips.length - 1 ? BRAND.walnut : D.onSurface, anchor: 'middle' });
     x += w + 14;
   });
-  body += t('Voice: lowercase cucuto · short · friendly · never shouty', { x: W - PAD, y: y0 + 75, size: 18, wght: 500, ROND: 60, fill: D.onSurfaceVariant, anchor: 'end' });
+  body += t('Voice: Cucuto, capital C · short · friendly · never shouty', { x: W - PAD, y: y0 + 75, size: 18, wght: 500, ROND: 60, fill: D.onSurfaceVariant, anchor: 'end' });
 }, true);
 
 write('.work/preview.svg', svgDoc(`0 0 ${W} ${y}`, body));

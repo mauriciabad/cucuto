@@ -1,4 +1,4 @@
-// Hand-built geometry for the cucuto mark and wordmark. Every shape is a plain filled path (no strokes, no fonts),
+// Hand-built geometry for the Cucuto mark and wordmark. Every shape is a plain filled path (no strokes, no fonts),
 // so the same data feeds SVG, Android VectorDrawable and rasters.
 
 const f = (n) => Number(n.toFixed(3)).toString();

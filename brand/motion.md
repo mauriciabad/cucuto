@@ -1,6 +1,6 @@
-# cucuto motion language
+# Cucuto motion language
 
-Everything in cucuto moves on **springs**, the Material 3 Expressive way: objects have mass, overshoot a little
+Everything in Cucuto moves on **springs**, the Material 3 Expressive way: objects have mass, overshoot a little
 when they are happy, and settle quickly. Motion explains what happened (a character was assigned, a door
 opened); it never makes the user wait. Setting up a contact must still take less than 10 seconds.
 
@@ -50,7 +50,7 @@ On the website, `linear()` CSS easing can approximate the springs.
 
 ## The signature: "the door pops open"
 
-A cuckoo clock announces who is there. Whenever cucuto reveals a character (assign, simulate message,
+A cuckoo clock announces who is there. Whenever Cucuto reveals a character (assign, simulate message,
 pack import preview, onboarding success, website hero), the little round door opens and the character pops out.
 
 | t (ms) | Element | What happens | Spring |
@@ -71,7 +71,7 @@ the character's scheme (`primary`), the house from `primaryContainer`.
 
 ## Squash and stretch for sprites
 
-Sprites are static images (often vector art), so cucuto gives them life with transforms only:
+Sprites are static images (often vector art), so Cucuto gives them life with transforms only:
 
 - **Keep the area constant:** `scaleY = 1 / scaleX`. Never scale one axis alone.
 - **Stretch along the velocity**, up to 1.2× (`stretch = clamp(velocity × 0.012, −0.2, 0.2)` in grid units/s).

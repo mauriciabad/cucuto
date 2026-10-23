@@ -22,7 +22,7 @@
   "additionalProperties": false,
   "$defs": {
     "entry": {
-      "description": "One downloadable .soundpack: a pack or a bundle. IDs are unique within an index.",
+      "description": "One downloadable pack or bundle zip (conventionally <name>.soundpack.zip). IDs are unique within an index.",
       "type": "object",
       "required": ["id", "type", "name", "version", "download"],
       "properties": {

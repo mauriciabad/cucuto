@@ -47,9 +47,9 @@ and every module's unit tests.
 - **ktlint over detekt.** detekt 1.23 is built against Kotlin 2.0 and detekt 2 is still alpha; ktlint 1.8 with the
   Compose rules runs on any Kotlin version and is auto-fixable (`./gradlew spotlessApply`).
 - **arm64-v8a only** (`abiFilters`), matching every supported device.
-- **Module-wide opt-in** to `ExperimentalMaterial3ExpressiveApi` in `:app`: cucuto is built on Expressive, so
+- **Module-wide opt-in** to `ExperimentalMaterial3ExpressiveApi` in `:app`: Cucuto is built on Expressive, so
   per-call opt-ins add noise without information.
-- **No Android backup**: `dataExtractionRules` exclude everything; cucuto has its own backup file and credentials
+- **No Android backup**: `dataExtractionRules` exclude everything; Cucuto has its own backup file and credentials
   must never leave the device.
 - **Baseline profile module deferred** to a follow-up: it needs real user journeys to be worth anything.
 

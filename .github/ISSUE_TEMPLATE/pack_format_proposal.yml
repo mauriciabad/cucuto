@@ -1,5 +1,5 @@
 name: Pack format proposal
-description: Propose a change to the .soundpack format, bundles or repository indexes (the JSON Schemas in spec/).
+description: Propose a change to the .soundpack.zip format, bundles or repository indexes (the JSON Schemas in spec/).
 labels: ["area:spec", "type:feature"]
 body:
   - type: markdown

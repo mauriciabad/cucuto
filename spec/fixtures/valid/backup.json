@@ -9,7 +9,7 @@
   ],
   "packs": [
     { "id": "app.mauri.demo.chiptune-critters", "type": "pack", "version": "1.0.0", "sha256": "2222222222222222222222222222222222222222222222222222222222222222", "size": 40000, "source": { "type": "repository", "repositoryUrl": "https://cucuto.mauri.app/repo/repository.json" } },
-    { "id": "com.example.private.songs", "type": "bundle", "version": "3.0.0", "packs": ["com.example.private.songs.day"], "sha256": "3333333333333333333333333333333333333333333333333333333333333333", "source": { "type": "local", "fileName": "songs.soundpack" } }
+    { "id": "com.example.private.songs", "type": "bundle", "version": "3.0.0", "packs": ["com.example.private.songs.day"], "sha256": "3333333333333333333333333333333333333333333333333333333333333333", "source": { "type": "local", "fileName": "songs.soundpack.zip" } }
   ],
   "contacts": [
     {

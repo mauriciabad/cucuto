@@ -40,7 +40,7 @@ class AssembledInput(val manifest: JsonObject, val manifestName: String, val pac
 
 /** Turns pack sources (folders with pack.yaml or pack.json, or built archives) into [AssembledPack]s. */
 object PackSources {
-    /** Reads a source folder (pack.yaml or pack.json) or a .soundpack / .zip archive. */
+    /** Reads a source folder (pack.yaml or pack.json) or a pack or bundle archive (any .zip, conventionally <name>.soundpack.zip). */
     fun load(path: Path): AssembledInput = when {
         path.isDirectory() && path.resolve("pack.yaml").exists() -> fromYaml(path.resolve("pack.yaml"))
         path.isDirectory() && path.resolve("pack.yml").exists() -> fromYaml(path.resolve("pack.yml"))

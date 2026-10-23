@@ -1,6 +1,6 @@
-# cucuto sound and haptics
+# Cucuto sound and haptics
 
-cucuto is about sound, so its own UI sounds must stay small and polite: the characters are the stars. UI sounds are
+Cucuto is about sound, so its own UI sounds must stay small and polite: the characters are the stars. UI sounds are
 **quiet by default and switchable off**; haptics follow the system touch-feedback setting. Every sound and haptic
 is fired by the single `Feedback` engine together with its motion (see [motion](motion.md)), and never carries
 meaning alone: the screen always says what happened too.
@@ -18,7 +18,7 @@ peaks around −3 dBFS before the app's own UI volume (default 40 %).
 | toggle off | [`sounds/toggle-off.ogg`](sounds/toggle-off.ogg) | 110 ms | The same blips falling (E6 → A5) | Switches turning off |
 | success | [`sounds/success.ogg`](sounds/success.ogg) | 280 ms | C6–E6–G6 major arpeggio, 60 ms apart, soft triangle | Pack imported, backup written, status card turns green |
 | error | [`sounds/error.ogg`](sounds/error.ogg) | 240 ms | Two low round notes falling a major third (A4 → F4); a gentle "nope", never a buzzer | Invalid pack, failed download, rejected action |
-| assign | [`sounds/assign.ogg`](sounds/assign.ogg) | 290 ms | **The cucuto call.** A flute-like falling major third (G5 → E♭5) with light vibrato: "cu-cu!", like a cuckoo clock | Assigning a character (then the character's own clip plays), the door-open moment |
+| assign | [`sounds/assign.ogg`](sounds/assign.ogg) | 290 ms | **The Cucuto call.** A flute-like falling major third (G5 → E♭5) with light vibrato: "cu-cu!", like a cuckoo clock | Assigning a character (then the character's own clip plays), the door-open moment |
 
 Rules:
 

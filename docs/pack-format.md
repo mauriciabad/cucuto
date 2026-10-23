@@ -32,8 +32,23 @@ The key words "must", "must not", "should" and "may" are used as in RFC 2119.
 
 ## Files and layout
 
-A `.soundpack` file is a zip archive (see [Archive rules](#archive-rules)). A plain `.zip` with the same content is
-also accepted. It holds either one pack or one bundle.
+A pack file is a zip archive (see [Archive rules](#archive-rules)) named `<name>.soundpack.zip`; `packer` writes
+`<id>-<version>.soundpack.zip`. It holds either one pack or one bundle. File names always end in `.zip` (never a bare
+`.soundpack`; [ADR 0007](decisions/0007-zip-file-names.md)).
+
+### File names and type detection
+
+| File | Name | Detected by (at the zip root) |
+| --- | --- | --- |
+| Pack | `<name>.soundpack.zip` | `pack.json` |
+| Bundle | `<name>.soundpack.zip` | `bundle.json` |
+| Backup | `cucuto-backup-YYYY-MM-DD.zip` | `backup.json` (plain) or `envelope.json` + `payload.bin` (encrypted) |
+
+Readers never trust the file name: they accept any `.zip` (or a file with no name at all, such as a `content://`
+stream) and decide what it is from the manifest at the root. A zip with none of these, or with both `pack.json` and
+`bundle.json`, is rejected (`MANIFEST_MISSING`, `MANIFEST_AMBIGUOUS`). Files are served and shared as
+`application/zip`; the Android app registers intent filters for `application/zip` and `.zip` paths, and the PWA
+registers `file_handlers` for `.zip`.
 
 ### Single pack
 
@@ -41,7 +56,7 @@ also accepted. It holds either one pack or one bundle.
 they like; `packer build` writes this canonical layout:
 
 ```
-chiptune-critters.soundpack
+chiptune-critters.soundpack.zip
 ├── pack.json
 ├── cover.svg
 ├── LICENSE
@@ -63,7 +78,7 @@ chiptune-critters.soundpack
 relative paths) in its own folder, listed in `bundle.json`. `packer bundle` uses `packs/<pack id>/`.
 
 ```
-demo-packs.soundpack
+demo-packs.soundpack.zip
 ├── bundle.json
 ├── cover.svg
 └── packs/
@@ -450,7 +465,7 @@ it; see [the repository schema](../spec/repository.schema.json).
         { "id": "frog", "name": "Bleep the frog", "sprite": "previews/app.mauri.demo.chiptune-critters/frog.svg", "sample": "previews/app.mauri.demo.chiptune-critters/frog-sample.ogg", "seedColor": "#4CAF50" }
       ],
       "sizeUnpacked": 180533,
-      "download": { "url": "packs/app.mauri.demo.chiptune-critters-1.0.0.soundpack", "size": 171458, "sha256": "8d63…" }
+      "download": { "url": "packs/app.mauri.demo.chiptune-critters-1.0.0.soundpack.zip", "size": 171458, "sha256": "8d63…" }
     }
   ]
 }
@@ -474,9 +489,9 @@ Rules:
 
 ## Backups
 
-A `.cucuto-backup` file is a zip archive (same [archive rules](#archive-rules) for paths and safety).
+A backup is a zip archive named `cucuto-backup-YYYY-MM-DD.zip` (same [archive rules](#archive-rules) for paths and safety).
 
-- **Plain backup:** `backup.json` at the root, plus optional `packs/<id>-<version>.soundpack` files for a "full
+- **Plain backup:** `backup.json` at the root, plus optional `packs/<id>-<version>.soundpack.zip` files for a "full
   backup" (each referenced by its pack entry's `included` path).
 - **Encrypted backup:** `envelope.json` ([`$defs/envelope`](../spec/backup.schema.json)) and `payload.bin`. The payload
   is the plain backup zip encrypted with AES-256-GCM: a 12-byte random nonce, a 128-bit tag appended to the
@@ -518,7 +533,7 @@ directly.
   same codes.
 - [`spec/fixtures/fixtures.json`](../spec/fixtures/fixtures.json) lists every golden fixture with its `kind`
   (`package`, `repository`, `backup`, `backup-envelope`), whether it is valid, and the exact sets of error and warning
-  codes expected. Folders are unpacked packs or bundles; `.soundpack` files are archives; `.json` files are documents.
+  codes expected. Folders are unpacked packs or bundles; `.soundpack.zip` files are archives; `.json` files are documents.
   Regenerate them with `kotlin spec/fixtures/generate.main.kts`.
 
 Changes to this format start with a pack format proposal issue and must update the schemas, this document, the

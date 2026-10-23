@@ -1,12 +1,12 @@
 <p align="center"><img src="logo/cucuto-logo.svg" alt="cucuto" width="360"></p>
 
-# cucuto brand guide
+# Cucuto brand guide
 
 ![Everything at a glance](preview.png)
 
 ## Concept
 
-**cucuto** (koo-KOO-toe) comes from Catalan *cucut*, the cuckoo. Like a cuckoo clock, it announces who is there:
+**Cucuto** (koo-KOO-toe) comes from Catalan *cucut*, the cuckoo. Like a cuckoo clock, it announces who is there:
 when a contact messages, the little round door pops open and their character sings.
 
 The mark is that clock: a warm tangerine house, its round door swung open, and a bird leaning out with its beak
@@ -171,7 +171,7 @@ Material 3 Expressive shapes (`androidx.compose.material3.MaterialShapes`, opt-i
 | Loading | `LoadingIndicator` (its own morphing shapes) |
 | Cards, sheets, dialogs | Standard shape scale (`medium` → `extraLarge`) |
 
-Never use a plain circle for contact avatars: the cookie silhouette is how people tell cucuto's characters from
+Never use a plain circle for contact avatars: the cookie silhouette is how people tell Cucuto's characters from
 WhatsApp's profile pictures.
 
 ## Iconography
@@ -180,7 +180,7 @@ WhatsApp's profile pictures.
 the round type and shapes. Settings: weight 500, grade 0, optical size 24, **fill 0** at rest and **fill 1** for
 the selected state (navigation bar, toggled actions), animated with a fast effects spring. In Compose, import the
 symbols you need as VectorDrawables (Android Studio › Vector Asset, or download from Google Fonts); on the web,
-use the variable font with `font-variation-settings` or inline SVGs. Do not mix in other icon sets; the cucuto
+use the variable font with `font-variation-settings` or inline SVGs. Do not mix in other icon sets; the Cucuto
 mark is not an icon (never use it as a "home" button).
 
 ## Motion, sound and haptics
@@ -192,7 +192,9 @@ mark is not an icon (never use it as a "home" button).
 
 ## Voice and tone
 
-- **Always lowercase:** cucuto, even at the start of a sentence ("cucuto plays…"). Say it koo-KOO-toe.
+- **Capital C in prose:** "Cucuto plays…", "Open Cucuto" (owner, 2026-10-23). Lowercase only in identifiers (`cucuto`
+  repo, `app.mauri.cucuto`, `cucuto.mauri.app`, file names, code) and in the logo wordmark, which is drawn lowercase.
+  Say it koo-KOO-toe.
 - **Friendly, short, concrete.** "Marta now sounds like Pikachu." rather than "Assignment saved successfully."
 - **Playful in moments, plain in instructions.** A little joy on success screens ("cu-cu! all set"), zero jokes in
   errors, setup steps, root or LSPosed guidance.

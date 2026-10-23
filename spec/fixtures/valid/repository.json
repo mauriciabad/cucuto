@@ -20,7 +20,7 @@
       ],
       "sizeUnpacked": 2048,
       "download": {
-        "url": "packs/app.mauri.fixtures.minimal-1.0.0.soundpack",
+        "url": "packs/app.mauri.fixtures.minimal-1.0.0.soundpack.zip",
         "size": 1834,
         "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
       }
@@ -35,7 +35,7 @@
         { "id": "app.mauri.fixtures.bundle.second", "name": "Bundle second", "version": "1.0.0" }
       ],
       "download": {
-        "url": "https://github.com/mauriciabad/cucuto/releases/download/packs-v1/app.mauri.fixtures.bundle-1.0.0.soundpack",
+        "url": "https://github.com/mauriciabad/cucuto/releases/download/packs-v1/app.mauri.fixtures.bundle-1.0.0.soundpack.zip",
         "size": 4096,
         "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
       }

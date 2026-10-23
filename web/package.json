@@ -1,7 +1,7 @@
 {
 	"name": "cucuto-web",
 	"version": "0.0.0",
-	"description": "cucuto website: static SvelteKit site and PWA",
+	"description": "Cucuto website: static SvelteKit site and PWA",
 	"private": true,
 	"license": "GPL-3.0-or-later",
 	"type": "module",

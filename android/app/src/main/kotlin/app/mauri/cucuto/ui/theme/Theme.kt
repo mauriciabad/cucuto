@@ -12,7 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * cucuto's theme: Material 3 Expressive with the expressive (spring-based) motion scheme and the brand type scale.
+ * Cucuto's theme: Material 3 Expressive with the expressive (spring-based) motion scheme and the brand type scale.
  * Colors come from the wallpaper (dynamic color) by default; with dynamic color off, the brand schemes from
  * `brand/tokens/Color.kt` apply, following the system contrast setting.
  *

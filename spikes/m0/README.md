@@ -1,4 +1,4 @@
-# cucuto M0 device spike
+# Cucuto M0 device spike
 
 Throwaway project for milestone M0 (issues #9–#12). It exists to answer questions about the
 owner's phone, not to become the production module — `:xposed` in `android/` is written fresh in

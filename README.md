@@ -6,7 +6,7 @@
 plays a random clip from the character you assigned to a contact whenever they message you on WhatsApp, with that
 character's own vibration. Like a cuckoo clock, it announces who's there.
 
-- **Sound packs, not bundled content.** The app ships empty. Import `.soundpack` files or download them from pack repositories.
+- **Sound packs, not bundled content.** The app ships empty. Import `.soundpack.zip` files or download them from pack repositories.
 - **Ringtones too.** Packs can carry call ringtones with variants (day, night, seasons…).
 - **Make your own.** Build packs in the app or on the website, no tools needed.
 - **Feels like a game.** Sound, motion and haptics on every interaction, built on Material 3 Expressive.

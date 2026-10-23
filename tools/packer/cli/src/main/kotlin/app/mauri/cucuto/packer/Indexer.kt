@@ -40,9 +40,10 @@ class Indexer(private val log: (String) -> Unit) {
 
     fun index(inputs: List<Path>, outDir: Path, options: Options): RepositoryIndex {
         val archives = inputs.flatMap { p ->
-            if (p.isDirectory()) p.listDirectoryEntries("*.soundpack").sortedBy { it.name } else listOf(p)
+            // Any .zip in a folder; each one must be a valid pack or bundle (detected from its contents).
+            if (p.isDirectory()) p.listDirectoryEntries("*.zip").sortedBy { it.name } else listOf(p)
         }
-        if (archives.isEmpty()) throw PackerException("No .soundpack files to index")
+        if (archives.isEmpty()) throw PackerException("No pack archives (.zip) to index")
         Files.createDirectories(outDir)
         val entries = mutableMapOf<String, Pair<RepositoryEntry, SemVer>>()
         for (file in archives) {

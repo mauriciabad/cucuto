@@ -9,7 +9,7 @@
 		{
 			icon: 'library-music',
 			title: 'Import a sound pack',
-			text: 'Open a .soundpack file or download one from a pack repository. A pack is a cast of characters, each with a picture, a few short clips and its own vibration.',
+			text: 'Open a .soundpack.zip file or download one from a pack repository. A pack is a cast of characters, each with a picture, a few short clips and its own vibration.',
 			character: 'leaf'
 		},
 		{

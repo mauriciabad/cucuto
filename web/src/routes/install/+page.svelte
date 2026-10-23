@@ -45,7 +45,7 @@
 		<li>
 			<h2 class="title-large">Check the status card</h2>
 			<p>
-				Open cucuto. The status card at the top checks that the module is active, the LSPosed scope
+				Open Cucuto. The status card at the top checks that the module is active, the LSPosed scope
 				is right, WhatsApp is installed and at least one pack is imported. Each failing check tells
 				you how to fix it.
 			</p>
@@ -53,8 +53,8 @@
 		<li>
 			<h2 class="title-large">Import a pack and assign characters</h2>
 			<p>
-				Import a <code>.soundpack</code> file, then pick a chat and tap a character. Keep WhatsApp’s own
-				notification tone and vibration turned on: Cucuto replaces them per contact.
+				Import a <code>.soundpack.zip</code> file, then pick a chat and tap a character. Keep WhatsApp’s
+				own notification tone and vibration turned on: Cucuto replaces them per contact.
 			</p>
 		</li>
 	</ol>

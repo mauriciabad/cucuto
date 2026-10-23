@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Nothing leaves the device through Android backup or device transfer: cucuto has its own backup file
+    Nothing leaves the device through Android backup or device transfer: Cucuto has its own backup file
     (docs/project-brief.md, "Backup and restore") and repository credentials must never be exported.
 -->
 <data-extraction-rules>

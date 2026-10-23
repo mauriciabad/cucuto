@@ -1,4 +1,4 @@
-# Project Brief: cucuto
+# Project Brief: Cucuto
 
 Oct 23, 2026 · @Mauri
 
@@ -81,14 +81,14 @@ The same flow in steps:
 
 ## Sound pack and bundle format (v1)
 
-A `.soundpack` file is a zip holding either one pack or a bundle of several packs, each with a JSON manifest, characters, clips, sprites and haptics. The format is public and versioned so anyone can build packs; plain `.zip` is also accepted.
+A sound pack file is a zip named `<name>.soundpack.zip` (owner update 2026-10-23: zip files always end in `.zip`, never a custom extension like `.soundpack`; [ADR 0007](decisions/0007-zip-file-names.md)). It holds either one pack or a bundle of several packs, each with a JSON manifest, characters, clips, sprites and haptics. The format is public and versioned so anyone can build packs. The app detects what a zip is from its contents (`pack.json`, `bundle.json` or `backup.json` at the root), so any `.zip` name is accepted.
 
 **Vocabulary.** A *pack* contains *characters*: Pikachu, a cat, a friend, or a song with its album art. A character has a picture, a pool of short notification *clips*, an optional set of *ringtones* with *variants*, and a default *haptic*. A *bundle* groups several packs in one file. Users assign characters to *contacts* (a 1:1 chat, a group, or a phone contact).
 
 Single pack layout:
 
 ```
-pokemon-voices.soundpack
+pokemon-voices.soundpack.zip
 ├── pack.json
 ├── cover.jxl
 └── characters/
@@ -104,7 +104,7 @@ pokemon-voices.soundpack
 Bundle layout: `bundle.json` at the root instead of `pack.json`, and each pack in its own folder.
 
 ```
-pokemon-all-gens.soundpack
+pokemon-all-gens.soundpack.zip
 ├── bundle.json
 ├── cover.jxl
 └── packs/
@@ -167,7 +167,7 @@ Rules the importer enforces:
 
 Import flow (local files and repository downloads go through the same pipeline):
 
-1. Entry points: in-app picker (Storage Access Framework, which also reaches Google Drive and other cloud apps), "Open with" and the share sheet for `.soundpack` files, and downloads from pack repositories.
+1. Entry points: in-app picker (Storage Access Framework, which also reaches Google Drive and other cloud apps), "Open with" and the share sheet for zip files (`application/zip` and `.zip` paths; packs are `*.soundpack.zip`, owner update 2026-10-23), and downloads from pack repositories.
 2. Validate against the schemas, then test-decode every clip and image.
 3. For a bundle, show its packs with checkboxes; all are selected by default.
 4. Show a preview screen that reveals the characters one by one, each playing a clip.
@@ -207,7 +207,7 @@ In the UI: the ringtone picker is a grid or carousel of album covers; tapping on
 
 One backup file restores every assignment, ringtone and setting on a new phone. Packs re-download from their repositories; only local-only packs, like the private Pokémon and K.K. packs, need their files picked again.
 
-What a backup holds (a `.cucuto-backup` zip with versioned JSON; schema in `spec/backup.schema.json`):
+What a backup holds (a zip named `cucuto-backup-YYYY-MM-DD.zip`, owner update 2026-10-23, with versioned JSON; schema in `spec/backup.schema.json`):
 
 - **Assignments:** every contact key the app knows (WhatsApp conversation keys, phone numbers, display names), the assigned character and ringtone by pack ID and character ID, variant rules, clip toggles and haptic overrides.
 - **Settings** and the list of pack repositories.
@@ -248,18 +248,18 @@ cucuto/
 
 |  | Public monorepo (GitHub) | Owner's private content (Google Drive) |
 | --- | --- | --- |
-| Contents | All code, schemas, docs, packer, website, CC0 demo packs | Pokémon pack sources (raw clips, sprites, `pack.yaml`) and the built `.soundpack` files |
+| Contents | All code, schemas, docs, packer, website, CC0 demo packs | Pokémon pack sources (raw clips, sprites, `pack.yaml`) and the built `.soundpack.zip` files |
 | Media | Only CC0 demo content: generate it with ffmpeg tones and simple drawn shapes, or use clearly CC0 recordings | Anime voice clips and Pokémon sprites, personal use only |
 | License | Code GPL-3.0-or-later; demo packs CC0 | None; never published |
 
 Keeping the Pokémon pack in a private Google Drive works well:
 
-- **Day one:** tap Import in the app. Android's file picker shows Google Drive; pick the `.soundpack` file. No public link, no sharing settings, nothing leaves the owner's account.
+- **Day one:** tap Import in the app. Android's file picker shows Google Drive; pick the `.soundpack.zip` file. No public link, no sharing settings, nothing leaves the owner's account.
 - **Later, optional:** a Google Drive folder can be added as a private pack repository, so updates appear in the app's Discover screen (see Pack repositories).
 
 Guards in the public repo:
 
-- `.gitignore` blocks `*.soundpack` outside build output, plus a `private/` folder for local experiments.
+- `.gitignore` blocks `*.soundpack.zip` (and bare `*.soundpack`) outside build output and `spec/fixtures/`, and backups (`cucuto-backup-*.zip`), plus a `private/` folder for local experiments.
 - A CI job fails if a commit adds audio or image files outside an allowlist (`packs/`, app resources, website assets made from demo packs).
 - README and website state that no third-party content ships with the app and users are responsible for the packs they import.
 - Screenshots and the explainer video use demo packs only, never Pokémon assets.
@@ -268,7 +268,7 @@ Building the owner's Pokémon pack (outside the repo):
 
 - **Voices:** The Sounds Resource rips of spin-off games that use the anime voice cast: Hey You, Pikachu! (37 Pikachu clips), PokePark 2 (Pikachu 25, Tepig 32, Oshawott 21, Snivy), PokePark Wii (563 unlabeled voice files), Pokémon Channel (7 clips each for many Johto and Kanto species), Pokémon Puzzle League. See the earlier research report for links.
 - **Sprites:** the owner prefers Dream World artwork, from the `sprites/pokemon/other/dream-world` folder of the [PokeAPI sprites repo](https://github.com/PokeAPI/sprites). These are SVG vector images and only cover generations I to V, so later Pokémon need another style (official artwork, 475 px PNG). Dream World art is static, so the app animates it (squash, stretch, bounce). Packs keep the SVGs; the packer can also rasterize them to JPEG XL or PNG. These images are copyrighted, so they stay private.
-- **Workflow:** one folder per character with raw clips, a `pack.yaml` listing names and colors, then `packer build` produces the `.soundpack`. Several packs (for example one per generation) can be combined with `packer bundle`.
+- **Workflow:** one folder per character with raw clips, a `pack.yaml` listing names and colors, then `packer build` produces the `.soundpack.zip`. Several packs (for example one per generation) can be combined with `packer bundle`.
 
 ## Website
 
@@ -277,7 +277,7 @@ A fully static SvelteKit site at `cucuto.mauri.app` explains the app, gets peopl
 Pages:
 
 1. **Home.** Hero animation built from a demo pack, a one-line pitch, a "Download APK" button (latest GitHub Release asset, with version and size), the explainer video, a screenshot carousel, "how it works" in three steps, requirements (Android 17, root, LSPosed with libxposed API 102) and an FAQ.
-2. **Packs.** A gallery of free packs: cover, character sprites, a play button per sample clip, size, license, a "Download .soundpack" button and an "Add to app" deep link.
+2. **Packs.** A gallery of free packs: cover, character sprites, a play button per sample clip, size, license, a "Download .soundpack.zip" button and an "Add to app" deep link.
 3. **Install guide.** Install the APK, enable the module in LSPosed with System Framework scope, reboot, run the in-app status checks.
 4. **For pack authors.** The format spec rendered from `docs/pack-format.md`, packer usage, how to host your own pack repository, and a link to the Create page.
 5. **Privacy.** No analytics, no cookies, no tracking.
@@ -287,7 +287,7 @@ Tech and deployment:
 - SvelteKit with the static adapter; every route prerendered at build time.
 - The release version, APK size and download URL are fetched from the GitHub Releases API during the build. A release triggers a site rebuild.
 - Deploy from GitHub Actions to GitHub Pages (simplest, lives next to the repo) or Cloudflare Pages. The owner picks; the agent sets it up and documents the exact DNS record for `cucuto.mauri.app` once the repo exists.
-- Large files (APK, `.soundpack` files) live as GitHub Release assets, not in the site build; GitHub allows up to 2 GiB per release file. The site hosts only small preview files: sample clips, sprites, covers.
+- Large files (APK, `.soundpack.zip` files) live as GitHub Release assets, not in the site build; GitHub allows up to 2 GiB per release file. The site hosts only small preview files: sample clips, sprites, covers.
 - The build runs `packer index` over the demo packs and publishes `/repo/index.json`, so the site is also a pack repository that the app adds by default.
 
 Images and media:
@@ -315,7 +315,7 @@ Index example (`repository.json`, generated by `packer index`):
       "type": "pack",
       "name": "Cats",
       "version": "1.2.0",
-      "author": "cucuto contributors",
+      "author": "Cucuto contributors",
       "license": "CC0-1.0",
       "tags": ["animals"],
       "cover": "previews/cats/cover.jxl",
@@ -323,7 +323,7 @@ Index example (`repository.json`, generated by `packer index`):
         { "id": "tabby", "name": "Tabby", "sprite": "previews/cats/tabby.jxl", "sample": "previews/cats/tabby.ogg" }
       ],
       "download": {
-        "url": "https://github.com/OWNER/cucuto/releases/download/packs-v1/cats-1.2.0.soundpack",
+        "url": "https://github.com/OWNER/cucuto/releases/download/packs-v1/cats-1.2.0.soundpack.zip",
         "size": 4821033,
         "sha256": "…"
       }
@@ -339,8 +339,8 @@ Supported sources:
 | Source | How the user adds it | When | Notes |
 | --- | --- | --- | --- |
 | Static HTTPS site (GitHub Pages, Cloudflare Pages, S3 or R2, any web server) | Paste the folder or `repository.json` URL, scan a QR code, or tap "Add to app" on a website | v1 | The main path. The project website is the default repository. |
-| Direct link to one `.soundpack` | Paste the link | v1 | One-off download through the same importer. |
-| Google Drive folder | Sign in with Google and pick a folder | v1.1 | Read-only Drive API access to that folder. The app reads `repository.json` there, or lists `.soundpack` files and reads their manifests. Fits the owner's private Drive. Public Drive links are a poor host: files above roughly 100 MB return a virus-scan warning page instead of the file, popular files get throttled, and folders can't be listed without the API. |
+| Direct link to one `.soundpack.zip` | Paste the link | v1 | One-off download through the same importer. |
+| Google Drive folder | Sign in with Google and pick a folder | v1.1 | Read-only Drive API access to that folder. The app reads `repository.json` there, or lists `.zip` files and reads their manifests. Fits the owner's private Drive. Public Drive links are a poor host: files above roughly 100 MB return a virus-scan warning page instead of the file, popular files get throttled, and folders can't be listed without the API. |
 | MEGA link | Paste the link | Later | MEGA encrypts files on the client, so the app would need the MEGA SDK and the key in the link to decrypt. Check the SDK's license against GPL-3.0 before committing. |
 
 Authentication:
@@ -361,7 +361,7 @@ Security: everything remote is untrusted. Apply the same validation as local imp
 
 ## Pack creator (app and website)
 
-People can build packs without the command line, either in the app or in the website installed as a PWA. Both produce standard `.soundpack` files, and everything runs on the device: nothing is uploaded anywhere.
+People can build packs without the command line, either in the app or in the website installed as a PWA. Both produce standard `.soundpack.zip` files, and everything runs on the device: nothing is uploaded anywhere.
 
 The creation flow, the same on both:
 
@@ -369,7 +369,7 @@ The creation flow, the same on both:
 2. **Characters:** add a character, pick or crop a sprite (any supported image format, animated allowed), name it, and pick a seed color (suggested from the sprite).
 3. **Clips:** import audio files or record with the microphone. A waveform editor trims start and end, with optional silence trimming and loudness normalization. Each clip gets a label and a weight.
 4. **Haptics:** auto mode by default; the haptic editor for custom patterns.
-5. **Validate and export:** run the same checks as the importer, then export a `.soundpack` (single pack or a bundle of several). The app can also install the result directly.
+5. **Validate and export:** run the same checks as the importer, then export a `.soundpack.zip` (single pack or a bundle of several). The app can also install the result directly.
 
 In the app:
 
@@ -380,7 +380,7 @@ In the app:
 
 In the website (PWA):
 
-- A **Create** page, installable as a PWA and usable offline (service worker, web app manifest). Where the browser supports file handling, the installed PWA opens `.soundpack` files directly.
+- A **Create** page, installable as a PWA and usable offline (service worker, web app manifest). Where the browser supports file handling, the installed PWA opens pack files directly (`file_handlers` for `application/zip` / `.zip`; owner update 2026-10-23).
 - Audio is decoded and trimmed with the Web Audio API and recorded with MediaRecorder. Encode with WebCodecs where the browser supports the codec, otherwise fall back to a WebAssembly encoder.
 - Images are cropped on a canvas; JPEG XL encoding is optional through a WebAssembly encoder.
 - Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews.
@@ -492,7 +492,7 @@ Gradle modules (under `android/`):
 
 Outside `android/`:
 
-- `tools/packer` — JVM command-line tool. `packer build` turns a folder plus `pack.yaml` into a validated `.soundpack`; `packer bundle` combines packs into one file; `packer index` writes `repository.json` with previews, sizes and SHA-256 hashes. With ffmpeg it can trim silence, normalize loudness and transcode to Opus; with libjxl's `cjxl` it can convert images to JPEG XL. All conversions are opt-in flags.
+- `tools/packer` — JVM command-line tool. `packer build` turns a folder plus `pack.yaml` into a validated `<id>-<version>.soundpack.zip`; `packer bundle` combines packs into one file; `packer index` writes `repository.json` with previews, sizes and SHA-256 hashes. With ffmpeg it can trim silence, normalize loudness and transcode to Opus; with libjxl's `cjxl` it can convert images to JPEG XL. All conversions are opt-in flags.
 - `web/` — the SvelteKit site, which reuses the schemas in `spec/` to render the packs gallery.
 
 How the app and the module talk:
@@ -619,7 +619,7 @@ Open questions for the owner (answer before M1 unless noted):
 5. Who hands the explainer video brief to the video subagent, and when: after M3, once the UI is final, is suggested.
 6. Should ringtones (M9) ship in v1, or follow in v1.1 like the pack creator?
 
-Settled: name cucuto (application ID app.mauri.cucuto, site cucuto.mauri.app), license GPL-3.0-or-later, libxposed API 102, monorepo, common image and audio formats with JPEG XL as the preferred image format, `.soundpack` as the file extension.
+Settled: name Cucuto (application ID app.mauri.cucuto, site cucuto.mauri.app), license GPL-3.0-or-later, libxposed API 102, monorepo, common image and audio formats with JPEG XL as the preferred image format, `.soundpack` as the file extension, replaced by `<name>.soundpack.zip` for packs and bundles and `cucuto-backup-YYYY-MM-DD.zip` for backups (owner update 2026-10-23: zip files always end in `.zip`; the type is detected from the contents).
 
 ## Sources
 

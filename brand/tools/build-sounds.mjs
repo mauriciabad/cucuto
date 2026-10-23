@@ -1,4 +1,4 @@
-// Synthesizes the cucuto UI sounds with ffmpeg (sine/triangle tones, short envelopes) as Ogg Opus.
+// Synthesizes the Cucuto UI sounds with ffmpeg (sine/triangle tones, short envelopes) as Ogg Opus.
 // Pure math, no samples: the results are original works dedicated to the public domain (CC0-1.0).
 import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';

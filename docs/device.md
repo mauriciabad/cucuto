@@ -58,17 +58,17 @@ adb shell su -c '/data/adb/modules/zygisk_lsposed/lspctl --json status'
 
 `lspctl` prints the framework version, API level, developer/safe mode and system_server
 connection. Its own help says it is for interactive debugging and is **not a stable control
-protocol**, so cucuto must never depend on it at runtime — it is a human/agent debugging and
+protocol**, so Cucuto must never depend on it at runtime — it is a human/agent debugging and
 recovery aid only. Enable/disable and scope subcommands require LSPosed developer mode.
 
 ## Relevant apps
 
 | Package | Version | Role |
 | --- | --- | --- |
-| `com.whatsapp` | 2.26.42.9 | the app whose notifications cucuto re-voices |
+| `com.whatsapp` | 2.26.42.9 | the app whose notifications Cucuto re-voices |
 | `com.waenhancer` | 2.0.4 | WaEnhancer X; hooks `com.whatsapp`, must keep working |
 
-cucuto scopes to `android` only and never touches either of these processes.
+Cucuto scopes to `android` only and never touches either of these processes.
 
 ## Notification sound player
 

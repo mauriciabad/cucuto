@@ -7,7 +7,7 @@
 
 <Seo
 	title="For pack authors"
-	description="Make sound packs for Cucuto: the open .soundpack format, the packer tool and hosting your own pack repository."
+	description="Make sound packs for Cucuto: the open .soundpack.zip format (a plain zip), the packer tool and hosting your own pack repository."
 />
 
 <div class="prose">
@@ -21,10 +21,10 @@
 
 	<h2 class="headline-small">What’s in a pack</h2>
 	<p>
-		A <code>.soundpack</code> file is a zip with a <code>pack.json</code> manifest and one folder per
-		character. Each character has a picture (JPEG XL recommended, PNG, WebP, AVIF and GIF work too), a
-		pool of short notification clips, an optional vibration pattern and optional ringtones. One file can
-		also hold a bundle of several packs.
+		A pack is a zip file, named <code>&lt;name&gt;.soundpack.zip</code>, with a
+		<code>pack.json</code> manifest and one folder per character. Each character has a picture (JPEG XL
+		recommended, PNG, WebP, AVIF and GIF work too), a pool of short notification clips, an optional vibration
+		pattern and optional ringtones. One file can also hold a bundle of several packs.
 	</p>
 	<p>
 		<a class="button tonal" href={PACK_FORMAT_URL} rel="external">
@@ -36,7 +36,7 @@
 	<h2 class="headline-small">Build it</h2>
 	<p>
 		Put your clips and pictures in folders, describe them in a <code>pack.yaml</code>, and the
-		<code>packer</code> command-line tool builds the <code>.soundpack</code>, checks it with the
+		<code>packer</code> command-line tool builds the <code>.soundpack.zip</code>, checks it with the
 		same rules as the app and can combine several packs into a bundle. A visual pack creator, in the
 		app and on this website, is planned too: no tools needed.
 	</p>

@@ -60,7 +60,7 @@ jobs:
             --author "Cucuto contributors" --license CC0-1.0 \
             --description "Every Cucuto demo pack in one file." \
             --cover packs/chiptune-critters/cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
-          "$packer" validate --strict dist/*.soundpack
+          "$packer" validate --strict dist/*.soundpack.zip
 
       - name: Build repository index
         run: |
@@ -69,14 +69,14 @@ jobs:
             --name "Cucuto demo packs" --homepage https://cucuto.mauri.app \
             --description "Free CC0 packs made for Cucuto." dist/
           tools/packer/cli/build/install/packer/bin/packer validate dist/repo/repository.json
-          (cd dist && sha256sum *.soundpack | tee SHA256SUMS)
+          (cd dist && sha256sum *.soundpack.zip | tee SHA256SUMS)
 
       - name: Upload demo packs
         uses: actions/upload-artifact@v7
         with:
           name: demo-packs
           path: |
-            dist/*.soundpack
+            dist/*.soundpack.zip
             dist/SHA256SUMS
           if-no-files-found: error
           retention-days: 30

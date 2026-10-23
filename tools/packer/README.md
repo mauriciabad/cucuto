@@ -1,6 +1,6 @@
 # packer
 
-Command-line tool that builds, validates, bundles and indexes Cucuto sound packs (`.soundpack`). It enforces the
+Command-line tool that builds, validates, bundles and indexes Cucuto sound packs (`.soundpack.zip`). It enforces the
 same rules as the app's importer ([pack format](../../docs/pack-format.md)) and writes reproducible archives.
 
 ## Install
@@ -25,13 +25,15 @@ needed for `--normalize`, `--trim-silence`, `--opus`, `--jxl` and `validate --de
 ### build
 
 ```sh
-packer build packs/chiptune-critters                  # writes ./app.mauri.demo.chiptune-critters-1.0.0.soundpack
+packer build packs/chiptune-critters                  # writes ./app.mauri.demo.chiptune-critters-1.0.0.soundpack.zip
 packer build packs/chiptune-critters -o dist/         # into a folder
-packer build my-pack -o my-pack.soundpack --opus --normalize --trim-silence --jxl
+packer build my-pack -o my-pack.soundpack.zip --opus --normalize --trim-silence --jxl
 ```
 
-Turns a folder with `pack.yaml` (or an unpacked pack or bundle with `pack.json`) into a `.soundpack`. The result is
-validated with the full importer rules first; nothing is written if there is an error.
+Turns a folder with `pack.yaml` (or an unpacked pack or bundle with `pack.json`) into `<id>-<version>.soundpack.zip`. The result is
+validated with the full importer rules first; nothing is written if there is an error. Output names always end in
+`.zip`: `-o` takes a folder or a `.zip` file name, and a bare `.soundpack` name is refused
+([ADR 0007](../../docs/decisions/0007-zip-file-names.md)).
 
 | Flag | Effect (needs) |
 | --- | --- |
@@ -51,11 +53,11 @@ versions.
 ### validate
 
 ```sh
-packer validate pack.soundpack unpacked-folder/ source-with-pack-yaml/ repository.json backup.json
-packer validate --json --strict dist/*.soundpack
+packer validate pack.soundpack.zip unpacked-folder/ source-with-pack-yaml/ repository.json backup.json
+packer validate --json --strict dist/*.soundpack.zip
 ```
 
-Validates `.soundpack` and `.zip` archives, unpacked pack or bundle folders, `pack.yaml` sources, repository indexes
+Validates pack and bundle archives (any `.zip`; the type comes from the manifest inside), unpacked pack or bundle folders, `pack.yaml` sources, repository indexes
 (`repository.json`), backups (`backup.json`) and encrypted backup envelopes (`envelope.json`). Use `--kind` when a
 JSON file has another name. Every issue carries a stable code from
 [`spec/error-codes.json`](../../spec/error-codes.json), the file and a JSON Pointer:
@@ -81,7 +83,7 @@ packer bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.0.0
   packs/chiptune-critters packs/kitchen-orchestra
 ```
 
-Combines packs (source folders or built `.soundpack` files) into one bundle. Each pack goes to `packs/<pack id>/`.
+Combines packs (source folders or built `.soundpack.zip` files) into one bundle. Each pack goes to `packs/<pack id>/`.
 Options: `--author`, `--license`, `--description`, `--homepage`, `--tag` (repeatable), `--cover`, and the same
 media flags as `build` (applied to source folders).
 
@@ -90,7 +92,7 @@ media flags as `build` (applied to source folders).
 ```sh
 packer index -o site/repo --name "Cucuto demo packs" --homepage https://cucuto.mauri.app dist/
 packer index -o site/repo --name "My packs" \
-  --download-base-url https://github.com/me/packs/releases/download/v1 dist/*.soundpack
+  --download-base-url https://github.com/me/packs/releases/download/v1 dist/*.soundpack.zip
 ```
 
 Writes a ready-to-host repository folder:
@@ -99,10 +101,10 @@ Writes a ready-to-host repository folder:
 site/repo/
 ├── repository.json
 ├── previews/<id>/cover.svg, <character>.svg, <character>-sample.ogg   (bundles: previews/<bundle>/<pack>/...)
-└── packs/<file>.soundpack          (only without --download-base-url)
+└── packs/<file>.soundpack.zip          (only without --download-base-url)
 ```
 
-Every input is validated first. Entries are sorted by ID; if an ID appears twice the higher version wins. Each
+Folder inputs contribute every `.zip` in them. Every input is validated first. Entries are sorted by ID; if an ID appears twice the higher version wins. Each
 download has its exact size and SHA-256. Preview URLs are relative, so the folder can be hosted anywhere (they resolve
 against the index URL). `generatedAt` is written only with `--generated-at` or when `SOURCE_DATE_EPOCH` is set, so
 indexes stay reproducible.
