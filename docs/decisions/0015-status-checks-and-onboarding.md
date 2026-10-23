@@ -1,6 +1,6 @@
 # 0015. Status checks and first-run onboarding
 
-- Status: accepted (owner may override, see the `question` issue linked from the PR)
+- Status: accepted (owner may override, see #127)
 - Date: 2026-10-24
 - Issue: #24
 
