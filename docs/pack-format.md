@@ -174,7 +174,7 @@ cut a notification clip from it only if the user asks.
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `file` | yes | Path to an [audio file](#audio), 0.2 to 4 s. |
+| `file` | yes | Path to an [audio file](#audio), 0.2 to 30 s. |
 | `label` | no | Shown in the clip list. |
 | `weight` | no | Relative probability, greater than 0 and at most 100, default 1. The app picks clips at random by weight with a shuffle bag, so the same clip never plays twice in a row. |
 
@@ -295,13 +295,18 @@ Durations (importer rule, measured from the container headers and confirmed by d
 
 | Use | Minimum | Maximum |
 | --- | --- | --- |
-| Notification clip | 0.2 s | 4 s |
+| Notification clip | 0.2 s | 30 s |
 | Ringtone | 5 s | 6 min |
 
 Both limits allow a 50 ms tolerance for encoder padding. Out of range: `CLIP_DURATION_OUT_OF_RANGE` or
 `RINGTONE_DURATION_OUT_OF_RANGE`. A file whose bytes do not match its extension's signature, or whose headers
 cannot be parsed, is `MEDIA_UNDECODABLE`. Tools may trim silence and normalize loudness (packer: `--trim-silence`,
 `--normalize`, EBU R128 at -16 LUFS) but never force a format.
+
+Long clips are allowed so the limit does not hold creativity back (a jingle, a song hook), but Android plays a
+notification sound to the end and lowers other audio while it plays. The app and the pack creator show a gentle hint
+for clips longer than 5 s, never an error. Auto haptics follow only the first 2 s of a clip, and custom haptics last
+at most 5 s ([ADR 0019](decisions/0019-long-notification-clips.md)).
 
 ### Images
 
@@ -430,7 +435,7 @@ contract and may be localized. The canonical list with severities and stages is
 | `LICENSE_NOT_SPDX` | warning | references | License is free text. |
 | `UNREFERENCED_FILE` | warning | references | Media file not referenced by any manifest. |
 | `MEDIA_UNDECODABLE` | error | media | Audio or image does not match its signature or cannot be parsed or decoded. |
-| `CLIP_DURATION_OUT_OF_RANGE` | error | media | Clip outside 0.2 to 4 s. |
+| `CLIP_DURATION_OUT_OF_RANGE` | error | media | Clip outside 0.2 to 30 s. |
 | `RINGTONE_DURATION_OUT_OF_RANGE` | error | media | Ringtone outside 5 s to 6 min. |
 | `IMAGE_TOO_LARGE` | error | media | Bitmap over 512 px per side. |
 | `SVG_UNSAFE` | error | media | Scripts, handlers, external references, DOCTYPE. |

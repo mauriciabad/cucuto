@@ -10,25 +10,71 @@ character's own vibration. Like a cuckoo clock, it announces who's there.
 
 - **Sound packs, not bundled content.** The app ships empty. Import `.soundpack.zip` files or download them from pack repositories.
 - **Ringtones too.** Packs can carry call ringtones with variants (day, night, seasons…).
-- **Make your own.** Build packs in the app or on the website, no tools needed.
+- **Make your own.** Build packs in the app or on the website, no tools needed (planned for v1.1; the `packer` CLI works today).
 - **Feels like a game.** Sound, motion and haptics on every interaction, built on Material 3 Expressive.
 
 > [!IMPORTANT]
 > Cucuto needs **Android 17, root and LSPosed (libxposed API 102)**. It runs as a tiny module inside `system_server` and
 > never touches the WhatsApp process. No content ships with the app; you are responsible for the packs you import.
 
+<!-- Screenshot slot: app screenshots made from the demo packs go here (#41). -->
+
+Cucuto is in development and has no release yet. The website is [cucuto.mauri.app](https://cucuto.mauri.app).
+
+## Install
+
+1. Install the APK from [GitHub Releases](https://github.com/mauriciabad/cucuto/releases).
+2. In the LSPosed manager, enable **Cucuto** with the **System Framework** scope only.
+3. Reboot.
+4. Open Cucuto: the setup guide and the status card check that everything works.
+5. Import a pack and give a contact a character.
+
+Details, troubleshooting and recovery: [install guide](docs/install.md) (also on the
+[website](https://cucuto.mauri.app/install/)). Before the first release, build a debug APK as described there.
+
+## Build
+
+You need JDK 21, the Android SDK, Rust with cargo-ndk (for the JPEG XL decoder) and [Bun](https://bun.com). Full setup
+in [CONTRIBUTING.md](CONTRIBUTING.md#building).
+
+```sh
+(cd android && ./gradlew build)                    # app and module: debug + release APKs, Lint, ktlint, unit tests
+(cd web && bun install && bun run build)           # website and PWA, in web/build/
+(cd tools/packer && ./gradlew build installDist)   # packer CLI, in tools/packer/cli/build/install/packer/
+```
+
 ## Repository
 
 | Path | What |
 | --- | --- |
-| [`android/`](android) | The app and its Xposed module (Kotlin, Jetpack Compose) |
+| [`android/`](android) | The app, its Xposed module and the `:core:*` libraries (Kotlin, Jetpack Compose) |
 | [`web/`](web) | Website, default pack repository and PWA pack creator (SvelteKit) |
 | [`tools/packer/`](tools/packer) | Command-line tool to build packs, bundles and repository indexes |
-| [`spec/`](spec) | JSON Schemas and golden test packs |
+| [`shared/pack-spec/`](shared/pack-spec) | The pack format rules in Kotlin, shared by the app and the packer |
+| [`spec/`](spec) | JSON Schemas, error codes and golden test packs |
 | [`packs/`](packs) | CC0 demo packs |
-| [`brand/`](brand) | Logo, icons and visual language |
-| [`docs/`](docs) | [Project brief](docs/project-brief.md), pack format, guides, decisions |
+| [`brand/`](brand) | Logo, icons, colors, motion and sound language |
+| [`docs/`](docs) | [Project brief](docs/project-brief.md), [pack format](docs/pack-format.md), [install guide](docs/install.md), [decisions](docs/decisions) |
+| [`spikes/`](spikes) | Throwaway prototypes behind some decisions |
+
+## Make packs
+
+A pack is a plain zip with a `pack.json` manifest and characters, each with a sprite, a pool of clips, an optional
+ringtone and a vibration.
+
+- [For pack authors](https://cucuto.mauri.app/authors/) on the website: the short version.
+- [Pack format](docs/pack-format.md): the full rules, with JSON Schemas in [`spec/`](spec).
+- [packer](tools/packer/README.md): build a pack from a folder with a `pack.yaml`, validate it, bundle packs and
+  publish your own pack repository.
+- [`packs/`](packs): two CC0 demo packs to copy from.
+
+## Built by AI agents
+
+Cucuto is built by AI agents (Claude) working from GitHub issues. The owner sets the scope, answers questions and has
+the final say; the agents write the code, docs and reviews. Everything an agent writes on GitHub is labeled as AI
+work. Human contributors are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
 Code is [GPL-3.0-or-later](LICENSE). Demo packs are [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+Security reports: [SECURITY.md](SECURITY.md).
