@@ -58,7 +58,7 @@ data class HomeState(
     val showRecent: Boolean get() = !filtering && recent.isNotEmpty()
 }
 
-/** Defaults the owner can override (question issue linked from the PR). */
+/** Defaults the owner can override (#129, ADR 0015). */
 object HomeRules {
     /** How long an unassigned chat stays in the recent senders strip after its last notification: 7 days. */
     const val RECENT_WINDOW_MS: Long = 7L * 24 * 60 * 60 * 1000

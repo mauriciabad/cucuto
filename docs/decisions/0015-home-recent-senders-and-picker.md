@@ -1,6 +1,6 @@
 # 0015. Home, recent senders and the character picker
 
-- Status: accepted (the owner may override the defaults below; see the `question` issue linked from the PR)
+- Status: accepted (the owner may override the defaults below, #129)
 - Date: 2026-10-24
 - Issues: #25 (Home and character picker), #18 (recent senders feed with one-tap assignment)
 
@@ -64,7 +64,7 @@ on Robolectric in `src/testDebug`, because the test activity comes from the debu
 Espresso 3.7.0: the 3.5 that Compose's test library pulls in looks for `InputManager.getInstance()`, which Android 17
 no longer has.
 
-### Defaults (owner may override)
+### Defaults (owner may override, #129)
 
 - The strip shows chats **without a voice** whose last notification is at most **7 days** old, newest first, up to
   **12**. Older ones stay in the list and in the FAB sheet.
