@@ -209,14 +209,17 @@ Everything is generated; edit the sources, not the outputs.
 
 ```
 cd brand/tools
-pnpm install
-pnpm build      # tokens, logos, icons, web icons, motion demo, UI sounds, preview and OG image
+bun install
+bun run build   # tokens, logos, icons, web icons, motion demo, UI sounds, preview and OG image
 ```
 
-Needs Node 22.15+, `rsvg-convert` (librsvg), `cjxl` (libjxl) and `ffmpeg` with libopus. The scripts are Node
-because the official Material Color Utilities reference implementation is TypeScript; they are build-time brand
-tooling only and never ship in the app. The type specimen downloads Google Sans Flex into `brand/.work/`
-(ignored).
+Needs [Bun](https://bun.com) (version in `tools/package.json`), `rsvg-convert` (librsvg), `cjxl` (libjxl) and
+`ffmpeg` with libopus. The scripts are JavaScript on Bun (owner, #63; #115) because the official Material Color
+Utilities reference implementation is TypeScript; they are build-time brand tooling only and never ship in the app.
+The output does not depend on the runtime: Node and Bun produce byte-identical tokens, SVGs and images (coordinates
+are rounded, since the engines can disagree in the last digit of trigonometric results). Only the UI sounds change bytes on every
+run, on any runtime: the Ogg muxer picks a random stream serial number; the decoded audio is identical. The type
+specimen downloads Google Sans Flex into `brand/.work/` (ignored).
 
 | Script | Makes |
 | --- | --- |

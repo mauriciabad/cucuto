@@ -29,10 +29,13 @@ export const clover = (cx, cy, R, n = 4) => polar(cx, cy, (a) => R * (0.72 + 0.2
 /** "SoftBurst": many shallow points. */
 export const softBurst = (cx, cy, R, n = 10) => polar(cx, cy, (a) => R * (0.86 + 0.14 * Math.abs(Math.cos((n / 2) * a)) ** 2));
 
-export const circlePath = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+// Coordinates are rounded like the polar shapes above: unrounded trigonometry differs in the last digit between
+// JavaScript engines (V8 and Bun's JavaScriptCore), and the generated SVGs must not depend on the runtime.
+export const circlePath = (cx, cy, r) =>
+  `M${f(cx - r)} ${f(cy)}a${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0Z`;
 
 export const roundRect = (x, y, w, h, r) =>
-  `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`;
+  `M${f(x + r)} ${f(y)}H${f(x + w - r)}A${f(r)} ${f(r)} 0 0 1 ${f(x + w)} ${f(y + r)}V${f(y + h - r)}A${f(r)} ${f(r)} 0 0 1 ${f(x + w - r)} ${f(y + h)}H${f(x + r)}A${f(r)} ${f(r)} 0 0 1 ${f(x)} ${f(y + h - r)}V${f(y + r)}A${f(r)} ${f(r)} 0 0 1 ${f(x + r)} ${f(y)}Z`;
 
 /** "Arch" (MaterialShapes.Arch): round top, flat-ish bottom with soft corners. */
 export const arch = (x, y, w, h) => {

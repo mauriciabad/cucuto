@@ -108,3 +108,77 @@ Answer: subagents are tied to their session; use /compact to keep them, or let t
 (Reboot after #101 landed; the device run verified both fixes and found a Diagnostics crash, fixed in the same follow-up PR.)
 
 > continue. resume agents and continue work
+
+## 2026-10-23 — Answer on #70 (website credit line and language)
+
+> 1 a anonimous
+> 2 multilingual, use english and spanish, and for the app too.
+
+Applied in #38: the footer stays anonymous; the website ships in English (root) and Spanish (`/es/`). The app's Spanish
+translation is #107.
+
+## 2026-10-23 — Answer on #55 (GitHub Pages or Cloudflare Pages?)
+
+> GitHub pages
+
+Issue closed by the owner: default (GitHub Pages) confirmed. The brief now says GitHub Pages everywhere and marks open question 2 settled.
+
+## 2026-10-23 — Answer on #56 (default for group chats)
+
+> agree
+
+Issue closed by the owner: default (one character per group, "per sender" as a per-group option) confirmed. Brief open question 3 marked settled.
+
+## 2026-10-23 — Answer on #59 (ringtones in v1 or v1.1?)
+
+> It matters for the v1
+
+Ringtones ship in v1: M9 lands before the M7 release (brief milestones and open question 6; the M9 milestone description no longer says v1.1). Only the pack creator (M8) stays v1.1.
+
+## 2026-10-23 — Answer on #60 (Kotlin always — website too?)
+
+> Actually if we can use kotlin for the PWA we may be able to reuse code and make our codebase simpler to mantain and work on. maybe webassembly helps
+
+> I want 1
+
+Option 1: the website validates packs with `shared/pack-spec` compiled for the browser, no TypeScript validator (#116); Kotlin/Wasm for more of the PWA creator is spike #117. Recorded in the brief, `CLAUDE.md`, ADR 0005 and `docs/pack-format.md`.
+
+## 2026-10-23 — Answer on #63 (brand identity: decisions to confirm (seed color, font, icon))
+
+> 3. I dont like how the faint sound rings look, but i like the idea. My main complaint is that in the andoid app it is not centered and only 1 ring is visible when icon mask is circle. this causes it to look like a mistake rather than a thought detail.
+> 5. okay, but i want to use bun, not node.
+>
+> okay for the others
+
+> I found another issue. the app icon that shows on the statusbar has incorect size, it looks too small compared to other app icons.
+
+Items 1, 2, 4 and 6 accepted. Item 3: the app icon's sound rings get centred so they read under a circle mask (#113). Item 5: JavaScript tooling (`brand/tools` and, by default, `web/`) moves from Node and pnpm to Bun (#115; noted in `CLAUDE.md` and the brief). Second comment: a proper status-bar notification icon (#114).
+
+## 2026-10-23 — Answer on #67 (module scope: `system` instead of `android` in scope.list)
+
+> i dont understand the question or i dont have enough knowledge to answer. I dont care about backwards compatibility. I want it to work with the minimum intrusion possible, so we lower the risk of critical vulnerabilities/mistakes. Pick based on my preferences.
+
+`system` stays (only `system_server`, the least intrusive scope that works); no backwards-compatibility code. "Minimum intrusion" is now a guiding principle in `CLAUDE.md` and the brief's constraints table; ADR 0002 records the answer.
+
+## 2026-10-23 — Answer on #68 (dependency updates: Dependabot (default) or Renovate?)
+
+> I dont care, just consider that when i'm happy with the featureset and it works i will probably abandon the code. so whatever you pick has to be something that when in the future i spawn a agent to do some task it also takes the spawn oportunity to update dependencies if it is not much work in paralel.
+
+Dependabot stays. New rule in `CLAUDE.md` (Workflow, "Dependencies"): every agent, whatever its task, also lands cheap dependency updates in a separate parallel PR; costly ones get an issue. ADR 0004 updated; Dependabot auto-merge and the missing `web/` entry in #122.
+
+## 2026-10-23 — Answer on #75 (pack format v1: defaults to confirm (strictness, SVG, day/night, validator library))
+
+> 3 i want sunrise and sunset from the phone's location, or a user setting
+> 7 on the notification duration limit, I would be more permissive on the maximum length to not limit creativity.
+>
+> besides this, would be nice that you made some brainstorming about more conditions that allow for fun, enjoyable and creative experiences. and that dont drain the battery.
+>
+> others ok
+
+Item 3: day and night follow sunrise and sunset from the phone's coarse location, a place the user sets, or fixed hours (#118). Item 7: the notification clip maximum goes from 4 s to 30 s by default (#119). The brainstorm of battery-free fun conditions is #120. The other defaults (1, 2, 4, 5, 6) are accepted. Brief updated.
+
+## 2026-10-23 — Answer on #88 (may the module wake the app to deliver the decision log?)
+
+> I dont understand the question not the changes in behaveour. i want the notifications to play at the same instant they play in stock whatsapp. and i also want to preserve baterylife.  i close the issue because i feel like my answer wont be educated, if i find out an unexpected behaveour because of this, you can revisit this
+
+Issue closed by the owner: the delivery default stands. The two requirements (same instant as stock WhatsApp, preserve battery) are an M1 acceptance criterion in the brief and are analysed in ADR 0010: event delivery complies (never on the notification path, no wake-ups), but a cold start of Cucuto's process can delay the clip itself; measured and fixed in #121.
