@@ -1,4 +1,4 @@
-# 0015. Packs screen: import flow, errors in plain words and removal
+# 0016. Packs screen: import flow, errors in plain words and removal
 
 - Status: accepted (defaults open for the owner in #130)
 - Date: 2026-10-24
