@@ -65,9 +65,9 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   `brew install jpeg-xl`; without it the JPEG XL source is skipped with a warning (CI installs `libjxl-tools` and sets
   `PICTURE_REQUIRE_JXL=1`). Sources live in `src/lib/assets/images/`.
 - **Pack validator (#116, ADR 0022).** Pack checks use `shared/pack-spec`, the Kotlin rules of packer and the app,
-  compiled to JavaScript; never a TypeScript port. Build it with JDK 21: `cd ../shared/pack-spec && ./gradlew
-  syncWebPackSpec` writes `src/lib/pack-spec/generated/` (ignored by version control). `src/lib/pack-spec/` types it
-  and loads it lazily (`loadPackSpec()`); `PackCheck.svelte` is the UI, on `/authors/#check` and `/open/`. Without the
+  compiled to JavaScript; never a TypeScript port. Build it with JDK 21: in `../shared/pack-spec`,
+  `./gradlew syncWebPackSpec` writes `src/lib/pack-spec/generated/` (ignored by version control).
+  `src/lib/pack-spec/` types it and loads it lazily (`loadPackSpec()`); `PackCheck.svelte` is the UI, on `/authors/#check` and `/open/`. Without the
   module the site still builds and the checker says it is not included; CI builds it in the `pack-spec-js` job and
   sets `CUCUTO_REQUIRE_PACK_SPEC=1`, which makes `vite.config.ts` fail without it.
 - **TypeScript 6.** TypeScript 7 is out, but SvelteKit 3, svelte-check and typescript-eslint still declare
