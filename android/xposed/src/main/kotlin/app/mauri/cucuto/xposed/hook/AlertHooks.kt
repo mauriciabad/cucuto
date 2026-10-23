@@ -3,6 +3,8 @@ package app.mauri.cucuto.xposed.hook
 import android.net.Uri
 import android.os.SystemClock
 import android.os.VibrationEffect
+import app.mauri.cucuto.core.haptics.HapticCapabilities
+import app.mauri.cucuto.core.haptics.HapticEffects
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.xposed.ModuleLog
@@ -22,7 +24,9 @@ import java.util.concurrent.atomic.AtomicLong
  * The production hooks (issue #15), on `com.android.server.notification.NotificationAttentionHelper`:
  *
  * - `playSound(NotificationRecord, Uri)`: argument 1 becomes the contact's clip.
- * - `playVibration(NotificationRecord, VibrationEffect, boolean)`: argument 1 becomes the contact's haptic.
+ * - `playVibration(NotificationRecord, VibrationEffect, boolean)`: argument 1 becomes the contact's haptic, built by
+ *   `:core:haptics` ([HapticVibrations], #96). The clip is the one `playSound` chose (the decision is shared), so an
+ *   `auto` haptic follows that clip's envelope.
  *
  * Both run only after the framework has decided the record alerts (DND, muted chats, ringer mode, burst limiter,
  * alert-once and group-alert rules are all upstream), and both only ever substitute an argument (M0 report §2).
@@ -33,7 +37,9 @@ import java.util.concurrent.atomic.AtomicLong
  * name and arity, so a changed signature is a logged no-op, never a crash.
  *
  * Speed: the notification path does a package check, a handful of reflective getters, hash map lookups and a
- * shuffle-bag draw. No IO, no Binder calls, no allocation beyond a few small objects. Every alert is timed with
+ * shuffle-bag draw; each haptic's effect is built once and cached. The vibrator's capabilities are read once, on the
+ * first custom haptic (a few in-process calls to the vibrator service). No IO, no allocation beyond a few small
+ * objects. Every alert is timed with
  * [SystemClock.elapsedRealtimeNanos]; anything over [SLOW_NANOS] is logged.
  */
 internal class AlertHooks(
@@ -42,9 +48,11 @@ internal class AlertHooks(
     private val report: (DecisionEvent) -> Unit,
     private val log: ModuleLog,
     private val router: AlertRouter = AlertRouter(),
-    private val effects: HapticEffects = HapticEffects(),
+    private val vibrations: HapticVibrations<VibrationEffect> = HapticVibrations(HapticEffects::create),
+    private val background: (() -> Unit) -> Unit = { it() },
 ) {
     private var reader: RecordReader? = null
+    private var vibrator: VibratorReader? = null
     private val recent = RecentDecisions()
 
     val installed: MutableList<String> = ArrayList(2)
@@ -65,9 +73,12 @@ internal class AlertHooks(
                 return
             }
             reader = recordReader
+            vibrator =
+                VibratorReader(helper).also {
+                    if (!it.usable) log.warn("${helper.simpleName} has no Context field; haptics use generic fallbacks")
+                }
             hook(helper, PLAY_SOUND, 2) { chain -> playSound(chain) }
             hook(helper, PLAY_VIBRATION, 3) { chain -> playVibration(chain) }
-            log.info("Haptics via ${effects.strategy}")
         } catch (t: Throwable) {
             log.warn("Installing hooks failed; WhatsApp keeps its tones", t)
         }
@@ -75,13 +86,18 @@ internal class AlertHooks(
 
     /**
      * Loads and initialises everything the notification path touches (the module's own classes, the routing code,
-     * the reflective haptics API), so the first WhatsApp alert after boot does not pay for class loading. Run on the
-     * background thread; touches no shuffle bag and reports nothing.
+     * `:core:haptics` and its `VibrationEffect.Builder` probe), so the first WhatsApp alert after boot does not pay for
+     * class loading. Run on the background thread; touches no shuffle bag, caches no effect and reports nothing.
      */
     fun warmUp() {
         try {
             router.decide(NotificationSnapshot(Targets.MESSENGERS.first(), shortcutId = "warm-up@lid"), table())
-            effects.effectFor(Targets.SELF_TEST_HAPTIC)
+            val builder = HapticEffects.builderAvailable
+            vibrations.warmUp(Targets.SELF_TEST_HAPTIC, VibratorReader.fallback())
+            vibrations.swapFor(Haptic.Keep)
+            log.info(
+                "Haptics via ${if (builder) "VibrationEffect.Builder" else "fallbacks (no VibrationEffect.Builder)"}",
+            )
             Uri.parse(Targets.SELF_TEST_CLIP).pathSegments
             recent.get(this)
         } catch (t: Throwable) {
@@ -134,35 +150,43 @@ internal class AlertHooks(
     }
 
     private fun playVibration(chain: XposedInterface.Chain): Any? {
-        var skip = false
-        val replacement: VibrationEffect? =
+        val swap: VibrationSwap<VibrationEffect>? =
             guarded(PLAY_VIBRATION) {
                 val start = SystemClock.elapsedRealtimeNanos()
                 val haptic = decisionFor(chain.getArg(0), start)?.haptic
-                val effect =
-                    when (haptic) {
-                        is Haptic.Custom -> {
-                            effects.effectFor(haptic)
-                        }
-
-                        Haptic.Off -> {
-                            skip = true
-                            null
-                        }
-
-                        else -> {
-                            null
-                        }
-                    }
+                if (haptic is Haptic.Custom && vibrations.capabilities == null) loadCapabilities(chain.thisObject)
+                val swap = vibrations.swapFor(haptic)
                 timed(PLAY_VIBRATION, start)
-                effect
+                swap
             }
-        // Haptic.Off is an explicit per-contact choice: report "not vibrated" without calling the original.
-        if (skip) return false
-        if (replacement == null) return chain.proceed()
-        val args = chain.args.toTypedArray()
-        args[1] = replacement
-        return chain.proceed(args)
+        return when (swap) {
+            null, VibrationSwap.Keep -> {
+                chain.proceed()
+            }
+
+            // Haptic.Off is an explicit per-contact choice: report "not vibrated" without calling the original.
+            VibrationSwap.Suppress -> {
+                false
+            }
+
+            is VibrationSwap.Replace -> {
+                val args = chain.args.toTypedArray()
+                args[1] = swap.effect
+                chain.proceed(args)
+            }
+        }
+    }
+
+    /**
+     * Reads the vibrator's capabilities through the helper's Context, once per boot: the first custom haptic pays a
+     * few in-process calls to the vibrator service. Falls back to generic capabilities when it cannot.
+     */
+    private fun loadCapabilities(helper: Any?) {
+        val read = vibrator?.capabilities(helper)
+        val capabilities = read ?: VibratorReader.fallback()
+        if (vibrations.useCapabilities(capabilities)) {
+            background { log.info(describe(capabilities, read != null)) }
+        }
     }
 
     /**
@@ -276,5 +300,30 @@ internal class AlertHooks(
         const val SLOW_NANOS: Long = 5_000_000
 
         private val EMPTY_IDENTITY = ConversationIdentity(emptyList(), false, null, null, null)
+
+        /** One line with what the vibrator can play, e.g. `Vibrator: builder, envelopes 16 points 20..1000ms, …`. */
+        internal fun describe(
+            capabilities: HapticCapabilities,
+            read: Boolean,
+        ): String =
+            buildString {
+                append(if (read) "Vibrator: " else "Vibrator unreadable, assuming: ")
+                append(if (capabilities.builderSupported) "builder" else "no builder")
+                if (capabilities.envelopesSupported) {
+                    append(", envelopes ").append(capabilities.maxControlPoints).append(" points ")
+                    append(capabilities.minControlPointMs).append("..").append(capabilities.maxControlPointMs)
+                    append("ms, max ").append(capabilities.maxEnvelopeMs).append("ms")
+                } else {
+                    append(", no envelopes")
+                }
+                append(", amplitude control ").append(if (capabilities.amplitudeControl) "yes" else "no")
+                append(", primitives ")
+                val primitives = capabilities.primitiveDurationsMs
+                if (primitives.isEmpty()) {
+                    append("none")
+                } else {
+                    primitives.entries.joinTo(this, " ") { "${it.key.name.lowercase()}=${it.value}ms" }
+                }
+            }
     }
 }

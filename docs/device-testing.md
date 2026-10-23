@@ -62,6 +62,9 @@ generation. Tap **Post test notification** (allow notifications if asked).
 - You hear a **two-tone rising chirp** (not the default notification sound) and feel a short **click-tick**.
 - Module log: `alert app.mauri.cucuto SWAPPED key=<title> … clip=content://app.mauri.cucuto.clips/selftest/chirp.wav (self-test) NNus`.
   `NNus` should be well under 5000; a `Slow playSound` warning is a finding.
+- Once per boot, after the first custom haptic: `Vibrator: builder, envelopes …, amplitude control …, primitives …`.
+  `builder` must be there (the module probes `VibrationEffect.Builder` inside `system_server`, where the 37.1 build
+  allows it); `Vibrator unreadable, assuming: …` means the helper's Context could not be read (a finding).
 - `adb shell dumpsys vibrator_manager | grep -A3 -i "app.mauri.cucuto"`: a short effect with usage NOTIFICATION.
 - Within ~10 s the Diagnostics screen shows a `SWAPPED` decision and "Module in system_server: Reported … Hooks:
   playSound, playVibration". The module log prints `Delivered N decision events to the app` once after boot (and

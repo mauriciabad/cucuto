@@ -7,6 +7,8 @@ plugins {
 dependencies {
     // The routing table format shared with the app: plain Kotlin, no dependencies.
     implementation(projects.core.routing)
+    // Haptic to VibrationEffect with capability checks and fallbacks (ADR 0012): no Context, no DI, never throws.
+    implementation(projects.core.haptics)
 
     // Provided by LSPosed at runtime; never bundled.
     compileOnly(libs.libxposed.api)

@@ -36,10 +36,13 @@ reflective haptics API are warmed up on a background thread after boot.
 resolution (pack weight × 4 copies, 1–400). The same clip never plays twice in a row, also across a refill and
 across a table republish (the bag remembers the last clip by URI).
 
-**Haptics.** `Haptic.Custom` presets and basic envelopes are built with `VibrationEffect.Builder` through
-reflection resolved once (M0 recommendation 9), cached per haptic; without the Builder, presets fall back to
-`createWaveform`. `Keep` and unresolvable effects keep WhatsApp's vibration; `Auto` uses the chosen clip's envelope;
-`Off` (per-contact override, ADR 0009) skips the vibration.
+**Haptics.** `Haptic.Custom` presets and basic envelopes are built by `:core:haptics`
+(`HapticEffects.create`, [ADR 0012](0012-haptics-effects-and-auto-haptics.md); wired in #96): `VibrationEffect.Builder`
+when it is available (probed by reflection, so it also works on the owner's 37.1 build inside `system_server`),
+otherwise a basic envelope, a `Composition` or a waveform. The vibrator's `HapticCapabilities` are read once, through
+`NotificationAttentionHelper`'s Context, on the first custom haptic; each effect is cached per haptic (bounded LRU,
+failures included). `Keep` and unbuildable effects keep WhatsApp's vibration; `Auto` uses the envelope of the clip
+`playSound` played (`forClip` on the shared decision); `Off` (per-contact override, ADR 0009) skips the vibration.
 
 **Clip provider (#16).** `content://app.mauri.cucuto.clips/<packId>/<characterId>/<path>` serves audio files from the
 active version of an installed pack (`files/packs/`, ADR 0008). Exported, read-only, and checked on every call:

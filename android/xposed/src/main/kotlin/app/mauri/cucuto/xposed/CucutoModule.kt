@@ -66,6 +66,7 @@ class CucutoModule : XposedModule() {
                     table = routing::peek,
                     report = reporter::report,
                     log = moduleLog,
+                    background = { block -> reporter.post(block = block) },
                 )
             hooks.install(param.classLoader)
             this.hooks = hooks
