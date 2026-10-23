@@ -1,0 +1,10 @@
+[versions]
+# AGP 9 has built-in Kotlin support, so there is no separate Kotlin Gradle plugin here.
+agp = "9.4.1"
+libxposed = "102.0.0"
+
+[libraries]
+libxposed-api = { module = "io.github.libxposed:api", version.ref = "libxposed" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

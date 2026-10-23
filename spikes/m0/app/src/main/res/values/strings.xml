@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">cucuto M0 spike</string>
+    <string name="module_description">Throwaway M0 device spike: observes the notification alerting path in system_server and swaps sound/vibration for its own debug notifications only. Scope: System Framework.</string>
+</resources>

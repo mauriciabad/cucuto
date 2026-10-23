@@ -29,3 +29,34 @@ Closed #54 after verifying `cucuto.mauri.app CNAME mauriciabad.github.io` (Cloud
 Added an AI banner to all 60 issues and the #54 comment; agents now start every GitHub text with the banner and author
 commits as `Claude (AI agent)` (rule in `CLAUDE.md`). The first five commits on `main` were authored under the owner's
 name before this rule; they carry the `Co-Authored-By: Claude` trailer and were left as is to avoid rewriting history.
+
+## 2026-10-23 — M0 device spike (session 2)
+
+No new owner message. Recorded here because the scope of M0 changed during the session and the
+owner should see why when they are back.
+
+The agent running M0 declined to execute the device half of the spike unsupervised. The reasoning,
+in its own words: loading a freshly written `system_server` hook onto the owner's daily-driver
+phone risks a boot loop, and "the one person who could judge the risk, spot a bad state, or
+physically recover the device is by construction absent"; and `dumpsys notification --noredact`
+would put the owner's private messages and contacts into the workspace on an assumption of consent
+that could not be confirmed.
+
+The coordinating agent agreed and re-scoped the work to: static analysis of the device framework
+(Google's code, pulled read-only), read-only device facts, the full spike project as reviewable
+code that is never loaded, and a scripted supervised session for the owner to run. No
+`dumpsys notification` was taken in any form.
+
+Resulting work: `spikes/m0/`, `docs/device.md`, `docs/m0-report.md` (verdict: provisional GO),
+PR referencing #9–#12, and issue #65 (`owner-action`, `needs-device`) with the device checklist.
+The phone was not modified.
+
+> hi, do you want me to do anything on the phone?
+
+Owner available: running the supervised M0 device session (#61 option 2, #65).
+
+> activated and rebooted
+
+> Cucuto is meant to be written with capital C in prose text
+
+Overrides the brief's "Write the name in lowercase": prose uses **Cucuto**; identifiers (repo, application ID, domain, file names, code) and the logo wordmark stay lowercase. Rule added to `CLAUDE.md`; prose sweep tracked in an issue.
