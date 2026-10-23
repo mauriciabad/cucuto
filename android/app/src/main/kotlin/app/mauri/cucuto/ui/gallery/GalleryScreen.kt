@@ -50,6 +50,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -67,6 +68,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.graphics.createBitmap
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -156,7 +158,7 @@ private fun GalleryContent(
     modifier: Modifier = Modifier,
 ) {
     val feedback = LocalFeedback.current
-    var accentIndex by rememberSaveable { mutableStateOf(0) }
+    var accentIndex by rememberSaveable { mutableIntStateOf(0) }
     val sprite by produceState<Bitmap?>(null) { value = withContext(Dispatchers.Default) { sampleSprite() } }
     val spriteSeed by produceState<Color?>(null, sprite) { value = sprite?.let { extractSeedColor(it) } }
     val seed = if (accentIndex == SPRITE_INDEX) spriteSeed else Accents[accentIndex].seed
@@ -203,7 +205,10 @@ private fun GalleryScaffold(
                 subtitle = { Text(stringResource(R.string.gallery_subtitle)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.navigate_back))
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.navigate_back),
+                        )
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -392,9 +397,9 @@ private fun CharactersCard(
 @Composable
 private fun Swatch(
     color: Color,
-    modifier: Modifier = Modifier.size(18.dp),
+    modifier: Modifier = Modifier,
 ) {
-    Surface(shape = CucutoShapes.Avatar.toShape(), color = color, modifier = modifier) {}
+    Surface(shape = CucutoShapes.Avatar.toShape(), color = color, modifier = modifier.size(18.dp)) {}
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -471,7 +476,9 @@ private fun SettingsCard(
         )
         SettingRow(
             R.string.gallery_rich_haptics,
-            stringResource(if (settings.richHaptics) R.string.gallery_rich_haptics_yes else R.string.gallery_rich_haptics_no),
+            stringResource(
+                if (settings.richHaptics) R.string.gallery_rich_haptics_yes else R.string.gallery_rich_haptics_no,
+            ),
         )
         SettingRow(R.string.gallery_contrast, contrast.toString())
     }
@@ -547,10 +554,17 @@ private fun ShapesCard() {
             R.string.gallery_shape_door to CucutoShapes.DoorFrame,
         )
     GalleryCard {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             shapes.forEach { (label, polygon) ->
                 ShapeSample(label) {
-                    Surface(shape = polygon.toShape(), color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(56.dp)) {}
+                    Surface(
+                        shape = polygon.toShape(),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(56.dp),
+                    ) {}
                 }
             }
             ShapeSample(R.string.gallery_shape_particles) {
@@ -560,7 +574,9 @@ private fun ShapesCard() {
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     val colors =
-                        with(MaterialTheme.colorScheme) { listOf(primary, primaryContainer, tertiary, tertiaryContainer) }
+                        with(
+                            MaterialTheme.colorScheme,
+                        ) { listOf(primary, primaryContainer, tertiary, tertiaryContainer) }
                     CucutoShapes.Particles.forEachIndexed { i, polygon ->
                         Surface(shape = polygon.toShape(), color = colors[i], modifier = Modifier.size(14.dp)) {}
                     }
@@ -597,9 +613,10 @@ private fun Color.hex(): String = "#%06X".format(toArgb() and 0xFFFFFF)
 /** A small frog drawn in code: a stand-in sprite with a transparent background, to show seed extraction. */
 private fun sampleSprite(): Bitmap {
     val size = SPRITE_PX
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val bitmap = createBitmap(size, size)
     val canvas = android.graphics.Canvas(bitmap)
     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+
     fun circle(
         x: Float,
         y: Float,
@@ -627,7 +644,13 @@ private const val SPRITE_PX = 160
 private fun GalleryPreview() {
     CucutoTheme(dynamicColor = false) {
         GalleryContent(
-            settings = GallerySettings(UiSoundLevel.Quiet, hapticsEnabled = true, dynamicColor = false, richHaptics = true),
+            settings =
+                GallerySettings(
+                    UiSoundLevel.Quiet,
+                    hapticsEnabled = true,
+                    dynamicColor = false,
+                    richHaptics = true,
+                ),
             onSoundLevel = {},
             onHaptics = {},
             onDynamicColor = {},

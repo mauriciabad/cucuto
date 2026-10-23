@@ -24,7 +24,10 @@ fun rememberBeatSeconds(
         if (beat == null) return@LaunchedEffect
         val firstFrame = withFrameNanos { it }
         do {
-            val frame = withFrameNanos { frameNanos -> frameNanos.also { seconds.floatValue = beat.elapsedSeconds(it) } }
+            val frame =
+                withFrameNanos { frameNanos ->
+                    frameNanos.also { seconds.floatValue = beat.elapsedSeconds(it) }
+                }
             // Safety net: never animate longer than the timeline itself, even with a beat from another time base.
             val running = (frame - firstFrame) / NANOS_PER_SECOND < durationSeconds + 1f
         } while (seconds.floatValue < durationSeconds && running)

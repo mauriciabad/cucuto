@@ -33,8 +33,9 @@ class UiFeedbackSettings
     ) {
         val soundLevel: Flow<UiSoundLevel> =
             dataStore.data
-                .map { prefs -> UiSoundLevel.entries.firstOrNull { it.name == prefs[SOUND_LEVEL] } ?: UiSoundLevel.Quiet }
-                .distinctUntilChanged()
+                .map { prefs ->
+                    UiSoundLevel.entries.firstOrNull { it.name == prefs[SOUND_LEVEL] } ?: UiSoundLevel.Quiet
+                }.distinctUntilChanged()
 
         val hapticsEnabled: Flow<Boolean> = dataStore.data.map { it[HAPTICS] ?: true }.distinctUntilChanged()
 

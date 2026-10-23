@@ -96,6 +96,7 @@ fun lerp(
 ): ColorScheme {
     if (fraction <= 0f) return start
     if (fraction >= 1f) return stop
+
     fun mix(
         a: Color,
         b: Color,

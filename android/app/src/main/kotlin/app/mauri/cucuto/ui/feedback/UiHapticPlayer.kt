@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.feedback
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
@@ -23,7 +24,11 @@ internal class UiHapticPlayer(
     private val supported = HashMap<List<Int>, Boolean>()
     private val touch = VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH)
 
-    /** Whether rich [haptic]s play as designed on this device (otherwise their fallback type plays). */
+    /**
+     * Whether rich [haptic]s play as designed on this device (otherwise their fallback type plays).
+     * `HapticPrimitive.id` only ever holds `VibrationEffect.Composition.PRIMITIVE_*` constants (see [Feedback]).
+     */
+    @SuppressLint("WrongConstant")
     fun supportsRich(haptic: UiHaptic.Rich): Boolean {
         val ids = haptic.primitives.map { it.id }.distinct()
         return synchronized(supported) {

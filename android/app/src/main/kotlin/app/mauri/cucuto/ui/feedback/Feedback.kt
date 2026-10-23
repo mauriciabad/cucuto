@@ -99,7 +99,11 @@ sealed interface Feedback {
                     listOf(
                         HapticPrimitive(Composition.PRIMITIVE_QUICK_RISE, scale = 0.5f, atMs = 0),
                         HapticPrimitive(Composition.PRIMITIVE_CLICK, scale = 0.9f, atMs = 60),
-                        HapticPrimitive(Composition.PRIMITIVE_TICK, scale = 0.6f, atMs = CHARACTER_CLIP_DELAY_MS.toInt()),
+                        HapticPrimitive(
+                            Composition.PRIMITIVE_TICK,
+                            scale = 0.6f,
+                            atMs = CHARACTER_CLIP_DELAY_MS.toInt(),
+                        ),
                     ),
                     fallback = HapticFeedbackType.Confirm,
                 )

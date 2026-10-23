@@ -50,7 +50,7 @@ fun ParticleBurst(
 ) {
     if (beat == null || LocalReducedMotion.current) return
     val seconds = rememberBeatSeconds(beat, MAX_LIFE_SECONDS)
-    BurstScene(beat.startNanos, { seconds.floatValue }, modifier, colors, particleCount)
+    BurstScene(beat.startNanos, { seconds.floatValue }, colors, particleCount, modifier)
 }
 
 /** The burst frozen [seconds] after its beat: previews, filmstrips and screenshot tests. */
@@ -61,15 +61,15 @@ fun ParticleBurstStill(
     seed: Long = 0L,
     colors: List<Color> = burstColors(),
     particleCount: Int = DEFAULT_COUNT,
-) = BurstScene(seed, { seconds }, modifier, colors, particleCount)
+) = BurstScene(seed, { seconds }, colors, particleCount, modifier)
 
 @Composable
 private fun BurstScene(
     seed: Long,
     seconds: () -> Float,
-    modifier: Modifier,
     colors: List<Color>,
     particleCount: Int,
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val springs = rememberSprings()
@@ -122,6 +122,7 @@ private class Particle(
             density: Float,
         ): List<Particle> {
             val random = Random(seed)
+
             fun between(
                 min: Float,
                 max: Float,

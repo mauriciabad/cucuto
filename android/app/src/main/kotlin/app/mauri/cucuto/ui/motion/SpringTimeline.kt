@@ -43,7 +43,14 @@ class UnitStep internal constructor(
     fun value(seconds: Float): Float = if (seconds <= 0f) 0f else animation.getValueFromNanos(seconds.toNanos())
 
     /** Velocity in progress units per second. */
-    fun velocity(seconds: Float): Float = if (seconds <= 0f) 0f else animation.getVelocityVectorFromNanos(seconds.toNanos()).value
+    fun velocity(seconds: Float): Float =
+        if (seconds <=
+            0f
+        ) {
+            0f
+        } else {
+            animation.getVelocityVectorFromNanos(seconds.toNanos()).value
+        }
 }
 
 private fun unitStep(spec: FiniteAnimationSpec<Float>) =

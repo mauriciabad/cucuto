@@ -15,7 +15,10 @@ class SeedColorSchemeTest {
     fun brandSeedReproducesTheBrandSchemes() {
         assertSchemesEqual(LightColorScheme, seedColorScheme(CucutoSeed, darkTheme = false))
         assertSchemesEqual(DarkColorScheme, seedColorScheme(CucutoSeed, darkTheme = true))
-        assertSchemesEqual(LightMediumContrastColorScheme, seedColorScheme(CucutoSeed, darkTheme = false, contrast = 0.5f))
+        assertSchemesEqual(
+            LightMediumContrastColorScheme,
+            seedColorScheme(CucutoSeed, darkTheme = false, contrast = 0.5f),
+        )
         assertSchemesEqual(DarkHighContrastColorScheme, seedColorScheme(CucutoSeed, darkTheme = true, contrast = 1f))
     }
 

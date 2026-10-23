@@ -67,7 +67,7 @@ fun CuckooDoor(
 ) {
     val timeline = rememberDoorTimeline(closeAfterMillis, callsAtMillis)
     val seconds = rememberBeatSeconds(beat, timeline.endSeconds)
-    DoorScene({ seconds.floatValue }, timeline, modifier, contentDescription, character)
+    DoorScene({ seconds.floatValue }, timeline, contentDescription, character, modifier)
 }
 
 /** The door frozen [seconds] after its beat: previews, filmstrips and screenshot tests. */
@@ -80,7 +80,7 @@ fun CuckooDoorStill(
     character: (@Composable () -> Unit)? = null,
 ) {
     val timeline = rememberDoorTimeline(closeAfterMillis, callsAtMillis)
-    DoorScene({ seconds }, timeline, modifier, contentDescription = null, character = character)
+    DoorScene({ seconds }, timeline, contentDescription = null, character = character, modifier = modifier)
 }
 
 @Composable
@@ -99,12 +99,19 @@ private fun rememberDoorTimeline(
 private fun DoorScene(
     seconds: () -> Float,
     timeline: DoorTimeline,
-    modifier: Modifier,
     contentDescription: String?,
     character: (@Composable () -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     val colors = doorColors()
-    val semantics = if (contentDescription != null) Modifier.semantics { this.contentDescription = contentDescription } else Modifier
+    val semantics =
+        if (contentDescription !=
+            null
+        ) {
+            Modifier.semantics { this.contentDescription = contentDescription }
+        } else {
+            Modifier
+        }
 
     BoxWithConstraints(modifier.aspectRatio(VIEW_W / VIEW_H).then(semantics)) {
         val unit = maxWidth / VIEW_W
@@ -300,9 +307,27 @@ private class DoorTimeline(
                 closeAt?.let { Segment(it, 0f, springs.defaultSpatial) },
             ),
         )
-    private val beak = Track(0f, calls.flatMap { listOf(Segment(it, 1f, springs.fastSpatial), Segment(it + BEAK_HOLD, 0f, springs.defaultSpatial)) })
-    private val waveAlpha = calls.map { Track(0f, listOf(Segment(it, 1f, springs.defaultEffects), Segment(it + WAVE_HOLD, 0f, springs.slowEffects))) }
-    private val waveTravel = calls.map { Track(0f, listOf(Segment(it, 1f, springs.slowSpatial), Segment(it + WAVE_TRAVEL_HOLD, 0f, springs.fastEffects))) }
+    private val beak =
+        Track(
+            0f,
+            calls.flatMap {
+                listOf(Segment(it, 1f, springs.fastSpatial), Segment(it + BEAK_HOLD, 0f, springs.defaultSpatial))
+            },
+        )
+    private val waveAlpha =
+        calls.map {
+            Track(0f, listOf(Segment(it, 1f, springs.defaultEffects), Segment(it + WAVE_HOLD, 0f, springs.slowEffects)))
+        }
+    private val waveTravel =
+        calls.map {
+            Track(
+                0f,
+                listOf(
+                    Segment(it, 1f, springs.slowSpatial),
+                    Segment(it + WAVE_TRAVEL_HOLD, 0f, springs.fastEffects),
+                ),
+            )
+        }
 
     // Reduced motion: one cross-fade to the open state (and back), no swing, no pop.
     private val fade =
