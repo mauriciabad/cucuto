@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.RingtoneManager
+import android.os.SystemClock
 import app.mauri.cucuto.R
 import app.mauri.cucuto.xposed.route.Targets
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,6 +20,14 @@ import javax.inject.Singleton
  * swaps its sound for the provider's self-test chirp and its vibration for a click-tick, then reports the decision
  * back: an end-to-end check of hook, clip provider, haptics and event delivery without a WhatsApp message.
  * Without the module, the phone plays the default notification sound.
+ *
+ * Android 15+ "notification cooldown" (politeness, `NotificationAttentionHelper`) mutes alerts before the framework
+ * ever calls `playSound`/`playVibration`, so the hook never sees them (device finding, issue #15):
+ * - Avalanche: for 2 minutes after boot, turning airplane mode off or a profile becoming available, every alert
+ *   that is not exempt is muted. The test is posted as [Notification.CATEGORY_REMINDER], which is exempt at full
+ *   volume (like WhatsApp's conversations, which are exempt as conversations).
+ * - Per-app cooldown: a second alert from the same app within 60 s plays at reduced volume (the hook still runs),
+ *   and one within 10 s of the previous post is muted. So two tests must be at least [MIN_SPACING_MILLIS] apart.
  */
 @Singleton
 class SelfTestNotifier
@@ -26,12 +35,30 @@ class SelfTestNotifier
     constructor(
         @param:ApplicationContext private val context: Context,
     ) {
-        /** Returns false when notifications are blocked for the app. */
-        suspend fun post(): Boolean =
+        sealed interface Result {
+            data object Posted : Result
+
+            /** Notifications are blocked for the app. */
+            data object Blocked : Result
+
+            /** Posting now would be muted by Android's per-app cooldown; try again in [seconds]. */
+            data class TooSoon(
+                val seconds: Int,
+            ) : Result
+        }
+
+        @Volatile private var lastPostedAt: Long? = null
+
+        suspend fun post(): Result =
             withContext(Dispatchers.IO) {
+                val now = SystemClock.elapsedRealtime()
+                lastPostedAt?.let { last ->
+                    val wait = last + MIN_SPACING_MILLIS - now
+                    if (wait > 0) return@withContext Result.TooSoon(((wait + 999) / 1000).toInt())
+                }
                 SelfTestSound.ensureFile(context.filesDir)
                 val manager = context.getSystemService(NotificationManager::class.java)
-                if (!manager.areNotificationsEnabled()) return@withContext false
+                if (!manager.areNotificationsEnabled()) return@withContext Result.Blocked
                 ensureChannel(manager)
                 val notification =
                     Notification
@@ -39,11 +66,12 @@ class SelfTestNotifier
                         .setSmallIcon(R.drawable.ic_launcher_monochrome)
                         .setContentTitle(context.getString(R.string.selftest_notification_title))
                         .setContentText(context.getString(R.string.selftest_notification_text))
-                        .setCategory(Notification.CATEGORY_STATUS)
+                        .setCategory(Notification.CATEGORY_REMINDER)
                         .setAutoCancel(true)
                         .build()
                 manager.notify(NOTIFICATION_ID, notification)
-                true
+                lastPostedAt = now
+                Result.Posted
             }
 
         private fun ensureChannel(manager: NotificationManager) {
@@ -71,7 +99,13 @@ class SelfTestNotifier
             manager.createNotificationChannel(channel)
         }
 
-        private companion object {
-            const val NOTIFICATION_ID = 0xC0C0
+        companion object {
+            private const val NOTIFICATION_ID = 0xC0C0
+
+            /**
+             * Android mutes an app's alert posted within `config_notifCooldownMuteMillis` (10 s in AOSP and on the
+             * Pixel) of its previous one; a little margin on top.
+             */
+            const val MIN_SPACING_MILLIS: Long = 12_000
         }
     }
