@@ -98,3 +98,7 @@ Response: auto-merge with an aggregate required check; agents open the PR, enabl
 > the issues with the tag question, do you want me to comment and close or comment and leave them open, or something else?
 
 Protocol: owner closes = default accepted; owner comments and leaves open = agent applies the answer, logs it verbatim, closes.
+
+> i think this session is becoming too long, i would like to make a new one that can resume the work you're doing and also resume the exact same subagents runing. how should we do it?
+
+Answer: subagents are tied to their session; use /compact to keep them, or let them finish (PRs auto-merge) and start a new lead session from CLAUDE.md + memory + owner log.
