@@ -24,7 +24,10 @@ class CucutoApplication :
         routingPublisher.start()
     }
 
-    /** The ImageLoader behind every `AsyncImage`: Coil's defaults plus JPEG XL (jxl-rs, ADR 0006) and SVG sprites. */
+    /**
+     * The ImageLoader behind every `AsyncImage`: Coil's defaults plus JPEG XL (jxl-rs, ADR 0006) and SVG (pack sprites
+     * and covers; the importer rejects unsafe SVGs).
+     */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader
             .Builder(context)
