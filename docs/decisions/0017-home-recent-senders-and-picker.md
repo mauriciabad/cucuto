@@ -1,4 +1,4 @@
-# 0015. Home, recent senders and the character picker
+# 0017. Home, recent senders and the character picker
 
 - Status: accepted (the owner may override the defaults below, #129)
 - Date: 2026-10-24
