@@ -1,6 +1,7 @@
 package app.mauri.cucuto.xposed
 
 import android.util.Log
+import app.mauri.cucuto.core.routing.RoutingContract
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
@@ -11,9 +12,21 @@ import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
  *
  * This runs inside `system_server`, so every callback is defensive: nothing may ever escape, because an exception
  * here could break notifications for the whole phone. On any failure WhatsApp simply keeps its default tone.
- * For now the module only logs that it loaded; the notification hooks arrive with the M0 spike.
+ * For now the module only logs that it loaded; the notification hooks (#15) read [routing].
  */
 class CucutoModule : XposedModule() {
+    /**
+     * The routing table the app publishes through Remote Preferences. Attached lazily on first use, so nothing
+     * extra runs while `system_server` boots.
+     */
+    internal val routing =
+        RoutingTableHolder(
+            preferences = { getRemotePreferences(RoutingContract.PREFERENCES_GROUP) },
+            log = { message, error ->
+                if (error == null) log(Log.INFO, TAG, message) else log(Log.WARN, TAG, message, error)
+            },
+        )
+
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         guarded("onModuleLoaded") {
             log(
