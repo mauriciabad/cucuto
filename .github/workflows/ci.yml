@@ -243,18 +243,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      # Bun runs everything: installs, scripts and their CLIs (web/bunfig.toml sets `run.bun`, so Vite, svelte-check,
+      # ESLint and Playwright run on Bun even though the runner has Node). The version comes from `packageManager`.
+      - uses: oven-sh/setup-bun@v2
         with:
-          package_json_file: web/package.json
+          bun-version-file: web/package.json
 
-      - uses: actions/setup-node@v7
+      # Bun's global package cache (https://bun.com/docs/pm/global-cache), keyed by the text lockfile.
+      - name: Cache Bun packages
+        uses: actions/cache@v6
         with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: web/pnpm-lock.yaml
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('web/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       # Encoded images (JPEG XL, AVIF, PNG) keyed by their sources and the encoder settings (web/scripts/picture.ts).
       - name: Cache encoded images
@@ -269,22 +273,22 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libjxl-tools
 
       - name: Type-check (svelte-check)
-        run: pnpm check
+        run: bun run check
 
       - name: Lint (Prettier + ESLint)
-        run: pnpm lint
+        run: bun run lint
 
       - name: Build
-        run: pnpm build
+        run: bun run build
         env:
           # Fail instead of silently skipping JPEG XL when images need encoding.
           PICTURE_REQUIRE_JXL: ${{ steps.picture-cache.outputs.cache-hit != 'true' && '1' || '' }}
 
       - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+        run: bun run playwright install --with-deps chromium
 
       - name: Playwright smoke and accessibility tests
-        run: pnpm test
+        run: bun run test
 
       - name: Upload Playwright traces
         if: failure()
