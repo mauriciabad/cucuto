@@ -130,6 +130,22 @@ public object RoutingCodec {
             }
         }
 
+    /**
+     * Encodes one haptic in the table's haptic syntax (`k`, `o`, `a` or a `c…` timeline), for storing haptics
+     * outside a table, such as the per-clip auto haptics written at import (`:core:haptics`).
+     */
+    public fun encodeHaptic(haptic: Haptic): String = StringBuilder(32).also { writeHaptic(it, haptic) }.toString()
+
+    /** Decodes [encodeHaptic]'s output, throwing [RoutingFormatException] on any problem. */
+    public fun decodeHaptic(encoded: String): Haptic =
+        try {
+            parseHaptic(encoded)
+        } catch (e: RoutingFormatException) {
+            throw e
+        } catch (e: RuntimeException) {
+            throw RoutingFormatException("Malformed haptic '$encoded': ${e.message}", e)
+        }
+
     /** Reads just the header's generation, or null if [encoded] is not a supported table. */
     public fun peekGeneration(encoded: String?): Long? {
         if (encoded == null || !encoded.startsWith(MAGIC)) return null
@@ -208,6 +224,52 @@ public object RoutingCodec {
                 }
             }
         }
+    }
+
+    private fun parseHaptic(raw: String): Haptic {
+        if (raw.length == 1) {
+            when (raw[0]) {
+                'k' -> return Haptic.Keep
+                'o' -> return Haptic.Off
+                'a' -> return Haptic.Auto
+            }
+        }
+        if (raw.isEmpty() || raw[0] != 'c') throw RoutingFormatException("Unknown haptic '$raw'")
+        val events = ArrayList<HapticEvent>()
+        for (part in raw.substring(1).split(';')) {
+            val values = part.substring(1).split(',')
+            events +=
+                when (part[0]) {
+                    'p' -> {
+                        if (values.size != 3 || values[1].length != 1) {
+                            throw RoutingFormatException("Bad preset '$part'")
+                        }
+                        HapticEvent.Preset(
+                            values[0].toInt(),
+                            HapticPreset.fromCode(values[1][0]),
+                            values[2].toInt(),
+                        )
+                    }
+
+                    'e' -> {
+                        if (values.size < 5 || (values.size - 2) % 3 != 0) {
+                            throw RoutingFormatException("Bad envelope '$part'")
+                        }
+                        val points =
+                            (2 until values.size step 3).map { i ->
+                                ControlPoint(values[i].toInt(), values[i + 1].toInt(), values[i + 2].toInt())
+                            }
+                        val sharpness =
+                            if (values[1].isEmpty()) HapticEvent.Envelope.DEFAULT_SHARPNESS else values[1].toInt()
+                        HapticEvent.Envelope(values[0].toInt(), points, sharpness)
+                    }
+
+                    else -> {
+                        throw RoutingFormatException("Unknown haptic event '$part'")
+                    }
+                }
+        }
+        return Haptic.Custom(events)
     }
 
     private fun StringBuilder.tab(): StringBuilder = append('\t')
@@ -309,7 +371,7 @@ public object RoutingCodec {
         private fun voice(): Voice {
             val packId = string()
             val characterId = string()
-            val haptic = haptic(field())
+            val haptic = parseHaptic(field())
             val base = string()
             val count = count()
             val clips = ArrayList<Clip>(count)
@@ -321,7 +383,7 @@ public object RoutingCodec {
                         if (raw == NONE) {
                             null
                         } else {
-                            haptic(raw) as? Haptic.Custom
+                            parseHaptic(raw) as? Haptic.Custom
                                 ?: throw RoutingFormatException("A clip haptic must be custom")
                         }
                     }
@@ -350,52 +412,6 @@ public object RoutingCodec {
                 flags = int(),
                 contactId = long(),
             )
-        }
-
-        private fun haptic(raw: String): Haptic {
-            if (raw.length == 1) {
-                when (raw[0]) {
-                    'k' -> return Haptic.Keep
-                    'o' -> return Haptic.Off
-                    'a' -> return Haptic.Auto
-                }
-            }
-            if (raw.isEmpty() || raw[0] != 'c') throw RoutingFormatException("Unknown haptic '$raw'")
-            val events = ArrayList<HapticEvent>()
-            for (part in raw.substring(1).split(';')) {
-                val values = part.substring(1).split(',')
-                events +=
-                    when (part[0]) {
-                        'p' -> {
-                            if (values.size != 3 || values[1].length != 1) {
-                                throw RoutingFormatException("Bad preset '$part'")
-                            }
-                            HapticEvent.Preset(
-                                values[0].toInt(),
-                                HapticPreset.fromCode(values[1][0]),
-                                values[2].toInt(),
-                            )
-                        }
-
-                        'e' -> {
-                            if (values.size < 5 || (values.size - 2) % 3 != 0) {
-                                throw RoutingFormatException("Bad envelope '$part'")
-                            }
-                            val points =
-                                (2 until values.size step 3).map { i ->
-                                    ControlPoint(values[i].toInt(), values[i + 1].toInt(), values[i + 2].toInt())
-                                }
-                            val sharpness =
-                                if (values[1].isEmpty()) HapticEvent.Envelope.DEFAULT_SHARPNESS else values[1].toInt()
-                            HapticEvent.Envelope(values[0].toInt(), points, sharpness)
-                        }
-
-                        else -> {
-                            throw RoutingFormatException("Unknown haptic event '$part'")
-                        }
-                    }
-            }
-            return Haptic.Custom(events)
         }
 
         private fun type() {

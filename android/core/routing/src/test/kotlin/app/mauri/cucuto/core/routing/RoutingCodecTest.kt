@@ -140,6 +140,25 @@ class RoutingCodecTest {
         )
     }
 
+    @Test
+    fun encodesSingleHaptics() {
+        assertEquals(
+            "cp0,C,800;p120,T,1000;e220,300,1000,800,120,0,400,180;e600,,0,0,50;p900,L,0",
+            RoutingCodec.encodeHaptic(RoutingFixtures.frogCustom),
+        )
+        for (haptic in listOf(Haptic.Keep, Haptic.Off, Haptic.Auto, RoutingFixtures.frogCustom)) {
+            assertEquals(haptic, RoutingCodec.decodeHaptic(RoutingCodec.encodeHaptic(haptic)))
+        }
+        for (bad in listOf("", "c", "x", "cp0,C", "ce0,,1000", "cq1", "cp0,Z,1000", "cpx,C,1")) {
+            try {
+                RoutingCodec.decodeHaptic(bad)
+                fail("Expected a RoutingFormatException for '$bad'")
+            } catch (_: RoutingFormatException) {
+                // Expected.
+            }
+        }
+    }
+
     private fun assertDecodeFails(
         input: String,
         messagePart: String? = null,
