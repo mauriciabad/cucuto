@@ -131,6 +131,32 @@ class RoutingCodecTest {
     }
 
     @Test
+    fun decodesTheDocumentedExample() {
+        // docs/routing-table.md, "Encoding".
+        val base = "content://app.mauri.cucuto.clips/app.mauri.demo.critters"
+        val example =
+            "cucuto-routing\t1\t1761000000123\t1\t1\t2\t2\t1\n" +
+                "P\tcom.whatsapp\n" +
+                "H\tz0,,_gCAgG\n" +
+                "V\tapp.mauri.demo.critters\tfrog\tcp0,C,800;e220,,1000,800,120,0,400,180" +
+                "\t$base/frog/characters/frog/clips/\t2\tribbit.ogg\t2000\t-\tcroak.ogg\t1000\t-\n" +
+                "V\tapp.mauri.demo.critters\towl\ta\t$base/owl/characters/owl/clips/" +
+                "\t2\thoot.ogg\t1000\t-\tsilence.ogg\t1000\t-\th0,-\n" +
+                "R\t0\t34600000001@s.whatsapp.net\t0\t42\t0\t1\n" +
+                "R\t0\t123456789012345@lid\t1\t42\t0\t1\n"
+        val table = RoutingCodec.decode(example)
+        val owl = table.resolve(WHATSAPP, "123456789012345@lid")!!.voice
+        assertEquals(
+            Haptic.Custom(
+                listOf(HapticEvent.Envelope(0, listOf(ControlPoint(1000, 508, 40), ControlPoint(0, 508, 120)))),
+            ),
+            owl.clips[0].haptic,
+        )
+        assertNull(owl.clips[1].haptic)
+        assertEquals(example, RoutingCodec.encode(table))
+    }
+
+    @Test
     fun rejectsMalformedTables() {
         val valid = RoutingCodec.encode(sample)
         val broken =
