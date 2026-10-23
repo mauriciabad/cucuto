@@ -512,8 +512,9 @@ directly.
 
 ## Implementations and fixtures
 
-- `tools/packer/pack-spec` is the Kotlin implementation of every rule above (shared with the Android app, see
-  [ADR 0005](decisions/0005-shared-pack-spec-module.md)).
+- [`shared/pack-spec`](../shared/pack-spec) is the Kotlin implementation of every rule above, shared by packer and
+  the Android importer (`android/core/pack`, see [ADR 0005](decisions/0005-shared-pack-spec-module.md) and
+  [ADR 0008](decisions/0008-pack-importer.md)).
 - The website's TypeScript validator uses the same schemas (with a JSON Schema 2020-12 validator) and must report the
   same codes.
 - [`spec/fixtures/fixtures.json`](../spec/fixtures/fixtures.json) lists every golden fixture with its `kind`
