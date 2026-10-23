@@ -35,6 +35,8 @@ is JVM-only and its 3.x line depends on Jackson 3, which is heavy for an Android
   image decoders, installing, and the runtime codes (downloads, backups, versions).
 - **The TypeScript site** does not share code. It validates with the same schemas (Ajv in 2020-12 mode) and ports the
   non-schema rules, and it must pass the same `spec/fixtures/fixtures.json`.
+  *Superseded by the owner's answer on #60 (option 1): the website reuses this module compiled for the browser
+  (Kotlin/Wasm or Kotlin/JS) instead of a TypeScript port; see "Owner update" below and #116.*
 
 ## Consequences
 
@@ -56,3 +58,17 @@ fixture through the Android importer ([ADR 0008](0008-pack-importer.md)). The im
 for it: `PackManifest.mediaReferences()` and `DurationRules`.
 - The optimumcode validator is younger than networknt. If it ever blocks us, swapping it touches only
   `SpecSchemas.kt`; the fixtures catch any behavior change.
+
+## Owner update (2026-10-23, #60)
+
+The question offered: 1. share the pack validator as a Kotlin Multiplatform module compiled to JS/Wasm for the
+website; 2. rewrite the site in Kotlin; or keep. The owner answered:
+
+> Actually if we can use kotlin for the PWA we may be able to reuse code and make our codebase simpler to mantain and work on. maybe webassembly helps
+
+> I want 1
+
+So `shared/pack-spec` gains a browser target and the website (the PWA pack creator and any other pack check on the site) calls it
+instead of a TypeScript validator; there is one implementation of the rules, run by packer, the app and the site
+against the same fixtures (#116). The site itself stays SvelteKit. How much more of the PWA creator can be shared
+Kotlin is spike #117.
