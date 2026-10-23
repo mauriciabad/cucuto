@@ -465,7 +465,7 @@ The Android side is Kotlin, Jetpack Compose and the libxposed API 102 in one Gra
 | SDK | `minSdk 37`, `targetSdk 37`, `compileSdk` = newest 37.x | Recent Compose releases require a 37.x `compileSdk`; check the release notes when setting it |
 | Language and build | Kotlin, Android Gradle Plugin 9.x, Gradle version catalog | Kotlin only, no Java sources |
 | UI | Jetpack Compose, Material 3 1.5.0 (Expressive), Navigation 3 | `MaterialExpressiveTheme`, expressive motion scheme |
-| Images | Coil 3 with the platform decoders (PNG, JPEG, WebP, GIF, AVIF, animated WebP and GIF), plus [jxl-coder](https://github.com/awxkee/jxl-coder) and its Coil plugin for JPEG XL | JXL support is a nice-to-have: ship only the arm64 native library to keep the APK small and check the license is GPL-compatible. If it causes crashes or bloat, drop it and convert JXL to WebP or PNG at import. |
+| Images | Coil 3 with the platform decoders (PNG, JPEG, WebP, GIF, AVIF, animated WebP and GIF), plus [jxl-rs](https://github.com/libjxl/jxl-rs) behind a small JNI layer and a Coil decoder for JPEG XL ([ADR 0006](decisions/0006-jpeg-xl-decoding.md); replaces jxl-coder) | JXL support is a nice-to-have: ship only the arm64 native library to keep the APK small and check the license is GPL-compatible. If it causes crashes or bloat, drop it and convert JXL to WebP or PNG at import. |
 | Data | Room (contacts, assignments, repositories, decision log), DataStore (settings), kotlinx.serialization (manifests, indexes) |  |
 | Networking | OkHttp with ETag caching, redirect limits and per-host credentials | For pack repositories only; the module never touches the network |
 | Secrets | Android Keystore key encrypting repository credentials | Never logged, never exported in backups |
@@ -603,7 +603,7 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 | WhatsApp identifiers change (phone JIDs versus newer `@lid` IDs) | Assignments stop matching | Store every key seen for a contact; match on any. The "recent senders" feed makes reassignment one tap. |
 | WhatsApp plays its call ringtone inside its own process | No custom WhatsApp call ringtones without hooking WhatsApp | Treat WhatsApp call ringtones as best effort; phone-call ringtones work natively regardless. |
 | Phone ringtone files deleted or moved by the user | Contacts fall back to the default ringtone | Keep ringtones in a dedicated `Ringtones/cucuto/` folder and re-check them on app start; repair automatically. |
-| JPEG XL decoding gaps (no built-in Android decoder assumed; Firefox needs a preference) | Missing sprites or site images | JXL is optional: bundle jxl-coder if it behaves, otherwise convert at import. On the site, serve `<picture>` with fallbacks. |
+| JPEG XL decoding gaps (no built-in Android decoder assumed; Firefox needs a preference) | Missing sprites or site images | JXL is optional: bundle jxl-rs (ADR 0006), otherwise convert at import. On the site, serve `<picture>` with fallbacks. |
 | Malicious or broken pack repositories | Crashes, storage abuse, misleading content | Same validation as local imports, size and SHA-256 checks, redirect caps, warning when adding an unknown repository. |
 | Google Drive and MEGA links are unreliable hosts | Failed downloads | Recommend static hosts for public repositories; use the Drive API (not public links) for Drive folders; treat MEGA as a later, SDK-based source. |
 | Losing the phone | All assignments gone | Automatic backups to a user-chosen folder (for example Google Drive), tested restore. |
