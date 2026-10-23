@@ -9,9 +9,13 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 sealed interface CucutoDestination : NavKey {
-    /** Status and onboarding: the start destination. */
+    /** Status: the start destination once onboarding is done. */
     @Serializable
     data object Status : CucutoDestination
+
+    /** First-run onboarding (#24): the start destination until it is finished or skipped; reopened from Status. */
+    @Serializable
+    data object Onboarding : CucutoDestination
 
     /** Contacts list with recent senders. */
     @Serializable

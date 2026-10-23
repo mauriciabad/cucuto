@@ -59,6 +59,7 @@ class XposedRoutingSink
     @Inject
     constructor() :
     RoutingSink,
+        XposedFramework,
         XposedServiceHelper.OnServiceListener {
         private val started = AtomicBoolean(false)
         private val _connection = MutableStateFlow<SinkConnection>(SinkConnection.Disconnected)
@@ -113,6 +114,32 @@ class XposedRoutingSink
                     .commit()
             check(committed) { "Remote Preferences commit failed" }
         }
+
+        override suspend fun report(): FrameworkReport? =
+            withContext(Dispatchers.IO) {
+                val service = service ?: return@withContext null
+                FrameworkReport(
+                    scope = ask("scope") { service.scope.toList() },
+                    targets =
+                        ask("running targets") {
+                            service.runningTargets.map {
+                                RunningTarget(it.uid, it.processName, TargetState.valueOf(it.state.name))
+                            }
+                        },
+                )
+            }
+
+        /** One framework query; a dead service, an older API or any framework error reads as "unknown". */
+        private inline fun <T> ask(
+            what: String,
+            block: () -> T,
+        ): T? =
+            try {
+                block()
+            } catch (e: Exception) {
+                Log.w(TAG, "Xposed service: reading the $what failed (${e.javaClass.simpleName})")
+                null
+            }
 
         private fun preferences() = service?.getRemotePreferences(RoutingContract.PREFERENCES_GROUP)
 

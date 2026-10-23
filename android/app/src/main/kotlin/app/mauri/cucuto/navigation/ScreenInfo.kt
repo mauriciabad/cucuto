@@ -21,12 +21,16 @@ data class ScreenInfo(
 )
 
 /**
- * Placeholder metadata; null for the real screens ([CucutoDestination.Status], [CucutoDestination.Diagnostics],
- * [CucutoDestination.Gallery]).
+ * Placeholder metadata; null for the real screens ([CucutoDestination.Status], [CucutoDestination.Onboarding],
+ * [CucutoDestination.Diagnostics], [CucutoDestination.Gallery]).
  */
 fun CucutoDestination.screenInfo(): ScreenInfo? =
     when (this) {
-        CucutoDestination.Status, CucutoDestination.Diagnostics, CucutoDestination.Gallery -> {
+        CucutoDestination.Status,
+        CucutoDestination.Onboarding,
+        CucutoDestination.Diagnostics,
+        CucutoDestination.Gallery,
+        -> {
             null
         }
 
