@@ -1,11 +1,13 @@
 # cucuto — agent guide
 
-cucuto (always lowercase) gives each WhatsApp contact a voice: an LSPosed module in `system_server` swaps the
+Cucuto gives each WhatsApp contact a voice: an LSPosed module in `system_server` swaps the
 notification sound and vibration per contact, using clips from user-imported sound packs. The full spec is
 [`docs/project-brief.md`](docs/project-brief.md). Read it before starting any non-trivial task; it is the source of truth.
 
 ## Ground rules
 
+- **Name: "Cucuto" with a capital C in prose** (owner, 2026-10-23). Lowercase only in identifiers (`cucuto` repo,
+  `app.mauri.cucuto`, `cucuto.mauri.app`, file names, code) and in the logo wordmark.
 - **Owner is away.** Never block on questions. Pick a sensible default, document it, and open (or comment on) a GitHub
   issue labeled `question` so the owner can override it later.
 - **Kotlin always.** All Android, tooling and scripting code is Kotlin (Gradle Kotlin DSL; `*.main.kts` scripts instead of

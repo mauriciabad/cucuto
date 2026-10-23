@@ -50,3 +50,13 @@ code that is never loaded, and a scripted supervised session for the owner to ru
 Resulting work: `spikes/m0/`, `docs/device.md`, `docs/m0-report.md` (verdict: provisional GO),
 PR referencing #9–#12, and issue #65 (`owner-action`, `needs-device`) with the device checklist.
 The phone was not modified.
+
+> hi, do you want me to do anything on the phone?
+
+Owner available: running the supervised M0 device session (#61 option 2, #65).
+
+> activated and rebooted
+
+> Cucuto is meant to be written with capital C in prose text
+
+Overrides the brief's "Write the name in lowercase": prose uses **Cucuto**; identifiers (repo, application ID, domain, file names, code) and the logo wordmark stay lowercase. Rule added to `CLAUDE.md`; prose sweep tracked in an issue.

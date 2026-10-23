@@ -1,8 +1,8 @@
 <p align="center"><img src="brand/logo/cucuto-logo.svg" alt="cucuto" width="320"></p>
 
-# cucuto
+# Cucuto
 
-**Give each contact a voice.** cucuto (koo-KOO-toe, from Catalan *cucut*, cuckoo) is an open-source Android 17 app that
+**Give each contact a voice.** Cucuto (koo-KOO-toe, from Catalan *cucut*, cuckoo) is an open-source Android 17 app that
 plays a random clip from the character you assigned to a contact whenever they message you on WhatsApp, with that
 character's own vibration. Like a cuckoo clock, it announces who's there.
 
@@ -12,7 +12,7 @@ character's own vibration. Like a cuckoo clock, it announces who's there.
 - **Feels like a game.** Sound, motion and haptics on every interaction, built on Material 3 Expressive.
 
 > [!IMPORTANT]
-> cucuto needs **Android 17, root and LSPosed (libxposed API 102)**. It runs as a tiny module inside `system_server` and
+> Cucuto needs **Android 17, root and LSPosed (libxposed API 102)**. It runs as a tiny module inside `system_server` and
 > never touches the WhatsApp process. No content ships with the app; you are responsible for the packs you import.
 
 ## Repository
