@@ -54,6 +54,7 @@ jobs:
               - "spec/**"
               - "brand/tokens/**"
               - "brand/app-icon/android-res/**"
+              - "brand/sounds/**"
               - ".github/workflows/ci.yml"
             web:
               - "web/**"

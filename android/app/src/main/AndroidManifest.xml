@@ -4,6 +4,8 @@
 
     <!-- The Diagnostics screen's test notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The Feedback engine's rich haptics (VibrationEffect compositions with USAGE_TOUCH). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!--
         Android backup and device transfer are off (res/xml/data_extraction_rules.xml).

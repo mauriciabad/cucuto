@@ -33,6 +33,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,6 +49,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.mauri.cucuto.BuildConfig
 import app.mauri.cucuto.R
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.navigation.PreviewDestinations
@@ -105,11 +107,21 @@ fun StatusScreen(
             item { SectionHeader(R.string.status_checks_header) }
             item { ChecksCard() }
             item {
-                FilledTonalButton(
-                    onClick = { onNavigate(CucutoDestination.Diagnostics) },
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Text(stringResource(R.string.screen_diagnostics))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(
+                        onClick = { onNavigate(CucutoDestination.Diagnostics) },
+                        shapes = ButtonDefaults.shapes(),
+                    ) {
+                        Text(stringResource(R.string.screen_diagnostics))
+                    }
+                    if (BuildConfig.DEBUG) {
+                        OutlinedButton(
+                            onClick = { onNavigate(CucutoDestination.Gallery) },
+                            shapes = ButtonDefaults.shapes(),
+                        ) {
+                            Text(stringResource(R.string.screen_gallery))
+                        }
+                    }
                 }
             }
             item { SectionHeader(R.string.status_screens_header) }
