@@ -74,3 +74,7 @@ Agent verifies playback via dumpsys and waits for naturally arriving WhatsApp me
 > you want me to ask a friend to message me? i dont understand what you want for me
 
 Clarified: nothing needed; ordinary incoming WhatsApp messages complete the M0 observation passively.
+
+> fyi i wont review prs, the code can be merged without my review or approval
+
+Agents keep reviewing and squash-merging PRs themselves once CI is green.

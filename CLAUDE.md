@@ -54,7 +54,7 @@ pack file extension `.soundpack` · backup `.cucuto-backup` · license GPL-3.0-o
   Commits are authored as `Claude (AI agent) <noreply@anthropic.com>` (set with `git config user.name/user.email` in
   each clone or worktree) and keep the `Co-Authored-By` trailer.
 - Work from GitHub issues. Branch `<type>/<issue>-<slug>` (e.g. `feat/12-pack-importer`), Conventional Commits
-  (`feat(pack): …`, `fix(xposed): …`, `docs: …`, `ci: …`), PR with `Closes #N`. Squash-merge.
+  (`feat(pack): …`, `fix(xposed): …`, `docs: …`, `ci: …`), PR with `Closes #N`. Squash-merge once CI is green; the owner does not review PRs, so the lead agent reviews (read the diff, check for copyrighted media and private data) and merges.
 - Milestones M0–M9 mirror the brief. Labels: `area:*`, `type:*`, `question`, `blocked`, `needs-device`.
 - Architecture decisions go in `docs/decisions/` (short ADRs: context, decision, consequences).
 - Keep PRs focused; run the relevant build and tests before pushing.
