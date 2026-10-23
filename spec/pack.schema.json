@@ -60,7 +60,7 @@
       "additionalProperties": false
     },
     "clip": {
-      "description": "Notification clip, 0.2 to 4 s.",
+      "description": "Notification clip, 0.2 to 30 s.",
       "type": "object",
       "required": ["file"],
       "properties": {

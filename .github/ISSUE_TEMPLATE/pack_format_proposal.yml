@@ -7,6 +7,13 @@ body:
       value: |
         The pack format is a public, versioned contract shared by the app, the website, the packer and third-party pack authors.
         Changes need a clear use case and a compatibility story. Never attach copyrighted media; describe the content instead.
+
+        **AI agents:** start the first text field with this banner (agents other than Claude use their own name):
+
+        ```markdown
+        > [!NOTE]
+        > 🤖 Written by an AI agent (Claude), not by the repository owner.
+        ```
   - type: dropdown
     id: scope
     attributes:

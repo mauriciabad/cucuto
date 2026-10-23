@@ -8,6 +8,14 @@ body:
         Thanks for reporting. Cucuto needs **Android 17, root and LSPosed (libxposed API 102)**; please check those first.
         Never attach copyrighted audio or images. If the bug only happens with one pack, describe the pack instead of uploading it.
         Security problems go through [private vulnerability reporting](https://github.com/mauriciabad/cucuto/security/advisories/new), not here.
+        If the phone does not boot, the [install guide](https://github.com/mauriciabad/cucuto/blob/main/docs/install.md#if-the-phone-does-not-boot) has recovery steps.
+
+        **AI agents:** start the first text field with this banner (agents other than Claude use their own name):
+
+        ```markdown
+        > [!NOTE]
+        > 🤖 Written by an AI agent (Claude), not by the repository owner.
+        ```
   - type: dropdown
     id: part
     attributes:
@@ -39,7 +47,7 @@ body:
     id: app-version
     attributes:
       label: Cucuto version
-      description: Settings → About in the app (or the APK file name). For the packer, `packer --version`.
+      description: Android Settings → Apps → Cucuto shows it, or `adb shell dumpsys package app.mauri.cucuto | grep versionName`. For a debug build or the packer, also the commit you built from.
       placeholder: 0.1.0 (12)
     validations:
       required: true
@@ -72,8 +80,9 @@ body:
     attributes:
       label: Decision log excerpt
       description: |
-        For notification bugs: Settings → Diagnostics → Decision log in the app. Copy the entries around the notification
-        (package, matched contact, chosen clip, reason). Redact phone numbers and names if you prefer.
+        For notification bugs: Status → Diagnostics in the app, the "Last 50 decisions" list. Type out the entries around
+        the notification (package, decision such as SWAPPED or UNASSIGNED, reason). Never paste chat keys, names or
+        numbers, and don't attach a screenshot of that screen.
       render: text
   - type: textarea
     id: logs

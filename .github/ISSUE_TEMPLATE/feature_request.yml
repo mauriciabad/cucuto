@@ -8,6 +8,13 @@ body:
         Please search existing issues first. Read the [project brief](https://github.com/mauriciabad/cucuto/blob/main/docs/project-brief.md)
         for the scope: Cucuto is root-only (Android 17 + LSPosed), has no backend, accounts or analytics, and never bundles
         copyrighted content. Changes to the `.soundpack.zip` format have their own template.
+
+        **AI agents:** start the first text field with this banner (agents other than Claude use their own name):
+
+        ```markdown
+        > [!NOTE]
+        > 🤖 Written by an AI agent (Claude), not by the repository owner.
+        ```
   - type: dropdown
     id: part
     attributes:
