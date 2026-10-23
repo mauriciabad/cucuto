@@ -5,6 +5,41 @@
 
     <string name="navigate_back">Back</string>
 
+    <!-- Diagnostics -->
+    <string name="screen_diagnostics">Diagnostics</string>
+    <string name="diag_framework">Xposed framework</string>
+    <string name="diag_framework_disconnected">Not connected. Enable Cucuto in LSPosed (scope: System Framework) and reboot.</string>
+    <string name="diag_framework_connected">Connected: %1$s, API %2$d</string>
+    <string name="diag_framework_unsupported">%1$s does not support Remote Preferences</string>
+    <string name="diag_routing">Routing table</string>
+    <string name="diag_routing_idle">Not published yet</string>
+    <string name="diag_routing_published">Generation %1$d: %2$d keys, %3$d voices</string>
+    <string name="diag_routing_too_large">Too large to publish (%1$d characters)</string>
+    <string name="diag_routing_failed">Publishing failed: %1$s</string>
+    <string name="diag_module">Module in system_server</string>
+    <string name="diag_module_never">No report yet. The module reports after its first alert; post a test notification.</string>
+    <string name="diag_module_report">Reported %1$s. Hooks: %2$s. Missing: %3$s</string>
+    <string name="diag_module_table">Table in the module</string>
+    <string name="diag_module_table_value">Generation %1$d, %2$d keys</string>
+    <string name="diag_module_timing">Since boot</string>
+    <string name="diag_module_timing_value">%1$d decisions, %2$d over 5 ms, slowest %3$d µs, %4$d events dropped</string>
+    <string name="diag_post_test">Post test notification</string>
+    <string name="diag_post_test_hint">With the module active you hear a two-tone chirp and feel a click-tick instead of the default sound. Its decision appears below within about 10 seconds.</string>
+    <string name="diag_post_test_posted">Posted. Listen for the chirp; the decision appears below within about 10 seconds.</string>
+    <string name="diag_post_test_blocked">Notifications are blocked for Cucuto. Allow them in the system settings.</string>
+    <string name="diag_switch">Cucuto voices</string>
+    <string name="diag_switch_body">The global switch. Off: every chat keeps WhatsApp\'s own tone.</string>
+    <string name="diag_test_voice">Give the latest sender a test voice</string>
+    <string name="diag_test_voice_no_sender">No WhatsApp sender seen yet. Receive a WhatsApp message first.</string>
+    <string name="diag_test_voice_assigned">Test voice assigned to %1$s. Their next message plays a chirp.</string>
+    <string name="diag_failed">Failed: %1$s</string>
+    <string name="diag_decisions_header">Last 50 decisions</string>
+    <string name="diag_decisions_empty">No decisions yet.</string>
+    <string name="selftest_channel_name">Self-test</string>
+    <string name="selftest_channel_description">The Diagnostics test notification. Keep its sound and vibration on.</string>
+    <string name="selftest_notification_title">Cucuto self-test</string>
+    <string name="selftest_notification_text">If the module is active, this played Cucuto\'s chirp instead of the default sound.</string>
+
     <!-- Status -->
     <string name="status_title">Status</string>
     <string name="status_hero_title">Getting cucuto ready</string>

@@ -46,4 +46,8 @@ sealed interface CucutoDestination : NavKey {
     /** Settings and diagnostics. */
     @Serializable
     data object Settings : CucutoDestination
+
+    /** Module status, the decision log and the self-test notification (#17). A real screen, not a placeholder. */
+    @Serializable
+    data object Diagnostics : CucutoDestination
 }
