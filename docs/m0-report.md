@@ -381,6 +381,25 @@ and was deleted; the DB was then read with `adb exec-out su -c cat` instead. Ver
 `spikes/m0/run-on-device.main.kts preflight` was run against the live device and is read-only; its
 output is reproduced in §1 and `docs/device.md`.
 
+### Another session is also working on this phone
+
+Worth flagging, because it was not expected. Between the start and the end of this session the
+framework's module count went from 4 to 5. The new entry is **`app.mauri.cucuto`** — the
+*production* application ID, not this spike's `app.mauri.cucuto.spike` — installed at
+`2026-10-23 21:21:51`, version `0.1.0`. It was not installed by this session.
+
+Its current state, read from `modules_config.db`: present in the `modules` table, but **no row in
+`modules_state` and no rows in `scope`**, so it is registered-but-inert — not enabled, not scoped
+to anything. It was left exactly as found.
+
+Two things follow:
+
+1. Another agent session is doing device work on the owner's phone concurrently with this one.
+   Two agents installing to one `system_server` is a collision risk that nothing currently
+   coordinates, and the owner should know it is happening.
+2. The production application ID is already taken on the device. If M1 installs over it, whatever
+   that session is doing will be replaced without warning.
+
 ---
 
 ## 10. What the supervised session must confirm
