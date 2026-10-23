@@ -1,0 +1,638 @@
+# Project Brief: cucuto
+
+Oct 23, 2026 · @Mauri
+
+## Mission
+
+Build **cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each contact a voice. The name comes from *cucut*, Catalan for cuckoo: like a cuckoo clock, it announces who's there. When a contact messages, the phone plays a random clip from the character assigned to them and fires that character's custom vibration; when they call, their ringtone plays. Write the name in lowercase. Identifiers: GitHub repo `cucuto`, application ID `app.mauri.cucuto`, website `cucuto.mauri.app` (the owner points DNS there once the repo exists).
+
+- **Content comes from sound packs, never from the code.** The app ships empty. Users import pack files, or browse and download them from pack repositories. Anyone can build and share packs of anything: animals, game SFX, a friend's voice, a game's songs.
+- **Notifications and ringtones.** The same packs can carry message sounds and call ringtones. A contact can get a K.K. Slider song with its album art as ringtone, Pikachu's cries for messages, or both from one character. Ringtones can have variants (day, night, seasons, sped-up, radio) of the same song, picked by rules.
+- **Anyone can make packs.** A pack creator in the app and in the website (an installable PWA) lets people build packs without tools: pick images, record or import clips and songs, trim them, set haptics, export.
+- **Packs travel alone or bundled.** One file can hold a single pack or a bundle of several.
+- **Pack repositories.** Users add a repository URL (a static website, a cloud folder, optionally password-protected), browse its packs, preview them, and download the ones they like. The project website is the default repository.
+- **Backup and restore.** One backup file brings every assignment, ringtone and setting back on a new phone.
+- **The owner's first packs are anime Pokémon voices (Dream World artwork) and K.K. Slider songs.** They are copyrighted, so they live only in the owner's private Google Drive and are imported after install.
+- **A public website** explains the app, offers the APK download, screenshots and an explainer video, and hosts free packs to download.
+- **It should feel like a game.** Every interaction gets sound, motion and haptics, built on the latest Material 3 Expressive guidelines.
+- **Common formats, JPEG XL preferred.** Packs accept the usual image and audio formats. JPEG XL (`.jxl`) is the recommended image format and gets first-class support where it costs little, to help it spread.
+
+Non-goals: Play Store release, support for Android 16 or older, dependence on other apps (Tasker, MacroDroid, BuzzKill), any backend, accounts or analytics, and bundling copyrighted media in the public repo.
+
+## Constraints and owner decisions
+
+These are fixed by the owner; design around them rather than reopening them.
+
+| Constraint | Value | What it means for the build |
+| --- | --- | --- |
+| OS | Android 17 (API 37), latest QPR | `minSdk = targetSdk = 37`, compile against the newest 37.x SDK. No compatibility code, no version branches. |
+| Root and hooking | Rooted; LSPosed with libxposed API 102 (WaEnhancer X already runs) | Root-only features are allowed. The module targets libxposed API 102 and uses no legacy Xposed API. |
+| Self-contained | No Tasker, MacroDroid, BuzzKill or other helper apps | One APK contains the app and its Xposed module. |
+| Target apps | WhatsApp (`com.whatsapp`) and WhatsApp Business (`com.whatsapp.w4b`) | Routing is keyed by package, so other messengers can be added later. Phone calls get ringtones through Android contacts. |
+| Coexistence | WaEnhancer X is installed and hooks WhatsApp | Do not hook the WhatsApp process. Stay in `system_server` to avoid clashes. |
+| License | GPL-3.0-or-later | Derived works must stay open source. Demo packs are CC0. |
+| Repository | One public monorepo on GitHub | Android app, website, packer tool, schemas and demo packs live together. |
+| Website | SvelteKit, fully static, at `cucuto.mauri.app` | No server. Deploy to GitHub Pages or Cloudflare Pages. |
+| Images | Common formats accepted; JPEG XL (`.jxl`) preferred | Support PNG, JPEG, WebP, GIF, AVIF and JPEG XL. JXL is recommended and used for the project's own assets where practical. If JXL decoding becomes a burden on Android, drop it in the app and convert JXL to another format at import time. |
+| Open source | Public code, private content | No copyrighted media in the public repo, ever. Content arrives as imported packs. |
+| Quality bar | Game feel plus latest Material 3 Expressive | Sound, motion and haptics on every interaction, built to current Material and accessibility guidance. |
+
+## Decision: root-first, no non-root version
+
+**Build it as an LSPosed module that runs in `system_server`; skip the non-root build.** Android 17's background audio hardening makes the non-root route unreliable, and root gives a cleaner design with fewer moving parts.
+
+Why non-root fails on Android 17:
+
+- **Background playback is silenced.** On Android 17, any app playing audio in the background needs a visible activity or a running foreground service (not `SHORT_SERVICE`). Apps targeting API 37 also need that service to have while-in-use (WIU) capability, and failures are silent ([Background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)).
+- **WIU is hard to keep.** WIU is only granted to a service started while the app is visible or from a user action. A service started at boot gets its audio suppressed, so after every reboot the owner would have to open the app again.
+- **The workarounds are worse than root.** A permanent media-playback notification, or posting our own duplicate notification on one channel per clip, both add visible clutter and fragile edge cases.
+
+| Approach | Plays reliably in background on Android 17 | Extra UI noise | Honors muted chats, DND and alert-once | Verdict |
+| --- | --- | --- | --- | --- |
+| Notification listener plays the clip itself | Only with a WIU foreground service; lost after reboot | Permanent foreground notification | Must be reimplemented by hand | Rejected |
+| Listener posts its own notification on a per-clip channel | Yes (the system plays it) | Duplicate notification, hundreds of channels in Settings | Partly; duplicates WhatsApp's own logic | Rejected |
+| **LSPosed hook in `system_server` swaps the sound and vibration on WhatsApp's own notification** | **Yes (the system plays it, as for any notification)** | **None** | **Yes, for free: the system decides whether to alert** | **Chosen** |
+
+What the chosen design gives us:
+
+- **One sound, no duplicates.** We replace WhatsApp's tone on the exact notification that was going to alert. Muted chats, re-posted updates, Do Not Disturb, ringer mode and notification cooldown keep working exactly as Android implements them.
+- **No WhatsApp settings to change.** Leave WhatsApp's tone and vibration on. If the module is off or a hook fails, the default WhatsApp tone plays: safe degradation.
+- **No foreground service, no persistent notification, no battery exemptions.** The app only needs to run when the owner opens it.
+- **No conflict with WaEnhancer X.** We never touch the WhatsApp process.
+
+The first milestone (M0 below) is a short device spike that confirms the hook points on the owner's exact build before any UI is written.
+
+## Architecture
+
+One APK holds two parts: a tiny hook inside `system_server` that swaps WhatsApp's alert, and a normal Compose app that manages packs and assignments.
+
+&#91;embedded content: architecture · notification path and app components\]
+
+Read it top to bottom: WhatsApp posts, the framework decides whether to alert, our hook swaps the sound and vibration, and the system plays them, reading the clip from our app.
+
+The same flow in steps:
+
+1. WhatsApp posts a MessagingStyle notification.
+2. `NotificationManagerService` applies channel settings, DND and ranking, and decides whether this post should alert at all.
+3. In the alerting step (`NotificationAttentionHelper` in recent AOSP; confirm the exact class and methods in M0), our hook runs only for WhatsApp packages. It reads the conversation key and sender, looks up the in-memory routing table, picks a clip and haptic, and replaces the record's sound URI and vibration effect.
+4. The system plays the sound through its notification sound player, which opens the clip from our clip provider, and plays the vibration through the vibrator service.
+5. The hook sends a "seen sender" event to the app so new contacts appear for one-tap assignment.
+6. In the app, the importer installs packs to private storage, the UI writes assignments to Room, and the app republishes the routing table whenever assignments change.
+
+## Sound pack and bundle format (v1)
+
+A `.soundpack` file is a zip holding either one pack or a bundle of several packs, each with a JSON manifest, characters, clips, sprites and haptics. The format is public and versioned so anyone can build packs; plain `.zip` is also accepted.
+
+**Vocabulary.** A *pack* contains *characters*: Pikachu, a cat, a friend, or a song with its album art. A character has a picture, a pool of short notification *clips*, an optional set of *ringtones* with *variants*, and a default *haptic*. A *bundle* groups several packs in one file. Users assign characters to *contacts* (a 1:1 chat, a group, or a phone contact).
+
+Single pack layout:
+
+```
+pokemon-voices.soundpack
+├── pack.json
+├── cover.jxl
+└── characters/
+    └── pikachu/
+        ├── sprite.jxl           # static, required (any supported format)
+        ├── sprite-anim.jxl      # animated (JXL, WebP or GIF), optional
+        └── clips/
+            ├── pika-pika.ogg
+            ├── chu.ogg
+            └── pikachu-happy.ogg
+```
+
+Bundle layout: `bundle.json` at the root instead of `pack.json`, and each pack in its own folder.
+
+```
+pokemon-all-gens.soundpack
+├── bundle.json
+├── cover.jxl
+└── packs/
+    ├── kanto/      # a complete pack: pack.json, cover.jxl, characters/
+    └── johto/
+```
+
+Pack manifest example, a song with ringtone variants (`pack.json`):
+
+```json
+{
+  "formatVersion": 1,
+  "id": "com.example.kk-slider",
+  "name": "K.K. Slider",
+  "version": "1.0.0",
+  "author": "Owner",
+  "license": "Personal use only",
+  "cover": "cover.jxl",
+  "characters": [
+    {
+      "id": "bubblegum-kk",
+      "name": "Bubblegum K.K.",
+      "sprite": "characters/bubblegum-kk/album.jxl",
+      "seedColor": "#F4A7C0",
+      "tags": ["kk", "pop"],
+      "clips": [
+        { "file": "characters/bubblegum-kk/clips/hook.ogg", "label": "Chorus hook" }
+      ],
+      "ringtones": [
+        { "file": "characters/bubblegum-kk/ringtones/live.ogg", "label": "Live", "tags": ["live"], "when": { "time": "day" } },
+        { "file": "characters/bubblegum-kk/ringtones/radio.ogg", "label": "Radio", "tags": ["radio"], "when": { "time": "night" }, "loop": { "startMs": 1200, "endMs": 98000 } }
+      ],
+      "haptic": { "mode": "auto" }
+    }
+  ]
+}
+```
+
+Bundle manifest example (`bundle.json`):
+
+```json
+{
+  "formatVersion": 1,
+  "type": "bundle",
+  "id": "com.example.pokemon-all-gens",
+  "name": "Pokémon, all generations",
+  "version": "1.0.0",
+  "cover": "cover.jxl",
+  "packs": ["packs/kanto", "packs/johto"]
+}
+```
+
+Rules the importer enforces:
+
+- **Audio:** any common format Android plays: Ogg Opus, Ogg Vorbis, MP3, AAC/M4A, FLAC or WAV. Notification clips are 0.2 to 4 s; ringtones are 5 s to 6 min and loop by default, with optional loop points. Opus is recommended for size. The packer and the pack creator can trim silence and normalize loudness so clips sound consistent, but they never force a format.
+- **Images:** PNG, JPEG, WebP, GIF, AVIF, JPEG XL or SVG, at most 512 px per side for bitmaps. Animated sprites can be GIF, animated WebP or animated JPEG XL. JPEG XL is recommended (it compresses pixel art losslessly and well); the tools can convert to it but never require it.
+- **Haptic:** `{"mode": "auto"}` derives a pattern from each clip at import time, or `{"mode": "custom", "events": [...]}` gives an explicit timeline (schema in the Haptics section).
+- **Limits:** up to 1 GB unpacked per pack and 2 GB per bundle (song packs are large), 5,000 files per pack, and a decompression ratio cap to block zip bombs. The importer warns before installing anything over 256 MB.
+- **Safety:** reject absolute paths and `..` segments (zip slip), unknown file types, and anything executable; SVGs are sanitized (no scripts, no external references). Packs contain data only. Pack IDs inside a bundle must be unique.
+
+Import flow (local files and repository downloads go through the same pipeline):
+
+1. Entry points: in-app picker (Storage Access Framework, which also reaches Google Drive and other cloud apps), "Open with" and the share sheet for `.soundpack` files, and downloads from pack repositories.
+2. Validate against the schemas, then test-decode every clip and image.
+3. For a bundle, show its packs with checkboxes; all are selected by default.
+4. Show a preview screen that reveals the characters one by one, each playing a clip.
+5. Install each pack to app-private storage at `files/packs/<id>/<version>/`. Re-importing the same `id` with a higher `version` updates in place and keeps all assignments.
+6. Removing a pack asks what to do with contacts that use its characters.
+
+The repo ships JSON Schemas in `spec/` (`pack.schema.json`, `bundle.schema.json`, `repository.schema.json`), a `docs/pack-format.md` spec, and the `packer` command-line tool that builds packs, bundles and repository indexes (see Tech stack).
+
+## Ringtones
+
+Packs can carry call ringtones too, so a contact gets one look and sound across messages and calls. For phone calls, the app uses Android's own per-contact ringtone, so it works without hooks and shows up in the Contacts app; the app is simply a much faster picker with album art.
+
+**Model.**
+
+- A character can carry a `ringtones` array next to its `clips`. A character can be a song (Bubblegum K.K. with its album cover), not only a creature.
+- **Variants** are ringtone entries of the same song: day and night versions, seasons, sped-up, underwater, "action", live versus radio. Each entry has free `tags` and an optional `when` condition (`time`: day, night or an hour range; `season`; `weekday`).
+- Per contact, the user picks the variant rule: one fixed variant, random per call, by time of day, by season, or follow the pack's `when` conditions.
+- **Linking:** assigning a character assigns both its notification clips and its ringtones. Users can also mix: messages from Pikachu, ringtone from K.K. Slider.
+
+Where ringtones apply:
+
+| Call type | How | Notes |
+| --- | --- | --- |
+| Phone calls, fixed or rule-based variant | Android's per-contact ringtone (`ContactsContract.Contacts.CUSTOM_RINGTONE`) | Native; Telecom plays it and the Contacts app shows it. Needs `READ_CONTACTS` and `WRITE_CONTACTS`. Ringtone files are copied into the shared `Ringtones/cucuto/` folder through MediaStore so the system can play them. For rule-based variants the app rewrites the contact's ringtone at each boundary (time-of-day change, new season) with an exact alarm. |
+| Phone calls, random per call | Optional hook in Telecom's ringer | Telecom runs in the system process; swap the ringtone URI at ring time. This also allows a custom vibration per contact. Confirm the class, method and LSPosed scope in M0. |
+| WhatsApp calls | To be investigated in M0 | If WhatsApp's incoming-call notification carries the ringtone, the existing `system_server` hook can swap it. If WhatsApp plays the ringtone inside its own process, that would mean hooking WhatsApp, which conflicts with the "never touch WhatsApp" rule; fall back to guiding the user to WhatsApp's per-chat custom ringtone (one file, no variants). |
+
+Contacts: each app contact links to an Android contact for phone ringtones. Match WhatsApp senders to Android contacts by phone number, and let the user confirm or pick manually.
+
+Audio for ringtones: any supported format, 5 s to 6 min, looping by default with optional seamless loop points (`loop.startMs`, `loop.endMs`), an optional fade-in, and loudness normalized for ringtone volume. The creator and the packer can cut a 2 to 3 s notification clip from a song (for example its hook) automatically.
+
+In the UI: the ringtone picker is a grid or carousel of album covers; tapping one plays it with a spinning-record animation, variant chips switch versions, and the contact detail shows both the message sound and the ringtone.
+
+**The owner's K.K. Slider pack (private).** The source is the [K.K. Slider Complete Songs Collection](https://downloads.khinsider.com/game-soundtracks/album/animal-crossing-k.k.-slider-complete-songs-collection) on KHInsider: 193 files, 98 songs plus 95 "(Radio)" versions, 502 MB as MP3 or 981 MB as FLAC. One character per song, with "live" and "radio" as variants, plus an auto-cut clip for messages. Album covers come from a fan wiki. Transcoding to Opus roughly halves the size. Like the Pokémon pack, it stays in the owner's private Google Drive.
+
+## Backup and restore
+
+One backup file restores every assignment, ringtone and setting on a new phone. Packs re-download from their repositories; only local-only packs, like the private Pokémon and K.K. packs, need their files picked again.
+
+What a backup holds (a `.cucuto-backup` zip with versioned JSON; schema in `spec/backup.schema.json`):
+
+- **Assignments:** every contact key the app knows (WhatsApp conversation keys, phone numbers, display names), the assigned character and ringtone by pack ID and character ID, variant rules, clip toggles and haptic overrides.
+- **Settings** and the list of pack repositories.
+- **Pack references:** ID, version, source repository URL and SHA-256 for each installed pack. An optional "full backup" includes the pack files themselves, which can be large.
+- **Credentials** for repositories only if the user opts in. Then the whole file is encrypted with a passphrase (AES-256-GCM, key derived with a memory-hard function such as Argon2id).
+
+Where backups go:
+
+- **Manual export** through the Storage Access Framework, for example straight into Google Drive.
+- **Automatic backup** to a folder the user picks once (persistent folder permission). It is written shortly after any change, keeping the last 10 copies.
+- Android's built-in app backup is left on for the settings database (no packs, no secrets) as a bonus, but nothing depends on it.
+
+Restore on a new phone:
+
+1. Install the APK, open the app, choose "Restore from backup" and pick the file.
+2. The app lists the needed packs: it downloads those with a repository (verifying SHA-256) and asks for the files of local-only packs (pick them from Google Drive).
+3. Contacts are re-matched by phone number, WhatsApp key and name; anything unmatched is shown for a one-tap fix.
+4. Phone ringtones are written back to the Android contacts, and the routing table is republished for the module.
+5. A final checklist covers what a backup can't do: enable the module in LSPosed (System Framework scope) and reboot.
+
+The restore must be idempotent: running it twice gives the same result, and it never overwrites assignments the user made on the new phone without asking.
+
+## Monorepo, license and private content
+
+One public monorepo under GPL-3.0-or-later holds everything except copyrighted media. The owner's Pokémon pack lives in their private Google Drive.
+
+```
+cucuto/
+├── android/            # Gradle project: app, xposed and core modules
+├── web/                # SvelteKit site and PWA pack creator (static adapter)
+├── tools/packer/       # CLI: build packs, bundles and repository indexes
+├── spec/               # JSON Schemas: pack, bundle, repository index
+├── packs/              # CC0 demo pack sources, built by CI and published on the site
+├── docs/               # pack format, install guide, contributing
+├── LICENSE             # GPL-3.0-or-later
+└── .github/workflows/  # android, web, packs, release
+```
+
+|  | Public monorepo (GitHub) | Owner's private content (Google Drive) |
+| --- | --- | --- |
+| Contents | All code, schemas, docs, packer, website, CC0 demo packs | Pokémon pack sources (raw clips, sprites, `pack.yaml`) and the built `.soundpack` files |
+| Media | Only CC0 demo content: generate it with ffmpeg tones and simple drawn shapes, or use clearly CC0 recordings | Anime voice clips and Pokémon sprites, personal use only |
+| License | Code GPL-3.0-or-later; demo packs CC0 | None; never published |
+
+Keeping the Pokémon pack in a private Google Drive works well:
+
+- **Day one:** tap Import in the app. Android's file picker shows Google Drive; pick the `.soundpack` file. No public link, no sharing settings, nothing leaves the owner's account.
+- **Later, optional:** a Google Drive folder can be added as a private pack repository, so updates appear in the app's Discover screen (see Pack repositories).
+
+Guards in the public repo:
+
+- `.gitignore` blocks `*.soundpack` outside build output, plus a `private/` folder for local experiments.
+- A CI job fails if a commit adds audio or image files outside an allowlist (`packs/`, app resources, website assets made from demo packs).
+- README and website state that no third-party content ships with the app and users are responsible for the packs they import.
+- Screenshots and the explainer video use demo packs only, never Pokémon assets.
+
+Building the owner's Pokémon pack (outside the repo):
+
+- **Voices:** The Sounds Resource rips of spin-off games that use the anime voice cast: Hey You, Pikachu! (37 Pikachu clips), PokePark 2 (Pikachu 25, Tepig 32, Oshawott 21, Snivy), PokePark Wii (563 unlabeled voice files), Pokémon Channel (7 clips each for many Johto and Kanto species), Pokémon Puzzle League. See the earlier research report for links.
+- **Sprites:** the owner prefers Dream World artwork, from the `sprites/pokemon/other/dream-world` folder of the [PokeAPI sprites repo](https://github.com/PokeAPI/sprites). These are SVG vector images and only cover generations I to V, so later Pokémon need another style (official artwork, 475 px PNG). Dream World art is static, so the app animates it (squash, stretch, bounce). Packs keep the SVGs; the packer can also rasterize them to JPEG XL or PNG. These images are copyrighted, so they stay private.
+- **Workflow:** one folder per character with raw clips, a `pack.yaml` listing names and colors, then `packer build` produces the `.soundpack`. Several packs (for example one per generation) can be combined with `packer bundle`.
+
+## Website
+
+A fully static SvelteKit site at `cucuto.mauri.app` explains the app, gets people to the APK, doubles as the default pack repository, and hosts the pack creator as an installable PWA. It needs no server.
+
+Pages:
+
+1. **Home.** Hero animation built from a demo pack, a one-line pitch, a "Download APK" button (latest GitHub Release asset, with version and size), the explainer video, a screenshot carousel, "how it works" in three steps, requirements (Android 17, root, LSPosed with libxposed API 102) and an FAQ.
+2. **Packs.** A gallery of free packs: cover, character sprites, a play button per sample clip, size, license, a "Download .soundpack" button and an "Add to app" deep link.
+3. **Install guide.** Install the APK, enable the module in LSPosed with System Framework scope, reboot, run the in-app status checks.
+4. **For pack authors.** The format spec rendered from `docs/pack-format.md`, packer usage, how to host your own pack repository, and a link to the Create page.
+5. **Privacy.** No analytics, no cookies, no tracking.
+
+Tech and deployment:
+
+- SvelteKit with the static adapter; every route prerendered at build time.
+- The release version, APK size and download URL are fetched from the GitHub Releases API during the build. A release triggers a site rebuild.
+- Deploy from GitHub Actions to GitHub Pages (simplest, lives next to the repo) or Cloudflare Pages. The owner picks; the agent sets it up and documents the exact DNS record for `cucuto.mauri.app` once the repo exists.
+- Large files (APK, `.soundpack` files) live as GitHub Release assets, not in the site build; GitHub allows up to 2 GiB per release file. The site hosts only small preview files: sample clips, sprites, covers.
+- The build runs `packer index` over the demo packs and publishes `/repo/index.json`, so the site is also a pack repository that the app adds by default.
+
+Images and media:
+
+- JPEG XL preferred, never required. Serve images with a `<picture>` element: a `.jxl` source first, then AVIF or PNG fallbacks generated at build time. Chrome 155 and later decode JPEG XL by default (since October 2026), Safari since version 17; Firefox still needs a preference ([JPEG XL in Chrome](https://developer.chrome.com/blog/jpeg-xl-in-chrome)).
+- The explainer video is produced by a separate subagent. The site expects `web/static/video/explainer.webm` and `.mp4`, a `poster.jxl` and WebVTT captions. Lazy-loaded, never autoplays with sound.
+- Screenshots come from the app running the demo packs, captured by a script so they can be regenerated on every release.
+
+Design: same visual language as the app (Material 3 Expressive color, shape and spring motion), light and dark themes, responsive, accessible, Lighthouse scores of 95 or more.
+
+## Pack repositories
+
+A repository is any HTTPS location that serves a `repository.json` index and the files it lists. Users add its URL, browse its packs, preview them, and download the ones they like, with optional credentials.
+
+Index example (`repository.json`, generated by `packer index`):
+
+```json
+{
+  "formatVersion": 1,
+  "name": "Official packs",
+  "homepage": "https://cucuto.mauri.app",
+  "packs": [
+    {
+      "id": "app.mauri.demo.cats",
+      "type": "pack",
+      "name": "Cats",
+      "version": "1.2.0",
+      "author": "cucuto contributors",
+      "license": "CC0-1.0",
+      "tags": ["animals"],
+      "cover": "previews/cats/cover.jxl",
+      "characters": [
+        { "id": "tabby", "name": "Tabby", "sprite": "previews/cats/tabby.jxl", "sample": "previews/cats/tabby.ogg" }
+      ],
+      "download": {
+        "url": "https://github.com/OWNER/cucuto/releases/download/packs-v1/cats-1.2.0.soundpack",
+        "size": 4821033,
+        "sha256": "…"
+      }
+    }
+  ]
+}
+```
+
+Relative paths resolve against the index URL. Entries with `"type": "bundle"` list their packs, so the app can show the contents before downloading. Previews are small separate files, so browsing stays fast.
+
+Supported sources:
+
+| Source | How the user adds it | When | Notes |
+| --- | --- | --- | --- |
+| Static HTTPS site (GitHub Pages, Cloudflare Pages, S3 or R2, any web server) | Paste the folder or `repository.json` URL, scan a QR code, or tap "Add to app" on a website | v1 | The main path. The project website is the default repository. |
+| Direct link to one `.soundpack` | Paste the link | v1 | One-off download through the same importer. |
+| Google Drive folder | Sign in with Google and pick a folder | v1.1 | Read-only Drive API access to that folder. The app reads `repository.json` there, or lists `.soundpack` files and reads their manifests. Fits the owner's private Drive. Public Drive links are a poor host: files above roughly 100 MB return a virus-scan warning page instead of the file, popular files get throttled, and folders can't be listed without the API. |
+| MEGA link | Paste the link | Later | MEGA encrypts files on the client, so the app would need the MEGA SDK and the key in the link to decrypt. Check the SDK's license against GPL-3.0 before committing. |
+
+Authentication:
+
+- Per repository, optional HTTP Basic (username and password) or a bearer token header. HTTPS only.
+- Credentials are encrypted with an Android Keystore key, never logged, and never forwarded when a redirect changes host.
+- Static hosts can't check passwords by themselves: on Cloudflare Pages a tiny middleware function or Cloudflare Access can add Basic auth; GitHub Pages cannot protect files. Document this for repository owners.
+
+In the app (Discover screen):
+
+1. **Repositories:** the default one plus user-added ones. Add by URL, QR code, or the deep link `cucuto://repo/add?url=…` from a website.
+2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges.
+3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched.
+4. **Download:** animated progress, then size and SHA-256 checks, then the standard importer (bundles show their pack checklist).
+5. **Updates:** repositories are checked when the app opens, with ETag caching. No background jobs.
+
+Security: everything remote is untrusted. Apply the same validation as local imports, check the advertised size before downloading, reject SHA-256 mismatches, cap redirects, and show each repository's host clearly. Adding a repository from an unknown source shows a short warning.
+
+## Pack creator (app and website)
+
+People can build packs without the command line, either in the app or in the website installed as a PWA. Both produce standard `.soundpack` files, and everything runs on the device: nothing is uploaded anywhere.
+
+The creation flow, the same on both:
+
+1. **Pack details:** name, author, license (with CC0 and CC-BY presets), description, cover.
+2. **Characters:** add a character, pick or crop a sprite (any supported image format, animated allowed), name it, and pick a seed color (suggested from the sprite).
+3. **Clips:** import audio files or record with the microphone. A waveform editor trims start and end, with optional silence trimming and loudness normalization. Each clip gets a label and a weight.
+4. **Haptics:** auto mode by default; the haptic editor for custom patterns.
+5. **Validate and export:** run the same checks as the importer, then export a `.soundpack` (single pack or a bundle of several). The app can also install the result directly.
+
+In the app:
+
+- A **Create** entry on the Packs screen. Packs installed from a repository can be duplicated and edited; the original stays untouched.
+- Recording uses `RECORD_AUDIO`, asked only when the user taps Record.
+- Live preview with real haptics, plus "Simulate message" to hear the clip exactly as a notification would play it.
+- Export through the share sheet or the Storage Access Framework (for example, straight into Google Drive).
+
+In the website (PWA):
+
+- A **Create** page, installable as a PWA and usable offline (service worker, web app manifest). Where the browser supports file handling, the installed PWA opens `.soundpack` files directly.
+- Audio is decoded and trimmed with the Web Audio API and recorded with MediaRecorder. Encode with WebCodecs where the browser supports the codec, otherwise fall back to a WebAssembly encoder.
+- Images are cropped on a canvas; JPEG XL encoding is optional through a WebAssembly encoder.
+- Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews.
+- Haptic patterns are edited visually. Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
+
+Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. The app's Kotlin validator, the website's TypeScript validator and `packer` all run against the same fixtures in CI, so a pack made anywhere imports everywhere.
+
+## Haptics
+
+Every character gets a vibration that is built with `VibrationEffect.Builder` and played by the system alongside its clip. In-app touches get their own lighter haptics.
+
+**API choice.** Use `VibrationEffect.Builder` as the primary API. It sequences presets (`PRESET_CLICK`, `PRESET_TICK`, `PRESET_LOW_TICK` and others) and basic envelopes on a timeline, and the framework falls back automatically when the hardware lacks a preset or envelope ([Create custom haptic effects](https://developer.android.com/develop/ui/views/haptics/custom-haptic-effects)). Google's docs label it "Android 16 (26Q4)"; confirm it exists on the owner's build in M0. If it is missing, fall back to `BasicEnvelopeBuilder` (API 36) plus `Composition` with explicit support checks. Do not use `WaveformEnvelopeBuilder` in packs: it has no fallback and depends on the device's frequency profile.
+
+Haptic schema in `pack.json` (custom mode), mapped one-to-one onto the Builder:
+
+```json
+"haptic": {
+  "mode": "custom",
+  "events": [
+    { "at": 0,   "preset": "CLICK", "scale": 0.8 },
+    { "at": 120, "preset": "TICK",  "scale": 0.5 },
+    { "at": 220, "envelope": [
+        { "intensity": 1.0, "sharpness": 0.8, "ms": 120 },
+        { "intensity": 0.0, "sharpness": 0.4, "ms": 180 }
+    ] }
+  ]
+}
+```
+
+Where haptics come from, in order of precedence:
+
+1. **Per-contact override** set in the haptic editor.
+2. **Pack custom pattern** for the character.
+3. **Auto mode, "haptics follow the voice":** at import, decode each clip, compute its loudness envelope (about 20 ms windows), simplify it to the device's maximum control points and store it as a basic envelope per clip. The vibration then rises and falls with the voice. Clamp the result to at most 2 s and always end at zero intensity, which the envelope API requires.
+
+Playback in notifications: the module sets the chosen `VibrationEffect` on WhatsApp's notification record, so the system plays it with notification usage. The owner's notification vibration intensity setting, DND and ringer mode then apply automatically.
+
+In-app haptics: use Compose `LocalHapticFeedback` types for standard touches (toggles, confirms, list ticks). Reserve richer Builder effects for moments of delight: assigning a character, importing a pack, a successful test. Follow Android's haptics design principles: short, crisp, never a long buzz for a UI action.
+
+**Haptic editor (M4).** A timeline screen where the owner taps to drop presets, drags envelope points, sees a live waveform, and previews with the clip. It also has a "tap the rhythm" mode that records taps into presets.
+
+## UX, game feel and Material 3 Expressive
+
+The app should feel like a small game: every action answers with synchronized motion, sound and haptics, on a Material 3 Expressive foundation. Juice never gets in the way of getting a contact set up in under 10 seconds.
+
+Screens:
+
+1. **Status and onboarding.** One card that turns green when everything works: module active in `system_server`, correct LSPosed scope, WhatsApp detected, at least one pack installed. Each failing check has a one-tap fix or a clear instruction.
+2. **Home (contacts).** A list of chats with their character's sprite as avatar. A "recent senders" strip shows people who messaged recently and have no character yet. Search, filter by pack, and a FAB to assign.
+3. **Character picker.** A grid of sprites or album covers grouped by pack. Tap previews (sprite bounces, clip plays, haptic fires). A second tap assigns.
+4. **Contact detail.** Assigned character, the clip pool with per-clip toggles, the ringtone with its variant rule and linked Android contact, haptic override, group policy (one character for the group, or per sender), and a "Simulate message" button that runs the real pipeline.
+5. **Packs.** Installed packs as a carousel, import from a file, create a new pack (see Pack creator), pack detail with all characters, update and remove.
+6. **Discover.** Browse pack repositories, preview and download packs, manage repositories and their credentials (see Pack repositories).
+7. **Haptic editor.** See the Haptics section.
+8. **Settings and diagnostics.** Global on/off, Quick Settings tile, backup and restore, and a decision log: for each recent notification, the package, matched contact, chosen clip and why (or why it was skipped). This log is essential for debugging.
+
+Juice checklist:
+
+- One `Feedback` engine fires sound, haptic and visual together from a single timestamp so they never drift apart.
+- Spring motion everywhere through `MaterialTheme.motionScheme` (expressive scheme).
+- Sprites squash and stretch when they "speak". Avatars morph shape on press using Material shapes.
+- Assigning a character shows a short particle burst in the character's color, with the clip and a rising haptic.
+- Shared-element transitions from grid to detail. Predictive back animations on every screen.
+- Each character screen takes its colors from the sprite (palette extraction to a seed color, then a dynamic color scheme).
+- A small built-in set of CC0 UI sounds (tap, toggle, success, error), switchable off and quiet by default.
+- Loading states use expressive progress indicators, never a bare spinner. Brand motif: a cuckoo clock whose little door pops open to reveal the character who's "calling". Use it in the app icon, onboarding, the assign animation and the website hero.
+
+Material and accessibility:
+
+- Use Compose Material 3 1.5.0 for Expressive components. As of 21 Oct 2026, 1.4.0 is stable and 1.5.0 is in beta (beta02); most Expressive APIs (motion scheme, button groups, split button, floating toolbar, FAB menu, wavy progress, expressive lists) are no longer experimental. `MaterialShapes` and `LoadingIndicator` still need opt-in ([release notes](https://developer.android.com/jetpack/androidx/releases/compose-material3)).
+- Edge-to-edge, dynamic color with a brand fallback, light and dark themes.
+- Respect the system "remove animations" setting: keep state changes, drop decorative motion and particles.
+- Every sprite and button has a TalkBack label. Never encode meaning only in color, sound or haptics.
+- Smooth at 120 Hz: baseline profiles, no work on the main thread when decoding sprites or audio.
+
+## Tech stack and project setup
+
+The Android side is Kotlin, Jetpack Compose and the libxposed API 102 in one Gradle project producing a single APK; the website is SvelteKit. Pick the newest stable versions on day one and record them in version catalogs; use the 1.5.0 Material 3 beta only for Expressive components.
+
+| Area | Choice | Notes |
+| --- | --- | --- |
+| SDK | `minSdk 37`, `targetSdk 37`, `compileSdk` = newest 37.x | Recent Compose releases require a 37.x `compileSdk`; check the release notes when setting it |
+| Language and build | Kotlin, Android Gradle Plugin 9.x, Gradle version catalog | Kotlin only, no Java sources |
+| UI | Jetpack Compose, Material 3 1.5.0 (Expressive), Navigation 3 | `MaterialExpressiveTheme`, expressive motion scheme |
+| Images | Coil 3 with the platform decoders (PNG, JPEG, WebP, GIF, AVIF, animated WebP and GIF), plus [jxl-coder](https://github.com/awxkee/jxl-coder) and its Coil plugin for JPEG XL | JXL support is a nice-to-have: ship only the arm64 native library to keep the APK small and check the license is GPL-compatible. If it causes crashes or bloat, drop it and convert JXL to WebP or PNG at import. |
+| Data | Room (contacts, assignments, repositories, decision log), DataStore (settings), kotlinx.serialization (manifests, indexes) |  |
+| Networking | OkHttp with ETag caching, redirect limits and per-host credentials | For pack repositories only; the module never touches the network |
+| Secrets | Android Keystore key encrypting repository credentials | Never logged, never exported in backups |
+| DI | Hilt | Keep the module code free of DI frameworks |
+| Audio in app | `SoundPool` for previews (the app is in the foreground, so Android 17's background limits do not apply) | Decoding with `MediaExtractor` and `MediaCodec` for the auto-haptic analysis |
+| Hooking | [libxposed API](https://github.com/libxposed/api) 102, `compileOnly` | `minApiVersion` and `targetApiVersion` 102; modules targeting 102 cannot call the legacy Xposed API, so don't |
+| Module scope | System Framework (`android`) only | Never scope WhatsApp |
+| Root utilities | libsu | Optional: read WhatsApp's contact database, run diagnostics |
+| Website | SvelteKit (Svelte 5) with the static adapter, TypeScript, service worker and web app manifest for the PWA | Deployed by GitHub Actions to GitHub Pages or Cloudflare Pages |
+| Tests | JUnit and Turbine (unit), Compose UI tests, Playwright for the site, a device test checklist |  |
+| CI | GitHub Actions: Android build, lint and tests; web build; demo packs and repository index; media allowlist guard; release APK on tag |  |
+
+Gradle modules (under `android/`):
+
+- `:app` — Compose UI, view models, onboarding, Discover, pack creator, diagnostics.
+- `:xposed` — module entry point and hooks. Small, defensive, no Compose and no heavy dependencies, since it loads inside `system_server`.
+- `:core:pack` — pack and bundle models, JSON Schema validation, safe unzip, importer.
+- `:core:repo` — repository sources (HTTPS index first, Google Drive later), credentials, download and verification.
+- `:core:data` — Room database, repositories, the routing table that the module reads.
+- `:core:ringtone` — MediaStore export, per-contact ringtones, variant rules and boundary alarms.
+- `:core:backup` — backup export, encryption, scheduled backups and restore.
+- `:core:haptics` — pack haptic schema to `VibrationEffect`, auto-haptic generator, capability checks.
+- `:core:audio` — decoding, loudness envelope analysis, preview playback, and recording, trimming, clip cutting and normalization for the pack creator.
+
+Outside `android/`:
+
+- `tools/packer` — JVM command-line tool. `packer build` turns a folder plus `pack.yaml` into a validated `.soundpack`; `packer bundle` combines packs into one file; `packer index` writes `repository.json` with previews, sizes and SHA-256 hashes. With ffmpeg it can trim silence, normalize loudness and transcode to Opus; with libjxl's `cjxl` it can convert images to JPEG XL. All conversions are opt-in flags.
+- `web/` — the SvelteKit site, which reuses the schemas in `spec/` to render the packs gallery.
+
+How the app and the module talk:
+
+- **Routing table (app to module):** the app writes a compact table (contact key, character id, clip list, haptic) to libxposed Remote Preferences, which the framework stores and serves to the module. The module caches it in memory and reloads on change. Never do disk or database work on the notification path.
+- **Clip files (system to app):** an exported read-only `ContentProvider` at `content://<appId>.clips/<pack>/<character>/<clip>`. It checks the calling UID and allows only the system and the process that actually opens notification sounds (historically SystemUI's ringtone player; confirm in M0). It refuses everyone else.
+- **Seen senders (module to app):** the module posts a lightweight event (package, conversation key, display name, group flag) that the app records. The event goes through the provider or a protected broadcast, so the home screen can offer "recent senders" for one-tap assignment.
+
+Contact identity: the stable key is `package + conversation key`. Prefer the notification's conversation shortcut ID if M0 shows it is the WhatsApp JID; otherwise fall back to the MessagingStyle conversation title. With root, the app can optionally read WhatsApp's local contact database to list all chats and groups with their JIDs; treat that schema as unstable and fail softly.
+
+## Milestones and acceptance criteria
+
+Ten milestones, each ending in something the owner can install and try. M0 is a go/no-go gate: if a check fails, report back with findings before building further.
+
+### M0 — Device spike (gate)
+
+A throwaway module plus a debug screen, run on the owner's phone.
+
+- [ ] Record device model, ROM build, root manager, LSPosed/Vector version and supported libxposed API level.
+- [ ] Module loads in `system_server` and logs every WhatsApp notification that reaches the alerting stage.
+- [ ] Locate the real hook point on this Android 17 build: in recent AOSP the alerting logic lives in `NotificationAttentionHelper` (sound, vibration, LED); confirm method names and signatures from the device's framework.
+- [ ] Dump for one 1:1 message and one group message: channel ID, sound URI, vibration, shortcut ID, MessagingStyle conversation title, sender `Person`, group key, group alert behavior, and whether the child or the summary is the record that alerts.
+- [ ] Swap the sound to a test clip served by our provider and hear it. Identify which process opens the URI.
+- [ ] Swap the vibration to a `VibrationEffect.Builder` effect and feel it. Confirm the Builder API exists on this build.
+- [ ] Confirm muted chats, Do Not Disturb, silent mode and quick bursts behave exactly as with WhatsApp's own tone.
+- [ ] Confirm WaEnhancer X keeps working with our module enabled.
+
+### M1 — Core engine
+
+- [ ] Pack and bundle importer with validation, safe unzip, decoding of every supported image and audio format, and install, tested with the demo packs and a malformed pack set (zip slip, oversize, bad schema).
+- [ ] Room database for contacts and assignments; routing table published to the module.
+- [ ] Module hook swaps sound and vibration using the routing table. Random clip per message with a shuffle bag, so the same clip never plays twice in a row.
+- [ ] Unassigned contacts keep WhatsApp's default tone. A global switch turns everything off.
+- [ ] Hook adds no noticeable delay: under 5 ms of work on the notification path, all lookups from memory.
+
+### M2 — Contacts and senders
+
+- [ ] "Recent senders" feed from the module, with one-tap assignment.
+- [ ] Optional root import of all WhatsApp chats and groups.
+- [ ] Group policy: one character per group, or per sender inside a group.
+- [ ] WhatsApp Business supported with the same flows.
+
+### M3 — UI and game feel
+
+- [ ] All screens from the UX section, built with Material 3 Expressive.
+- [ ] Feedback engine with synchronized sound, haptic and motion; full juice checklist done.
+- [ ] Accessibility pass: TalkBack walkthrough, large fonts, "remove animations" setting.
+
+### M4 — Haptics
+
+- [ ] Pack haptic schema implemented, including auto mode ("haptics follow the voice").
+- [ ] Haptic editor with live preview and tap-the-rhythm recording.
+- [ ] Per-contact haptic override.
+
+### M5 — Pack repositories and bundles
+
+- [ ] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
+- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges.
+- [ ] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
+- [ ] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
+- [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.
+
+### M6 — Website
+
+- [ ] SvelteKit static site with Home, Packs, Install guide, For pack authors and Privacy pages.
+- [ ] APK download wired to the latest GitHub Release; rebuild on every release.
+- [ ] Demo packs built in CI, published as release assets, indexed at `/repo/index.json` and set as the app's default repository.
+- [ ] JPEG XL images with generated fallbacks; scripted screenshots from the demo packs; slot ready for the explainer video from the video subagent.
+- [ ] Deployed to GitHub Pages or Cloudflare Pages, with the exact DNS record for `cucuto.mauri.app` handed to the owner.
+
+### M7 — Open-source release
+
+- [ ] Public monorepo with README, LICENSE (GPL-3.0-or-later), pack format docs, schemas, `packer`, CONTRIBUTING.
+- [ ] Backup and restore: manual export, automatic backups to a chosen folder, optional encryption, and a tested restore on a wiped phone.
+- [ ] CI green, including the media allowlist guard.
+- [ ] Signed release APK on GitHub Releases, linked from the website.
+- [ ] The owner imports the private packs from Google Drive on a clean install and everything works end to end.
+
+### M8 — Pack creator (v1.1; can move earlier)
+
+- [ ] In-app creator: pack details, characters, sprite crop, import or record clips, waveform trim, normalize, haptics, validate, export or install.
+- [ ] Duplicate-and-edit for installed packs.
+- [ ] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser.
+- [ ] "Host your own repository" helper that outputs a folder with `repository.json` and previews.
+- [ ] Golden test packs shared by the Kotlin validator, the TypeScript validator and `packer`, all green in CI.
+
+### M9 — Ringtones
+
+- [ ] Spike first: confirm Telecom's ringer hook point and scope for random-per-call, and find out how WhatsApp plays its call ringtone.
+- [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
+- [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
+- [ ] Album-cover ringtone picker with preview and variant chips; contact linking by phone number.
+- [ ] WhatsApp call ringtones if the M9 spike shows it can be done without hooking WhatsApp.
+- [ ] The owner's K.K. Slider pack assigned to several contacts, with day and night variants switching correctly.
+
+Later ideas, out of scope for v1: other messengers (Telegram, Signal, SMS), per-contact ringtones for WhatsApp calls, a home-screen widget, MEGA links as a pack source, community pack submissions to the official repository.
+
+## Risks and open questions
+
+The biggest risk is framework internals shifting under the hook; the mitigations below keep failures silent and safe (WhatsApp's own tone plays).
+
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| Hook point differs on the owner's build or changes in a later QPR | Custom sounds stop; default tone plays | Resolve methods by name with several candidate signatures, log clearly, no-op on failure. Status screen shows "hook not active". |
+| LSPosed/Vector instability on Android 17 (users report boot loops on some builds) | Module can't load | The owner's framework already runs WaEnhancer X with API 102. Keep the module tiny and catch every exception inside hooks; never throw in `system_server`. |
+| Group messages alert through the summary notification, not the child | Wrong or missing sender | M0 confirms which record alerts. If it is the summary, resolve the sender from the newest child in the same group. |
+| The process that plays notification sounds can't read our clip URI | Silence instead of a clip | Provider caller allowlist confirmed in M0. Fallback: have the module copy clips to a location that process can read. |
+| WhatsApp identifiers change (phone JIDs versus newer `@lid` IDs) | Assignments stop matching | Store every key seen for a contact; match on any. The "recent senders" feed makes reassignment one tap. |
+| WhatsApp plays its call ringtone inside its own process | No custom WhatsApp call ringtones without hooking WhatsApp | Treat WhatsApp call ringtones as best effort; phone-call ringtones work natively regardless. |
+| Phone ringtone files deleted or moved by the user | Contacts fall back to the default ringtone | Keep ringtones in a dedicated `Ringtones/cucuto/` folder and re-check them on app start; repair automatically. |
+| JPEG XL decoding gaps (no built-in Android decoder assumed; Firefox needs a preference) | Missing sprites or site images | JXL is optional: bundle jxl-coder if it behaves, otherwise convert at import. On the site, serve `<picture>` with fallbacks. |
+| Malicious or broken pack repositories | Crashes, storage abuse, misleading content | Same validation as local imports, size and SHA-256 checks, redirect caps, warning when adding an unknown repository. |
+| Google Drive and MEGA links are unreliable hosts | Failed downloads | Recommend static hosts for public repositories; use the Drive API (not public links) for Drive folders; treat MEGA as a later, SDK-based source. |
+| Losing the phone | All assignments gone | Automatic backups to a user-chosen folder (for example Google Drive), tested restore. |
+| Copyrighted media leaks into the public repo | Takedown risk | `.gitignore`, CI media allowlist, demo-pack-only screenshots and video. |
+| Very rapid bursts of messages | Clips cut each other off | The system already plays one notification sound at a time; cooldown softens bursts. Optional per-contact minimum gap in settings. |
+
+Open questions for the owner (answer before M1 unless noted):
+
+1. Which GitHub account or organization owns the `cucuto` repo (it replaces `OWNER` in URLs).
+2. Hosting for the site: GitHub Pages or Cloudflare Pages (needed by M6).
+3. Default for group chats: one character per group, or per sender?
+4. Include WhatsApp Business from v1? The design supports it at no extra cost.
+5. Who hands the explainer video brief to the video subagent, and when: after M3, once the UI is final, is suggested.
+6. Should ringtones (M9) ship in v1, or follow in v1.1 like the pack creator?
+
+Settled: name cucuto (application ID app.mauri.cucuto, site cucuto.mauri.app), license GPL-3.0-or-later, libxposed API 102, monorepo, common image and audio formats with JPEG XL as the preferred image format, `.soundpack` as the file extension.
+
+## Sources
+
+- [Background audio hardening (Android 17)](https://developer.android.com/about/versions/17/changes/bg-audio)
+- [Behavior changes: apps targeting Android 17](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [Create custom haptic effects](https://developer.android.com/develop/ui/views/haptics/custom-haptic-effects)
+- [Compose Material 3 release notes](https://developer.android.com/jetpack/androidx/releases/compose-material3)
+- [NotificationAttentionHelper in AOSP](https://android.googlesource.com/platform//frameworks/base/+/330dc32a01316b5e31c4ea5afdf834cb0497f057/services/core/java/com/android/server/notification/NotificationAttentionHelper.java)
+- [libxposed API](https://github.com/libxposed/api) and [Develop modules with the modern Xposed API](https://www.github.com/LSPosed/LSPosed/wiki/Develop-Xposed-Modules-Using-Modern-Xposed-API)
+- [Vector (LSPosed fork)](https://github.com/JingMatrix/Vector) and [Android 17 crash-loop discussion](https://github.com/JingMatrix/Vector/discussions/759)
+- [WaEnhancer X releases](https://newreleases.io/project/github/mubashardev/WaEnhancer/release/1.7.0)
+- [PokeAPI sprites (including Dream World SVGs)](https://github.com/PokeAPI/sprites)
+- [K.K. Slider Complete Songs Collection on KHInsider](https://downloads.khinsider.com/game-soundtracks/album/animal-crossing-k.k.-slider-complete-songs-collection)
+- [JPEG XL in Chrome (Chrome 155)](https://developer.chrome.com/blog/jpeg-xl-in-chrome) and [JPEG XL browser status, July 2026](https://freetoolonline.com/news/jpeg-xl-returns-chrome-firefox.html)
+- [jxl-coder for Android](https://github.com/awxkee/jxl-coder) and [its Coil plugin](https://github.com/awxkee/jxl-coder-coil)
+- [Google Drive direct links and the virus-scan threshold](https://u2l.ai/tools/google-drive-direct-link-generator)
