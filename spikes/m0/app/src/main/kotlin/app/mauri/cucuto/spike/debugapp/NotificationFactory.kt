@@ -89,7 +89,8 @@ object NotificationFactory {
         Person.Builder()
             .setKey(jid)
             .setName(name)
-            .setUri("content://com.android.contacts/data/$jid")
+            // No setUri: WhatsApp holds READ_CONTACTS and a contacts URI; the spike does not, and the
+            // framework rejects an ungranted Person URI with a SecurityException.
             .setBot(false)
             .build()
 

@@ -49,6 +49,10 @@ fun sh(vararg cmd: String, quiet: Boolean = false): String {
 fun adb(vararg a: String, quiet: Boolean = false) = sh("adb", *a, quiet = quiet)
 fun adbSu(cmd: String, quiet: Boolean = false) = adb("shell", "su", "-c", cmd, quiet = quiet)
 
+/** Lines this module wrote through the libxposed log API (LSPosed stores them in its own log, not logcat). */
+fun lspdModuleLog(): String =
+    adb("shell", "su -c \"grep -h -F '$SPIKE_PKG,$TAG,' /data/adb/lspd/log/modules_*.log\"", quiet = true)
+
 fun header(s: String) = println("\n=== $s ===")
 fun ok(s: String) = println("  [ok]   $s")
 fun bad(s: String) = println("  [FAIL] $s")
@@ -132,7 +136,8 @@ fun verify() {
     if (ssPid.isNotBlank()) ok("system_server alive (pid $ssPid)") else bad("system_server NOT running")
 
     header("module loaded?")
-    val log = adb("logcat", "-d", "-s", TAG, quiet = true)
+    // Boot-time lines scroll out of logcat quickly; the libxposed log in LSPosed's modules log keeps them.
+    val log = adb("logcat", "-d", "-s", TAG, quiet = true) + "\n" + lspdModuleLog()
     if (log.contains("system_server starting")) ok("module ran onSystemServerStarting")
     else bad("no onSystemServerStarting line — module not loaded or not scoped to System Framework")
     log.lines().filter { it.contains("hooked ") }.forEach { ok(it.substringAfter(TAG).trim()) }
