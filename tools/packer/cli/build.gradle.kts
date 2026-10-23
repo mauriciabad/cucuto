@@ -12,7 +12,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":pack-spec"))
+    implementation("app.mauri.cucuto:pack-spec")
     implementation(libs.clikt)
     implementation(libs.kaml)
     implementation(libs.kotlinx.serialization.json)
@@ -28,6 +28,11 @@ application {
 }
 
 val repoRoot = rootProject.layout.projectDirectory.dir("../..")
+
+// The shared pack-spec build (every golden fixture in spec/fixtures) is tested with packer.
+tasks.named("check") {
+    dependsOn(gradle.includedBuild("pack-spec").task(":check"))
+}
 
 tasks.test {
     useJUnitPlatform()

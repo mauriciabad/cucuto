@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-23
-- Issues: #4, #5
+- Issues: #4, #5, #13 (moved to `shared/pack-spec/`)
 
 ## Context
 
@@ -44,5 +44,15 @@ is JVM-only and its 3.x line depends on Jackson 3, which is heavy for an Android
   and the app add a real decode on top.
 - Moving the module out of `tools/packer` is a mechanical change (directory move plus `includeBuild`), done in the
   first Android importer PR.
+
+## Update (#13)
+
+The module now lives in `shared/pack-spec/`, a standalone Gradle build (its own wrapper and version catalog) that
+`tools/packer` and `android/` include with `includeBuild`; both depend on `app.mauri.cucuto:pack-spec`, which Gradle
+substitutes with the included project. It keeps the single `jvm()` target: Android consumes the JVM variant directly,
+so an `androidTarget()` (and AGP inside the shared build) would add build complexity without new capabilities while
+the module has no Android-specific code. Packer's `check` runs the module's tests, and `:core:pack` runs every golden
+fixture through the Android importer ([ADR 0008](0008-pack-importer.md)). The importer also uses two additions made
+for it: `PackManifest.mediaReferences()` and `DurationRules`.
 - The optimumcode validator is younger than networknt. If it ever blocks us, swapping it touches only
   `SpecSchemas.kt`; the fixtures catch any behavior change.
