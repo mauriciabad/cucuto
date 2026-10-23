@@ -12,7 +12,7 @@ on:
   pull_request:
   push:
     branches: [main]
-  # Also started by site-rebuild.yml (release published) and packs-release.yml with site_only, so the website
+  # Also started by site-rebuild.yml (release published), release.yml and packs-release.yml with site_only, so the website
   # picks up new release data (APK version and size, /repo/index.json) and redeploys.
   workflow_dispatch:
     inputs:
