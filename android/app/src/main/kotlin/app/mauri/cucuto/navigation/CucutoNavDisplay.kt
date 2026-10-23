@@ -11,12 +11,17 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
+import app.mauri.cucuto.home.HomeScreen
+import app.mauri.cucuto.picker.PickerScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
+import app.mauri.cucuto.ui.motion.SharedElementEntry
+import app.mauri.cucuto.ui.motion.SharedElementsHost
 import app.mauri.cucuto.ui.placeholder.PlaceholderScreen
 import app.mauri.cucuto.ui.status.StatusScreen
 
@@ -31,32 +36,57 @@ fun CucutoNavDisplay(modifier: Modifier = Modifier) {
     val navigate: (CucutoDestination) -> Unit = { backStack.add(it) }
     val goBack: () -> Unit = { backStack.removeLastOrNull() }
 
-    NavDisplay(
-        backStack = backStack,
-        onBack = goBack,
-        modifier = modifier,
-        entryDecorators =
-            listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
-        transitionSpec = { motion.slideTransition(forward = true) },
-        popTransitionSpec = { motion.slideTransition(forward = false) },
-        predictivePopTransitionSpec = { motion.slideTransition(forward = false) },
-        entryProvider =
-            entryProvider {
-                entry<CucutoDestination.Status> { StatusScreen(onNavigate = navigate) }
-                entry<CucutoDestination.Home> { PlaceholderScreen(it, onBack = goBack) }
-                entry<CucutoDestination.Picker> { PlaceholderScreen(it, onBack = goBack) }
-                entry<CucutoDestination.ContactDetail> { PlaceholderScreen(it, onBack = goBack) }
-                entry<CucutoDestination.Packs> { PlaceholderScreen(it, onBack = goBack) }
-                entry<CucutoDestination.Discover> { PlaceholderScreen(it, onBack = goBack) }
-                entry<CucutoDestination.HapticEditor> { PlaceholderScreen(it, onBack = goBack) }
-                entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }
-                entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
-                entry<CucutoDestination.Gallery> { GalleryScreen(onBack = goBack) }
-            },
-    )
+    SharedElementsHost {
+        NavDisplay(
+            backStack = backStack,
+            onBack = goBack,
+            modifier = modifier,
+            entryDecorators =
+                listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+            transitionSpec = { motion.slideTransition(forward = true) },
+            popTransitionSpec = { motion.slideTransition(forward = false) },
+            predictivePopTransitionSpec = { motion.slideTransition(forward = false) },
+            entryProvider = entries(backStack, navigate, goBack),
+        )
+    }
+}
+
+private fun entries(
+    backStack: MutableList<NavKey>,
+    navigate: (CucutoDestination) -> Unit,
+    goBack: () -> Unit,
+) = entryProvider<NavKey> {
+    entry<CucutoDestination.Status> { StatusScreen(onNavigate = navigate) }
+    entry<CucutoDestination.Home> {
+        SharedElementEntry {
+            HomeScreen(
+                onOpenChat = { chat -> navigate(CucutoDestination.Picker(chat)) },
+                onOpenPacks = { navigate(CucutoDestination.Packs) },
+                onBack = goBack,
+            )
+        }
+    }
+    entry<CucutoDestination.Picker> { key ->
+        SharedElementEntry {
+            PickerScreen(
+                chat = key.chat,
+                onBack = goBack,
+                // Only this picker, and only if the user has not left it already.
+                onDone = { backStack.remove(key) },
+                onOpenPacks = { navigate(CucutoDestination.Packs) },
+            )
+        }
+    }
+    entry<CucutoDestination.ContactDetail> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Packs> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Discover> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.HapticEditor> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
+    entry<CucutoDestination.Gallery> { GalleryScreen(onBack = goBack) }
 }
 
 /** Shared-axis style slide driven by the expressive motion scheme's springs. */
