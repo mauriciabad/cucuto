@@ -113,6 +113,13 @@ class PackImporter(
         if (import.claim()) withContext(ioDispatcher + NonCancellable) { store.deleteStaging(import.stagingDir) }
     }
 
+    /**
+     * Removes every version of the pack [id] from the store. Serialized with [install], so a removal never races an
+     * import of the same pack. Returns false when it was not installed.
+     */
+    suspend fun uninstall(id: String): Boolean =
+        withContext(ioDispatcher) { installLock.withLock { store.uninstall(id) } }
+
     /** Deletes leftovers of imports interrupted by process death. Call once at startup, before any import. */
     suspend fun deleteLeftovers() =
         withContext(ioDispatcher) {
