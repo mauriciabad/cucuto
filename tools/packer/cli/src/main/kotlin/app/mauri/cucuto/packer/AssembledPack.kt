@@ -2,9 +2,12 @@ package app.mauri.cucuto.packer
 
 import app.mauri.cucuto.packspec.EntryKind
 import app.mauri.cucuto.packspec.ErrorCode
+import app.mauri.cucuto.packspec.FileInput
 import app.mauri.cucuto.packspec.PackReadException
 import app.mauri.cucuto.packspec.PackSource
 import app.mauri.cucuto.packspec.SourceEntry
+import app.mauri.cucuto.packspec.zip.ByteArrayInput
+import app.mauri.cucuto.packspec.zip.RandomAccessInput
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.fileSize
@@ -46,6 +49,15 @@ class AssembledPack(files: Map<String, Content>) : PackSource {
         return when (c) {
             is Content.OnDisk -> Files.newInputStream(c.path).use { it.readNBytes(count) }
             is Content.InMemory -> c.bytes().let { if (it.size <= count) it else it.copyOf(count) }
+        }
+    }
+
+    override fun <T> useFile(path: String, maxBytes: Long, block: (RandomAccessInput) -> T): T {
+        val c = files[path] ?: throw PackReadException(ErrorCode.FILE_MISSING, "No such file: $path")
+        if (c.size > maxBytes) throw PackReadException(ErrorCode.FILE_TOO_LARGE, "$path is larger than $maxBytes bytes")
+        return when (c) {
+            is Content.OnDisk -> FileInput(c.path).use(block)
+            is Content.InMemory -> block(ByteArrayInput(c.bytes()))
         }
     }
 

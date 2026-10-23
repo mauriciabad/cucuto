@@ -397,19 +397,19 @@ class PackImporter(
                     if (!target.canonicalFile.toPath().startsWith(packCanonical)) {
                         return listOf(Issue(ErrorCode.UNSAFE_PATH, "Path leaves the pack folder", file = archivePath))
                     }
-                    val bytes =
-                        try {
-                            zip.read(archivePath, format.maxBytes)
-                        } catch (e: PackReadException) {
-                            return listOf(Issue(e.code, e.message ?: "Unreadable", file = archivePath))
-                        }
                     val parent = target.parentFile
                     if (parent != null && !parent.isDirectory && !parent.mkdirs()) {
                         throw IOException("Cannot create $parent")
                     }
-                    FileOutputStream(target).use { out ->
-                        out.write(bytes)
-                        out.fd.sync()
+                    // Streamed in chunks, as audio files can be up to 100 MiB. A read error can come after some chunks
+                    // were written; the staging folder goes away with everything in it.
+                    try {
+                        FileOutputStream(target).use { out ->
+                            zip.copyTo(archivePath, format.maxBytes) { b, off, n -> out.write(b, off, n) }
+                            out.fd.sync()
+                        }
+                    } catch (e: PackReadException) {
+                        return listOf(Issue(e.code, e.message ?: "Unreadable", file = archivePath))
                     }
                 }
             }

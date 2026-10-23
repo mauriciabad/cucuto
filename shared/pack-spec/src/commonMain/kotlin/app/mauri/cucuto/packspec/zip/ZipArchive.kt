@@ -8,7 +8,7 @@ import app.mauri.cucuto.packspec.PackReadException
 import app.mauri.cucuto.packspec.PackSource
 import app.mauri.cucuto.packspec.SourceEntry
 
-/** Random access to the bytes of an archive. */
+/** Random access to the bytes of an archive (or of one file, see [PackSource.useFile]). */
 interface RandomAccessInput {
     val size: Long
 
@@ -29,6 +29,30 @@ class ByteArrayInput(private val bytes: ByteArray) : RandomAccessInput {
 fun interface RawInflater {
     /** Inflates [compressed]. Returns null if the data is corrupt or does not expand to exactly [expectedSize] bytes. */
     fun inflate(compressed: ByteArray, expectedSize: Int): ByteArray?
+
+    /**
+     * Starts a streaming inflation, so large entries never sit in memory whole. Platforms without one return null and
+     * entries are inflated in one piece with [inflate].
+     */
+    fun stream(): InflateStream? = null
+}
+
+/** One raw DEFLATE stream, fed with compressed input in chunks (the shape of java.util.zip.Inflater). */
+interface InflateStream {
+    /** All input given so far is consumed and more is needed to continue. */
+    val needsInput: Boolean
+
+    /** The end of the DEFLATE stream was reached. */
+    val finished: Boolean
+
+    /** Supplies compressed bytes. The array must not change until [needsInput] is true again. */
+    fun setInput(buffer: ByteArray, offset: Int, length: Int)
+
+    /** Inflates into [out]. Returns the bytes written (0 when input is needed or the stream is finished), or -1 for corrupt data. */
+    fun inflate(out: ByteArray, offset: Int, length: Int): Int
+
+    /** Releases the stream (native memory on the JVM). */
+    fun close()
 }
 
 /** A central directory record. Sizes come from the central directory (Zip64-aware). */
@@ -47,20 +71,38 @@ class ZipEntryRecord(
 class ZipOpenResult(val source: ZipArchive?, val issues: List<Issue>)
 
 /**
+ * Memory use of [ZipArchive] reads: entries up to [inMemoryBytes] are read whole, larger ones are streamed in
+ * [chunkBytes] chunks, and random access to a large deflated entry keeps its first and last [windowBytes] in memory.
+ */
+internal class ZipTuning(
+    val inMemoryBytes: Long = 4 * Limits.MiB,
+    val windowBytes: Int = Limits.MiB.toInt(),
+    val chunkBytes: Int = 64 * 1024,
+)
+
+/**
  * Minimal zip reader for pack archives: parses the central directory itself so it can see encryption flags, Unix
  * file types and declared sizes before inflating anything. Only stored (0) and deflate (8) entries are readable.
+ *
+ * Every read checks the whole entry: the local header, the data bounds, that a DEFLATE stream expands to exactly the
+ * declared size, and the CRC-32. Large entries are streamed, so memory stays bounded whatever their size, and the
+ * errors are the same whichever way an entry is read.
  */
 class ZipArchive private constructor(
     private val input: RandomAccessInput,
     private val inflater: RawInflater,
     val records: List<ZipEntryRecord>,
+    private val tuning: ZipTuning,
 ) : PackSource {
 
     private val byName = records.associateBy { it.name }
 
     override val entries: List<SourceEntry> = records.map { SourceEntry(it.name, it.uncompressedSize, it.kind) }
 
-    override fun read(path: String, maxBytes: Long): ByteArray {
+    /** Platforms without streaming inflation read deflated entries in one piece. */
+    private val streaming: Boolean = inflater.stream()?.also { it.close() } != null
+
+    private fun record(path: String, maxBytes: Long): ZipEntryRecord {
         val rec = byName[path] ?: throw PackReadException(ErrorCode.FILE_MISSING, "No such entry: $path")
         if (rec.uncompressedSize > maxBytes) {
             throw PackReadException(ErrorCode.FILE_TOO_LARGE, "$path is larger than $maxBytes bytes")
@@ -68,33 +110,315 @@ class ZipArchive private constructor(
         if (rec.uncompressedSize > Int.MAX_VALUE - 16 || rec.compressedSize > Int.MAX_VALUE - 16) {
             throw PackReadException(ErrorCode.FILE_TOO_LARGE, "$path is too large to read")
         }
-        val local = ByteArray(30)
-        try {
-            input.readFully(rec.localHeaderOffset, local)
-        } catch (e: Exception) {
-            throw PackReadException(ErrorCode.ARCHIVE_UNREADABLE, "Local header of $path is out of bounds")
+        return rec
+    }
+
+    /** Small entries, and deflated ones when the platform cannot stream, are read whole. */
+    private fun inMemory(rec: ZipEntryRecord) =
+        rec.uncompressedSize <= tuning.inMemoryBytes || (rec.method == METHOD_DEFLATE && !streaming)
+
+    override fun read(path: String, maxBytes: Long): ByteArray = readWhole(record(path, maxBytes))
+
+    override fun readHead(path: String, count: Int): ByteArray {
+        val rec = record(path, Long.MAX_VALUE)
+        if (inMemory(rec)) {
+            val all = readWhole(rec)
+            return if (all.size <= count) all else all.copyOf(count)
         }
-        if (local.u32(0) != LOCAL_SIG) throw PackReadException(ErrorCode.ARCHIVE_UNREADABLE, "Bad local header for $path")
-        val dataStart = rec.localHeaderOffset + 30 + local.u16(26) + local.u16(28)
+        // The whole entry is still checked, so a corrupt file fails here exactly as a full read would.
+        val head = ByteArray(minOf(count.toLong(), rec.uncompressedSize).toInt())
+        var filled = 0
+        stream(rec) { b, off, n ->
+            val take = minOf(n, head.size - filled)
+            if (take > 0) {
+                b.copyInto(head, filled, off, off + take)
+                filled += take
+            }
+        }
+        return head
+    }
+
+    override fun copyTo(path: String, maxBytes: Long, sink: (ByteArray, Int, Int) -> Unit) {
+        val rec = record(path, maxBytes)
+        if (inMemory(rec)) {
+            val all = readWhole(rec)
+            sink(all, 0, all.size)
+        } else {
+            stream(rec, sink)
+        }
+    }
+
+    override fun <T> useFile(path: String, maxBytes: Long, block: (RandomAccessInput) -> T): T {
+        val rec = record(path, maxBytes)
+        if (inMemory(rec)) return block(ByteArrayInput(readWhole(rec)))
+        if (rec.method == METHOD_STORED) {
+            // Check it once, then read straight from the archive.
+            val start = EntryReader(rec).use { reader ->
+                val scratch = ByteArray(tuning.chunkBytes)
+                while (reader.read(scratch, 0, scratch.size) >= 0) Unit
+                reader.dataStart
+            }
+            return block(SliceInput(input, start, rec.uncompressedSize, rec.name))
+        }
+        // Deflated: one checking pass keeps the head and the tail, where the header probes look. The middle is
+        // inflated again on demand.
+        val window = minOf(tuning.windowBytes.toLong(), rec.uncompressedSize / 2).coerceAtLeast(1L).toInt()
+        val head = ByteArray(window)
+        val ring = ByteArray(window)
+        var position = 0L
+        stream(rec) { b, off, n ->
+            if (position < window) {
+                val take = minOf(n.toLong(), window - position).toInt()
+                b.copyInto(head, position.toInt(), off, off + take)
+            }
+            // Only the last `window` bytes of this chunk can end up in the tail.
+            val skip = maxOf(0, n - window)
+            var p = position + skip
+            for (i in off + skip until off + n) ring[(p++ % window).toInt()] = b[i]
+            position += n
+        }
+        // ring holds the last `window` bytes; rotate it so tail[0] is the byte at size - window.
+        val shift = (rec.uncompressedSize % window).toInt()
+        val tail = if (shift == 0) ring else ring.copyOfRange(shift, window) + ring.copyOfRange(0, shift)
+        return InflatedInput(rec, head, tail).use { block(it) }
+    }
+
+    /** Reads a whole entry into memory. */
+    private fun readWhole(rec: ZipEntryRecord): ByteArray {
+        if (rec.method == METHOD_DEFLATE && !streaming) return readWholeOneShot(rec)
+        val out = ByteArray(rec.uncompressedSize.toInt())
+        EntryReader(rec).use { reader ->
+            var n = 0
+            while (true) {
+                val r = reader.read(out, n, out.size - n)
+                if (r < 0) break
+                n += r
+            }
+        }
+        return out
+    }
+
+    /** A deflated entry through [RawInflater.inflate], for platforms without streaming inflation. */
+    private fun readWholeOneShot(rec: ZipEntryRecord): ByteArray {
+        val dataStart = dataStart(rec)
         val compressed = ByteArray(rec.compressedSize.toInt())
         try {
             input.readFully(dataStart, compressed)
         } catch (e: Exception) {
-            throw PackReadException(ErrorCode.ARCHIVE_UNREADABLE, "Data of $path is truncated")
+            throw unreadable("Data of ${rec.name} is truncated")
         }
-        val data = when (rec.method) {
-            METHOD_STORED -> {
-                if (rec.compressedSize != rec.uncompressedSize) {
-                    throw PackReadException(ErrorCode.ARCHIVE_UNREADABLE, "Stored entry $path has inconsistent sizes")
-                }
-                compressed
-            }
-            METHOD_DEFLATE -> inflater.inflate(compressed, rec.uncompressedSize.toInt())
-                ?: throw PackReadException(ErrorCode.ARCHIVE_UNREADABLE, "Cannot inflate $path or its size differs from the header")
-            else -> throw PackReadException(ErrorCode.ARCHIVE_UNSUPPORTED, "Unsupported compression method ${rec.method}")
-        }
-        if (Crc32.of(data) != rec.crc32) throw PackReadException(ErrorCode.ARCHIVE_UNREADABLE, "CRC mismatch in $path")
+        val data = inflater.inflate(compressed, rec.uncompressedSize.toInt()) ?: throw inflateError(rec)
+        if (Crc32.of(data) != rec.crc32) throw unreadable("CRC mismatch in ${rec.name}")
         return data
+    }
+
+    private fun stream(rec: ZipEntryRecord, sink: (ByteArray, Int, Int) -> Unit) {
+        if (rec.method == METHOD_DEFLATE && !streaming) {
+            val all = readWholeOneShot(rec)
+            sink(all, 0, all.size)
+            return
+        }
+        EntryReader(rec).use { reader ->
+            val buffer = ByteArray(tuning.chunkBytes)
+            while (true) {
+                val n = reader.read(buffer, 0, buffer.size)
+                if (n < 0) break
+                if (n > 0) sink(buffer, 0, n)
+            }
+        }
+    }
+
+    private fun dataStart(rec: ZipEntryRecord): Long {
+        val local = ByteArray(30)
+        try {
+            input.readFully(rec.localHeaderOffset, local)
+        } catch (e: Exception) {
+            throw unreadable("Local header of ${rec.name} is out of bounds")
+        }
+        if (local.u32(0) != LOCAL_SIG) throw unreadable("Bad local header for ${rec.name}")
+        return rec.localHeaderOffset + 30 + local.u16(26) + local.u16(28)
+    }
+
+    /**
+     * The uncompressed bytes of one entry, in order. [read] returns -1 at the end, after checking that a DEFLATE stream
+     * ends exactly at the declared size and that the CRC-32 matches. Every failure is a [PackReadException].
+     */
+    private inner class EntryReader(private val rec: ZipEntryRecord) : AutoCloseable {
+        val dataStart: Long = dataStart(rec)
+        private var stream: InflateStream? = null
+        private var inBuffer = ByteArray(0)
+        private var inPosition = dataStart
+        private var inLeft = rec.compressedSize
+        private var crc = 0L
+        private var ended = false
+
+        /** Uncompressed bytes returned so far. */
+        var position = 0L
+            private set
+
+        init {
+            if (dataStart + rec.compressedSize > input.size) throw unreadable("Data of ${rec.name} is truncated")
+            when (rec.method) {
+                METHOD_STORED -> if (rec.compressedSize != rec.uncompressedSize) {
+                    throw unreadable("Stored entry ${rec.name} has inconsistent sizes")
+                }
+                METHOD_DEFLATE -> {
+                    stream = inflater.stream() ?: error("Streaming inflation is not available")
+                    inBuffer = ByteArray(minOf(tuning.chunkBytes.toLong(), maxOf(rec.compressedSize, 1L)).toInt())
+                }
+                else -> throw PackReadException(ErrorCode.ARCHIVE_UNSUPPORTED, "Unsupported compression method ${rec.method}")
+            }
+        }
+
+        fun read(out: ByteArray, offset: Int, length: Int): Int {
+            if (ended) return -1
+            val left = rec.uncompressedSize - position
+            if (left == 0L) {
+                finish()
+                return -1
+            }
+            val want = minOf(length.toLong(), left).toInt()
+            if (want == 0) return 0
+            val s = stream
+            val n = if (s == null) {
+                try {
+                    input.readFully(dataStart + position, out, offset, want)
+                } catch (e: Exception) {
+                    throw unreadable("Data of ${rec.name} is truncated")
+                }
+                want
+            } else {
+                inflateSome(s, out, offset, want)
+            }
+            crc = Crc32.update(crc, out, offset, n)
+            position += n
+            return n
+        }
+
+        private fun inflateSome(s: InflateStream, out: ByteArray, offset: Int, want: Int): Int {
+            while (true) {
+                // Finished before the declared size: the entry is shorter than its header says.
+                if (s.finished) throw inflateError(rec)
+                if (s.needsInput) {
+                    if (!feed(s)) throw inflateError(rec)
+                    continue
+                }
+                val r = s.inflate(out, offset, want)
+                if (r < 0) throw inflateError(rec)
+                if (r > 0) return r
+                if (!s.needsInput && !s.finished) throw inflateError(rec)
+            }
+        }
+
+        private fun feed(s: InflateStream): Boolean {
+            if (inLeft <= 0L) return false
+            val n = minOf(inBuffer.size.toLong(), inLeft).toInt()
+            try {
+                input.readFully(inPosition, inBuffer, 0, n)
+            } catch (e: Exception) {
+                throw unreadable("Data of ${rec.name} is truncated")
+            }
+            inPosition += n
+            inLeft -= n
+            s.setInput(inBuffer, 0, n)
+            return true
+        }
+
+        private fun finish() {
+            ended = true
+            stream?.let { s ->
+                // The stream must end at the declared size: nothing more may come out of the remaining input.
+                val probe = ByteArray(1)
+                while (!s.finished) {
+                    if (s.inflate(probe, 0, 1) != 0) throw inflateError(rec)
+                    if (s.finished || !s.needsInput || !feed(s)) break
+                }
+            }
+            if (crc != rec.crc32) throw unreadable("CRC mismatch in ${rec.name}")
+        }
+
+        override fun close() {
+            stream?.close()
+            stream = null
+        }
+    }
+
+    /** A stored entry, already checked: its bytes straight from the archive. */
+    private class SliceInput(
+        private val input: RandomAccessInput,
+        private val start: Long,
+        override val size: Long,
+        private val name: String,
+    ) : RandomAccessInput {
+        override fun readFully(position: Long, buffer: ByteArray, offset: Int, length: Int) {
+            if (position < 0 || length < 0 || position + length > size) throw IndexOutOfBoundsException("read past end of $name")
+            try {
+                input.readFully(start + position, buffer, offset, length)
+            } catch (e: Exception) {
+                throw unreadable("Data of $name is truncated")
+            }
+        }
+    }
+
+    /**
+     * A large deflated entry, already checked: its first and last bytes from memory, the middle inflated again on
+     * demand. Reads that move forward continue the same inflation; a read behind it starts over.
+     */
+    private inner class InflatedInput(
+        private val rec: ZipEntryRecord,
+        private val head: ByteArray,
+        private val tail: ByteArray,
+    ) : RandomAccessInput, AutoCloseable {
+        override val size: Long = rec.uncompressedSize
+        private val tailStart = size - tail.size
+        private var cursor: EntryReader? = null
+        private var scratch: ByteArray? = null
+
+        override fun readFully(position: Long, buffer: ByteArray, offset: Int, length: Int) {
+            if (position < 0 || length < 0 || position + length > size) throw IndexOutOfBoundsException("read past end of ${rec.name}")
+            var p = position
+            var o = offset
+            var left = length
+            while (left > 0) {
+                val n = when {
+                    p < head.size -> {
+                        val n = minOf(left.toLong(), head.size - p).toInt()
+                        head.copyInto(buffer, o, p.toInt(), p.toInt() + n)
+                        n
+                    }
+                    p >= tailStart -> {
+                        val t = (p - tailStart).toInt()
+                        tail.copyInto(buffer, o, t, t + left)
+                        left
+                    }
+                    else -> middle(p, buffer, o, minOf(left.toLong(), tailStart - p).toInt())
+                }
+                p += n
+                o += n
+                left -= n
+            }
+        }
+
+        private fun middle(position: Long, buffer: ByteArray, offset: Int, length: Int): Int {
+            var reader = cursor
+            if (reader == null || reader.position > position) {
+                reader?.close()
+                reader = EntryReader(rec).also { cursor = it }
+            }
+            val skip = scratch ?: ByteArray(tuning.chunkBytes).also { scratch = it }
+            while (reader.position < position) {
+                val n = reader.read(skip, 0, minOf(skip.size.toLong(), position - reader.position).toInt())
+                if (n < 0) throw unreadable("Data of ${rec.name} ended early")
+            }
+            val n = reader.read(buffer, offset, length)
+            if (n <= 0) throw unreadable("Data of ${rec.name} ended early")
+            return n
+        }
+
+        override fun close() {
+            cursor?.close()
+            cursor = null
+        }
     }
 
     companion object {
@@ -106,8 +430,14 @@ class ZipArchive private constructor(
         private const val ZIP64_LOCATOR_SIG = 0x07064b50L
         private const val ZIP64_EOCD_SIG = 0x06064b50L
 
+        private fun unreadable(message: String) = PackReadException(ErrorCode.ARCHIVE_UNREADABLE, message)
+
+        private fun inflateError(rec: ZipEntryRecord) = unreadable("Cannot inflate ${rec.name} or its size differs from the header")
+
         /** Opens [input] and runs the archive-stage checks. */
-        fun open(input: RandomAccessInput, inflater: RawInflater): ZipOpenResult {
+        fun open(input: RandomAccessInput, inflater: RawInflater): ZipOpenResult = open(input, inflater, ZipTuning())
+
+        internal fun open(input: RandomAccessInput, inflater: RawInflater, tuning: ZipTuning): ZipOpenResult {
             val issues = mutableListOf<Issue>()
             fun fail(code: ErrorCode, msg: String) = ZipOpenResult(null, issues + Issue(code, msg))
             try {
@@ -223,7 +553,7 @@ class ZipArchive private constructor(
                 ) {
                     issues += Issue(ErrorCode.COMPRESSION_RATIO_EXCEEDED, "Archive expands from $size to $total bytes")
                 }
-                val archive = if (issues.isEmpty()) ZipArchive(input, inflater, records) else null
+                val archive = if (issues.isEmpty()) ZipArchive(input, inflater, records, tuning) else null
                 return ZipOpenResult(archive, issues)
             } catch (e: PackReadException) {
                 return fail(e.code, e.message ?: "Unreadable archive")
@@ -248,8 +578,11 @@ object Crc32 {
         c
     }
 
-    fun of(data: ByteArray, offset: Int = 0, length: Int = data.size): Long {
-        var c = 0xFFFFFFFFL
+    fun of(data: ByteArray, offset: Int = 0, length: Int = data.size): Long = update(0L, data, offset, length)
+
+    /** Continues the CRC-32 [crc] (0 for no data yet) with [length] more bytes. */
+    fun update(crc: Long, data: ByteArray, offset: Int = 0, length: Int = data.size): Long {
+        var c = crc xor 0xFFFFFFFFL
         for (i in offset until offset + length) c = table[((c xor data[i].toLong()) and 0xFF).toInt()] xor (c ushr 8)
         return c xor 0xFFFFFFFFL
     }

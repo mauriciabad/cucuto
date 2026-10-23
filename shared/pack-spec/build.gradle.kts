@@ -82,6 +82,8 @@ kotlin {
 
 tasks.named<Test>("jvmTest") {
     useJUnitPlatform()
+    // Smaller than the large synthetic entries of StreamingZipTest: reading one whole would fail (#84).
+    maxHeapSize = "64m"
     systemProperty("cucuto.specDir", specDir.asFile.absolutePath)
     inputs.dir(specDir).withPropertyName("specDir")
 }
