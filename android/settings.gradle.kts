@@ -34,6 +34,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "cucuto"
 
+// Pack format rules shared with tools/packer (docs/decisions/0005-shared-pack-spec-module.md).
+includeBuild("../shared/pack-spec")
+
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include(":app")

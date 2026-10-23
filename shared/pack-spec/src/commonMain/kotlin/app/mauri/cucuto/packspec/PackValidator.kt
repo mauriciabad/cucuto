@@ -30,7 +30,7 @@ sealed interface PackContent {
 class PackValidation(val report: ValidationReport, val content: PackContent?, val durationsMs: Map<String, Long>)
 
 /**
- * The pack importer rules (docs/pack-format.md), shared by packer and, later, the Android app. Stages run in order and
+ * The pack importer rules (docs/pack-format.md), shared by packer and the Android importer (android/core/pack). Stages run in order and
  * stop after the first stage that reports an error, so every implementation reports the same codes.
  */
 class PackValidator(private val checkMedia: Boolean = true) {
@@ -53,9 +53,8 @@ class PackValidator(private val checkMedia: Boolean = true) {
         return PackValidation(run.sink.report(), content, run.durations)
     }
 
-    private enum class Role(val label: String) { COVER("cover"), SPRITE("sprite"), SPRITE_ANIMATED("spriteAnimated"), CLIP("clip"), RINGTONE("ringtone") }
-
-    private class Reference(val path: String, val role: Role, val pointer: String, val manifestFile: String, val ringtone: Ringtone? = null)
+    /** A [MediaReference] resolved against the source root. */
+    private class Reference(val path: String, val role: MediaRole, val pointer: String, val manifestFile: String, val ringtone: Ringtone? = null)
 
     private inner class Run(val source: PackSource) {
         val sink = IssueSink()
@@ -200,7 +199,7 @@ class PackValidator(private val checkMedia: Boolean = true) {
                     duplicates(content.packs.map { it.manifest.id }).forEach { id ->
                         sink.add(ErrorCode.DUPLICATE_ID, "Pack ID $id appears more than once", file = "bundle.json")
                     }
-                    b.cover?.let { refs += Reference(it, Role.COVER, "/cover", "bundle.json") }
+                    refs += b.mediaReferences().map { Reference(it.path, it.role, it.pointer, "bundle.json") }
                     b.license?.let { checkLicense(it, "bundle.json") }
                     for (pack in content.packs) {
                         refs += packReferences(pack)
@@ -222,12 +221,7 @@ class PackValidator(private val checkMedia: Boolean = true) {
                     sink.add(ErrorCode.FILE_MISSING, "${ref.role.label} file does not exist", file = ref.path, pointer = ref.pointer)
                     continue
                 }
-                val ok = when (ref.role) {
-                    Role.COVER, Role.SPRITE -> format.kind == FileKind.IMAGE
-                    Role.SPRITE_ANIMATED -> format.canAnimate
-                    Role.CLIP, Role.RINGTONE -> format.kind == FileKind.AUDIO
-                }
-                if (!ok) sink.add(ErrorCode.FILE_TYPE_MISMATCH, "${format.name} cannot be used as ${ref.role.label}", file = ref.path, pointer = ref.pointer)
+                if (!ref.role.accepts(format)) sink.add(ErrorCode.FILE_TYPE_MISMATCH, "${format.name} cannot be used as ${ref.role.label}", file = ref.path, pointer = ref.pointer)
             }
             // Files nobody references.
             val referenced = refs.map { it.path }.toSet()
@@ -244,20 +238,15 @@ class PackValidator(private val checkMedia: Boolean = true) {
             val m = entry.manifest
             val manifestFile = PackPaths.join(entry.root, "pack.json")
             fun full(p: String) = PackPaths.join(entry.root, p)
-            val refs = mutableListOf<Reference>()
-            m.cover?.let { refs += Reference(full(it), Role.COVER, "/cover", manifestFile) }
+            val refs = m.mediaReferences().map { Reference(full(it.path), it.role, it.pointer, manifestFile, it.ringtone) }
             checkLicense(m.license, manifestFile)
             duplicates(m.characters.map { it.id }).forEach { id ->
                 sink.add(ErrorCode.DUPLICATE_ID, "Character ID $id appears more than once", file = manifestFile)
             }
             m.characters.forEachIndexed { ci, c ->
                 val cp = "/characters/$ci"
-                refs += Reference(full(c.sprite), Role.SPRITE, "$cp/sprite", manifestFile)
-                c.spriteAnimated?.let { refs += Reference(full(it), Role.SPRITE_ANIMATED, "$cp/spriteAnimated", manifestFile) }
-                c.clips.forEachIndexed { i, clip -> refs += Reference(full(clip.file), Role.CLIP, "$cp/clips/$i/file", manifestFile) }
                 c.ringtones.forEachIndexed { i, r ->
                     val rp = "$cp/ringtones/$i"
-                    refs += Reference(full(r.file), Role.RINGTONE, "$rp/file", manifestFile, r)
                     r.`when`?.timeRange?.let { (from, to) ->
                         if (from == to) sink.add(ErrorCode.WHEN_INVALID, "Time range starts and ends at $from", file = manifestFile, pointer = "$rp/when/time")
                     }
@@ -343,25 +332,8 @@ class PackValidator(private val checkMedia: Boolean = true) {
         }
 
         fun checkDuration(path: String, ms: Long, refs: List<Reference>) {
-            val tol = Limits.DURATION_TOLERANCE_MS
             for (ref in refs) {
-                when (ref.role) {
-                    Role.CLIP -> if (ms < Limits.CLIP_MIN_MS - tol || ms > Limits.CLIP_MAX_MS + tol) {
-                        sink.add(ErrorCode.CLIP_DURATION_OUT_OF_RANGE, "Clip is $ms ms; clips are ${Limits.CLIP_MIN_MS} to ${Limits.CLIP_MAX_MS} ms", file = path, pointer = ref.pointer)
-                    }
-                    Role.RINGTONE -> {
-                        if (ms < Limits.RINGTONE_MIN_MS - tol || ms > Limits.RINGTONE_MAX_MS + tol) {
-                            sink.add(ErrorCode.RINGTONE_DURATION_OUT_OF_RANGE, "Ringtone is $ms ms; ringtones are ${Limits.RINGTONE_MIN_MS} to ${Limits.RINGTONE_MAX_MS} ms", file = path, pointer = ref.pointer)
-                        }
-                        val loop = ref.ringtone?.loopRange ?: continue
-                        val end = loop.endMs ?: ms
-                        val start = loop.startMs ?: 0L
-                        if (end > ms + tol || start + Limits.MIN_LOOP_MS > end) {
-                            sink.add(ErrorCode.LOOP_POINTS_INVALID, "Loop $start..$end ms does not fit in $ms ms of audio", file = ref.manifestFile, pointer = ref.pointer.removeSuffix("/file") + "/loop")
-                        }
-                    }
-                    else -> {}
-                }
+                sink.issues += DurationRules.check(path, ms, listOf(MediaReference(ref.path, ref.role, ref.pointer, ref.ringtone)), ref.manifestFile)
             }
         }
     }

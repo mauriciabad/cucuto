@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - "shared/**"
+      - "spec/**"
       - "brand/tokens/**"
       - "brand/app-icon/android-res/**"
       - ".github/workflows/android.yml"
@@ -11,6 +13,8 @@ on:
     branches: [main]
     paths:
       - "android/**"
+      - "shared/**"
+      - "spec/**"
       - "brand/tokens/**"
       - "brand/app-icon/android-res/**"
       - ".github/workflows/android.yml"
@@ -44,9 +48,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      # `build` = debug and release APKs (R8), Android Lint, ktlint (Spotless) and every module's unit tests.
+      # `build` = debug and release APKs (R8), Android Lint, ktlint (Spotless) and every module's unit tests (including
+      # every golden fixture in spec/ through the pack importer). Instrumented tests need a device: compile them here.
       - name: Build
-        run: ./gradlew build --stacktrace
+        run: ./gradlew build assembleDebugAndroidTest --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
