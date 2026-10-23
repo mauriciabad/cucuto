@@ -261,12 +261,12 @@ export const es: Messages = {
 			{
 				title: 'Reinicia',
 				textHtml:
-					'El módulo se carga en el proceso del sistema de Android al arrancar, así que hace falta reiniciar del todo después de activarlo o de cambiar su ámbito.'
+					'El módulo se carga en el proceso del sistema de Android al arrancar, así que hace falta reiniciar del todo después de activarlo, de cambiar su ámbito o de actualizar Cucuto.'
 			},
 			{
 				title: 'Revisa la tarjeta de estado',
 				textHtml:
-					'Abre Cucuto. La tarjeta de estado de arriba comprueba que el módulo está activo, que el ámbito de LSPosed es correcto, que WhatsApp está instalado y que hay al menos un pack importado. Cada comprobación que falla te dice cómo arreglarla.'
+					'Abre Cucuto. La primera vez, una guía de configuración te acompaña en estos pasos y termina con una notificación de prueba; puedes volver a abrirla desde la pantalla de estado. La tarjeta de estado de arriba comprueba que el módulo está activo, que el ámbito de LSPosed es correcto, que WhatsApp está instalado y que hay al menos un pack importado. Cada comprobación que falla te dice cómo arreglarla.'
 			},
 			{
 				title: 'Importa un pack y asigna personajes',
@@ -293,6 +293,11 @@ export const es: Messages = {
 				q: 'No suena nada.',
 				aHtml:
 					'Cucuto solo sustituye un sonido que iba a sonar. Comprueba que el chat no está silenciado, que No molestar está desactivado y que el tono de notificación de WhatsApp no está en silencio.'
+			},
+			{
+				q: 'El móvil no arranca después de activar el módulo.',
+				aHtml:
+					'Arranca en el modo seguro de tu gestor de root (normalmente pulsando Bajar volumen durante el arranque; consulta su documentación). Desactiva todos los módulos, LSPosed incluido. Después desinstala Cucuto y reinicia con normalidad: LSPosed descarta un módulo cuya app ya no está. Hay más formas de recuperarlo en la <a href="{repo}/blob/main/docs/install.md#if-the-phone-does-not-boot" rel="external">guía de instalación en GitHub</a> (en inglés).'
 			},
 			{
 				q: '¿Sigues atascado?',
