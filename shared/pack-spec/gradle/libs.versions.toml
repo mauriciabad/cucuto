@@ -1,0 +1,19 @@
+# Versions checked on Maven Central and gradle.org on 2026-10-23 (latest stable releases).
+# Keep kotlin and kotlinx-serialization equal to tools/packer and android/: this build is compiled into both.
+[versions]
+kotlin = "2.4.21"
+kotlinx-serialization = "1.12.0"
+json-schema-validator = "0.5.5"
+junit = "6.1.3"
+jvm-toolchain = "21"
+
+[libraries]
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+json-schema-validator = { module = "io.github.optimumcode:json-schema-validator", version.ref = "json-schema-validator" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

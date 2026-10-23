@@ -1,6 +1,6 @@
 name: packs
 
-# packer (tools/packer): build and tests, including every golden fixture in spec/fixtures.
+# packer (tools/packer): build and tests, including shared/pack-spec and every golden fixture in spec/fixtures.
 # Demo packs (packs/): build each pack, the demo bundle and a repository index, and upload them as artifacts.
 # Publishing them as release assets comes later (release workflow).
 
@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - "tools/packer/**"
+      - "shared/**"
       - "spec/**"
       - "packs/**"
       - ".github/workflows/packs.yml"
@@ -15,6 +16,7 @@ on:
     branches: [main]
     paths:
       - "tools/packer/**"
+      - "shared/**"
       - "spec/**"
       - "packs/**"
       - ".github/workflows/packs.yml"

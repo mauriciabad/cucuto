@@ -5,9 +5,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Consumers depend on "app.mauri.cucuto:pack-spec"; includeBuild substitutes this project for it.
+group = "app.mauri.cucuto"
+
 // The repository-level spec/ folder (schemas, error codes, fixtures) is the contract. Its JSON files are embedded as
 // Kotlin string constants so commonMain needs no resource or file APIs.
-val specDir = rootProject.layout.projectDirectory.dir("../../spec")
+val specDir = layout.projectDirectory.dir("../../spec")
 val generatedDir = layout.buildDirectory.dir("generated/spec/commonMain/kotlin")
 
 val generateSpecSources = tasks.register("generateSpecSources") {
@@ -36,7 +39,7 @@ val generateSpecSources = tasks.register("generateSpecSources") {
         val schemas = files.filter { it.name.endsWith(".schema.json") }
         val codes = files.single { it.name == "error-codes.json" }
         val source = buildString {
-            appendLine("// Generated from spec/ by :pack-spec:generateSpecSources. Do not edit.")
+            appendLine("// Generated from spec/ by generateSpecSources in shared/pack-spec. Do not edit.")
             appendLine("package app.mauri.cucuto.packspec")
             appendLine()
             appendLine("internal object SpecResources {")

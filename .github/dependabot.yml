@@ -41,6 +41,21 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: gradle
+    directory: /shared/pack-spec
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    labels: ["area:pack", "type:chore"]
+    groups:
+      pack-spec:
+        patterns:
+          - "*"
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

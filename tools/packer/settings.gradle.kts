@@ -14,6 +14,9 @@ dependencyResolutionManagement {
     }
 }
 
-// pack-spec: validation core with no JVM-only APIs in commonMain (see docs/decisions/0001-shared-pack-spec-module.md).
+// pack-spec: the validation core shared with the Android importer, a standalone build in shared/pack-spec
+// (docs/decisions/0005-shared-pack-spec-module.md). Its tests run as part of `check` here (see cli/build.gradle.kts).
+includeBuild("../../shared/pack-spec")
+
 // cli: the `packer` command-line tool.
-include(":pack-spec", ":cli")
+include(":cli")

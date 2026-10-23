@@ -30,6 +30,7 @@ notification sound and vibration per contact, using clips from user-imported sou
 android/        Gradle project (:app, :xposed, :core:*) — Kotlin, Compose, Material 3 Expressive
 web/            SvelteKit static site + PWA pack creator
 tools/packer/   Kotlin JVM CLI: build packs, bundles, repository indexes
+shared/         pack-spec: the pack format rules (Kotlin Multiplatform), included by tools/packer and android/
 spec/           JSON Schemas (pack, bundle, repository, backup) + golden fixtures (the cross-platform contract)
 packs/          CC0 demo pack sources
 brand/          Logo, app icon, colors, typography, motion and sound language
@@ -72,7 +73,8 @@ pack files `*.soundpack.zip` · backups `cucuto-backup-YYYY-MM-DD.zip` (always e
   37.0. AGP 9 has built-in Kotlin: never apply `org.jetbrains.kotlin.android` (or kapt; use KSP).
 - Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build installDist` (tests run
   every golden fixture in `spec/fixtures`; CLI at `tools/packer/cli/build/install/packer/bin/packer`, usage in
-  `tools/packer/README.md`). Pack format rules: `docs/pack-format.md`; error codes: `spec/error-codes.json`.
+  `tools/packer/README.md`). Pack format rules: `docs/pack-format.md` (code: `shared/pack-spec`, also run by
+  `android/core/pack` tests); error codes: `spec/error-codes.json`.
 - Kotlin scripts (`*.main.kts`) need the `kotlin` CLI (Homebrew `kotlin`, 2.4.21). Media tools: `ffmpeg` (libopus),
   `cjxl`/`djxl` (`jpeg-xl`), `cwebp` (`webp`), `rsvg-convert` (`librsvg`). Regenerate fixtures with
   `kotlin spec/fixtures/generate.main.kts` and demo pack sounds with `kotlin packs/generate.main.kts`.

@@ -1,0 +1,89 @@
+package app.mauri.cucuto.core.pack
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.mauri.cucuto.core.pack.media.AudioProbeResult
+import app.mauri.cucuto.core.pack.media.ImageProbeResult
+import app.mauri.cucuto.core.pack.media.PlatformAudioProbe
+import app.mauri.cucuto.core.pack.media.PlatformImageProbe
+import app.mauri.cucuto.packspec.FileFormat
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import kotlin.math.abs
+
+/** The platform decoders on every format of the golden fixtures. */
+@RunWith(AndroidJUnit4::class)
+class PlatformProbesTest {
+    private val dir = DeviceFixtures.newDir("probes")
+    private val audio = PlatformAudioProbe()
+    private val image = PlatformImageProbe()
+
+    @After
+    fun tearDown() {
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun decodesEveryAudioFormat() {
+        // Durations measured from the headers by pack-spec (its RulesTest); the platform must agree within 60 ms.
+        val expected =
+            mapOf(
+                "valid/all-formats/characters/png/clip.wav" to 300L,
+                "valid/all-formats/characters/jpeg/clip.m4a" to 500L,
+                "valid/all-formats/characters/webp/clip.aac" to 500L,
+                "valid/all-formats/characters/gif/clip.flac" to 400L,
+                "valid/all-formats/characters/avif/clip.ogg" to 500L,
+                "valid/all-formats/characters/jxl/clip.mp3" to 600L,
+                "valid/all-formats/characters/svg/clip.opus" to 500L,
+                "valid/full-pack/characters/song/ringtones/day.ogg" to 6000L,
+            )
+        for ((path, ms) in expected) {
+            for (full in listOf(true, false)) {
+                val result = audio.probe(DeviceFixtures.file(path, dir), FileFormat.of(path)!!, full)
+                assertTrue("$path (full=$full): $result", result is AudioProbeResult.Decoded)
+                val actual = (result as AudioProbeResult.Decoded).durationMs
+                assertTrue("$path (full=$full): $actual ms, expected about $ms ms", abs(actual - ms) <= 60)
+            }
+        }
+    }
+
+    @Test
+    fun rejectsAudioThatIsNotAudio() {
+        val path = "invalid/audio-undecodable/characters/beep/clips/beep.ogg"
+        val result = audio.probe(DeviceFixtures.file(path, dir), FileFormat.OGG, true)
+        assertTrue(result.toString(), result is AudioProbeResult.Undecodable)
+    }
+
+    @Test
+    fun decodesEveryBitmapFormat() {
+        val expected =
+            mapOf(
+                "valid/all-formats/characters/png/sprite.png" to ImageProbeResult.Decoded(16, 16),
+                "valid/all-formats/characters/jpeg/sprite.jpg" to ImageProbeResult.Decoded(16, 16),
+                "valid/all-formats/characters/webp/sprite.webp" to ImageProbeResult.Decoded(16, 16),
+                "valid/all-formats/characters/gif/sprite.gif" to ImageProbeResult.Decoded(16, 16),
+                "valid/all-formats/characters/avif/sprite.avif" to ImageProbeResult.Decoded(64, 64),
+                "invalid/image-too-large/characters/beep/sprite.png" to ImageProbeResult.Decoded(600, 600),
+            )
+        for ((path, result) in expected) {
+            assertEquals(path, result, image.probe(DeviceFixtures.file(path, dir), FileFormat.of(path)!!))
+        }
+        // No platform decoders: SVG (safety rules in pack-spec) and, until #77, JPEG XL.
+        for (path in listOf(
+            "valid/all-formats/characters/jxl/sprite.jxl",
+            "valid/all-formats/characters/svg/sprite.svg",
+        )) {
+            val result = image.probe(DeviceFixtures.file(path, dir), FileFormat.of(path)!!)
+            assertTrue("$path: $result", result is ImageProbeResult.NotChecked)
+        }
+    }
+
+    @Test
+    fun rejectsImagesThatAreNotImages() {
+        val path = "invalid/image-undecodable/characters/beep/sprite.png"
+        val result = image.probe(DeviceFixtures.file(path, dir), FileFormat.PNG)
+        assertTrue(result.toString(), result is ImageProbeResult.Undecodable)
+    }
+}
