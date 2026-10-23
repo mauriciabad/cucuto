@@ -12,6 +12,8 @@ android {
 
     defaultConfig {
         applicationId = "app.mauri.cucuto"
+        // Defaults for local and CI builds. Releases take both from the tag (`-Pcucuto.version`, release.yml):
+        // versionCode = MAJOR * 1_000_000 + MINOR * 1_000 + PATCH (ADR 0021, docs/releasing.md).
         versionCode = 1
         versionName = "0.1.0"
     }
