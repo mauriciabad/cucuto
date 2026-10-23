@@ -1,6 +1,7 @@
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import { picture } from './scripts/picture.ts';
 
 export default defineConfig({
 	build: {
@@ -8,6 +9,8 @@ export default defineConfig({
 		assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined)
 	},
 	plugins: [
+		// `?picture` imports: JPEG XL + AVIF + PNG at build time, rendered by <Picture> (#40).
+		picture(),
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
@@ -27,6 +30,8 @@ export default defineConfig({
 					'script-src': ['self'],
 					'style-src': ['self', 'unsafe-inline'],
 					'img-src': ['self', 'data:'],
+					// Sample clips in the pack gallery come from /repo/previews/.
+					'media-src': ['self'],
 					'font-src': ['self'],
 					'connect-src': ['self'],
 					'manifest-src': ['self'],

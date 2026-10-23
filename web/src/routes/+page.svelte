@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import DownloadApk from '#lib/components/DownloadApk.svelte';
 	import HeroClock from '#lib/components/HeroClock.svelte';
 	import Icon, { type IconName } from '#lib/components/Icon.svelte';
 	import Seo from '#lib/components/Seo.svelte';
-	import { LATEST_RELEASE_URL, PITCH, REPO_URL, REQUIREMENTS } from '#lib/site.js';
+	import { PITCH, REPO_URL, REQUIREMENTS } from '#lib/site.js';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 
 	const steps: Array<{ icon: IconName; title: string; text: string; character: string }> = [
 		{
@@ -89,10 +93,7 @@
 				cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss.
 			</p>
 			<div class="actions">
-				<a class="button" href={LATEST_RELEASE_URL} rel="external">
-					<Icon name="download" />
-					Download APK
-				</a>
+				<DownloadApk release={data.appRelease} />
 				<a class="button tonal" href={resolve('install/')}>
 					How to install
 					<Icon name="arrow-forward" />

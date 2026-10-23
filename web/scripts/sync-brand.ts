@@ -20,6 +20,8 @@ const files: Array<[from: string, to: string]> = [
 	['logo/cucuto-logo-dark.svg', 'src/lib/assets/cucuto-logo-dark.svg'],
 	['logo/cucuto-mark.svg', 'src/lib/assets/cucuto-mark.svg'],
 	['motion/door-open.svg', 'src/lib/assets/door-open.svg'],
+	// Raster sources for `?picture` imports (encoded to JPEG XL, AVIF and PNG at build time, see scripts/picture.ts)
+	['app-icon/cucuto-icon-rounded-512.png', 'src/lib/assets/images/cucuto-icon.png'],
 	// Design tokens
 	['tokens/colors.css', 'src/lib/styles/colors.css'],
 	['tokens/typography.css', 'src/lib/styles/typography.css']

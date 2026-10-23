@@ -13,3 +13,6 @@ bun.lockb
 # Copied from brand/ by `pnpm sync:brand`
 /src/lib/styles/colors.css
 /src/lib/styles/typography.css
+
+# Generated at build time
+/.build-data/

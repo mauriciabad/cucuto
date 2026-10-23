@@ -9,11 +9,14 @@
 	import cookie from '@material-symbols/svg-500/rounded/cookie.svg?raw';
 	import download from '@material-symbols/svg-500/rounded/download.svg?raw';
 	import extension from '@material-symbols/svg-500/rounded/extension.svg?raw';
+	import libraryAdd from '@material-symbols/svg-500/rounded/library_add.svg?raw';
 	import libraryMusic from '@material-symbols/svg-500/rounded/library_music.svg?raw';
 	import lock from '@material-symbols/svg-500/rounded/lock.svg?raw';
 	import noAccounts from '@material-symbols/svg-500/rounded/no_accounts.svg?raw';
 	import notificationsActive from '@material-symbols/svg-500/rounded/notifications_active.svg?raw';
 	import personPin from '@material-symbols/svg-500/rounded/person_pin.svg?raw';
+	import playArrow from '@material-symbols/svg-500/rounded/play_arrow-fill.svg?raw';
+	import stop from '@material-symbols/svg-500/rounded/stop-fill.svg?raw';
 
 	const sources = {
 		android,
@@ -25,11 +28,14 @@
 		cookie,
 		download,
 		extension,
+		'library-add': libraryAdd,
 		'library-music': libraryMusic,
 		lock,
 		'no-accounts': noAccounts,
 		'notifications-active': notificationsActive,
-		'person-pin': personPin
+		'person-pin': personPin,
+		'play-arrow': playArrow,
+		stop
 	};
 
 	export type IconName = keyof typeof sources;
