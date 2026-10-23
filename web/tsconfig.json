@@ -1,0 +1,9 @@
+{
+	"extends": "$app/tsconfig",
+	"compilerOptions": {
+		"strict": true,
+		"types": ["$app/types", "node", "vite/client"]
+	},
+	"include": ["src", "tests", "scripts", "vite.config.ts", "playwright.config.ts"],
+	"exclude": ["src/service-worker"]
+}

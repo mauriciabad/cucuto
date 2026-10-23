@@ -1,0 +1,15 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+# Miscellaneous
+/static/
+/test-results/
+/playwright-report/
+
+# Copied from brand/ by `pnpm sync:brand`
+/src/lib/styles/colors.css
+/src/lib/styles/typography.css

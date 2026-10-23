@@ -1,0 +1,161 @@
+/*
+ * Cucuto motion tokens for the web (brand/motion.md): the Material 3 Expressive spring scheme approximated with
+ * CSS linear() easing. Each spring comes with the duration it takes to settle (within 0.2 %).
+ * Spatial springs move things (position, scale, rotation); effects springs change color and opacity, never overshoot.
+ */
+
+:root {
+	--cucuto-spring-fast-spatial: linear(
+		0,
+		0.099,
+		0.317,
+		0.561,
+		0.775,
+		0.934,
+		1.034,
+		1.083,
+		1.095,
+		1.084,
+		1.063,
+		1.04,
+		1.02,
+		1.005,
+		0.996,
+		0.992,
+		0.991,
+		0.992,
+		0.994,
+		0.996,
+		1
+	);
+	--cucuto-spring-fast-spatial-duration: 350ms;
+	--cucuto-spring-default-spatial: linear(
+		0,
+		0.067,
+		0.215,
+		0.387,
+		0.551,
+		0.69,
+		0.8,
+		0.882,
+		0.938,
+		0.975,
+		0.997,
+		1.009,
+		1.014,
+		1.015,
+		1.014,
+		1.011,
+		1.009,
+		1.006,
+		1.004,
+		1.003,
+		1
+	);
+	--cucuto-spring-default-spatial-duration: 420ms;
+	--cucuto-spring-slow-spatial: linear(
+		0,
+		0.065,
+		0.21,
+		0.379,
+		0.541,
+		0.681,
+		0.791,
+		0.874,
+		0.933,
+		0.971,
+		0.995,
+		1.008,
+		1.014,
+		1.015,
+		1.014,
+		1.012,
+		1.009,
+		1.007,
+		1.005,
+		1.003,
+		1
+	);
+	--cucuto-spring-slow-spatial-duration: 570ms;
+	--cucuto-spring-fast-effects: linear(
+		0,
+		0.07,
+		0.214,
+		0.371,
+		0.515,
+		0.635,
+		0.73,
+		0.804,
+		0.859,
+		0.9,
+		0.929,
+		0.95,
+		0.965,
+		0.976,
+		0.983,
+		0.988,
+		0.992,
+		0.995,
+		0.996,
+		0.997,
+		1
+	);
+	--cucuto-spring-fast-effects-duration: 140ms;
+	--cucuto-spring-default-effects: linear(
+		0,
+		0.073,
+		0.22,
+		0.38,
+		0.525,
+		0.645,
+		0.74,
+		0.812,
+		0.866,
+		0.905,
+		0.934,
+		0.954,
+		0.968,
+		0.978,
+		0.985,
+		0.99,
+		0.993,
+		0.995,
+		0.997,
+		0.998,
+		1
+	);
+	--cucuto-spring-default-effects-duration: 220ms;
+	--cucuto-spring-slow-effects: linear(
+		0,
+		0.072,
+		0.219,
+		0.379,
+		0.523,
+		0.643,
+		0.738,
+		0.811,
+		0.865,
+		0.904,
+		0.933,
+		0.953,
+		0.968,
+		0.978,
+		0.985,
+		0.989,
+		0.993,
+		0.995,
+		0.997,
+		0.998,
+		1
+	);
+	--cucuto-spring-slow-effects-duration: 310ms;
+}
+
+/* Reduced motion: keep state changes (colors, opacity), drop decorative movement. */
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--cucuto-spring-fast-spatial-duration: 0ms;
+		--cucuto-spring-default-spatial-duration: 0ms;
+		--cucuto-spring-slow-spatial-duration: 0ms;
+	}
+}
