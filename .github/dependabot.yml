@@ -1,5 +1,4 @@
 # Dependency updates (docs/decisions/0004-dependabot-for-dependency-updates.md).
-# Add `/web` to the npm entry once the website exists.
 version: 2
 
 updates:
@@ -82,7 +81,23 @@ updates:
         patterns:
           - "*"
 
-  - package-ecosystem: npm
+  # JavaScript tooling runs on Bun (#115): Dependabot's `bun` ecosystem reads package.json and the text bun.lock.
+  - package-ecosystem: bun
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    labels: ["area:web", "type:chore"]
+    groups:
+      web:
+        patterns:
+          - "*"
+
+  - package-ecosystem: bun
     directory: /brand/tools
     schedule:
       interval: monthly

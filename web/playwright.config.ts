@@ -8,7 +8,7 @@ export default defineConfig({
 	reporter: process.env.CI ? [['github'], ['list']] : 'list',
 	use: { baseURL: 'http://localhost:4173', trace: 'retain-on-failure' },
 	webServer: {
-		command: 'pnpm build && pnpm preview --port 4173 --strictPort',
+		command: 'bun run build && bun run preview --port 4173 --strictPort',
 		port: 4173,
 		reuseExistingServer: !process.env.CI
 	},

@@ -2,18 +2,16 @@
   "name": "cucuto-brand-tools",
   "private": true,
   "type": "module",
-  "description": "Generates the Cucuto color tokens (Material Color Utilities), logos, icons, motion demo, UI sounds and previews.",
+  "description": "Generates the Cucuto color tokens (Material Color Utilities), logos, icons, motion demo, UI sounds and previews. Runs on Bun.",
   "license": "GPL-3.0-or-later",
-  "engines": {
-    "node": ">=22.15"
-  },
+  "packageManager": "bun@1.4.3",
   "scripts": {
-    "tokens": "node generate-tokens.mjs > /dev/null",
-    "assets": "node build-brand.mjs",
-    "motion": "node build-motion.mjs",
-    "sounds": "node build-sounds.mjs",
-    "preview": "node build-preview.mjs",
-    "build": "pnpm tokens && pnpm assets && pnpm motion && pnpm sounds && pnpm preview"
+    "tokens": "bun generate-tokens.mjs > /dev/null",
+    "assets": "bun build-brand.mjs",
+    "motion": "bun build-motion.mjs",
+    "sounds": "bun build-sounds.mjs",
+    "preview": "bun build-preview.mjs",
+    "build": "bun run tokens && bun run assets && bun run motion && bun run sounds && bun run preview"
   },
   "dependencies": {
     "@material/material-color-utilities": "0.4.0",

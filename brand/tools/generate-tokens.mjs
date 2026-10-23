@@ -1,11 +1,11 @@
 // Generates the Cucuto color tokens with the official Material Color Utilities.
-//   cd brand/tools && pnpm install && pnpm tokens
+//   cd brand/tools && bun install && bun run tokens
 // Outputs brand/tokens/colors.json, Color.kt and colors.css. Never edit those by hand: change this file and rerun.
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { mcu } from './mcu.mjs';
-
-const { Hct, SchemeVibrant, MaterialDynamicColors, hexFromArgb, argbFromHex } = mcu;
+// The package's ESM files import each other without the ".js" extension. Node refuses that without a resolve hook;
+// Bun's resolver accepts it, so the package is imported directly.
+import { Hct, SchemeVibrant, MaterialDynamicColors, hexFromArgb, argbFromHex } from '@material/material-color-utilities';
 
 /** The brand seed: "cuckoo tangerine". */
 const SEED = '#FF6B2C';

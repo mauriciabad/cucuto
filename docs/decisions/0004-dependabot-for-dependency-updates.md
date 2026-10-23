@@ -13,7 +13,7 @@ updates. The owner is away and cannot install GitHub Apps.
 
 Use **Dependabot** (`.github/dependabot.yml`): weekly Gradle updates for `android/` (version catalog, plugins and
 the Gradle wrapper) grouped as Kotlin, AndroidX + AGP, and everything else; weekly GitHub Actions updates in one
-group; monthly npm updates for `brand/tools` (add `/web` when the site exists).
+group; JavaScript updates with the `bun` ecosystem (#115), weekly for `web/` and monthly for `brand/tools`.
 
 Renovate would group more precisely and understands more files (for example `gradle-daemon-jvm.properties`), but it
 needs the Renovate GitHub App installed on the repository, which only the owner can do. Dependabot works from the
