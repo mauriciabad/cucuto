@@ -1,0 +1,17 @@
+[versions]
+# AGP 9 has built-in Kotlin support, so there is no separate Kotlin Gradle plugin here.
+agp = "9.4.1"
+kotlin = "2.4.21"
+coil = "3.6.3"
+# Only for the side-by-side comparison; not a production dependency.
+jxlCoder = "2.6.1"
+jxlCoderCoil = "2.6.1"
+
+[libraries]
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
+jxl-coder = { module = "io.github.awxkee:jxl-coder", version.ref = "jxlCoder" }
+jxl-coder-coil = { module = "io.github.awxkee:jxl-coder-coil", version.ref = "jxlCoderCoil" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
