@@ -20,10 +20,10 @@ data class ScreenInfo(
     val icon: ImageVector,
 )
 
-/** Placeholder metadata for every destination except [CucutoDestination.Status], which is a real screen. */
+/** Placeholder metadata; null for the real screens ([CucutoDestination.Status], [CucutoDestination.Diagnostics]). */
 fun CucutoDestination.screenInfo(): ScreenInfo? =
     when (this) {
-        CucutoDestination.Status -> {
+        CucutoDestination.Status, CucutoDestination.Diagnostics -> {
             null
         }
 

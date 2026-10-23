@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- The Diagnostics screen's test notification. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
         Android backup and device transfer are off (res/xml/data_extraction_rules.xml).
@@ -25,5 +29,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Clip provider (#16). Exported because SystemUI's ringtone player opens the clip URI the module swaps in;
+            ClipProvider itself refuses every caller except uid 1000 and com.android.systemui, and is read-only.
+        -->
+        <provider
+            android:name=".provider.ClipProvider"
+            android:authorities="app.mauri.cucuto.clips"
+            android:exported="true"
+            android:grantUriPermissions="false"
+            tools:ignore="ExportedContentProvider" />
+
+        <!--
+            Module events (#17): system_server calls report(...) with batched decisions. ModuleEventProvider refuses
+            every caller except uid 1000.
+        -->
+        <provider
+            android:name=".provider.ModuleEventProvider"
+            android:authorities="app.mauri.cucuto.events"
+            android:exported="true"
+            android:grantUriPermissions="false"
+            tools:ignore="ExportedContentProvider" />
     </application>
 </manifest>
