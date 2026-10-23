@@ -1,0 +1,88 @@
+name: Bug report
+description: Something in the app, the module, the website or the packer does not work as expected.
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. cucuto needs **Android 17, root and LSPosed (libxposed API 102)**; please check those first.
+        Never attach copyrighted audio or images. If the bug only happens with one pack, describe the pack instead of uploading it.
+        Security problems go through [private vulnerability reporting](https://github.com/mauriciabad/cucuto/security/advisories/new), not here.
+  - type: dropdown
+    id: part
+    attributes:
+      label: Part
+      description: Where does the problem happen?
+      options:
+        - Android app
+        - Xposed module (notification sound or vibration)
+        - Ringtones / phone calls
+        - Pack import or pack repositories
+        - Backup and restore
+        - Website or PWA pack creator
+        - Packer CLI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+      placeholder: |
+        1. Assigned the "Cat" character to a WhatsApp chat
+        2. Received a message from that chat
+        3. Expected a meow; heard WhatsApp's default tone
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: cucuto version
+      description: Settings → About in the app (or the APK file name). For the packer, `packer --version`.
+      placeholder: 0.1.0 (12)
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Manufacturer and model.
+      placeholder: Google Pixel 9
+  - type: input
+    id: rom
+    attributes:
+      label: ROM and Android build
+      description: Stock or custom ROM name, Android version and build number (Settings → About phone).
+      placeholder: Stock, Android 17 QPR1, BP3A.261005.001
+  - type: input
+    id: lsposed
+    attributes:
+      label: LSPosed version
+      description: Fork and version from the LSPosed manager, plus root solution (Magisk, KernelSU, APatch).
+      placeholder: LSPosed (JingMatrix) 1.10.x, KernelSU 1.0.x
+  - type: input
+    id: whatsapp
+    attributes:
+      label: WhatsApp version
+      description: Package (WhatsApp or WhatsApp Business) and version, if the bug involves notifications.
+      placeholder: com.whatsapp 2.26.x
+  - type: textarea
+    id: decision-log
+    attributes:
+      label: Decision log excerpt
+      description: |
+        For notification bugs: Settings → Diagnostics → Decision log in the app. Copy the entries around the notification
+        (package, matched contact, chosen clip, reason). Redact phone numbers and names if you prefer.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Other logs
+      description: LSPosed module log or `adb logcat` lines mentioning `cucuto`. Redact personal data.
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, screen recordings, other installed modules (for example WaEnhancer X), workarounds you found.

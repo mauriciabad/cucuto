@@ -1,0 +1,59 @@
+name: Pack format proposal
+description: Propose a change to the .soundpack format, bundles or repository indexes (the JSON Schemas in spec/).
+labels: ["area:spec", "type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The pack format is a public, versioned contract shared by the app, the website, the packer and third-party pack authors.
+        Changes need a clear use case and a compatibility story. Never attach copyrighted media; describe the content instead.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: What does it change?
+      multiple: true
+      options:
+        - pack.json (pack manifest)
+        - bundle.json (bundles)
+        - Repository index
+        - Backup file
+        - Audio, image or haptic rules
+        - Limits and safety rules
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: Which packs or authors need this, and what can't they express today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: New or changed fields, files or rules. Include a manifest excerpt.
+      render: json
+    validations:
+      required: true
+  - type: dropdown
+    id: compatibility
+    attributes:
+      label: Compatibility
+      description: How do older apps and existing packs behave?
+      options:
+        - Additive (old readers ignore it, old packs stay valid)
+        - Needs a new format version
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility-notes
+    attributes:
+      label: Compatibility notes
+      description: Migration, defaults for missing values, and what the importer should do with unknown values.
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety considerations
+      description: Packs and repositories are untrusted input. Does this add new paths, file types, sizes, URLs or parsing?
