@@ -48,9 +48,18 @@ Android adaptive icon (108 dp canvas, 72 dp viewport, 66 dp safe zone) as Vector
 cp -r brand/app-icon/android-res/* android/app/src/main/res/
 ```
 
-- `drawable/ic_launcher_background.xml`: tangerine with soft sound rings (they move in launcher parallax).
-- `drawable/ic_launcher_foreground.xml`: the on-color mark, 50 dp wide, inside the 66 dp safe circle.
-- `drawable/ic_launcher_monochrome.xml`: one-color silhouette for themed icons (Android tints it).
+- `drawable/ic_launcher_background.xml`: flat tangerine.
+- `drawable/ic_launcher_foreground.xml`: the on-color mark, 43.5 dp wide, inside two **sound rings**: concentric
+  with the icon's center (radii 25.5 and 31 dp, apricot fading to the door's tint), the voice spreading out of the
+  clock. The outer ring ends 3.5 dp inside the 72 dp circle, so every launcher mask (circle, squircle, rounded
+  square, teardrop, cookie) shows the same two whole rings and never a stray arc. They sit in the foreground,
+  locked to the house, so launcher motion cannot pull them off-center.
+- `drawable/ic_launcher_monochrome.xml`: one-color silhouette for themed icons (Android tints it), with the rings
+  at 50 % and 30 % alpha.
+- `drawable/ic_stat_cucuto.xml`: the **status-bar notification icon**, 24 dp, white on transparent, the small
+  mark's silhouette (bigger bird, no door) filling the 22 dp live area. Use it for every notification Cucuto posts;
+  never the launcher layers (their glyph fills only the 66 dp safe zone of a 108 dp canvas, so it renders at about
+  half the size of other apps' icons).
 - `mipmap-anydpi/ic_launcher.xml` and `ic_launcher_round.xml`: `<adaptive-icon>` with `<monochrome>`. No `-v26`
   qualifier and no bitmap mipmaps: `minSdk` is 37.
 - Manifest: `android:icon="@mipmap/ic_launcher"` and `android:roundIcon="@mipmap/ic_launcher_round"`.
@@ -67,7 +76,7 @@ as is (GitHub, the website). Both also as `.jxl`.
 | [`favicon.svg`](web/favicon.svg), [`favicon.ico`](web/favicon.ico) (16 + 32) | Browser tab |
 | [`apple-touch-icon.png`](web/apple-touch-icon.png) (180, opaque) | iOS home screen |
 | [`icon-192.png`](web/icon-192.png), [`icon-512.png`](web/icon-512.png) | PWA `purpose: any` |
-| [`icon-maskable-512.png`](web/icon-maskable-512.png) | PWA `purpose: maskable` (mark inside the 80 % safe circle) |
+| [`icon-maskable-512.png`](web/icon-maskable-512.png) | PWA `purpose: maskable` (mark and rings inside the 80 % safe circle) |
 | [`og-image.png`](web/og-image.png) 1200 × 630 (+ [`.jxl`](web/og-image.jxl), [SVG source](web/source/og-image.svg)) | Open Graph / social cards |
 
 Every raster has a `.jxl` twin (lossless, except the photo-like OG image). Serve images with `<picture>` and the
