@@ -2,6 +2,8 @@
 
 # Cucuto
 
+[![ci](https://github.com/mauriciabad/cucuto/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mauriciabad/cucuto/actions/workflows/ci.yml)
+
 **Give each contact a voice.** Cucuto (koo-KOO-toe, from Catalan *cucut*, cuckoo) is an open-source Android 17 app that
 plays a random clip from the character you assigned to a contact whenever they message you on WhatsApp, with that
 character's own vibration. Like a cuckoo clock, it announces who's there.
