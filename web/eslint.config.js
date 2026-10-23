@@ -36,6 +36,10 @@ export default defineConfig(
 	{
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
-		rules: {}
+		rules: {
+			// Internal links go through pageHref() (src/lib/i18n/links.ts), which calls resolve() with the locale
+			// prefix; the rule only recognizes direct resolve() calls in markup.
+			'svelte/no-navigation-without-resolve': ['error', { ignoreLinks: true }]
+		}
 	}
 );

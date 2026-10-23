@@ -262,14 +262,15 @@ class PackLibrary
                         version = pack.version,
                         name = candidate?.manifest?.name ?: pack.id,
                         path = pack.directory.path,
-                        // The importer does not expose the archive's digest yet; backups (M2/M5) fill it in.
-                        sha256 = "",
-                        sizeBytes = candidate?.sizeBytes ?: 0L,
+                        sha256 = import.archiveSha256,
+                        sizeBytes = import.archiveSizeBytes,
                         source = origin.source,
                         repositoryUrl = (origin as? Origin.Repository)?.url,
                         downloadUrl = (origin as? Origin.Url)?.url,
                         fileName = (origin as? Origin.Local)?.fileName,
                         bundleId = import.bundle?.id,
+                        bundleName = import.bundle?.name,
+                        bundleVersion = import.bundle?.version,
                         installedAt = now,
                     ),
                 )

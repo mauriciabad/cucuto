@@ -87,6 +87,24 @@ kbd {
 	color: var(--md-sys-color-on-surface);
 }
 
+pre {
+	margin: 0;
+	padding: 1rem 1.25rem;
+	overflow-x: auto;
+	border-radius: 1.25rem;
+	background: var(--md-sys-color-surface-container);
+	color: var(--md-sys-color-on-surface);
+	font: 400 0.875rem/1.5 var(--cucuto-font-mono);
+	tab-size: 2;
+}
+
+pre code {
+	padding: 0;
+	border-radius: 0;
+	background: none;
+	font: inherit;
+}
+
 /* Layout */
 
 .container {

@@ -99,7 +99,12 @@ fun PackDetailSheet(
             HorizontalDivider()
             Fact(stringResource(R.string.packs_fact_version), pack.version)
             pack.license?.let { Fact(stringResource(R.string.packs_fact_license), it) }
-            if (pack.sizeBytes > 0) Fact(stringResource(R.string.packs_fact_size), sizeText(pack.sizeBytes))
+            // The recorded size is the imported file's, so it says little about one pack of a bundle.
+            if (pack.sizeBytes > 0 &&
+                pack.bundleId == null
+            ) {
+                Fact(stringResource(R.string.packs_fact_size), sizeText(pack.sizeBytes))
+            }
             Fact(stringResource(R.string.packs_fact_source), stringResource(sourceText(pack.source)))
             Fact(stringResource(R.string.packs_fact_contacts), contactsText(pack))
             Text(

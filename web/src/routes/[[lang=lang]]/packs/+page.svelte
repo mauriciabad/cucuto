@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import Html from '#lib/components/Html.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Seo from '#lib/components/Seo.svelte';
 	import { formatSize } from '#lib/format.js';
+	import { LOCALE_INFO, fill, localeFromPath, messages } from '#lib/i18n/index.js';
 	import { ADD_TO_APP_URL, DEFAULT_REPOSITORY_PATH } from '#lib/repository.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	const placeholders = [
-		{ character: 'leaf', title: 'Animals' },
-		{ character: 'sky', title: 'Chiptune' },
-		{ character: 'sunny', title: 'Little bells' }
-	];
+	const locale = $derived(localeFromPath(page.url.pathname));
+	const t = $derived(messages(locale).packs);
+	const placeholderAccents = ['leaf', 'sky', 'sunny'];
 
 	// One shared player: starting a sample stops the previous one.
 	let audio: HTMLAudioElement | undefined;
@@ -33,25 +33,17 @@
 	$effect(() => () => audio?.pause());
 </script>
 
-<Seo
-	title="Packs"
-	description="Free sound packs for Cucuto: characters with clips and vibrations, ready to import."
-/>
+<Seo title={t.title} description={t.description} />
 
 <div class="container">
 	<header class="page-header">
-		<h1 class="display-small emphasized">Packs</h1>
-		<p class="body-large">
-			A pack is a cast of characters, each with a picture, short clips and a vibration. Free packs
-			listed here are CC0, so you can use, change and share them.
-		</p>
+		<h1 class="display-small emphasized">{t.title}</h1>
+		<p class="body-large">{t.lead}</p>
 	</header>
 
 	{#if data.packs.length > 0}
 		<p class="repo-note on-surface-variant">
-			This list is also the app’s default pack repository,
-			<code>{DEFAULT_REPOSITORY_PATH}</code>: browse and download the same packs from the app, or
-			tap <strong>Add to app</strong> to add it again.
+			<Html text={t.repoNoteHtml} values={{ path: DEFAULT_REPOSITORY_PATH }} />
 		</p>
 		<ul class="gallery">
 			{#each data.packs as pack (pack.id)}
@@ -63,20 +55,21 @@
 						<h2 class="title-large">{pack.name}</h2>
 						<p class="body-medium on-surface-variant">
 							{[
-								pack.type === 'bundle' ? 'Bundle' : undefined,
-								pack.author ?? 'Unknown author',
-								pack.license ?? 'No license',
-								`${formatSize(pack.download.size)} .soundpack.zip`
+								pack.type === 'bundle' ? t.bundle : undefined,
+								pack.author ?? t.unknownAuthor,
+								pack.license ?? t.noLicense,
+								`${formatSize(pack.download.size, LOCALE_INFO[locale].htmlLang)} .soundpack.zip`
 							]
 								.filter(Boolean)
 								.join(' · ')}
 						</p>
 						{#if pack.description}
-							<p class="body-medium">{pack.description}</p>
+							<!-- Pack descriptions come from the repository index and stay in their own language. -->
+							<p class="body-medium" lang="en">{pack.description}</p>
 						{/if}
 
 						{#if pack.characters.length > 0}
-							<ul class="characters" aria-label="Characters">
+							<ul class="characters" aria-label={t.characters}>
 								{#each pack.characters as character (character.id)}
 									{@const key = `${pack.id}/${character.id}`}
 									<li class="character">
@@ -89,7 +82,9 @@
 											<button
 												type="button"
 												class="play"
-												aria-label="{playing === key ? 'Stop' : 'Play'} {character.name}’s sample"
+												aria-label={fill(playing === key ? t.stop : t.play, {
+													name: character.name
+												})}
 												aria-pressed={playing === key}
 												onclick={() => toggleSample(key, sample)}
 											>
@@ -103,7 +98,7 @@
 
 						{#if pack.packs.length > 0}
 							<p class="body-medium on-surface-variant">
-								Contains {pack.packs.map((p) => p.name).join(', ')}.
+								{fill(t.contains, { names: pack.packs.map((p) => p.name).join(', ') })}
 							</p>
 						{/if}
 					</div>
@@ -111,11 +106,13 @@
 					<div class="pack-actions">
 						<a class="button small" href={pack.download.url} rel="external">
 							<Icon name="download" />
-							Download<span class="visually-hidden"> {pack.name} .soundpack.zip</span>
+							{t.download}<span class="visually-hidden">
+								{fill(t.downloadHidden, { name: pack.name })}</span
+							>
 						</a>
 						<a class="button small tonal" href={ADD_TO_APP_URL} rel="external">
 							<Icon name="library-add" />
-							Add to app
+							{t.addToApp}
 						</a>
 					</div>
 				</li>
@@ -124,8 +121,8 @@
 	{:else}
 		<section class="empty" aria-labelledby="soon-title">
 			<ul class="gallery" aria-hidden="true">
-				{#each placeholders as item (item.title)}
-					<li class="pack placeholder" data-character={item.character}>
+				{#each t.placeholders as title, i (title)}
+					<li class="pack placeholder" data-character={placeholderAccents[i]}>
 						<div class="cover"></div>
 						<div class="line wide"></div>
 						<div class="line"></div>
@@ -133,15 +130,11 @@
 				{/each}
 			</ul>
 			<div class="soon card">
-				<h2 id="soon-title" class="title-large">The first free packs are on their way</h2>
+				<h2 id="soon-title" class="title-large">{t.soonTitle}</h2>
 				<p class="on-surface-variant">
-					Once the demo packs are published, this gallery lists every pack with its characters,
-					sample clips and a download button. The same list is available to the app at
-					<code>{DEFAULT_REPOSITORY_PATH}</code>, the default pack repository.
+					<Html text={t.soonTextHtml} values={{ path: DEFAULT_REPOSITORY_PATH }} />
 				</p>
-				<p class="on-surface-variant">
-					Want to make one? Read the <a href={resolve('authors/')}>guide for pack authors</a>.
-				</p>
+				<p class="on-surface-variant"><Html text={t.soonAuthorsHtml} /></p>
 			</div>
 		</section>
 	{/if}

@@ -57,6 +57,10 @@ class PreparedImport internal constructor(
     val packs: List<PackCandidate>,
     /** Warnings (never errors), including PACK_SAME_VERSION and PACK_DOWNGRADE for installed packs. */
     val report: ValidationReport,
+    /** SHA-256 (lowercase hex) of the imported file, for the installed packs index and backups. */
+    val archiveSha256: String,
+    /** Size of the imported file in bytes. */
+    val archiveSizeBytes: Long,
     internal val stagingDir: File,
     internal val stagedPacks: Map<String, File>,
 ) {

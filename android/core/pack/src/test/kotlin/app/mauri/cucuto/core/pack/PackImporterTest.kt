@@ -64,7 +64,15 @@ class PackImporterTest {
     fun `installs a pack with its manifest, media and licenses only`() =
         runTest {
             val importer = importer()
-            val prepared = importer.ready(fixtureArchive("valid/full-pack", archives))
+            val archive = fixtureArchive("valid/full-pack", archives)
+            val prepared = importer.ready(archive)
+            val sha256 =
+                java.security.MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(archive.readBytes())
+                    .joinToString("") { "%02x".format(it) }
+            assertEquals(sha256, prepared.archiveSha256)
+            assertEquals(archive.length(), prepared.archiveSizeBytes)
             val candidate = prepared.packs.single()
             assertEquals(InstallAction.INSTALL, candidate.action)
             assertNull(candidate.installedVersion)
