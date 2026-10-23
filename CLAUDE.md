@@ -19,7 +19,7 @@ notification sound and vibration per contact, using clips from user-imported sou
   m3.material.io (Material 3 Expressive), libxposed API docs, svelte.dev. Prefer documented APIs and best practices
   over memory; cite the doc in the PR when a decision depends on it.
 - **Never commit copyrighted media.** Only CC0 demo content in `packs/`, brand assets in `brand/`, app resources and
-  website assets. CI (`.github/workflows/media-guard.yml`) enforces an allowlist. No pack (`*.soundpack.zip`) or backup (`cucuto-backup-*.zip`) files outside build output and `spec/fixtures/`.
+  website assets. CI (the `media-guard` job in `.github/workflows/ci.yml`) enforces an allowlist. No pack (`*.soundpack.zip`) or backup (`cucuto-backup-*.zip`) files outside build output and `spec/fixtures/`.
 - **Never hook the WhatsApp process.** The module is scoped to System Framework only (`system` in
   `META-INF/xposed/scope.list`, which is `system_server` for modern modules; `android` would be wrong, see ADR 0002). Never throw inside
   `system_server`; every hook catches everything and degrades to WhatsApp's default tone.
@@ -55,7 +55,16 @@ pack files `*.soundpack.zip` · backups `cucuto-backup-YYYY-MM-DD.zip` (always e
   Commits are authored as `Claude (AI agent) <noreply@anthropic.com>` (set with `git config user.name/user.email` in
   each clone or worktree) and keep the `Co-Authored-By` trailer.
 - Work from GitHub issues. Branch `<type>/<issue>-<slug>` (e.g. `feat/12-pack-importer`), Conventional Commits
-  (`feat(pack): …`, `fix(xposed): …`, `docs: …`, `ci: …`), PR with `Closes #N`. Squash-merge once CI is green; the owner does not review PRs, so the lead agent reviews (read the diff, check for copyrighted media and private data) and merges.
+  (`feat(pack): …`, `fix(xposed): …`, `docs: …`, `ci: …`), PR with `Closes #N`.
+- **Auto-merge, don't wait for CI.** Right after `gh pr create`, run `gh pr merge --auto --squash` and finish your
+  task: do not watch or wait for CI. GitHub squash-merges the PR once the required `ci-ok` check is green (and deletes
+  the branch). If CI fails, the PR stays open and the lead resumes the agent to fix it. The owner does not review
+  PRs; the lead agent reviews them (read the diff, check for copyrighted media and private data) and can disable
+  auto-merge (`gh pr merge --disable-auto`) to hold one.
+- **CI** is one workflow, `.github/workflows/ci.yml`: a `changes` job (path filter) picks which jobs run, and `ci-ok`
+  (always runs, green when every needed job passed or was skipped) is the only required check of the `main` ruleset
+  (PRs required, 0 approvals, no force pushes or deletions; repository admins can bypass for hotfixes; branches need
+  not be up to date). Never rename `ci-ok`; add new jobs to its `needs`.
 - Milestones M0–M9 mirror the brief. Labels: `area:*`, `type:*`, `question`, `blocked`, `needs-device`.
 - Architecture decisions go in `docs/decisions/` (short ADRs: context, decision, consequences).
 - Keep PRs focused; run the relevant build and tests before pushing.

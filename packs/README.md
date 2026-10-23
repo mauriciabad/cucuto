@@ -8,7 +8,7 @@ sounds are synthesized with ffmpeg, pictures are hand-written SVG.
 | [Chiptune critters](chiptune-critters) | `app.mauri.demo.chiptune-critters` | frog (with a day/night ringtone), bird, cat, bee |
 | [Kitchen orchestra](kitchen-orchestra) | `app.mauri.demo.kitchen-orchestra` | pot, glass, whisk, kettle |
 
-CI (`.github/workflows/packs.yml`) also builds them into one bundle, `app.mauri.demo.all`, and a repository index.
+CI (the `packs` job in `.github/workflows/ci.yml`) also builds them into one bundle, `app.mauri.demo.all`, and a repository index.
 
 ## Build
 
@@ -33,4 +33,4 @@ The script overwrites the `.ogg` files from ffmpeg expressions; edit the express
 ## Adding a pack
 
 Only content you made yourself or that is clearly CC0, with its provenance in the pack's README. Add a `LICENSE`
-(CC0-1.0), a `pack.yaml` ([format](../tools/packer/README.md#packyaml)) and list the pack in `packs.yml`.
+(CC0-1.0), a `pack.yaml` ([format](../tools/packer/README.md#packyaml)) and list the pack in the `packs` job of `.github/workflows/ci.yml`.
