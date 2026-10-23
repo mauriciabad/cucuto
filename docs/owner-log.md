@@ -78,3 +78,7 @@ Clarified: nothing needed; ordinary incoming WhatsApp messages complete the M0 o
 > fyi i wont review prs, the code can be merged without my review or approval
 
 Agents keep reviewing and squash-merging PRs themselves once CI is green.
+
+> i dont want to use custom extensions (like .soundpack) if it is a zip it has to end with .zip, you can do things like .soundpack.zip but dont skip .zip. think what is best and do it
+
+Decision: packs and bundles `*.soundpack.zip`; backups `cucuto-backup-YYYY-MM-DD.zip`; type detected from contents, any `.zip` accepted. ADR + sweep issue.

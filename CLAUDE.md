@@ -39,7 +39,7 @@ docs/           Brief, pack format, install guide, decisions (docs/decisions/NNN
 ## Identifiers
 
 GitHub `mauriciabad/cucuto` · application ID `app.mauri.cucuto` · site `https://cucuto.mauri.app` ·
-pack file extension `.soundpack` · backup `.cucuto-backup` · license GPL-3.0-or-later (demo packs CC0-1.0).
+pack files `*.soundpack.zip` · backups `cucuto-backup-YYYY-MM-DD.zip` (always end in `.zip`; type detected from contents) · license GPL-3.0-or-later (demo packs CC0-1.0).
 
 ## Workflow
 
