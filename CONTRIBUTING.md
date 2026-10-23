@@ -14,14 +14,14 @@ Cucuto is one monorepo:
 | Path | What | Stack |
 | --- | --- | --- |
 | [`android/`](android) | Gradle project: `:app`, `:xposed` and `:core:*` modules | Kotlin, Jetpack Compose, Material 3 Expressive |
-| [`web/`](web) | Static website, default pack repository and PWA pack creator | SvelteKit, TypeScript |
+| [`web/`](web) | Static website, default pack repository and PWA pack creator | SvelteKit, TypeScript, Bun |
 | [`tools/packer/`](tools/packer) | CLI that builds packs, bundles and repository indexes | Kotlin JVM |
-| [`spec/`](spec) | JSON Schemas (pack, bundle, repository, backup) and golden fixtures: the cross-platform contract | JSON Schema |
+| [`shared/pack-spec/`](shared/pack-spec) | The pack format rules, included by `android/` and `tools/packer/` | Kotlin Multiplatform |
+| [`spec/`](spec) | JSON Schemas (pack, bundle, repository, backup), error codes and golden fixtures: the cross-platform contract | JSON Schema |
 | [`packs/`](packs) | CC0 demo pack sources | |
 | [`brand/`](brand) | Logo, app icon, colors, typography, motion and sound language | |
-| [`docs/`](docs) | Brief, pack format, install guide, decisions (`docs/decisions/NNNN-title.md`) | Markdown |
-
-Some folders appear as the milestones land; check the brief for the plan.
+| [`docs/`](docs) | Brief, pack format, install guide, device testing, decisions (`docs/decisions/NNNN-title.md`) | Markdown |
+| [`spikes/`](spikes) | Prototypes behind some decisions; not part of the product | |
 
 ## Ground rules
 
@@ -31,7 +31,8 @@ Some folders appear as the milestones land; check the brief for the plan.
   `android/gradle/libs.versions.toml` or `package.json`.
 - **Follow the official guidelines.** developer.android.com, m3.material.io, the libxposed API docs and svelte.dev. Cite
   the doc in your PR when a decision depends on it.
-- **Never hook the WhatsApp process.** The module is scoped to System Framework (`android`) only. Code in `system_server`
+- **Never hook the WhatsApp process.** The module is scoped to System Framework only (`system` in
+  `META-INF/xposed/scope.list`, see [ADR 0002](docs/decisions/0002-xposed-scope-system.md)). Code in `system_server`
   never throws: every hook catches everything and falls back to WhatsApp's default tone.
 - **Architecture decisions** go in `docs/decisions/` as short ADRs (context, decision, consequences).
 
@@ -45,7 +46,7 @@ Cucuto ships no content. The public repository never contains copyrighted media.
 - Demo packs in `packs/` must be **CC0-1.0**, and you must be able to show where every file came from (record the source
   in the pack's README or manifest). If in doubt, leave it out.
 - Never commit built `.soundpack.zip` files (only golden fixtures in `spec/fixtures/`) or backups (`cucuto-backup-*.zip`). Keep
-  private experiments in `private/`, which is git-ignored.
+  private experiments in `private/`, which is ignored.
 - Screenshots, videos and website previews use demo packs only.
 - Changes to the pack, bundle, repository or backup format start with a
   [pack format proposal](https://github.com/mauriciabad/cucuto/issues/new?template=pack_format_proposal.yml) and update
@@ -53,28 +54,73 @@ Cucuto ships no content. The public repository never contains copyrighted media.
 
 ## Building
 
-Requirements: JDK 21, the Android SDK (platform `android-37.0`, build-tools 37) and, for the website and the brand
-tools, [Bun](https://bun.com).
+Requirements:
+
+- **JDK 21** (Homebrew: `brew install openjdk@21`, then
+  `export JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home`).
+- **Android SDK** with platform `android-37.2` and build-tools 37.0.0. Point Gradle at it with `ANDROID_HOME` or with
+  `sdk.dir` in `android/local.properties` (not committed).
+- **Rust and NDK r30** for `:core:jxl`, the JPEG XL decoder: `brew install rustup && rustup default stable`,
+  `cargo install cargo-ndk` and `android sdk install ndk/30.0.16248370` (or `sdkmanager "ndk;30.0.16248370"`). rustup fetches the pinned toolchain by itself.
+  Only APK packaging needs them; unit tests and Lint do not ([details](android/core/jxl/README.md#build)).
+- **[Bun](https://bun.com)** for the website and the brand tools (`brew install oven-sh/bun/bun`; the version is
+  `packageManager` in `web/package.json`). Node is not needed.
+- Optional: the `kotlin` CLI for `*.main.kts` scripts, and `ffmpeg`, `jpeg-xl`, `webp` and `librsvg` for media work.
 
 ```sh
-# Android app and Xposed module
-cd android && ./gradlew build
+# Android app, Xposed module and :core:* (debug + release APKs, Lint, ktlint, unit tests)
+cd android
+./gradlew build
+./gradlew spotlessApply            # fix formatting
 
 # Website and PWA pack creator
-cd web && bun install && bun run build
+cd web
+bun install
+bun run check                      # svelte-check
+bun run lint                       # Prettier + ESLint
+bun run build                      # static site in web/build/
+bun run test                       # Playwright smoke and axe tests (bun run playwright install chromium first)
 
-# Packer CLI
-cd tools/packer && ./gradlew build
+# Packer CLI (its tests run every golden fixture in spec/fixtures)
+cd tools/packer
+./gradlew build installDist
+cli/build/install/packer/bin/packer --help
+
+# The pack format rules on their own
+cd shared/pack-spec
+./gradlew build
+
+# From the repository root: regenerate the golden fixtures and the demo pack sounds (both reproducible)
+kotlin spec/fixtures/generate.main.kts
+kotlin packs/generate.main.kts
 ```
 
-On macOS with Homebrew: `export JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home`.
+Each part has its own README with more: [`web/`](web/README.md), [`tools/packer/`](tools/packer/README.md),
+[`packs/`](packs/README.md), [`brand/`](brand/README.md).
 
-Running the module needs a rooted Android 17 device with LSPosed (libxposed API 102): enable Cucuto in LSPosed with the
-System Framework scope and reboot. Work that can only be verified on a device is labeled `needs-device`.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs only the jobs whose paths changed: `android-assemble`,
+`android-test`, `android-lint`, `web`, `packs` and `media-guard`. The `cucuto-debug-apk` artifact is the debug APK.
+
+### Testing on a device
+
+The module needs a rooted Android 17 phone with LSPosed (libxposed API 102). Install a debug build as in the
+[install guide](docs/install.md#before-the-first-release), enable Cucuto in LSPosed with the System Framework scope and
+reboot. Learn the [recovery steps](docs/install.md#if-the-phone-does-not-boot) first: a broken module in
+`system_server` can stop the phone from booting. [`docs/device-testing.md`](docs/device-testing.md) is the full test
+plan, with the log lines to look for. Work that can only be verified on a device is labeled `needs-device`.
+
+Never post the Diagnostics decision list, or logs with chat keys, names or numbers, on GitHub.
+
+## Docs and the website
+
+Setup text lives in three places that must agree: the app's strings, the website's Install page (English in
+`web/src/lib/i18n/en.ts`, Spanish in `es.ts`) and [`docs/install.md`](docs/install.md). When you change a setup step,
+update all three. Write "Cucuto" with a capital C in prose.
 
 ## Workflow
 
-1. **Start from an issue.** Pick one or open one with the right template. Comment before starting large work.
+1. **Start from an issue.** Pick one or open one with the right
+   [template](https://github.com/mauriciabad/cucuto/issues/new/choose). Comment before starting large work.
 2. **Branch** as `<type>/<issue>-<slug>`, for example `feat/12-pack-importer` or `fix/31-zip-slip`.
 3. **Commit** with [Conventional Commits](https://www.conventionalcommits.org/): `feat(pack): …`, `fix(xposed): …`,
    `docs: …`, `ci: …`, `chore: …`. Use the area as the scope when it helps.
@@ -93,7 +139,8 @@ Labels: `area:*` (which part), `type:*` (bug, feature, spike, chore, docs), `que
 AI agents are welcome contributors here, and much of the project is built by them. Their work must always be labeled as
 AI-written so nobody mistakes it for a human's:
 
-- Issues, pull requests, comments, reviews and releases written by an agent start with this banner:
+- Issues, pull requests, comments, reviews and releases written by an agent start with this banner (the issue and pull
+  request templates repeat it):
 
   ```markdown
   > [!NOTE]

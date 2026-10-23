@@ -289,7 +289,7 @@ class PackImporterTest {
     @Test
     fun `decoded durations and sizes are checked again`() =
         runTest {
-            val longClip = importer(audio = { _, _, _ -> AudioProbeResult.Decoded(9_000) })
+            val longClip = importer(audio = { _, _, _ -> AudioProbeResult.Decoded(31_000) })
             val clip = longClip.prepare(ImportSource.of(fixtureArchive("valid/minimal-pack", archives))).result()
             assertEquals(listOf("CLIP_DURATION_OUT_OF_RANGE"), (clip as ImportResult.Invalid).report.errorCodes())
 

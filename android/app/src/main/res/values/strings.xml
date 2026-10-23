@@ -73,6 +73,57 @@
     <string name="screen_settings_body">Global switch, backup and restore, and the decision log for every recent notification.</string>
     <string name="placeholder_coming">Coming in %1$s</string>
 
+    <!-- Chats (shared by Home and the character picker) -->
+    <string name="chat_unnamed">Unnamed chat</string>
+    <string name="chat_unnamed_group">Unnamed group</string>
+    <string name="chat_open_label">Choose a voice</string>
+
+    <!-- Home -->
+    <string name="home_search_hint">Search chats and characters</string>
+    <string name="home_search_clear">Clear search</string>
+    <string name="home_filter_header">Filter by pack</string>
+    <string name="home_recent_header">Recent senders</string>
+    <string name="home_recent_body">They messaged you and have no voice yet. Tap one to choose.</string>
+    <string name="home_recent_hide">Hide</string>
+    <string name="home_recent_hide_label">Hide from recent senders</string>
+    <string name="home_chats_header">Chats</string>
+    <string name="home_chat_voice">%1$s · %2$s</string>
+    <string name="home_chat_no_voice">No voice yet: WhatsApp\'s tone</string>
+    <string name="home_chat_voice_missing">Voice missing: its pack was removed</string>
+    <string name="home_chat_group">Group · %1$s</string>
+    <string name="home_empty_title">No chats yet</string>
+    <string name="home_empty_body">When someone messages you on WhatsApp, they show up here. Tap them to give them a voice.</string>
+    <string name="home_empty_door">A closed cuckoo-clock door, waiting for someone to call</string>
+    <string name="home_no_matches">No chats match</string>
+    <string name="home_no_packs_title">No sound packs yet</string>
+    <string name="home_no_packs_body">Import a sound pack to get characters to choose from.</string>
+    <string name="home_open_packs">Open Packs</string>
+    <string name="home_fab">Assign a voice</string>
+    <string name="home_sheet_title">Who gets a voice?</string>
+    <string name="home_sheet_empty">Every chat has a voice. New senders show up here when they message you.</string>
+    <string name="home_loading">Loading chats</string>
+
+    <!-- Character picker -->
+    <string name="picker_title">Choose a voice</string>
+    <string name="picker_subtitle_for">For %1$s</string>
+    <string name="picker_subtitle_preview">Preview characters</string>
+    <string name="picker_hint">Tap a character to hear it. Tap it again to give it to this chat.</string>
+    <string name="picker_hint_preview">Tap a character to hear it. Open a chat from Home to give it a voice.</string>
+    <string name="picker_speaks_as">Speaks as %1$s</string>
+    <string name="picker_no_voice">No voice yet: WhatsApp\'s tone</string>
+    <string name="picker_assigned">%1$s now speaks for %2$s</string>
+    <string name="picker_tap_again">Tap again to assign</string>
+    <string name="picker_current">Current voice</string>
+    <string name="picker_state_selected">Selected</string>
+    <string name="picker_state_playing">Playing</string>
+    <string name="picker_preview_label">Preview</string>
+    <string name="picker_assign_label">Assign</string>
+    <string name="picker_remove">Remove voice</string>
+    <string name="picker_failed">Couldn\'t save the voice. Try again.</string>
+    <string name="picker_empty_title">No characters yet</string>
+    <string name="picker_empty_body">Import a sound pack to fill this grid.</string>
+    <string name="picker_loading">Loading characters</string>
+
     <!-- Design gallery (debug builds): the theme, shape and feedback building blocks for screen work. -->
     <string name="screen_gallery">Design gallery</string>
     <string name="gallery_subtitle">Theme, shapes and feedback</string>
@@ -300,7 +351,7 @@
     <string name="error_license_not_spdx">The license isn\'t a standard license name, so it\'s shown as written.</string>
     <string name="error_unreferenced_file">Some files aren\'t used by any character and were left out.</string>
     <string name="error_media_undecodable">A sound or picture is damaged or can\'t be played on this phone.</string>
-    <string name="error_clip_duration_out_of_range">A notification sound is too short or too long. It must last 0.2 to 4 seconds.</string>
+    <string name="error_clip_duration_out_of_range">A notification sound is too short or too long. It must last 0.2 to 30 seconds.</string>
     <string name="error_ringtone_duration_out_of_range">A ringtone is too short or too long. It must last 5 seconds to 6 minutes.</string>
     <string name="error_image_too_large">A picture is too big. Pictures can be at most 512 pixels on each side.</string>
     <string name="error_svg_unsafe">A picture (SVG) contains scripts or outside links, so it was blocked for safety.</string>

@@ -47,6 +47,10 @@ class PackManifestCatalogTest {
             assertEquals(listOf(2000, 250), frog.clips.map { it.milliWeight })
             assertEquals("characters/frog/clips/ribbit.ogg", frog.clips[0].file)
             assertEquals(Haptic.Keep, frog.haptic)
+            assertEquals("Frog", frog.name)
+            assertEquals("characters/frog/sprite.svg", frog.sprite)
+            assertNull(frog.seedColor)
+            assertEquals(listOf("frog", "song"), catalog.characters(pack).keys.toList())
 
             val song = catalog.character(pack, "song")!!
             assertEquals(0, song.clips.size)

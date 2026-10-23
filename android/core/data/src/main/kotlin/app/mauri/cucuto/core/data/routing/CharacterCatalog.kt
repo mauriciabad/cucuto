@@ -23,10 +23,21 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
-/** What the routing table needs to know about an installed character. */
+/**
+ * An installed character: what the routing table needs (clips, haptic) and what the character picker shows.
+ *
+ * @property name Display name from `pack.json`, or null if missing.
+ * @property sprite Path of the static sprite from `pack.json` (relative to the pack folder).
+ * @property spriteAnimated Path of the optional animated sprite.
+ * @property seedColor `#RRGGBB` seed of the character's color scheme, when the pack sets one.
+ */
 data class CatalogCharacter(
     val clips: List<CatalogClip>,
     val haptic: Haptic,
+    val name: String? = null,
+    val sprite: String? = null,
+    val spriteAnimated: String? = null,
+    val seedColor: String? = null,
 )
 
 /**
@@ -79,10 +90,12 @@ class PackManifestCatalog
         override suspend fun character(
             pack: InstalledPackEntity,
             characterId: String,
-        ): CatalogCharacter? {
+        ): CatalogCharacter? = characters(pack)[characterId]
+
+        /** Every character of [pack] in `pack.json` order; empty if the manifest cannot be read. */
+        suspend fun characters(pack: InstalledPackEntity): Map<String, CatalogCharacter> {
             val cacheKey = "${pack.packId}\u0000${pack.version}\u0000${pack.path}"
-            val characters = cache[cacheKey] ?: load(pack).also { cache[cacheKey] = it }
-            return characters[characterId]
+            return cache[cacheKey] ?: load(pack).also { cache[cacheKey] = it }
         }
 
         /** Forgets what was read from the pack installed in [packPath] (its auto haptics changed) and says so. */
@@ -120,9 +133,20 @@ class PackManifestCatalog
                             val autoHaptic = snapped.getOrPut(file) { autoHaptics[file]?.let(HapticGrid::snap) }
                             CatalogClip(file, (weight * 1000).roundToInt().coerceAtLeast(1), autoHaptic)
                         }
-                    result[id] = CatalogCharacter(clips, HapticJson.fromPack(character["haptic"]))
+                    result[id] =
+                        CatalogCharacter(
+                            clips = clips,
+                            haptic = HapticJson.fromPack(character["haptic"]),
+                            name = character.string("name"),
+                            sprite = character.string("sprite"),
+                            spriteAnimated = character.string("spriteAnimated"),
+                            seedColor = character.string("seedColor"),
+                        )
                 }
                 return result
             }
+
+            private fun JsonObject.string(key: String): String? =
+                (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
         }
     }
