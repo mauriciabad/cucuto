@@ -1,4 +1,4 @@
-# 0013. Theme, character colors and the Feedback engine
+# 0014. Theme, character colors and the Feedback engine
 
 - Status: accepted
 - Date: 2026-10-24

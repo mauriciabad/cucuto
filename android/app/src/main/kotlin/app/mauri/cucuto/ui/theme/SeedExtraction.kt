@@ -20,7 +20,7 @@ import kotlin.math.roundToInt
  *
  * Transparent pixels (most sprites have a transparent background) are ignored. Returns null when the image has no
  * usable color (an all-grey or fully transparent sprite): the caller then keeps the surrounding scheme.
- * See docs/decisions/0013-theme-and-feedback-engine.md for why this is MCU and not androidx.palette.
+ * See docs/decisions/0014-theme-and-feedback-engine.md for why this is MCU and not androidx.palette.
  */
 suspend fun extractSeedColor(bitmap: Bitmap): Color? =
     withContext(Dispatchers.Default) {
