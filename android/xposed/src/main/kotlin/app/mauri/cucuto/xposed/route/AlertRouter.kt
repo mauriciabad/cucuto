@@ -1,5 +1,6 @@
 package app.mauri.cucuto.xposed.route
 
+import app.mauri.cucuto.core.haptics.forClip
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
@@ -95,11 +96,8 @@ class AlertRouter(
             val speaker = match.speaker
             val index = bags.next("$pkg\n${speaker.key}", uris, weights, speaker.seed)
             val clip = voice.clips[index]
-            val haptic =
-                when (val h = voice.haptic) {
-                    Haptic.Auto -> clip.haptic ?: Haptic.Keep
-                    else -> h
-                }
+            // Resolved against the clip drawn for the sound, so an auto envelope matches what plays.
+            val haptic = voice.haptic.forClip(clip.haptic)
             return Decision(
                 outcome = Outcome.SWAPPED,
                 packageName = pkg,
