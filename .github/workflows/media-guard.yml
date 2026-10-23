@@ -13,7 +13,7 @@ jobs:
     name: No media outside the allowlist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check media paths
         run: |
           # Audio and image files may only live in these paths. Copyrighted content never enters the repo.
