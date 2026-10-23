@@ -31,6 +31,15 @@ android {
         }
     }
 
+    testOptions {
+        // Robolectric needs the merged resources (strings) for the Compose UI tests.
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            // Robolectric's Android 16+ runtime touches FileDescriptor internals that JDK 21 hides by default.
+            it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+        }
+    }
+
     sourceSets {
         named("main") {
             // Brand tokens and the adaptive icon are compiled straight from brand/ (single source of truth,
@@ -85,8 +94,19 @@ dependencies {
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.compose.material.icons.core)
     implementation(libs.coil.compose)
+    // Pack sprites and covers may be SVG (sanitized by the importer, docs/pack-format.md#images).
+    implementation(libs.coil.svg)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material.color.utilities)
+
+    // Compose UI tests on the JVM (Robolectric) live in src/testDebug: the test activity comes from the
+    // debug-only ui-test-manifest.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.androidx.test.espresso.core)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

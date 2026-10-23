@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.jxl.JxlCoilDecoder
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
+import coil3.svg.SvgDecoder
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -23,10 +24,15 @@ class CucutoApplication :
         routingPublisher.start()
     }
 
-    /** The ImageLoader behind every `AsyncImage`: Coil's defaults plus JPEG XL (jxl-rs, ADR 0006). */
+    /**
+     * The ImageLoader behind every `AsyncImage`: Coil's defaults plus JPEG XL (jxl-rs, ADR 0006) and SVG (pack sprites
+     * and covers; the importer rejects unsafe SVGs).
+     */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader
             .Builder(context)
-            .components { add(JxlCoilDecoder.Factory()) }
-            .build()
+            .components {
+                add(JxlCoilDecoder.Factory())
+                add(SvgDecoder.Factory())
+            }.build()
 }

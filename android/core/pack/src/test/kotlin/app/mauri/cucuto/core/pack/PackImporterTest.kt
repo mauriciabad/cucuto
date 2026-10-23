@@ -216,7 +216,7 @@ class PackImporterTest {
     @Test
     fun `decoded durations and sizes are checked again`() =
         runTest {
-            val longClip = importer(audio = { _, _, _ -> AudioProbeResult.Decoded(9_000) })
+            val longClip = importer(audio = { _, _, _ -> AudioProbeResult.Decoded(31_000) })
             val clip = longClip.prepare(ImportSource.of(fixtureArchive("valid/minimal-pack", archives))).result()
             assertEquals(listOf("CLIP_DURATION_OUT_OF_RANGE"), (clip as ImportResult.Invalid).report.errorCodes())
 
@@ -235,8 +235,11 @@ class PackImporterTest {
             val importer = importer()
             val prepared = importer.ready(fixtureArchive("valid/minimal-pack", archives))
             assertTrue(prepared.stagingDir.isDirectory)
+            val staged = prepared.stagedFolder(prepared.packs.single())
+            assertTrue(File(staged, "pack.json").isFile)
             importer.discard(prepared)
             assertFalse(prepared.stagingDir.exists())
+            assertNull(prepared.stagedFolder(prepared.packs.single()))
             val result = importer.install(prepared).result()
             assertEquals(FailureReason.NOT_PREPARED, (result as ImportResult.Failed).reason)
             assertTrue(store.installedPacks().isEmpty())
@@ -296,8 +299,8 @@ class PackImporterTest {
             val importer = importer()
             importer.installAll(minimal("1.0.0"))
             importer.installAll(minimal("1.1.0"), activate = false)
-            assertTrue(store.uninstall(minimalId))
-            assertFalse(store.uninstall(minimalId))
+            assertTrue(importer.uninstall(minimalId))
+            assertFalse(importer.uninstall(minimalId))
             assertTrue(store.installedPacks().isEmpty())
             assertNull(store.activeVersion(minimalId))
         }

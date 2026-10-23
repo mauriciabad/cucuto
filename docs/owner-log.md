@@ -182,3 +182,11 @@ Item 3: day and night follow sunrise and sunset from the phone's coarse location
 > I dont understand the question not the changes in behaveour. i want the notifications to play at the same instant they play in stock whatsapp. and i also want to preserve baterylife.  i close the issue because i feel like my answer wont be educated, if i find out an unexpected behaveour because of this, you can revisit this
 
 Issue closed by the owner: the delivery default stands. The two requirements (same instant as stock WhatsApp, preserve battery) are an M1 acceptance criterion in the brief and are analysed in ADR 0010: event delivery complies (never on the notification path, no wake-ups), but a cold start of Cucuto's process can delay the clip itself; measured and fixed in #121.
+
+> you can have more agents working in paralel
+
+(Lead added seven parallel streams: #121 clip cold start, #119/#84 pack-spec, #97 auto haptics, #44 release signing, #45 docs, #116/#49 pack-spec in the browser, #50 ringtone spike.)
+
+> the most important is to get the app working first
+
+(Lead focused the critical path: screen PRs #128/#132, then the end-to-end loop on the phone.)
