@@ -1,5 +1,5 @@
 // Copies the generated brand assets the website uses from `brand/` into `web/`.
-// The brand folder is the source of truth: run `pnpm sync:brand` after rebuilding the brand, then commit the copies.
+// The brand folder is the source of truth: run `bun run sync:brand` after rebuilding the brand, then commit the copies.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 

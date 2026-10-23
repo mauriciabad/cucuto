@@ -63,7 +63,7 @@ class SelfTestNotifier
                 val notification =
                     Notification
                         .Builder(context, Targets.SELF_TEST_CHANNEL)
-                        .setSmallIcon(R.drawable.ic_launcher_monochrome)
+                        .setSmallIcon(R.drawable.ic_stat_cucuto)
                         .setContentTitle(context.getString(R.string.selftest_notification_title))
                         .setContentText(context.getString(R.string.selftest_notification_text))
                         .setCategory(Notification.CATEGORY_REMINDER)

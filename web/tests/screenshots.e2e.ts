@@ -1,5 +1,5 @@
 // Full-page screenshots of every page in both themes, for reviews and PRs. Not part of the CI run:
-//   SCREENSHOTS=1 pnpm exec playwright test screenshots --project=desktop
+//   SCREENSHOTS=1 bun run playwright test screenshots --project=desktop
 import { test } from '@playwright/test';
 
 const paths = [

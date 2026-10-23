@@ -17,7 +17,7 @@ notification sound and vibration per contact, using clips from user-imported sou
   Python or shell where practical). No Java sources. The website is SvelteKit + TypeScript (owner decision in the brief),
   but it reuses Kotlin where that saves a second implementation: pack validation comes from `shared/pack-spec`
   compiled for the browser, never a TypeScript port (owner, #60; #116). JavaScript tooling runs on Bun, not Node
-  (owner, #63; migration in #115, until it lands the commands below still say `pnpm`).
+  (owner, #63; #115).
 - **Minimum intrusion** (owner, #67): "I want it to work with the minimum intrusion possible, so we lower the risk of
   critical vulnerabilities/mistakes." Hook as little as possible, as late as possible, in as few processes as
   possible; ask for the fewest permissions, only when a feature needs them; read no more of a notification than the
@@ -99,10 +99,13 @@ pack files `*.soundpack.zip` · backups `cucuto-backup-YYYY-MM-DD.zip` (always e
   `./gradlew spotlessApply` fixes formatting · versions live in `android/gradle/libs.versions.toml`, module setup in
   `android/build-logic/` (ADR 0001). `compileSdk` is 37.2: `VibrationEffect.Builder` and friends are missing from
   37.0. AGP 9 has built-in Kotlin: never apply `org.jetbrains.kotlin.android` (or kapt; use KSP).
-- Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build installDist` (tests run
-  every golden fixture in `spec/fixtures`; CLI at `tools/packer/cli/build/install/packer/bin/packer`, usage in
-  `tools/packer/README.md`). Pack format rules: `docs/pack-format.md` (code: `shared/pack-spec`, also run by
-  `android/core/pack` tests); error codes: `spec/error-codes.json`.
+- JavaScript runs on Bun (Homebrew `oven-sh/bun/bun`; version in each `packageManager` field), never Node or pnpm.
+  Web: `cd web && bun install && bun run build` (also `check`, `lint`, `test`; `web/bunfig.toml` runs every script and
+  CLI on the Bun runtime) · Brand: `cd brand/tools && bun install && bun run build`.
+- Packer: `cd tools/packer && ./gradlew build installDist` (tests run every golden fixture in `spec/fixtures`; CLI at
+  `tools/packer/cli/build/install/packer/bin/packer`, usage in `tools/packer/README.md`). Pack format rules:
+  `docs/pack-format.md` (code: `shared/pack-spec`, also run by `android/core/pack` tests); error codes:
+  `spec/error-codes.json`.
 - Kotlin scripts (`*.main.kts`) need the `kotlin` CLI (Homebrew `kotlin`, 2.4.21). Media tools: `ffmpeg` (libopus),
   `cjxl`/`djxl` (`jpeg-xl`), `cwebp` (`webp`), `rsvg-convert` (`librsvg`). Regenerate fixtures with
   `kotlin spec/fixtures/generate.main.kts` and demo pack sounds with `kotlin packs/generate.main.kts`.

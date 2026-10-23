@@ -1,5 +1,7 @@
 // Ready-to-use mark and wordmark shapes (no side effects), shared by the build scripts.
-import { markPaths, markSmallPaths, beakGapPaths, wordmarkParts, circle, WORDMARK } from './geometry.mjs';
+import {
+  markPaths, markSmallPaths, beakGapPaths, wordmarkParts, circle, roundedPolygon, offsetPolygon, SMALL_BEAK, SMALL_BEAK_R, WORDMARK,
+} from './geometry.mjs';
 import { union, subtract, pathData, transform } from './boolean.mjs';
 import { MARK_COLORS } from './brand-colors.mjs';
 import { pathEl } from './svg.mjs';
@@ -19,6 +21,15 @@ export const markMono = pathData(union(
 
 export const sp = markSmallPaths();
 export const smallBody = (colors = MARK_COLORS.full) => markBody(colors, sp);
+
+/**
+ * Single-color silhouette of the small mark (status-bar notification icon): the house with the opening and a gap
+ * around the beak knocked out, the bigger bird inside. Fewer, larger details than markMono, so it holds at 24 dp.
+ */
+export const smallMono = pathData(union(
+  subtract(sp.house, sp.opening, roundedPolygon(offsetPolygon(SMALL_BEAK, 2.2), SMALL_BEAK_R.map((r) => r + 2.2))),
+  subtract(union(sp.head, sp.beak), sp.eye),
+));
 
 /** Wordmark as one path; native box x 0–246, y -14–40 (baseline 40). */
 export const wordmark = pathData(union(...wordmarkParts().map((p) => (typeof p === 'string'
