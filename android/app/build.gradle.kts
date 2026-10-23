@@ -1,3 +1,5 @@
+import app.mauri.cucuto.buildlogic.BrandSoundsTask
+
 plugins {
     alias(libs.plugins.cucuto.android.application)
     alias(libs.plugins.cucuto.android.compose)
@@ -12,6 +14,11 @@ android {
         applicationId = "app.mauri.cucuto"
         versionCode = 1
         versionName = "0.1.0"
+    }
+
+    buildFeatures {
+        // BuildConfig.DEBUG gates the design gallery.
+        buildConfig = true
     }
 
     buildTypes {
@@ -29,6 +36,18 @@ android {
             kotlin.directories += "../../brand/tokens"
             res.directories += "../../brand/app-icon/android-res"
         }
+    }
+}
+
+// Brand UI sounds (brand/sounds/*.ogg) become R.raw.ui_* through a generated resource directory.
+val brandSounds =
+    tasks.register<BrandSoundsTask>("brandSounds") {
+        sounds.from(fileTree("../../brand/sounds") { include("*.ogg") })
+    }
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.res?.addGeneratedSourceDirectory(brandSounds, BrandSoundsTask::outputDirectory)
     }
 }
 
@@ -65,6 +84,7 @@ dependencies {
     implementation(libs.compose.material.icons.core)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.material.color.utilities)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
