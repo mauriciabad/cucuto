@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest an idea or an improvement for cucuto.
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues first. Read the [project brief](https://github.com/mauriciabad/cucuto/blob/main/docs/project-brief.md)
+        for the scope: cucuto is root-only (Android 17 + LSPosed), has no backend, accounts or analytics, and never bundles
+        copyrighted content. Changes to the `.soundpack` format have their own template.
+  - type: dropdown
+    id: part
+    attributes:
+      label: Part
+      options:
+        - Android app
+        - Xposed module
+        - Ringtones / phone calls
+        - Pack import or pack repositories
+        - Backup and restore
+        - Website or PWA pack creator
+        - Packer CLI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you would like it to work. Sketches and mockups are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself.

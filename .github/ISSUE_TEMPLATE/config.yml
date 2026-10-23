@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Project brief
+    url: https://github.com/mauriciabad/cucuto/blob/main/docs/project-brief.md
+    about: Scope, architecture, pack format v1 and roadmap. Read it before proposing big changes.
+  - name: Contributing guide
+    url: https://github.com/mauriciabad/cucuto/blob/main/CONTRIBUTING.md
+    about: Repository layout, how to build each part, commit and branch conventions.
+  - name: Website and install guide
+    url: https://cucuto.mauri.app
+    about: Download the APK, install the LSPosed module and browse free packs.
+  - name: Report a security vulnerability
+    url: https://github.com/mauriciabad/cucuto/security/advisories/new
+    about: Please report vulnerabilities privately, not in a public issue.
