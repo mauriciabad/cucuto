@@ -10,6 +10,9 @@ notification sound and vibration per contact, using clips from user-imported sou
   `app.mauri.cucuto`, `cucuto.mauri.app`, file names, code) and in the logo wordmark.
 - **Owner is away.** Never block on questions. Pick a sensible default, document it, and open (or comment on) a GitHub
   issue labeled `question` so the owner can override it later.
+- **`question` issues:** each states the default taken. The owner **closes** it to accept the default, or **comments and
+  leaves it open** to change it; the lead then applies the answer, copies it verbatim into the owner log and closes the
+  issue. Check open `question` issues for new owner comments at the start of every session.
 - **Kotlin always.** All Android, tooling and scripting code is Kotlin (Gradle Kotlin DSL; `*.main.kts` scripts instead of
   Python or shell where practical). No Java sources. The website is SvelteKit + TypeScript (owner decision in the brief).
 - **Latest stable versions.** Check current versions when adding a dependency (official release notes, Maven Central,

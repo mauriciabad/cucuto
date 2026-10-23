@@ -94,3 +94,7 @@ Response: auto-merge with an aggregate required check; agents open the PR, enabl
 > i allow
 
 (Permission for the agent to reboot the phone over adb.)
+
+> the issues with the tag question, do you want me to comment and close or comment and leave them open, or something else?
+
+Protocol: owner closes = default accepted; owner comments and leaves open = agent applies the answer, logs it verbatim, closes.
