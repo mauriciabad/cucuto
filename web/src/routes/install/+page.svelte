@@ -1,7 +1,12 @@
 <script lang="ts">
-	import Icon from '#lib/components/Icon.svelte';
+	import DownloadApk from '#lib/components/DownloadApk.svelte';
+	import Picture from '#lib/components/Picture.svelte';
 	import Seo from '#lib/components/Seo.svelte';
-	import { ISSUES_URL, LATEST_RELEASE_URL, REQUIREMENTS } from '#lib/site.js';
+	import appIcon from '#lib/assets/images/cucuto-icon.png?w=192&picture';
+	import { ISSUES_URL, RELEASES_URL, REQUIREMENTS } from '#lib/site.js';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 </script>
 
 <Seo
@@ -21,11 +26,17 @@
 	<ol class="install-steps">
 		<li>
 			<h2 class="title-large">Download and install the APK</h2>
-			<p>
-				Get the latest <code>.apk</code> from the
-				<a href={LATEST_RELEASE_URL} rel="external">GitHub release page</a> and open it on your phone.
-				Android asks you to allow installs from that app (your browser or file manager) the first time.
-			</p>
+			<div class="with-icon">
+				<p>
+					Get the latest <code>.apk</code> from the
+					<a href={data.appRelease?.releaseUrl ?? RELEASES_URL} rel="external"
+						>GitHub release page</a
+					>
+					and open it on your phone. Android asks you to allow installs from that app (your browser or
+					file manager) the first time. Once installed, look for this icon.
+				</p>
+				<Picture src={appIcon} alt="The Cucuto app icon" class="app-icon" width="96" height="96" />
+			</div>
 		</li>
 		<li>
 			<h2 class="title-large">Enable the module in LSPosed</h2>
@@ -77,12 +88,9 @@
 		</li>
 	</ul>
 
-	<p class="back">
-		<a class="button tonal" href={LATEST_RELEASE_URL} rel="external">
-			<Icon name="download" />
-			Download APK
-		</a>
-	</p>
+	<div class="back">
+		<DownloadApk release={data.appRelease} />
+	</div>
 </div>
 
 <style>
@@ -124,7 +132,29 @@
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
+	.with-icon {
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem 1.5rem;
+	}
+
+	.with-icon :global(.app-icon) {
+		flex: none;
+		width: 6rem;
+		height: auto;
+		margin-top: 0.5rem;
+	}
+
+	@media (max-width: 32rem) {
+		.with-icon {
+			flex-direction: column;
+		}
+	}
+
 	.back {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
 		margin-top: 2.5rem;
 	}
 </style>

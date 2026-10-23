@@ -31,5 +31,18 @@ SCREENSHOTS=1 pnpm exec playwright test screenshots   # full-page screenshots in
   creator (#48).
 - **Motion.** `src/lib/styles/motion.css` turns the brand's spring tokens into CSS `linear()` easings. Everything
   respects `prefers-reduced-motion`.
+- **Release data.** `pnpm build` and `pnpm dev` first run `scripts/build-data.ts`, which reads the GitHub Releases
+  API: the latest app release (`v*` tag with an `.apk` asset) becomes the Download APK button (version, size, URL;
+  "coming soon" before the first release), and `repository.zip` from the newest `packs-v*` release
+  (`.github/workflows/packs-release.yml`) is unpacked into `static/repo/`, served as `/repo/index.json`, the app's
+  default pack repository, and rendered on the Packs page. Network errors never fail the build (previous data or an
+  empty index is used). `CUCUTO_OFFLINE=1` skips the network; `CUCUTO_REPO_DIR=<packer index output>` uses a local
+  repository instead; `GITHUB_TOKEN` raises the API rate limit. Publishing an app release re-runs the deploy (`site-rebuild.yml`
+  `release` trigger); `packs-release.yml` dispatches it after uploading the packs.
+- **Images (JPEG XL).** Import rasters with `?picture` (`?w=192&picture` to resize) and render them with
+  `<Picture>`: a `<picture>` with JPEG XL first, then AVIF, then PNG, encoded at build time by `scripts/picture.ts`
+  (cjxl for JPEG XL, sharp for AVIF/PNG) and cached in `node_modules/.cache/picture`. Install cjxl with
+  `brew install jpeg-xl`; without it the JPEG XL source is skipped with a warning (CI installs `libjxl-tools` and sets
+  `PICTURE_REQUIRE_JXL=1`). Sources live in `src/lib/assets/images/`.
 - **TypeScript 6.** TypeScript 7 is out, but SvelteKit 3, svelte-check and typescript-eslint still declare
   `typescript@^6` as their peer, so the site stays on 6.x until they support 7.

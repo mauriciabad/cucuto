@@ -44,12 +44,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
 	});
 }
 
-test('home links to the latest release and the install guide', async ({ page }) => {
+test('home links to the install guide', async ({ page }) => {
 	await page.goto('/');
-	await expect(page.getByRole('link', { name: 'Download APK' })).toHaveAttribute(
-		'href',
-		'https://github.com/mauriciabad/cucuto/releases/latest'
-	);
 	await page.getByRole('link', { name: 'How to install' }).click();
 	await expect(page).toHaveURL(/\/install\/$/);
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Install guide');

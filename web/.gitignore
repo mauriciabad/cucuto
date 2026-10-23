@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 # Playwright
 test-results
 playwright-report
+
+# Release data fetched at build time (scripts/build-data.ts)
+/.build-data
+/static/repo
