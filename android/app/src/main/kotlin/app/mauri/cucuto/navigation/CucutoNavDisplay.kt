@@ -15,6 +15,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.ui.placeholder.PlaceholderScreen
 import app.mauri.cucuto.ui.status.StatusScreen
 
@@ -51,6 +52,7 @@ fun CucutoNavDisplay(modifier: Modifier = Modifier) {
                 entry<CucutoDestination.Discover> { PlaceholderScreen(it, onBack = goBack) }
                 entry<CucutoDestination.HapticEditor> { PlaceholderScreen(it, onBack = goBack) }
                 entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }
+                entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
             },
     )
 }

@@ -104,6 +104,14 @@ fun StatusScreen(
             item { HeroCard() }
             item { SectionHeader(R.string.status_checks_header) }
             item { ChecksCard() }
+            item {
+                FilledTonalButton(
+                    onClick = { onNavigate(CucutoDestination.Diagnostics) },
+                    shapes = ButtonDefaults.shapes(),
+                ) {
+                    Text(stringResource(R.string.screen_diagnostics))
+                }
+            }
             item { SectionHeader(R.string.status_screens_header) }
             item { ScreenLinks(onNavigate) }
         }

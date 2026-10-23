@@ -84,3 +84,17 @@ Agents keep reviewing and squash-merging PRs themselves once CI is green.
 Decision: packs and bundles `*.soundpack.zip`; backups `cucuto-backup-YYYY-MM-DD.zip`; type detected from contents, any `.zip` accepted. ADR + sweep issue.
 
 > i got a wp message
+
+> you're wasting time because agents are waiting for long ci to finish. some work could be probably started while it is being merged
+
+Response: auto-merge with an aggregate required check; agents open the PR, enable auto-merge and finish; more parallel work streams.
+
+> it was already enabled...
+
+> i allow
+
+(Permission for the agent to reboot the phone over adb.)
+
+> the issues with the tag question, do you want me to comment and close or comment and leave them open, or something else?
+
+Protocol: owner closes = default accepted; owner comments and leaves open = agent applies the answer, logs it verbatim, closes.

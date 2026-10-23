@@ -32,10 +32,22 @@ class RoutingTableHolder(
     @Volatile private var lastAttempt: Long = 0
     private val lock = Any()
 
-    /** The latest table. Cheap enough for the notification path. */
+    /** The latest table. Attaches on first use, which is a Binder call: prefer [peek] on the notification path. */
     fun current(): RoutingTable {
         if (attached == null) attach()
         return table
+    }
+
+    /** The table held right now, without attaching: a volatile read, for the notification path. */
+    fun peek(): RoutingTable = table
+
+    /** Whether the change listener is registered (the table follows the app's publications). */
+    val isAttached: Boolean get() = attached != null
+
+    /** Attaches if needed (at most once per retry interval). Call from a background thread. */
+    fun ensureAttached(): Boolean {
+        if (attached == null) attach()
+        return attached != null
     }
 
     override fun onSharedPreferenceChanged(

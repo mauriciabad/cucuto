@@ -39,7 +39,7 @@ Some folders appear as the milestones land; check the brief for the plan.
 
 Cucuto ships no content. The public repository never contains copyrighted media.
 
-- Audio, image and zip files may only live in the paths allowed by [`media-guard`](.github/workflows/media-guard.yml):
+- Audio, image and zip files may only live in the paths allowed by the `media-guard` job in [`ci`](.github/workflows/ci.yml):
   `packs/`, `brand/`, `spec/fixtures/`, Android `res/` and `assets/`, `web/static/`, `web/src/lib/assets/`, `docs/images/`
   and the packer's test resources. CI fails otherwise.
 - Demo packs in `packs/` must be **CC0-1.0**, and you must be able to show where every file came from (record the source
@@ -80,6 +80,9 @@ System Framework scope and reboot. Work that can only be verified on a device is
 4. **Open a pull request** with `Closes #N`, fill in the template, and keep it focused. Run the relevant builds and tests
    before pushing.
 5. **Squash-merge.** The PR title becomes the commit title on `main`, so it must be a Conventional Commit too.
+   `main` is protected by a ruleset: changes land through pull requests only, and the single required status check is
+   `ci-ok` (the last job of `.github/workflows/ci.yml`, green when every needed job passed or was skipped). Enable
+   auto-merge (`gh pr merge --auto --squash`) and GitHub merges once `ci-ok` is green.
 
 Labels: `area:*` (which part), `type:*` (bug, feature, spike, chore, docs), `question`, `blocked`, `needs-device`,
 `good first issue` and `help wanted`.
