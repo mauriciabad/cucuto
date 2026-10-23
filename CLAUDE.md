@@ -70,7 +70,12 @@ pack file extension `.soundpack` · backup `.cucuto-backup` · license GPL-3.0-o
   `./gradlew spotlessApply` fixes formatting · versions live in `android/gradle/libs.versions.toml`, module setup in
   `android/build-logic/` (ADR 0001). `compileSdk` is 37.2: `VibrationEffect.Builder` and friends are missing from
   37.0. AGP 9 has built-in Kotlin: never apply `org.jetbrains.kotlin.android` (or kapt; use KSP).
-- Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build`
+- Web: `cd web && pnpm install && pnpm build` · Packer: `cd tools/packer && ./gradlew build installDist` (tests run
+  every golden fixture in `spec/fixtures`; CLI at `tools/packer/cli/build/install/packer/bin/packer`, usage in
+  `tools/packer/README.md`). Pack format rules: `docs/pack-format.md`; error codes: `spec/error-codes.json`.
+- Kotlin scripts (`*.main.kts`) need the `kotlin` CLI (Homebrew `kotlin`, 2.4.21). Media tools: `ffmpeg` (libopus),
+  `cjxl`/`djxl` (`jpeg-xl`), `cwebp` (`webp`), `rsvg-convert` (`librsvg`). Regenerate fixtures with
+  `kotlin spec/fixtures/generate.main.kts` and demo pack sounds with `kotlin packs/generate.main.kts`.
 - Device: owner's rooted Android 17 phone over adb (when connected). Device-only work is labeled `needs-device`.
   Installing and launching `app.mauri.cucuto` is fine (the module is inert until enabled); never enable it in
   LSPosed, change scopes or reboot without an explicit go-ahead.
