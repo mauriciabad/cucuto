@@ -1,0 +1,228 @@
+/* Base styles and shared building blocks. Colors and type come from the brand tokens (colors.css, typography.css). */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: none;
+	text-size-adjust: none;
+	scroll-padding-top: 5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html {
+		scroll-behavior: smooth;
+	}
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	background: var(--md-sys-color-surface);
+	color: var(--md-sys-color-on-surface);
+	font: 400 1rem/1.5rem var(--cucuto-font);
+	letter-spacing: 0.009em;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+figure {
+	margin: 0;
+}
+
+h1,
+h2,
+h3 {
+	text-wrap: balance;
+}
+
+p {
+	text-wrap: pretty;
+}
+
+img,
+svg {
+	display: block;
+	max-width: 100%;
+}
+
+a {
+	color: var(--md-sys-color-primary);
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.18em;
+}
+
+a:hover {
+	text-decoration-thickness: 0.14em;
+}
+
+:focus-visible {
+	outline: 3px solid var(--md-sys-color-primary);
+	outline-offset: 3px;
+	border-radius: 0.5rem;
+}
+
+::selection {
+	background: var(--md-sys-color-tertiary-container);
+	color: var(--md-sys-color-on-tertiary-container);
+}
+
+code,
+kbd {
+	font-size: 0.9em;
+	padding: 0.1em 0.35em;
+	border-radius: 0.4em;
+	background: var(--md-sys-color-surface-container-high);
+	color: var(--md-sys-color-on-surface);
+}
+
+/* Layout */
+
+.container {
+	width: min(100% - 2rem, 72rem);
+	margin-inline: auto;
+}
+
+.prose {
+	width: min(100% - 2rem, 44rem);
+	margin-inline: auto;
+}
+
+.prose > * + * {
+	margin-top: 1rem;
+}
+
+.prose > h2 {
+	margin-top: 2.5rem;
+}
+
+.prose > ul,
+.prose > ol {
+	padding-left: 1.5rem;
+}
+
+.prose > :is(ul, ol) > li + li {
+	margin-top: 0.5rem;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+.on-surface-variant {
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Page header used by every page except home */
+
+.page-header {
+	padding-block: 3rem 2rem;
+}
+
+.page-header p {
+	margin-top: 0.75rem;
+	color: var(--md-sys-color-on-surface-variant);
+	max-width: 40rem;
+}
+
+/* Buttons: M3 Expressive, round at rest, squarer and smaller when pressed (fast spatial spring). */
+
+.button {
+	--button-bg: var(--md-sys-color-primary);
+	--button-fg: var(--md-sys-color-on-primary);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-height: 3.5rem;
+	padding: 0 1.75rem;
+	border: 0;
+	border-radius: 1.75rem;
+	background: var(--button-bg);
+	color: var(--button-fg);
+	font: 600 1rem/1.5rem var(--cucuto-font);
+	font-variation-settings: 'ROND' var(--cucuto-rond-label);
+	letter-spacing: 0.009em;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		border-radius var(--cucuto-spring-fast-spatial-duration) var(--cucuto-spring-fast-spatial),
+		scale var(--cucuto-spring-fast-spatial-duration) var(--cucuto-spring-fast-spatial),
+		background-color var(--cucuto-spring-fast-effects-duration) var(--cucuto-spring-fast-effects);
+}
+
+.button:hover {
+	background: color-mix(in srgb, var(--button-bg) 92%, var(--button-fg));
+	text-decoration: none;
+}
+
+.button:active {
+	border-radius: 0.75rem;
+	scale: 0.96;
+}
+
+.button.tonal {
+	--button-bg: var(--md-sys-color-secondary-container);
+	--button-fg: var(--md-sys-color-on-secondary-container);
+}
+
+.button.outlined {
+	--button-bg: transparent;
+	--button-fg: var(--md-sys-color-primary);
+	box-shadow: inset 0 0 0 1px var(--md-sys-color-outline);
+}
+
+.button.outlined:hover {
+	background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+}
+
+.button.small {
+	min-height: 2.5rem;
+	padding: 0 1rem;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+}
+
+.button svg {
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: currentColor;
+	flex: none;
+}
+
+/* Cards */
+
+.card {
+	border-radius: 1.75rem;
+	padding: 1.5rem;
+	background: var(--md-sys-color-surface-container-low);
+	color: var(--md-sys-color-on-surface);
+}
+
+/* Material Symbols (inline SVG) */
+
+.icon {
+	width: 1.5rem;
+	height: 1.5rem;
+	fill: currentColor;
+	flex: none;
+}
