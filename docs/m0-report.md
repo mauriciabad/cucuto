@@ -422,3 +422,33 @@ Then three checks that only a real WhatsApp message can answer (a 1:1, a group, 
 exact steps in the issue.
 
 **Leave the module uninstalled at the end** unless the session is going straight on into M1.
+
+## Supervised device run (2026-10-23, owner present)
+
+Pixel 10 Pro, `CP3A.261005.005`, LSPosed 2.2.1 (libxposed API 102). Identifiers below are the spike's salted digests;
+only the JID domain is real.
+
+| Check | Result |
+| --- | --- |
+| Module loads in `system_server` | **Yes, with scope `system`.** Scope `android` does not load into `system_server` (ADR 0002). |
+| Hooks installed | `buzzBeepBlinkLocked(NotificationRecord, Signals)`, `playSound(NotificationRecord, Uri)`, `playVibration(NotificationRecord, VibrationEffect, boolean)` |
+| Sound swap | **Works.** `playSound` arg swapped to `content://app.mauri.cucuto.spike.clips/clip/spike_chirp.wav`; SystemUI `RingtonePlayer` played it. |
+| Who opens the clip URI | **`com.android.systemui`** (uid 10253 on this device; allowlist by package, not uid). |
+| Vibration swap | **Works.** `VibrationEffect.Builder(PRESET_CLICK, PRESET_TICK)` played with usage NOTIFICATION (~85 ms) instead of the original 650 ms waveform (`dumpsys vibrator_manager`). |
+| `VibrationEffect.Builder` on this build | Present (compileSdk 37.2). |
+| Which record alerts | **The group summary.** WhatsApp puts every chat (1:1 and groups) in one notification group with `groupAlertBehavior=SUMMARY`; children post with `onlyAlertOnce=true` and never reach `playSound`. |
+| Contact key | **The summary's shortcut ID is the conversation that just alerted**: `…@lid` for 1:1 chats, `…@g.us` for groups. Same value on the child. Phone-number JIDs (`@s.whatsapp.net`) did not appear. |
+| 1:1 vs group | Channel: `individual_chat_defaults_5` vs `group_chat_defaults_6` (suffix numbers can change; match the prefix). The JID domain also tells them apart. |
+| Bursts / throttling | Follow-up messages re-post the summary on `silent_notifications_7` (importance 2, no sound), so they never reach our hook: WhatsApp's own throttling is preserved. |
+| DND priority, ringer silent | No `PLAY_SOUND` for the test notifications: muted upstream of the hook. |
+| WhatsApp + WaEnhancer | Running normally across both reboots; no crash-buffer entries. |
+| Muted chat | Not observed yet (pending a message in a muted chat; expected to post on the silent channel). |
+| Sender `Person` / MessagingStyle | Read as absent on every WhatsApp record. The spike's `RecordReader` logged `Bundle` type warnings, so this is likely a reader bug; production must read `EXTRA_MESSAGING_STYLE_USER`, `EXTRA_MESSAGES` and `EXTRA_TITLE`/`EXTRA_CONVERSATION_TITLE` defensively. Only needed for per-sender group policy and display names. |
+
+**Verdict: GO.** Recommendations for M1:
+
+- Hook `playSound` and `playVibration` (replace argument 1); keep `buzzBeepBlinkLocked` read-only or drop it.
+- Route on `package + shortcutId` from the alerting record; fall back to the conversation title if the shortcut ID is missing.
+- Contacts are keyed by `@lid` for 1:1 chats. Matching to Android contacts by phone number needs the root WhatsApp DB import (M2) or a manual pick.
+- Hook events log through libxposed's log (LSPosed modules log), not logcat; the decision log must go to the app via the provider/broadcast path (#17).
+- Provider allowlist: `com.android.systemui` plus `android` (uid 1000).
