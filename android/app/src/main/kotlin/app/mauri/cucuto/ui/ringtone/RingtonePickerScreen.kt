@@ -85,6 +85,7 @@ import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import kotlinx.coroutines.delay
+import java.io.File
 
 /** What the ringtone picker can ask for; [RingtonePickerScreen] wires it to its view model. */
 data class RingtonePickerActions(
@@ -603,7 +604,7 @@ private fun RingtonePickerPreview() {
     }
 }
 
-/** Made-up characters and chat for previews and tests (no files: previews cannot play). */
+/** Made-up characters and chat for previews and tests (the files do not exist: a preview just fails quietly). */
 internal fun previewRingtonePickerState(): RingtonePickerState {
     fun character(
         packId: String,
@@ -615,17 +616,20 @@ internal fun previewRingtonePickerState(): RingtonePickerState {
         RingtoneCharacterItem(
             character("app.mauri.demo.critters", "frog", "Bleep the frog", 0xFF4CAF50),
             listOf(
-                RingtoneVariantItem(RingtoneVariant("frog/ringtones/day.ogg", "Pond song (day)", listOf("day")), null),
+                RingtoneVariantItem(
+                    RingtoneVariant("frog/ringtones/day.ogg", "Pond song (day)", listOf("day")),
+                    File("day.ogg"),
+                ),
                 RingtoneVariantItem(
                     RingtoneVariant("frog/ringtones/night.ogg", "Pond song (night)", listOf("night")),
-                    null,
+                    File("night.ogg"),
                 ),
             ),
         )
     val kettle =
         RingtoneCharacterItem(
             character("app.mauri.demo.kitchen", "kettle", "Tootle the kettle", 0xFFE57373),
-            listOf(RingtoneVariantItem(RingtoneVariant("kettle/ringtones/reel.ogg", "Kettle reel"), null)),
+            listOf(RingtoneVariantItem(RingtoneVariant("kettle/ringtones/reel.ogg", "Kettle reel"), File("reel.ogg"))),
         )
     val key = ChatKey("com.whatsapp", "100000000000003@lid")
     return RingtonePickerState(

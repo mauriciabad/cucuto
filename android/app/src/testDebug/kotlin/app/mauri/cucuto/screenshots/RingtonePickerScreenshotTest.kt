@@ -13,8 +13,9 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The ringtone picker (#53) for Iris, whose voice is Bleep the frog: the frog's pond song rings by day and night, and
- * the kettle's reel is there to mix in. Sprites and ringtone files come from the demo packs.
+ * The ringtone picker (#53) for Iris, whose voice is Bleep the frog (its pond song rings by day and night): the
+ * kettle's reel was just tapped to mix in, so its record is out and "Ring with" saves it. Sprites and ringtone files
+ * come from the demo packs.
  */
 class RingtonePickerScreenshotTest(
     variant: Variant,
@@ -55,6 +56,7 @@ class RingtonePickerScreenshotTest(
                                 RingtonePackItem(kitchen.packId, kitchen.name, listOf(kettle)),
                             ),
                         saved = RingtoneSelection(frog.voice, followsVoice = true, mode = RingtoneMode.TIME),
+                        edited = RingtoneSelection(kettle.voice, followsVoice = false),
                     ),
                 beat = null,
                 actions = RingtonePickerActions(),

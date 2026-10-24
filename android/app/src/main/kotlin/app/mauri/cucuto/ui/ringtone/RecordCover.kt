@@ -70,6 +70,8 @@ fun RecordCover(
         }
     }
     val recordSize = size * RECORD_SCALE
+    // In its sleeve the cover sits in the middle; as the record comes out, the sleeve moves left to make room.
+    val sleeveX = size * ((WIDTH_SCALE - 1f) / 2f) * (1f - pull)
     Box(modifier.size(width = size * WIDTH_SCALE, height = size).clearAndSetSemantics {}) {
         Record(
             character = character,
@@ -77,7 +79,7 @@ fun RecordCover(
             modifier =
                 Modifier
                     .align(Alignment.CenterStart)
-                    .offset(x = (size - recordSize) / 2 + (size * PULL_SCALE) * pull)
+                    .offset(x = sleeveX + (size - recordSize) / 2 + (size * PULL_SCALE) * pull)
                     .size(recordSize)
                     .graphicsLayer { rotationZ = angle.value },
         )
@@ -85,7 +87,7 @@ fun RecordCover(
             shape = RoundedCornerShape(size * CORNER_SCALE),
             color = sleeveColor,
             shadowElevation = 2.dp,
-            modifier = Modifier.align(Alignment.CenterStart).size(size),
+            modifier = Modifier.align(Alignment.CenterStart).offset(x = sleeveX).size(size),
         ) {
             CharacterSprite(
                 character = character,
