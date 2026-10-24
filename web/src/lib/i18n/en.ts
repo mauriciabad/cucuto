@@ -57,7 +57,7 @@ export const en = {
 		footerLicenseHtml:
 			'<strong>Cucuto</strong> is free software under the <a href="{license}" rel="external">GPL-3.0-or-later</a> license.',
 		footerContent:
-			'No third-party content ships with the app; you are responsible for the packs you import. Not affiliated with WhatsApp or Meta.',
+			'No third-party content ships with the app; you are responsible for the packs you import. Not affiliated with WhatsApp, Meta or Signal.',
 		footerLinks: { source: 'Source on GitHub', install: 'Install guide', privacy: 'Privacy' }
 	},
 	download: {

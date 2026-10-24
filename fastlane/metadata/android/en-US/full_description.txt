@@ -18,7 +18,7 @@ Without root and LSPosed it can’t change notification sounds. Cucuto is an ear
 • Ringtone rules in plain words: a song can ring live by day and as a radio cut at night. Read the pack’s rules, or write your own for one contact.
 • Clips with good timing: a greeting for the first message of the day, a reply to a burst of messages, rare easter eggs, night and holiday clips. No sensors, no tracking, no battery cost.
 • Big packs fold into sections, search finds a character by name, and Surprise me picks one at random.
-• Add people from your contacts before they write: their voice plays from their second message.
+• Add people from your contacts before they write: their voice plays from their first message on Signal, their second on WhatsApp.
 
 <b>Built to stay out of the way</b>
 • One sound, no duplicates: no second notification and no permanent icon in the status bar.

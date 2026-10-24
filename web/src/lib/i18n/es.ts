@@ -28,7 +28,7 @@ export const es: Messages = {
 		footerLicenseHtml:
 			'<strong>Cucuto</strong> es software libre con licencia <a href="{license}" rel="external">GPL-3.0-or-later</a>.',
 		footerContent:
-			'La app no incluye contenido de terceros; tú eres responsable de los packs que importas. Sin relación con WhatsApp ni Meta.',
+			'La app no incluye contenido de terceros; tú eres responsable de los packs que importas. Sin relación con WhatsApp, Meta ni Signal.',
 		footerLinks: {
 			source: 'Código en GitHub',
 			install: 'Guía de instalación',

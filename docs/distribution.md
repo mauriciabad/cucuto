@@ -45,9 +45,9 @@ fastlane/metadata/android/
   copy in both languages. Format: plain text, a blank line between paragraphs, `<b>` for headings, "• " bullets and
   bare URLs. Play renders only bold, italics and line breaks, and F-Droid turns line breaks into `<br>`. `<p>`,
   `<ul>` and `<a>` would show as raw tags on Play.
-- **WhatsApp** (ADR 0046): never in the title, the icon or the feature graphic, and not in the first words of the short
-  description. The full description ends with "Not affiliated with WhatsApp or Meta." ("Sin relación con WhatsApp
-  ni Meta.").
+- **WhatsApp and Signal** (ADR 0046, ADR 0081): never in the title, the icon or the feature graphic, and not in the
+  first words of the short description. The full description ends with "Not affiliated with WhatsApp, Meta or
+  Signal." ("Sin relación con WhatsApp, Meta ni Signal.").
 - **Screenshots** come from the Roborazzi screenshot tests (ADR 0032), light theme, with the CC0 demo packs and
   made-up chats only. The screen keeps its 822 × 1782 px and is centered on a 1080 × 1920 canvas in the brand's
   primary-90 tone (`StoreFrame`), because Play refuses screenshots taller than 2:1 and any alpha. Regenerate both
