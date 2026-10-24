@@ -15,6 +15,19 @@ public object RoutingContract {
     /** Long preference with the table's [RoutingTable.generation], for cheap staleness checks and diagnostics. */
     public const val KEY_GENERATION: String = "generation"
 
+    /**
+     * libxposed remote file with the same encoded table, framed by [RoutingFile]. The module re-reads it when the
+     * app sends [ACTION_TABLE_PUBLISHED]: after an app update LSPosed stops delivering preference changes to the
+     * running module until the next reboot, but remote files stay readable (ADR 0024).
+     */
+    public const val REMOTE_FILE: String = "routing.table"
+
+    /** Broadcast the app sends to `system_server` after every publication, so the module re-reads [REMOTE_FILE]. */
+    public const val ACTION_TABLE_PUBLISHED: String = "app.mauri.cucuto.action.ROUTING_TABLE_PUBLISHED"
+
+    /** Package of the receivers registered by `system_server` with its system context: the nudge targets it only. */
+    public const val SYSTEM_PACKAGE: String = "android"
+
     /** Authority of the app's read-only clip provider (`<applicationId>.clips`). */
     public const val CLIP_AUTHORITY: String = "app.mauri.cucuto.clips"
 
@@ -26,7 +39,7 @@ public object RoutingContract {
     public const val MAX_ENCODED_CHARS: Int = 256 * 1024
 
     /**
-     * The clip URI the module hands to the notification sound player:
+     * The clip provider's URI for a clip, used when the clip is not mirrored (ADR 0018):
      * `content://app.mauri.cucuto.clips/<packId>/<characterId>/<file>`, where `file` is the clip's path from
      * `pack.json`. Pack IDs, character IDs and pack paths only use URI-safe characters (pack format "IDs" and
      * `common.schema.json#/$defs/path`), so nothing needs escaping.

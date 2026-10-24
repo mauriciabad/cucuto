@@ -9,6 +9,7 @@ import app.mauri.cucuto.core.routing.Haptic
  *
  * - [Haptic.Keep]: leave the notification's vibration as it is.
  * - [Haptic.Off]: play no vibration.
- * - [Haptic.Custom]: play [HapticEffects.create]'s effect, or keep the original when it returns null.
+ * - [Haptic.Custom]: play [HapticEffects.create]'s effect (module) or [PublicHapticEffects.create]'s (app), or keep
+ *   the original when it returns null.
  */
 fun Haptic.forClip(clipHaptic: Haptic.Custom?): Haptic = if (this == Haptic.Auto) clipHaptic ?: Haptic.Keep else this

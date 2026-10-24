@@ -38,5 +38,19 @@ object Limits {
     const val DURATION_TOLERANCE_MS = 50L
     const val MIN_LOOP_MS = 1_000L
 
+    /**
+     * A rendered ring file ([RingFiles]) lasts at least this long: the loop section repeats until the file reaches it,
+     * and a ringtone that plays once is padded with silence to it. Telecom loops the whole file and calls ring for about
+     * 20 to 60 s before voicemail, so the intro is heard once. The longest ring file is under this plus one loop.
+     */
+    const val RING_FILE_MIN_MS = 90_000L
+
+    /** Default length of a notification clip cut from a ringtone ([ClipCuts]); the brief asks for 2 to 3 s. */
+    const val CUT_CLIP_DEFAULT_MS = 2_500L
+
+    /** Fades a renderer applies to a cut clip so it does not click. */
+    const val CUT_FADE_IN_MS = 10L
+    const val CUT_FADE_OUT_MS = 200L
+
     const val HAPTIC_MAX_MS = 5_000L
 }
