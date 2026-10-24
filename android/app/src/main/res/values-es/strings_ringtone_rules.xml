@@ -8,7 +8,7 @@
     <string name="ringtone_rules_day_note">El día va del amanecer al atardecer en tu lugar de día y noche (de 7:00 a 19:00 hasta que elijas uno).</string>
     <string name="ringtone_rules_contact_section">Para %1$s</string>
     <string name="ringtone_rules_one_version">Este tono tiene una sola versión, así que siempre suena esa.</string>
-    <string name="ringtone_rules_other_character">%1$s aún no suena para %2$s. Guárdalo primero en el selector de tonos y luego cambia aquí sus reglas.</string>
+    <string name="ringtone_rules_other_character">%1$s aún no suena para %2$s. Elige sus reglas y guarda: desde entonces, %1$s sonará cuando %2$s te llame.</string>
     <string name="ringtone_rules_view_only">Para cambiarlas para un contacto, abre el selector de tonos desde su chat.</string>
     <string name="ringtone_rules_missing">Este personaje ya no está instalado.</string>
     <string name="ringtone_rule_custom">Tus propias reglas</string>

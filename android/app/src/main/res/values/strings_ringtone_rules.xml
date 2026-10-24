@@ -8,7 +8,7 @@
     <string name="ringtone_rules_day_note">Day runs from sunrise to sunset at your day and night place (7:00 to 19:00 until you choose one).</string>
     <string name="ringtone_rules_contact_section">For %1$s</string>
     <string name="ringtone_rules_one_version">This ringtone has one version, so it always rings.</string>
-    <string name="ringtone_rules_other_character">%1$s doesn\'t ring for %2$s yet. Save it in the ringtone picker first, then change its rules here.</string>
+    <string name="ringtone_rules_other_character">%1$s doesn\'t ring for %2$s yet. Choose its rules and save: from then on, %1$s rings when %2$s calls you.</string>
     <string name="ringtone_rules_view_only">To change them for one contact, open the ringtone picker from the contact\'s chat.</string>
     <string name="ringtone_rules_missing">This character is no longer installed.</string>
     <string name="ringtone_rule_custom">Your own rules</string>

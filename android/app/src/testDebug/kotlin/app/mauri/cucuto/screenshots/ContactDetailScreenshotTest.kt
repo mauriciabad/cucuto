@@ -68,6 +68,10 @@ class ContactDetailScreenshotTest(
                                 hasCharacter = true,
                                 variants = listOf(VariantChip("day.ogg", "Day"), VariantChip("night.ogg", "Night")),
                                 using = true,
+                                // Linked: the contact and the WhatsApp hint sit under the row (#348).
+                                linked = true,
+                                linkedName = chat.displayName,
+                                exportTitle = "${frog.name} · Day",
                                 mode = RingtoneMode.TIME,
                                 modes =
                                     listOf(

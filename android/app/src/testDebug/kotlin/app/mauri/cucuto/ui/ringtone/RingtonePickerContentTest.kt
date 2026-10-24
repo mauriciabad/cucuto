@@ -32,8 +32,7 @@ class RingtonePickerContentTest {
         RingtonePickerActions(
             onSelect = { events += "select:${it.voice.characterId}" },
             onTogglePreview = { item, file -> events += "play:${item.voice.characterId}:$file" },
-            onMode = { events += "mode:$it" },
-            onVariant = { events += "variant:$it" },
+            onOpenRules = { events += "rules:${it.voice.characterId}" },
             onSave = { events += "save" },
             onOpenPacks = { events += "packs" },
             onOpenDiscover = { events += "discover" },
@@ -116,11 +115,13 @@ class RingtonePickerContentTest {
         compose.onNodeWithText("Same as the messages").assertIsDisplayed()
         compose.onNodeWithText("Pond song (night)").assertIsDisplayed()
         compose.onNodeWithContentDescription("Play Pond song (night)").performClick()
-        compose.onNodeWithText("By season").assertDoesNotExist()
-        compose.onNodeWithText("Random per call").performClick()
+        // The rule in a few words, one tap from the rules screen: no chips (#347).
+        compose.onNodeWithText("Random per call").assertDoesNotExist()
+        compose.onNodeWithText("Which version rings").assertIsDisplayed()
+        compose.onNodeWithText("Day and night").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         // Nothing changed yet: the stored choice is already the one.
         compose.onNodeWithText("Already chosen").assertIsNotEnabled()
-        assertEquals(listOf("play:frog:frog/ringtones/night.ogg", "mode:RANDOM"), events)
+        assertEquals(listOf("play:frog:frog/ringtones/night.ogg", "rules:frog"), events)
     }
 
     @Test
@@ -158,12 +159,19 @@ class RingtonePickerContentTest {
     }
 
     @Test
-    fun theFixedRulePicksAVersionWithItsRadioButton() {
+    fun oneVersionIsSummedUpByName() {
         val start = state()
         val frog = start.packs[0].characters.single()
         show(start.copy(edited = RingtoneSelection(frog.voice, true, RingtoneMode.FIXED, "frog/ringtones/day.ogg")))
-        compose.onNodeWithText("Pond song (night)").performClick()
-        assertEquals(listOf("variant:frog/ringtones/night.ogg"), events)
+        compose.onNodeWithText("One version: Pond song (day)").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aSingleVersionHasNoRuleRow() {
+        val start = state()
+        val kettle = start.packs[1].characters.single()
+        show(start.copy(edited = RingtoneSelection(kettle.voice, followsVoice = false)))
+        compose.onNodeWithText("Which version rings").assertDoesNotExist()
     }
 
     @Test
