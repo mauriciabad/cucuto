@@ -18,10 +18,7 @@ name: release
 # never on a command line). The repository variable RELEASE_CERT_SHA256, when set, pins the signing certificate so a
 # replaced key fails the release instead of shipping an APK that cannot update existing installs.
 #
-# Google Play (ADR 0071, owner update #287): the same build also makes the app bundle, signed with the same release
-# key, and attaches cucuto-<version>.aab and its checksum. For Play that key is the upload key, and Play App Signing
-# re-signs what it serves with the same release key, which the owner gave Play with PEPK. Nothing here uploads to
-# Play: the owner does (docs/releasing.md).
+# No Google Play bundle: Cucuto isn't on Play (ADR 0080).
 #
 # Actions are pinned to full commit SHAs (this workflow handles the signing key); Dependabot keeps the pins and their
 # version comments current. To retry a failed run (for example after adding the secrets), re-run it from the
@@ -131,11 +128,9 @@ jobs:
           save-if: false
 
       # Tests, lint and ktlint already ran in ci.yml on the way to main; this builds the release variant only
-      # (R8, resource shrinking, lintVital): the APK and Google Play's app bundle (ADR 0071), from the same R8 output
-      # and version, both signed with the release key (ci.yml builds both in one run too). The keystore lives in
-      # RUNNER_TEMP for this step only. No configuration cache, so the passwords are never serialized into a cache
-      # entry.
-      - name: Build the signed release APK and Play bundle
+      # (R8, resource shrinking, lintVital), signed with the release key. The keystore lives in RUNNER_TEMP for this
+      # step only. No configuration cache, so the passwords are never serialized into a cache entry.
+      - name: Build the signed release APK
         working-directory: android
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
@@ -146,7 +141,7 @@ jobs:
           export CUCUTO_RELEASE_KEYSTORE="$RUNNER_TEMP/cucuto-release.jks"
           trap 'rm -f "$CUCUTO_RELEASE_KEYSTORE"' EXIT
           printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$CUCUTO_RELEASE_KEYSTORE"
-          ./gradlew :app:assembleRelease :app:bundleRelease -Pcucuto.version="$VERSION" --no-configuration-cache --stacktrace
+          ./gradlew :app:assembleRelease -Pcucuto.version="$VERSION" --no-configuration-cache --stacktrace
           ./gradlew --stop
 
       - name: Verify the signature and the version
@@ -192,69 +187,6 @@ jobs:
           (cd dist && sha256sum "cucuto-$VERSION.apk" | tee "cucuto-$VERSION.apk.sha256")
           echo "CERT_SHA256=$cert" >> "$GITHUB_ENV"
 
-      # Google Play's app bundle (ADR 0071, owner updates #287). The release key is Play's upload key and, given to
-      # Play with PEPK, its app signing key too, so Play installs and these APKs share one certificate. bundletool
-      # reads the bundle's manifest and settings; pinned by version and checksum like the actions above.
-      - name: Verify the Play bundle
-        env:
-          BUNDLETOOL_VERSION: "1.18.3"
-          BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
-        run: |
-          aab=android/app/build/outputs/bundle/release/app-release.aab
-          if [ ! -f "$aab" ]; then
-            echo "::error title=No Play bundle::$aab is missing."
-            exit 1
-          fi
-          bundletool="$RUNNER_TEMP/bundletool.jar"
-          curl -fsSL -o "$bundletool" \
-            "https://github.com/google/bundletool/releases/download/$BUNDLETOOL_VERSION/bundletool-all-$BUNDLETOOL_VERSION.jar"
-          echo "$BUNDLETOOL_SHA256  $bundletool" | sha256sum -c -
-
-          # Signed (a bundle carries a JAR signature), by exactly one key: the release key that signed the APK, so the
-          # upload key Play registered on the first upload never changes. Output captured first: under pipefail,
-          # grep -q closing the pipe early would fail the pipeline.
-          verified=$(jarsigner -verify "$aab")
-          if [[ "$verified" != *"jar verified."* ]]; then
-            echo "::error title=Unsigned bundle::$aab has no valid signature."
-            exit 1
-          fi
-          keytool -printcert -jarfile "$aab" > "$RUNNER_TEMP/upload-certs.txt"
-          if [ "$(grep -c '^Signer #' "$RUNNER_TEMP/upload-certs.txt")" != 1 ]; then
-            echo "::error title=Unexpected signers::The bundle must have exactly one signer."
-            exit 1
-          fi
-          if grep -q '^Owner: .*CN=Android Debug' "$RUNNER_TEMP/upload-certs.txt"; then
-            echo "::error title=Debug-signed bundle::The bundle is signed with a debug key."
-            exit 1
-          fi
-          upload=$(grep -m1 'SHA256:' "$RUNNER_TEMP/upload-certs.txt" | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
-          if [ "$upload" != "$CERT_SHA256" ]; then
-            echo "::error title=Bundle signed by another key::The bundle is signed by $upload, but the APK by $CERT_SHA256. Both must use the release key, which is also Play's upload key (ADR 0071)."
-            exit 1
-          fi
-
-          # The same version as the APK, 16 KB-aligned native libraries for Play's split APKs, and the module.
-          manifest() { java -jar "$bundletool" dump manifest --bundle="$aab" --xpath="/manifest/@$1"; }
-          package=$(manifest package)
-          code=$(manifest android:versionCode)
-          name=$(manifest android:versionName)
-          if [ "$package $code $name" != "app.mauri.cucuto $VERSION_CODE $VERSION" ]; then
-            echo "::error title=Wrong bundle version::Expected app.mauri.cucuto $VERSION_CODE $VERSION, got $package $code $name."
-            exit 1
-          fi
-          config=$(java -jar "$bundletool" dump config --bundle="$aab")
-          if [[ "$config" != *PAGE_ALIGNMENT_16K* ]]; then
-            echo "::error title=16 KB alignment::The bundle doesn't ask for 16 KB-aligned native libraries (PAGE_ALIGNMENT_16K)."
-            exit 1
-          fi
-          if ! unzip -l "$aab" base/root/META-INF/xposed/java_init.list > /dev/null; then
-            echo "::error title=Module metadata missing::The bundle has no META-INF/xposed files; LSPosed wouldn't load a Play install."
-            exit 1
-          fi
-
-          cp "$aab" "dist/cucuto-$VERSION.aab"
-          (cd dist && sha256sum "cucuto-$VERSION.aab" | tee "cucuto-$VERSION.aab.sha256")
-
       # Release notes from the Conventional Commits since the previous tag, grouped for users (ADR 0046). The same
       # run writes the store changelog for this versionCode (fastlane/metadata/android/en-US/changelogs/) and the
       # CHANGELOG.md section. Normally the release PR already committed both (docs/releasing.md) and they are kept as
@@ -299,8 +231,6 @@ jobs:
             echo '| --- | --- |'
             echo "| \`$(basename "$apk")\` | $(numfmt --to=si --suffix=B "$(stat -c %s "$apk")") |"
             echo "| \`$(basename "$apk").sha256\` | SHA-256 checksum |"
-            echo "| \`cucuto-$VERSION.aab\` | Google Play bundle; not for installing |"
-            echo "| \`cucuto-$VERSION.aab.sha256\` | SHA-256 checksum |"
             echo
             echo 'Needs Android 17, root and LSPosed. Install guide: <https://cucuto.mauri.app/install/>.'
             echo 'After installing or updating, reboot: the module inside the system loads the new version at boot.'
@@ -313,7 +243,7 @@ jobs:
             echo
             cat dist/changes.md
           } > dist/notes.md
-          assets=("$apk" "$apk.sha256" "dist/cucuto-$VERSION.aab" "dist/cucuto-$VERSION.aab.sha256")
+          assets=("$apk" "$apk.sha256")
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" "${assets[@]}" --clobber
           else
@@ -328,7 +258,6 @@ jobs:
             echo "- APK: \`$(basename "$apk")\`, versionCode $VERSION_CODE"
             echo "- SHA-256: \`$sha\`"
             echo "- Signing certificate SHA-256: \`$CERT_SHA256\`"
-            echo "- Play bundle: \`cucuto-$VERSION.aab\`, signed with the same key (Play's upload key). Upload it to Play Console (docs/releasing.md)."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Releases created with GITHUB_TOKEN don't trigger other workflows (site-rebuild.yml), so start the website
