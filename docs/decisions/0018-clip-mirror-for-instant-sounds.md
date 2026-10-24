@@ -1,6 +1,6 @@
 # 0018. Clip mirror: SystemUI plays clips without starting Cucuto
 
-- Status: accepted; the owner kept the shared-storage default on #150 (hook alternative re-checked in #216)
+- Status: accepted; the owner kept the shared-storage default on #150 (hook alternative re-checked in #216, [ADR 0062](0062-hook-vs-clip-mirror.md))
 - Date: 2026-10-24
 - Issues: #121 (follow-up to #88)
 
@@ -120,3 +120,15 @@ the delay is not in WhatsApp: SystemUI opens the clip, and the wait was Cucuto's
 could help sit in SystemUI or another provider (options 3 and 4 above), which ADR 0051 does not open up, and the
 mirror already matches the stock tone. #216 records this check and would overturn it only if a hook proves clearly
 better.
+
+## Hook alternative re-checked (owner, #150)
+
+Done in #216, written up in [ADR 0062](0062-hook-vs-clip-mirror.md). **The mirror stays.** Android 17's
+`IRingtonePlayer` accepts only a `Uri`, so nothing can hand SystemUI a file descriptor without hooking SystemUI.
+The options compared:
+- a WhatsApp hook can't remove the delay, because the delay isn't in WhatsApp;
+- a world-readable private file is blocked by SELinux;
+- the only option that keeps clips out of shared storage, playing them inside `system_server`, would re-implement
+  SystemUI's notification player there, with no gain in speed or battery.
+
+ADR 0062 lists what would reopen the decision.

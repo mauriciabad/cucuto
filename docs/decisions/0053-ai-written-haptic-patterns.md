@@ -43,5 +43,7 @@ backend and network calls from the app.
   model and what it is given. The loudness rows are the simplified auto envelope (16 points at most, first 2 s), so
   attaching the audio gives better results; the tip says so.
 - The pack creators (app #47, web #48) and a website guide, also listed on #217, can reuse `HapticAiText` and the
-  rules in `docs/pack-format.md#writing-a-custom-haptic-with-an-ai`; they are not part of this change.
+  rules in `docs/pack-format.md#writing-a-custom-haptic-with-an-ai`; they are not part of this change. Since #191
+  the prompt and parser live in `shared/pack-spec` (`HapticPatternText`), shared by the app and the website's creator
+  ([ADR 0058](0058-create-page-tools.md)); `HapticAiText` adapts them to the editor's timeline.
 - How useful real AI answers are can only be judged by trying them (`needs-device` for the feel).

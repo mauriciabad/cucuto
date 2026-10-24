@@ -73,6 +73,8 @@ class LargeFontScreenshotTest(
 
     @Test fun restoreConflicts() = largeFont("restore-conflicts")
 
+    @Test fun ringtonePicker() = largeFont("ringtone-picker")
+
     private fun largeFont(screen: String) =
         screenshot(screen, fontScale = LARGEST_FONT_SCALE) {
             A11yScreens.content(screen)()

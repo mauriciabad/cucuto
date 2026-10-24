@@ -7,7 +7,7 @@ import { preSkipOf, writeOggOpus } from './ogg.js';
 export interface EncodedClip {
 	bytes: Uint8Array;
 	/** File extension, without the dot. */
-	extension: 'ogg' | 'wav';
+	extension: string;
 	/** MIME type, for previews. */
 	type: string;
 }
