@@ -63,6 +63,12 @@ class AuthoringTest {
     }
 
     @Test
+    fun `pack file names come from the name, or the ID when the name has no usable letters`() {
+        assertEquals("garden-birds.soundpack.zip", Authoring.packFileName("Garden birds!", "local.ana.garden-birds-k3x9q2"))
+        assertEquals("pika-k3x9q2.soundpack.zip", Authoring.packFileName("ピカチュウ", "local.me.pika-k3x9q2"))
+    }
+
+    @Test
     fun `a pack that would not update the installed one gets the next patch version`() {
         assertEquals("1.0.0", Authoring.versionAfter("1.0.0", null))
         assertEquals("1.0.1", Authoring.versionAfter("1.0.0", "1.0.0"))

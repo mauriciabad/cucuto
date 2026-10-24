@@ -22,11 +22,13 @@ to JavaScript for the website too):
   the next version when reinstalling, the license presets, and the audio and image targets.
 - `PackAssembler`: turns a `PackDraft` into packer's canonical layout (`characters/<id>/sprite.<ext>`,
   `characters/<id>/clips/<label>.<ext>`, `cover.<ext>`) and the `pack.json` text. Platforms supply the bytes behind
-  opaque keys (file paths in the app, Blobs on the website).
+  opaque keys (file paths in the app, Blobs on the website). `Authoring.packFileName` names the file.
+- `ClipDsp` (added by the website's creator, #48, ADR 0038, from this PR's code): the clip processing on mono 48 kHz
+  floats. The app keeps no copy of it.
 
 Every pack is then checked with the same `PackValidator` as packer, the importer and the website (media included),
-on the exact zip the user gets. #48 should call the assembler through Kotlin/JS: add a small `@JsExport` facade next
-to `PackSpecJs.kt` when the page is built. That export is left to #48 so this PR does not grow the browser API.
+on the exact zip the user gets. The website calls all of this through `AuthoringJs.kt`, so both creators make the same
+packs by construction.
 
 - **Pack IDs:** the suggestion is `local.<author>.<name>-<6 random [a-z0-9]>`, for example `local.ana.garden-birds-k3x9q2`.
   People have no domain to use, `app.mauri.` is reserved, and the random part keeps two "My pack" packs apart. The
@@ -46,13 +48,13 @@ to `PackSpecJs.kt` when the page is built. That export is left to #48 so this PR
 - Recording: `AudioRecord`, mono 48 kHz, at most 30 s, in memory only.
 - Preview: `PcmPlayer` (`AudioTrack`) for the selection. Finished clips play as a notification, with the character's
   vibration (`CreatorPreview`, auto haptics from `:core:haptics`).
-- Processing (`dsp/`, plain Kotlin, tested on the JVM) uses packer's targets:
-  1. Cut to the selection.
-  2. Trim leading and trailing audio below −50 dBFS, keeping 20 ms of silence.
-  3. Resample to 48 kHz with a windowed-sinc filter (Opus only takes 8 to 48 kHz, most files are 44.1 kHz).
-  4. Normalize to −16 LUFS integrated (ITU-R BS.1770 K-weighting with gating), capped by a −1.5 dBTP true peak
+- Processing uses packer's targets. The app cuts the selection at the source's rate and resamples it to 48 kHz
+  (`dsp/Resampler`, windowed sinc; Opus only takes 8 to 48 kHz, most files are 44.1 kHz). Pack-spec's shared
+  `ClipDsp` does the rest, the same code as the website:
+  1. Trim leading and trailing audio below −50 dBFS, keeping 20 ms of silence.
+  2. Normalize to −16 LUFS integrated (ITU-R BS.1770 K-weighting with gating), capped by a −1.5 dBTP true peak
      (4× oversampled) and by +24 dB of gain at most.
-  5. Add 5 ms fades at both ends.
+  3. Add 5 ms fades at both ends.
 - Encoding: `MediaCodec` (`audio/opus`) into `MediaMuxer`'s Ogg output, mono, 96 kb/s (packer's clip bitrate).
 
 No native library is added. Android 17 ships an Opus encoder and an Ogg muxer (API 29+). A libopus or ffmpeg

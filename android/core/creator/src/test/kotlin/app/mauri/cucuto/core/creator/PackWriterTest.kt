@@ -2,6 +2,7 @@ package app.mauri.cucuto.core.creator
 
 import app.mauri.cucuto.packspec.ErrorCode
 import app.mauri.cucuto.packspec.HapticEvent
+import app.mauri.cucuto.packspec.authoring.Authoring
 import app.mauri.cucuto.packspec.authoring.DraftProblem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -88,7 +89,7 @@ class PackWriterTest {
         assertEquals(2.5, m.characters[0].clips[1].weight!!, 0.0)
         assertNull(m.characters[0].haptic)
         assertEquals("custom", m.characters[1].haptic?.mode)
-        assertEquals("kitchen-sounds.soundpack.zip", PackWriter.fileName(m))
+        assertEquals("kitchen-sounds.soundpack.zip", Authoring.packFileName(m.name, m.id))
 
         ZipFile(out).use { zip ->
             val names = zip.entries().toList().map { it.name }

@@ -4,8 +4,8 @@ import android.media.MediaCodec
 import android.media.MediaCodecList
 import android.media.MediaMuxer
 import android.util.Log
-import app.mauri.cucuto.core.audio.dsp.ProcessedClip
 import app.mauri.cucuto.packspec.Limits
+import app.mauri.cucuto.packspec.authoring.ClipDsp
 import app.mauri.cucuto.packspec.media.AudioProbe
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +25,9 @@ data class EncodedClip(
 )
 
 /**
- * Encodes [ProcessedClip]s with the platform's own encoders ([MediaCodec]) and containers ([MediaMuxer]): Ogg Opus,
- * or AAC in MP4 when Opus is not available. No native library ships for this (ADR 0034).
+ * Encodes processed clips ([ClipDsp.Processed], mono 48 kHz) with the platform's own encoders ([MediaCodec]) and
+ * containers ([MediaMuxer]): Ogg Opus, or AAC in MP4 when Opus is not available. No native library ships for this
+ * (ADR 0034).
  *
  * Every file is checked before it is accepted: pack-spec's [AudioProbe], the parser every validator uses, must read
  * it and measure the clip's length within the format's 50 ms tolerance. A file that fails (a device's muxer writing
@@ -41,7 +42,7 @@ class ClipEncoder(
      * @throws IOException when no format could be encoded and verified.
      */
     suspend fun encode(
-        clip: ProcessedClip,
+        clip: ClipDsp.Processed,
         directory: File,
         baseName: String,
     ): EncodedClip =

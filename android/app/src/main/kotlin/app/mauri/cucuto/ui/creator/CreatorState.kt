@@ -4,12 +4,12 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
 import app.mauri.cucuto.core.audio.PcmAudio
 import app.mauri.cucuto.core.creator.CreatorDraft
-import app.mauri.cucuto.core.creator.PackWriter
 import app.mauri.cucuto.core.creator.SpriteCrop
 import app.mauri.cucuto.core.pack.ImportProgress
 import app.mauri.cucuto.packs.ImportProblem
 import app.mauri.cucuto.packs.ProblemItem
 import app.mauri.cucuto.packspec.PackManifest
+import app.mauri.cucuto.packspec.authoring.Authoring
 import app.mauri.cucuto.packspec.authoring.DraftProblem
 import java.io.File
 
@@ -154,7 +154,7 @@ sealed interface FinishUi {
         /** Installed into the library during this visit. */
         val installed: Boolean = false,
     ) : FinishUi {
-        val fileName: String get() = PackWriter.fileName(manifest)
+        val fileName: String get() = Authoring.packFileName(manifest.name, manifest.id)
     }
 }
 

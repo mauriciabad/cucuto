@@ -6,7 +6,6 @@ import app.mauri.cucuto.packspec.PackManifest
 import app.mauri.cucuto.packspec.PackValidator
 import app.mauri.cucuto.packspec.ValidationReport
 import app.mauri.cucuto.packspec.authoring.AssembledPack
-import app.mauri.cucuto.packspec.authoring.Authoring
 import app.mauri.cucuto.packspec.authoring.DraftProblem
 import app.mauri.cucuto.packspec.authoring.PackAssembler
 import app.mauri.cucuto.packspec.authoring.PackDraft
@@ -78,9 +77,5 @@ class PackWriter(
     companion object {
         /** 1980-01-02, inside the zip format's date range: no clock time leaks into the file. */
         private const val FIXED_TIME = 315_619_200_000L
-
-        /** The file name to suggest when exporting: `<pack name slug>.soundpack.zip`. */
-        fun fileName(manifest: PackManifest): String =
-            Authoring.slug(manifest.name).ifEmpty { manifest.id.substringAfterLast('.') } + ".soundpack.zip"
     }
 }
