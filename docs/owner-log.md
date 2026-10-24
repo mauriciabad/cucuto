@@ -410,3 +410,9 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 > we should be towards the end of development, please do a boost to finish important stuff. now i have many agents working, but tomorrow i wont have any, only sporadic ones from time to time to do small features. if this is not feasable to finish let me know
 
 (The lead started the roadmap items that can finish without the owner in parallel: the sound flow rethink #298, pack rules #288, import speed #279, the review sample chat #285, the remaining Drive backup work #163, a handoff guide for sporadic agents, and fixes for the open PRs. Work that needs the owner's phone, a second phone or the Play account can't finish without them; the lead listed it in the reply.)
+
+## 2026-10-24 — Comment on #284 (haptic previews in Discover: defaults to confirm)
+
+> 6 at least show a visual preview of the haptic (also on the app would be nice)
+
+(Default 6 was "the website keeps sound-only previews". Filed as #301 (M5): draw the vibration on the website and in the app. The agent that builds it updates ADR 0069 and closes #284; defaults 1 to 5 stand.)
