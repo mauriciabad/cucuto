@@ -50,7 +50,7 @@ data class Character(
 )
 
 @Serializable
-data class Clip(val file: String, val label: String? = null, val weight: Double? = null)
+data class Clip(val file: String, val label: String? = null, val weight: Double? = null, val `when`: When? = null)
 
 @Serializable
 data class Ringtone(

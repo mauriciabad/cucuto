@@ -10,6 +10,7 @@ import app.mauri.cucuto.core.data.inMemoryDatabase
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
+import app.mauri.cucuto.core.data.settings.DayNightSettings
 import app.mauri.cucuto.core.data.settings.RoutingSettings
 import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.Haptic
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -34,6 +36,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
+import java.time.LocalDate
+import java.time.ZoneId
 
 /** End to end inside the app: database changes → routing table → encoded write to (fake) Remote Preferences. */
 @RunWith(AndroidJUnit4::class)
@@ -63,18 +67,19 @@ class RoutingPublisherTest {
     private val catalog = FakeCatalog()
 
     private fun TestScope.publisher(scope: CoroutineScope = backgroundScope): Pair<RoutingPublisher, RoutingSettings> {
-        val settings =
-            RoutingSettings(
-                PreferenceDataStoreFactory.create(
-                    scope = scope,
-                ) { folder.newFile("settings.preferences_pb").also { it.delete() } },
-            )
+        val store =
+            PreferenceDataStoreFactory.create(
+                scope = scope,
+            ) { folder.newFile("settings.preferences_pb").also { it.delete() } }
+        val settings = RoutingSettings(store)
         val source =
             RoutingTableSource(
                 db.contactDao(),
                 db.installedPackDao(),
                 settings,
                 RoutingTableBuilder(catalog, mirror),
+                DayNightSettings(store),
+                { flowOf(LocalDay(LocalDate.of(2026, 10, 24), ZoneId.of("Europe/Madrid"))) },
             )
         return RoutingPublisher(source, sink, mirror, clock, scope) to settings
     }

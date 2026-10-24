@@ -4,11 +4,11 @@
 # Format:     tools/packer/README.md (pack.yaml) and docs/pack-format.md (pack.json)
 id: app.mauri.demo.chiptune-critters
 name: Chiptune critters
-version: 1.0.0
+version: 1.1.0
 author: Cucuto contributors
 license: CC0-1.0
 homepage: https://cucuto.mauri.app
-description: Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog also sings a pond song as a ringtone, bright by day and sleepy at night.
+description: Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog hops by day, croaks at night and also sings a pond song as a ringtone, bright by day and sleepy at night.
 cover: cover.svg
 tags: [chiptune, animals, demo]
 characters:
@@ -20,8 +20,11 @@ characters:
     clips:
       - file: frog/clips/ribbit.ogg
         weight: 2
-      - frog/clips/croak.ogg
-      - frog/clips/hop.ogg
+      # Day and night clips (#118): ribbit always plays, croak only at night and hop only by day.
+      - file: frog/clips/croak.ogg
+        when: night
+      - file: frog/clips/hop.ogg
+        when: day
     ringtones:
       - file: frog/ringtones/pond-song-day.ogg
         label: Pond song (day)

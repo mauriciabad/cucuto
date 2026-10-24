@@ -15,6 +15,8 @@ package app.mauri.cucuto.core.routing
  * @property routes One entry per contact key, pointing into [voices].
  * @property selfTestClip Where the Diagnostics test chirp is, when the app mirrors it for SystemUI (ADR 0018);
  *   null keeps the clip provider's `content://app.mauri.cucuto.clips/selftest/chirp.wav`.
+ * @property conditions When conditional clips may play ([Clip.condition]), deduplicated: every distinct pack `when`
+ *   once, as instants the app computed (ADR 0037).
  */
 public data class RoutingTable(
     val generation: Long,
@@ -22,6 +24,7 @@ public data class RoutingTable(
     val voices: List<Voice>,
     val routes: List<Route>,
     val selfTestClip: String? = null,
+    val conditions: List<TimeCondition> = emptyList(),
 ) {
     private val index: Map<String, Map<String, Route>> = buildIndex(routes)
 
@@ -29,6 +32,13 @@ public data class RoutingTable(
         for (route in routes) {
             require(route.voice == Route.NO_VOICE || route.voice in voices.indices) {
                 "Route ${route.packageName} points at voice ${route.voice}, but there are ${voices.size}"
+            }
+        }
+        for (voice in voices) {
+            for (clip in voice.clips) {
+                require(clip.condition == Clip.ALWAYS || clip.condition in conditions.indices) {
+                    "Clip ${clip.uri} points at condition ${clip.condition}, but there are ${conditions.size}"
+                }
             }
         }
     }
@@ -66,6 +76,15 @@ public data class RoutingTable(
         if (conversation.voice == Route.NO_VOICE) return null
         return Match(conversation, conversation, voices[conversation.voice])
     }
+
+    /**
+     * Whether [clip] may play at [nowMs] (epoch milliseconds): always for a clip without a condition, otherwise
+     * while its condition is active or unknown (outside the published span). O(1), no allocation.
+     */
+    public fun isPlayable(
+        clip: Clip,
+        nowMs: Long,
+    ): Boolean = clip.condition == Clip.ALWAYS || conditions[clip.condition].state(nowMs) != TimeCondition.INACTIVE
 
     /**
      * Result of [resolve].
@@ -135,7 +154,10 @@ public data class Voice(
     val characterId: String,
     val clips: List<Clip>,
     val haptic: Haptic,
-)
+) {
+    /** True when at least one clip has a [Clip.condition], so the module must check the time before drawing. */
+    val isConditional: Boolean = clips.any { it.condition != Clip.ALWAYS }
+}
 
 /**
  * One playable clip.
@@ -145,13 +167,19 @@ public data class Voice(
  * @property milliWeight Relative probability in thousandths (the pack's `weight` × 1000; default 1000).
  * @property haptic The clip's own envelope ("haptics follow the voice"), used when the voice's haptic is
  *   [Haptic.Auto]. Null when the app has not analysed the clip.
+ * @property condition Index into [RoutingTable.conditions] (the clip's pack `when`, such as night only), or
+ *   [ALWAYS]. A conditional clip joins the pool only while its condition is active or unknown.
  */
 public data class Clip(
     val uri: String,
     val milliWeight: Int = DEFAULT_MILLI_WEIGHT,
     val haptic: Haptic.Custom? = null,
+    val condition: Int = ALWAYS,
 ) {
     public companion object {
         public const val DEFAULT_MILLI_WEIGHT: Int = 1000
+
+        /** [condition] of a clip without a `when`: it always joins the pool. */
+        public const val ALWAYS: Int = -1
     }
 }
