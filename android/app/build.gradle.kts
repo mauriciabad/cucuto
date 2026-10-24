@@ -46,6 +46,14 @@ android {
         localeFilters += listOf("en", "es")
     }
 
+    bundle {
+        // The Play bundle keeps both languages in the base APK (ADR 0071): the language is picked per app (ADR 0036),
+        // and Play clients that only fetch the phone language's split would leave the other one without strings.
+        language {
+            enableSplit = false
+        }
+    }
+
     buildFeatures {
         // BuildConfig.DEBUG gates the design gallery.
         buildConfig = true

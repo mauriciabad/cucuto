@@ -14,7 +14,7 @@
 //   ... --from v0.1.1        # previous tag (default: the newest v* tag before --to, other than v<version>)
 //   ... --to REF             # last commit (default: tag v<version> if it exists, else HEAD)
 //   ... --force              # rewrite the store changelog and the CHANGELOG.md section even if they exist
-//   ... --check              # only check the store metadata limits (titles, descriptions, changelogs); no git
+//   ... --check              # only check the store metadata (lengths, tags, brand rules, Play images); no git
 //
 // Listed: feat (New), fix and perf (Fixes), docs (Docs), minus internal scopes (see internalScopes). A line
 // "Release note: <words for users>" in a commit body (for squash merges, the PR description) replaces its subject;
@@ -33,9 +33,28 @@ val repoUrl = "https://github.com/mauriciabad/cucuto"
 val metadataDir = File("fastlane/metadata/android")
 val changelogFile = File("CHANGELOG.md")
 
-/** F-Droid's limits (https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/). */
-val limits = mapOf("title.txt" to 50, "short_description.txt" to 80, "full_description.txt" to 4000)
+/**
+ * The strictest limit of the stores that read this metadata: F-Droid
+ * (https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/) allows a 50-character title, Google
+ * Play 30 (ADR 0071). Both allow 80 for the short description, 4000 for the full one and 500 for a changelog.
+ */
+val limits = mapOf("title.txt" to 30, "short_description.txt" to 80, "full_description.txt" to 4000)
 val changelogLimit = 500
+
+/**
+ * Google Play renders only bold, italics and line breaks in a description, F-Droid turns line breaks into `<br>`:
+ * plain text with these tags reads the same in both (ADR 0071).
+ */
+val allowedTags = setOf("<b>", "</b>", "<i>", "</i>")
+
+/** Each full description ends with this disclaimer (Meta's brand guidelines, Play's IP policy; ADR 0046). */
+val disclaimers = mapOf("en-US" to "Not affiliated with WhatsApp or Meta.", "es-ES" to "Sin relación con WhatsApp ni Meta.")
+
+/** Other brands that must stay out of the title and the opening words of the short description (ADR 0046). */
+val brands = listOf("WhatsApp", "Meta")
+
+/** True when [text] has [brand] as a whole word, in any case. */
+fun names(text: String, brand: String) = Regex("""\b$brand\b""", RegexOption.IGNORE_CASE).containsMatchIn(text)
 
 fun fail(message: String): Nothing {
     System.err.println("error: $message")
@@ -69,7 +88,52 @@ run {
     }
 }
 
-// --check: the limits every store client enforces, so a too-long text fails CI instead of being cut off.
+/** Width, height and whether a PNG has an alpha channel (color types 4 and 6, or a tRNS chunk), or null. */
+data class PngInfo(val width: Int, val height: Int, val alpha: Boolean)
+
+fun pngInfo(file: File): PngInfo? {
+    val bytes = file.readBytes()
+    val signature = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+    if (bytes.size < 33 || !bytes.copyOfRange(0, 8).contentEquals(signature)) return null
+    fun int(at: Int) = (0..3).fold(0) { acc, i -> (acc shl 8) or (bytes[at + i].toInt() and 0xFF) }
+    val colorType = bytes[25].toInt()
+    // tRNS gives a palette or an RGB image transparency; it sits between IHDR and IDAT, so the first chunks are enough.
+    val head = String(bytes, 0, minOf(bytes.size, 4096), Charsets.ISO_8859_1)
+    return PngInfo(int(16), int(20), alpha = colorType == 4 || colorType == 6 || "tRNS" in head.substringBefore("IDAT"))
+}
+
+// Google Play's preview assets (https://support.google.com/googleplay/android-developer/answer/9866151, ADR 0071).
+fun checkImages(locale: File, problems: MutableList<String>) {
+    val images = File(locale, "images")
+    File(images, "icon.png").takeIf { it.isFile }?.let { icon ->
+        val info = pngInfo(icon)
+        if (info == null || info.width != 512 || info.height != 512 || !info.alpha) {
+            problems += "$icon: Play wants a 512 × 512 32-bit PNG (with alpha)"
+        }
+    }
+    File(images, "featureGraphic.png").takeIf { it.isFile }?.let { graphic ->
+        val info = pngInfo(graphic)
+        if (info == null || info.width != 1024 || info.height != 500 || info.alpha) {
+            problems += "$graphic: Play wants a 1024 × 500 24-bit PNG (no alpha)"
+        }
+    }
+    val screenshots = File(images, "phoneScreenshots").listFiles()?.sortedBy { it.name }.orEmpty()
+    if (screenshots.size > 8) problems += "$images/phoneScreenshots: ${screenshots.size} screenshots (Play takes at most 8)"
+    for (shot in screenshots) {
+        val info = pngInfo(shot)
+        if (info == null) {
+            problems += "$shot: not a PNG"
+            continue
+        }
+        val (short, long) = minOf(info.width, info.height) to maxOf(info.width, info.height)
+        if (info.alpha) problems += "$shot: has an alpha channel (Play refuses it; export with ./gradlew :app:exportStoreScreenshots)"
+        if (short < 320 || long > 3840) problems += "$shot: ${info.width} × ${info.height} (Play: every side 320 to 3840 px)"
+        if (long > 2 * short) problems += "$shot: ${info.width} × ${info.height} (Play: the long side at most twice the short one)"
+    }
+}
+
+// --check: the limits every store enforces, so a too-long text or a refused image fails CI instead of being cut off
+// or rejected at upload.
 fun checkMetadata(): List<String> {
     val problems = mutableListOf<String>()
     val locales = metadataDir.listFiles { f -> f.isDirectory }?.sortedBy { it.name }.orEmpty()
@@ -85,11 +149,28 @@ fun checkMetadata(): List<String> {
             if (length == 0) problems += "$file is empty"
             if (length > max) problems += "$file has $length characters (at most $max)"
         }
+        val title = File(locale, "title.txt").takeIf { it.isFile }?.readText().orEmpty()
+        brands.filter { names(title, it) }.forEach { problems += "$locale/title.txt names $it" }
+        val opening = File(locale, "short_description.txt").takeIf { it.isFile }?.readText().orEmpty()
+            .split(Regex("""\s+""")).filter { it.isNotEmpty() }.take(3).joinToString(" ")
+        brands.filter { names(opening, it) }
+            .forEach { problems += "$locale/short_description.txt opens with $it (keep it out of the first words)" }
+        File(locale, "full_description.txt").takeIf { it.isFile }?.readText()?.let { description ->
+            Regex("""<[^>]*>""").findAll(description).map { it.value }.filter { it !in allowedTags }.distinct()
+                .forEach { problems += "$locale/full_description.txt uses $it (Play renders only ${allowedTags.joinToString(" ")})" }
+            val disclaimer = disclaimers[locale.name]
+            if (disclaimer == null) {
+                problems += "$locale: add its WhatsApp and Meta disclaimer to `disclaimers` in this script"
+            } else if (!description.trimEnd().endsWith(disclaimer)) {
+                problems += "$locale/full_description.txt must end with \"$disclaimer\""
+            }
+        }
         File(locale, "changelogs").listFiles()?.sortedBy { it.name }?.forEach { file ->
             if (!Regex("""[1-9][0-9]*\.txt""").matches(file.name)) problems += "$file: name it <versionCode>.txt"
             val length = file.readText().trimEnd().length
             if (length > changelogLimit) problems += "$file has $length characters (at most $changelogLimit)"
         }
+        checkImages(locale, problems)
     }
     return problems
 }
