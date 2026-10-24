@@ -128,6 +128,16 @@ sealed interface CucutoDestination : NavKey {
     @Serializable
     data object AssignVoice : CucutoDestination
 
+    /** "Add a chat from contacts" (ADR 0065): the explainer, then the WhatsApp entries of Android's contacts. */
+    @Serializable
+    data object AddFromContacts : CucutoDestination
+
+    /** Home → "Who is this?" (ADR 0065): which person added from contacts the recent sender [chat] is. */
+    @Serializable
+    data class ConfirmLink(
+        val chat: ChatKey,
+    ) : CucutoDestination
+
     /** Module status, the decision log and the self-test notification (#17). */
     @Serializable
     data object Diagnostics : CucutoDestination

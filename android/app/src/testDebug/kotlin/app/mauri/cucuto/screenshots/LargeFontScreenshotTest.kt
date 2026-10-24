@@ -75,6 +75,14 @@ class LargeFontScreenshotTest(
 
     @Test fun ringtonePicker() = largeFont("ringtone-picker")
 
+    @Test fun addFromContacts() = largeFont("add-from-contacts")
+
+    @Test fun addFromContactsList() = largeFont("add-from-contacts-list")
+
+    @Test fun confirmLink() = largeFont("confirm-link")
+
+    @Test fun homeWaiting() = largeFont("home-waiting")
+
     private fun largeFont(screen: String) =
         screenshot(screen, fontScale = LARGEST_FONT_SCALE) {
             A11yScreens.content(screen)()

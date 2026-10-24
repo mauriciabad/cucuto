@@ -1,6 +1,9 @@
 package app.mauri.cucuto.core.backup
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.mauri.cucuto.core.data.chats.ChatVoice
+import app.mauri.cucuto.core.data.chats.PhoneRingtoneFollow
+import app.mauri.cucuto.core.data.chats.RoomChatDirectory
 import app.mauri.cucuto.core.data.db.AssignmentEntity
 import app.mauri.cucuto.core.data.db.ContactEntity
 import app.mauri.cucuto.core.data.db.ContactKeyEntity
@@ -14,6 +17,9 @@ import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.repository.AssignmentRepository
+import app.mauri.cucuto.core.data.repository.ContactRepository
+import app.mauri.cucuto.core.data.repository.SeenSenderRepository
 import app.mauri.cucuto.core.pack.PackStore
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import app.mauri.cucuto.packspec.FileInput
@@ -305,6 +311,53 @@ class BackupRoundTripTest {
         }
 
     private fun BackupContact.withoutLocalState() = copy(id = "", ringtone = ringtone?.copy(undo = null))
+
+    @Test
+    fun `a chat added from contacts that has not messaged yet comes back still waiting for its first message`() =
+        runTest {
+            // ADR 0065: only a phone JID, its number and the Android link; no @lid until the first notification.
+            val contacts = oldPhone.contactDao()
+            val carla =
+                contacts.insert(
+                    ContactEntity(
+                        displayName = "Carla",
+                        shuffleSeed = 3,
+                        createdAt = 1,
+                        updatedAt = 1,
+                        androidLookupKey = "0r3-GHI",
+                        androidDisplayName = "Carla",
+                    ),
+                )
+            contacts.insertKey(key(carla, "com.whatsapp", "34600333444@s.whatsapp.net"))
+            contacts.insertKey(key(carla, ContactKeyEntity.NO_PACKAGE, "+34600333444"))
+            oldPhone.assignmentDao().upsert(
+                AssignmentEntity(contactId = carla, packId = critters, characterId = "beep", updatedAt = 1),
+            )
+
+            val (result, bytes) = export()
+            val inBackup = result.document.contacts.single()
+            assertEquals(listOf(BackupContactKey("com.whatsapp", "34600333444@s.whatsapp.net")), inBackup.keys)
+            assertEquals(listOf("+34600333444"), inBackup.phoneNumbers)
+            assertEquals(BackupAndroidContact("0r3-GHI", "Carla"), inBackup.androidContact)
+
+            (open(bytes) as BackupOpenResult.Opened).backup.use { backup ->
+                BackupRestorer(newPhone, FakeSettings(), FakeCredentialStore(), clock)
+                    .restore(backup.document, backup.encrypted)
+            }
+
+            val chats =
+                RoomChatDirectory(
+                    ContactRepository(newPhone, newPhone.contactDao(), clock),
+                    AssignmentRepository(newPhone, newPhone.assignmentDao(), clock),
+                    SeenSenderRepository(newPhone.seenSenderDao()),
+                    PhoneRingtoneFollow(newPhone.phoneRingtoneDao(), { false }, clock),
+                ).observeChats().first()
+            val chat = chats.single()
+            assertTrue("still waiting for its first message", chat.awaitingLink)
+            assertEquals("Carla", chat.displayName)
+            assertEquals(ChatVoice(critters, "beep"), chat.voice)
+            assertEquals("0r3-GHI", newPhone.contactDao().get(chat.contactId!!)!!.contact.androidLookupKey)
+        }
 
     @Test
     fun `an encrypted backup needs its passphrase and carries credentials when asked`() =

@@ -51,6 +51,17 @@ class HomeJourneyTest {
     }
 
     @Test
+    fun someoneWhoMessagedComesBeforeSomeoneAddedFromContacts() {
+        val waiting =
+            Chat(ChatKey(WA, "34600000001@s.whatsapp.net"), 1, "Ana", false, null, null, 0, awaitingLink = true)
+        val old = chat(ADA, "Ada", seenAgo = HomeRules.RECENT_WINDOW_MS * 2)
+        assertEquals("Ada", (homeJourney(state(listOf(waiting, old)), false, null) as JourneyStep.GiveFirstVoice).chat.chat.displayName)
+
+        val onlyWaiting = state(listOf(waiting))
+        assertEquals(JourneyStep.GiveFirstVoice(onlyWaiting.unassigned.single()), homeJourney(onlyWaiting, false, null))
+    }
+
+    @Test
     fun anOldSenderIsInvitedWhenNobodyIsRecent() {
         val old = chat(ADA, "Ada", seenAgo = HomeRules.RECENT_WINDOW_MS * 2)
         val home = state(listOf(old))

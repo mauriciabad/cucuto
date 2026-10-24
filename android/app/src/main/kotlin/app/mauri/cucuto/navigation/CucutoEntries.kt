@@ -16,6 +16,8 @@ import app.mauri.cucuto.picker.PickerScreen
 import app.mauri.cucuto.ui.creator.CreatorFinishScreen
 import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.developer.DeveloperScreen
+import app.mauri.cucuto.ui.contacts.AddFromContactsScreen
+import app.mauri.cucuto.ui.contacts.ConfirmLinkScreen
 import app.mauri.cucuto.ui.discover.DiscoverImportReview
 import app.mauri.cucuto.ui.discover.DiscoverRepositories
 import app.mauri.cucuto.ui.discover.DiscoverRepositoryForm
@@ -164,7 +166,28 @@ fun cucutoEntries(
             AssignVoiceScreen(
                 onBack = goBack,
                 onPick = { chat -> navigator.replace(key, CucutoDestination.Picker(chat)) },
+                onAddFromContacts = { navigate(CucutoDestination.AddFromContacts) },
             )
+        }
+        // Chats from contacts (ADR 0065): one person saved opens their contact detail; several go back to the list.
+        entry<CucutoDestination.AddFromContacts> { key ->
+            AddFromContactsScreen(
+                onBack = goBack,
+                onDone = { saved ->
+                    val only = saved.singleOrNull()
+                    if (only != null) {
+                        navigator.replace(key, CucutoDestination.ContactDetail(only))
+                    } else {
+                        navigator.remove(key)
+                    }
+                },
+            )
+        }
+        entry<CucutoDestination.ConfirmLink>(
+            clazzContentKey = { "confirm-link/${it.chat.packageName}/${it.chat.conversationKey}" },
+            metadata = childOf(CucutoDestination.Home),
+        ) { key ->
+            ConfirmLinkScreen(chat = key.chat, onBack = goBack, onDone = { navigator.remove(key) })
         }
 
         // Debug builds only: R8 drops these screens from release builds.

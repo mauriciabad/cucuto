@@ -158,8 +158,9 @@ A sighting is linked to a waiting chat automatically only when all of these hold
 2. no other waiting chat of that app has that name;
 3. no other sighting of that app has that name;
 4. **no namesake in Android's contacts:** every WhatsApp entry of that app with that name belongs to the waiting
-   chat's own Android contact. This catches a second "Ana" in the phone's contacts that the user did not add: she
-   would show up with the same name, and rule 2 alone would give her the first Ana's voice.
+   chat's own Android contact, or to someone whose chat is already linked (a sender with no chat cannot be them). This
+   catches a second "Ana" in the phone's contacts that the user did not add: she would show up with the same name, and
+   rule 2 alone would give her the first Ana's voice.
 
 Rule 4 reads the same WhatsApp entries as the list (lookup key and name, in memory only). It runs only when rules 1 to
 3 already hold, so only after a sighting matches a waiting chat. Without the contacts permission, or for a waiting chat

@@ -178,6 +178,8 @@ class AppNavigatorTest {
                 CucutoDestination.Repositories,
                 CucutoDestination.CreatorFinish("app.mauri.demo.critters"),
                 CucutoDestination.AssignVoice,
+                CucutoDestination.AddFromContacts,
+                CucutoDestination.ConfirmLink(ada.chat!!),
             )
         all.forEach { destination ->
             val json = Json.encodeToString(CucutoDestination.serializer(), destination)

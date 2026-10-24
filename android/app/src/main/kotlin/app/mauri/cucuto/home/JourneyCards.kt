@@ -59,11 +59,12 @@ internal fun JourneyCard(
     onDismissCelebration: () -> Unit,
     modifier: Modifier = Modifier,
     onRestoreBackup: () -> Unit = {},
+    onAddFromContacts: () -> Unit = {},
 ) {
     when (step) {
         JourneyStep.None -> Unit
         JourneyStep.ImportPacks -> ImportPacksCard(onGetDemoPacks, onImportDemoPacks, onRestoreBackup, modifier)
-        JourneyStep.WaitForMessages -> WaitForMessagesCard(onPreviewCharacters, modifier)
+        JourneyStep.WaitForMessages -> WaitForMessagesCard(onPreviewCharacters, onAddFromContacts, modifier)
         is JourneyStep.GiveFirstVoice -> GiveFirstVoiceCard(step.chat, onOpen = { onOpenChat(step.chat.key) }, modifier)
         is JourneyStep.FirstVoice -> FirstVoiceCard(step.chat, onDismissCelebration, modifier)
     }
@@ -110,10 +111,14 @@ private fun ImportPacksCard(
     }
 }
 
-/** Packs are in, nobody has messaged since: say what happens next, and let the user hear the characters. */
+/**
+ * Packs are in, nobody has messaged since: say what happens next, let the user hear the characters, or add someone
+ * from contacts before they message (ADR 0065).
+ */
 @Composable
 private fun WaitForMessagesCard(
     onPreviewCharacters: () -> Unit,
+    onAddFromContacts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     JourneySurface(modifier) {
@@ -129,6 +134,7 @@ private fun WaitForMessagesCard(
             shapes = ButtonDefaults.shapes(),
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.home_journey_preview)) }
+        AddFromContactsButton(onAddFromContacts, Modifier.fillMaxWidth())
     }
 }
 
@@ -158,7 +164,16 @@ private fun GiveFirstVoiceCard(
                     modifier = Modifier.semantics { heading() },
                 )
                 Text(
-                    text = stringResource(R.string.home_journey_first_body, name),
+                    // Someone added from contacts has not messaged yet (ADR 0065).
+                    text =
+                        stringResource(
+                            if (row.chat.awaitingLink) {
+                                R.string.home_journey_first_body_waiting
+                            } else {
+                                R.string.home_journey_first_body
+                            },
+                            name,
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
