@@ -47,10 +47,18 @@ In the LSPosed manager: enable **cucuto**, scope = **System Framework** only (th
 - `Hooked NotificationAttentionHelper.playVibration(NotificationRecord, VibrationEffect, boolean)`
 - `Haptics via VibrationEffect.Builder`
 - `Hooks installed: [playSound, playVibration]; missing: []`
+- within ~10 s of `Hooks installed`, and before any `alert …` line, once: `Vibrator: builder, envelopes … points …,
+  amplitude control …, primitives …`. The module reads the vibrator's capabilities on its background thread as soon as the vibrator
+  service is up (#190, [ADR 0044](decisions/0044-vibrator-capabilities-at-boot.md)), never on the notification path.
+  `builder` must be there (the module probes `VibrationEffect.Builder` inside `system_server`, where the 37.1 build
+  allows it).
 - within ~1 min: `Routing table attached (generation …)` (0 before the app has published anything)
 
 **Fail if:** `missing` is not empty, no `cucuto` lines at all, or any crash in
-`adb logcat -b crash -d`. Then go to the recovery ladder.
+`adb logcat -b crash -d`. Then go to the recovery ladder. **Finding** (open an issue) if the `Vibrator:` line comes
+after the first `alert …` line or is missing, if it reads `Vibrator unreadable, assuming: …` (the service never
+became ready within 5 minutes; custom haptics use generic capabilities), or if any `Slow playVibration` or
+`Slow playSound` line appears, the first alert after boot included.
 
 ## 2. Self-test (no WhatsApp needed)
 
@@ -62,9 +70,7 @@ generation. Tap **Post test notification** (allow notifications if asked).
 - You hear a **two-tone rising chirp** (not the default notification sound) and feel a short **click-tick**.
 - Module log: `alert app.mauri.cucuto SWAPPED key=<title> … clip=content://app.mauri.cucuto.clips/selftest/chirp.wav (self-test) NNus`.
   `NNus` should be well under 5000; a `Slow playSound` warning is a finding.
-- Once per boot, after the first custom haptic: `Vibrator: builder, envelopes …, amplitude control …, primitives …`.
-  `builder` must be there (the module probes `VibrationEffect.Builder` inside `system_server`, where the 37.1 build
-  allows it); `Vibrator unreadable, assuming: …` means the helper's Context could not be read (a finding).
+- No new `Vibrator:` line: it was logged once, right after boot (step 1). No `Slow playVibration` line either.
 - `adb shell dumpsys vibrator_manager | grep -A3 -i "app.mauri.cucuto"`: a short effect with usage NOTIFICATION.
 - Within ~10 s the Diagnostics screen shows a `SWAPPED` decision and "Module in system_server: Reported … Hooks:
   playSound, playVibration". The module log prints `Delivered N decision events to the app` once after boot (and
