@@ -9,8 +9,8 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -328,7 +328,11 @@ private fun NoPacksCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.home_no_packs_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.home_no_packs_body), style = MaterialTheme.typography.bodyMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Wraps when the labels are long (Spanish), instead of squeezing "Open Packs".
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
                 Button(onClick = onGetDemoPacks) { Text(stringResource(R.string.home_get_demo_packs)) }
                 TextButton(onClick = onOpenPacks) { Text(stringResource(R.string.home_open_packs)) }
             }

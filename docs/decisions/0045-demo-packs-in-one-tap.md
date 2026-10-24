@@ -1,13 +1,13 @@
 # 0045. The demo packs in one tap, from Home through Discover
 
-- Status: accepted (defaults open for the owner in the `question` issue linked from #179)
+- Status: accepted (defaults open for the owner in #208)
 - Date: 2026-10-24
 - Issue: #179
 
 ## Context
 
-On first run, Home's "no packs" card (the shell's "Import the demo packs" card in #153, ADR 0027) sent the user to a
-file picker, so a new user had to download the demo bundle from the website first. The website publishes the default
+On first run, Home's "no packs" card sent the user to the Packs screen, and the shell's "Import the demo packs" card
+(#153, ADR 0027) to a file picker in Downloads, so a new user had to download the demo bundle from the website first. The website publishes the default
 repository at `https://cucuto.mauri.app/repo/index.json` (#94), which lists the bundle `app.mauri.demo.all` with every
 demo pack. Discover (ADR 0029) already downloads repository entries with their size and SHA-256 and hands them to the
 shared import review. Minimum intrusion still holds: nothing bundled in the APK, and no network without a user action.
@@ -45,5 +45,5 @@ same way.
 - `DiscoverViewModel` takes `DemoPacksRequests`, keeps the catalog for file imports, and its state has `focus` and
   `demo`. `HomeViewModel` takes `DemoPacksRequests`.
 - The bundle ID `app.mauri.demo.all` is a contract with `packs/README.md` and the CI job that builds the bundle.
-- Defaults the owner can change (in the `question` issue): the focus filter instead of the whole repository, turning
+- Defaults the owner can change (#208): the focus filter instead of the whole repository, turning
   the default repository back on, and treating a stale index as offline.
