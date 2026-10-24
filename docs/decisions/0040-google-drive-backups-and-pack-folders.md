@@ -131,7 +131,7 @@ the user's Drive. Question #187 asks whether the owner wants a stored passphrase
 
 The owner created it with an agent. Nothing here is secret, and nothing goes into GitHub secrets or the app:
 
-- Project ID `cucuto-app` (number 50484089495), owned by the owner's Google account. Google Drive API and Google
+- Project ID `cucuto-app`, owned by the owner's Google account. Google Drive API and Google
   Picker API enabled.
 - Google Auth Platform: app name Cucuto, External, **In production**. Home page `https://cucuto.mauri.app`, privacy
   policy `https://cucuto.mauri.app/privacy/`, authorized domain `mauri.app`. No logo, so no brand verification.
