@@ -1,6 +1,6 @@
 # 0025. Contact detail and "Simulate message"
 
-- Status: accepted (the owner may override the defaults below)
+- Status: accepted (defaults open for the owner in #169)
 - Date: 2026-10-24
 - Issue: #26
 
