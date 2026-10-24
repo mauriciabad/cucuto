@@ -486,3 +486,39 @@ in `web/static/video/` and `web/src/lib/assets/images/`, so Home plays it instea
 
 (#339: the ringtone cover became a shared element of its own, drawn above the avatar's, so the pair flies as one
 group; ADR 0073 and brand/motion.md updated.)
+
+## 2026-10-24 (evening): wrapping up, agent efficiency, the v1 plan
+
+> when the current agents end, dont lunch more. only the minimum ones to release all code and wrap up development
+
+(The lead stopped launching new agents and let the running ones finish.)
+
+> what effort is using each agent model?
+
+(Every agent ran on Opus 5.5, inherited from the lead, at the general-purpose agent's default effort. The owner then set the session effort to medium.)
+
+> are the agents working effiently? i feel like they are speending too much time on their task. i dont want to rush theb, but i also dont want to waste time
+
+(The Mac was overloaded: load about 36 on 10 cores, with about 9 agents each running full Gradle builds and emulators. The lead told agents to run only the tests they touch, merge `main` once before pushing and leave the full check to CI, and to keep about 5 heavy agents at once.)
+
+> Why do you stop? the app has to be finished to enter the low development stage
+
+(The lead resumed with four agents: #347 and #348 (ringtone screens), #346 (sample chat, later dropped), #350 (Baseline Profile and the contact detail header), #325 and #324 (creators).)
+
+> do you have a plan of that is needed to consider the app ready?
+
+(The plan is issue #357, "v1.0 readiness".)
+
+> what is the Sample chat? i dont understand
+
+> "Google Play reviewer has no root and no LSPosed," why are you planing stuff for google play?!
+
+(The sample chat was built for Google Play review before the owner decided against Play. The owner then had it removed completely, in another session: #365, ADR 0075 withdrawn.)
+
+> i answered all issue questions
+
+(Closed `question` issues keep their defaults. On #309 the owner answered item 2, 2026-10-24 17:19 UTC, verbatim:)
+
+> 2 "The explainer shows every time" NO. I completely disagree. this is making the UX worse and is a very bad idea.
+
+(Already changed by #337 / PR #344: the contacts explainer shows only while the permission is missing. #309 closed.)
