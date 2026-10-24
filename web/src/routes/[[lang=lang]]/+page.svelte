@@ -85,6 +85,22 @@
 	</div>
 </section>
 
+<section class="section" aria-labelledby="extras-title">
+	<div class="container">
+		<h2 id="extras-title" class="headline-large">{t.extrasTitle}</h2>
+		<p class="section-lead on-surface-variant">{t.extrasLead}</p>
+		<ul class="features">
+			{#each t.extras as item (item.title)}
+				<li class="feature">
+					<Icon name={item.icon} class="feature-icon" />
+					<h3 class="title-medium">{item.title}</h3>
+					<p class="body-medium on-surface-variant">{item.text}</p>
+				</li>
+			{/each}
+		</ul>
+	</div>
+</section>
+
 <section class="section" aria-labelledby="features-title">
 	<div class="container">
 		<h2 id="features-title" class="headline-large">{t.featuresTitle}</h2>
