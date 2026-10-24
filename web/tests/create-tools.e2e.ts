@@ -128,7 +128,7 @@ test('opens an existing pack and keeps everything the format allows', async ({ p
 	await expect(
 		page.getByText('Saves as an update: the same pack ID, version 2.1.0.')
 	).toBeVisible();
-	await expect(page.getByText('Ringtones: 5. Animated pictures: 1.')).toBeVisible();
+	await expect(page.getByText('Ringtones: 6. Animated pictures: 1.')).toBeVisible();
 	await expect(page.getByLabel('Pack name')).toHaveValue('Full pack');
 	await expect(page.locator('article.character')).toHaveCount(3);
 	await expect(page.locator('.pack-id code')).toHaveText('app.mauri.fixtures.full');
@@ -154,7 +154,11 @@ test('opens an existing pack and keeps everything the format allows', async ({ p
 	expect(manifest.characters[0].haptic).toEqual(original.characters[0].haptic);
 	expect(manifest.characters[0].spriteAnimated).toBe('characters/robin/sprite-anim.gif');
 	expect(manifest.characters[0].clips[1].when).toEqual(original.characters[0].clips[1].when);
-	expect(manifest.characters[1].ringtones).toHaveLength(4);
+	// Special clips (#120) survive editing: `oneIn` and the `firstOfDay`, `burst` and `date` conditions.
+	const rules = (clips: { when?: unknown; oneIn?: number }[]) =>
+		clips.map((c) => ({ when: c.when, oneIn: c.oneIn }));
+	expect(rules(manifest.characters[0].clips)).toEqual(rules(original.characters[0].clips));
+	expect(manifest.characters[1].ringtones).toHaveLength(5);
 	expect(manifest.characters[2].ringtones).toHaveLength(1);
 
 	// Saved as a copy instead: a new derived ID and version 1.0.0.
