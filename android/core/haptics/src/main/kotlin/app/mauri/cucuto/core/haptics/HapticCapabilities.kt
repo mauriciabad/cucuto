@@ -4,10 +4,12 @@ import app.mauri.cucuto.core.routing.HapticPreset
 
 /**
  * What a device's vibrator can play, as plain data so the planner runs (and is tested) without Android. Read it
- * once with [android.os.Vibrator.hapticCapabilities] and reuse it: it does not change while the device is running.
+ * once per process with [PublicHapticEffects.capabilities] (app) or [HapticEffects.capabilities] (module, in
+ * `system_server`) and reuse it: it does not change while the device is running.
  *
- * @property builderSupported `VibrationEffect.Builder` exists (Android 17 QPR2, API 37.2). It sequences presets and
- *   basic envelopes and falls back on its own when the hardware lacks one.
+ * @property builderSupported `VibrationEffect.Builder` can be used in this process (API 37.2, or its classes inside
+ *   `system_server` on 37.1). It sequences presets and basic envelopes and falls back on its own when the hardware
+ *   lacks one. Always false in the app process: [PublicHapticEffects] ignores it (issue #139).
  * @property envelopesSupported `Vibrator.areEnvelopeEffectsSupported()`. The envelope limits below are only
  *   meaningful (and positive) when this is true.
  * @property maxControlPoints `VibratorEnvelopeEffectInfo.getMaxSize()`, at least 16 on supporting devices.
@@ -16,7 +18,7 @@ import app.mauri.cucuto.core.routing.HapticPreset
  * @property maxEnvelopeMs `getMaxDurationMillis()`, at least `maxControlPoints × maxControlPointMs`.
  * @property amplitudeControl `Vibrator.hasAmplitudeControl()`, used by the waveform fallback.
  * @property primitiveDurationsMs The presets whose composition primitive is supported, with its duration (0 when
- *   unknown). Used only by the `Composition` fallback when the Builder is missing.
+ *   unknown). Used only without the Builder, to choose between a `Composition` and `createPredefined`.
  */
 data class HapticCapabilities(
     val builderSupported: Boolean = false,

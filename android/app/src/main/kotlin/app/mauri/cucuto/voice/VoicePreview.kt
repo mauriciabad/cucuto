@@ -9,8 +9,7 @@ import android.os.VibratorManager
 import android.util.Log
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.haptics.HapticCapabilities
-import app.mauri.cucuto.core.haptics.HapticEffects
-import app.mauri.cucuto.core.haptics.hapticCapabilities
+import app.mauri.cucuto.core.haptics.PublicHapticEffects
 import app.mauri.cucuto.core.routing.Haptic
 import dagger.Binds
 import dagger.Module
@@ -59,8 +58,8 @@ interface VoicePreview {
 /**
  * [VoicePreview] with `MediaPlayer` and the vibrator. Clips play with notification audio attributes, like Android's
  * own notification sound picker, so the preview follows the notification volume and the ringer mode: what you hear
- * is what a message will sound like. The vibration uses the same `:core:haptics` builder as the module, with
- * notification vibration attributes. Files come from the installed pack folders (ADR 0008), never from the network.
+ * is what a message will sound like. The vibration uses `:core:haptics`' public-API path ([PublicHapticEffects]:
+ * the module's Builder is hidden API for apps, issue #139), with notification vibration attributes. Files come from the installed pack folders (ADR 0008), never from the network.
  */
 @Singleton
 class MediaVoicePreview
@@ -73,7 +72,7 @@ class MediaVoicePreview
         private val vibrator: Vibrator by lazy {
             context.getSystemService(VibratorManager::class.java).defaultVibrator
         }
-        private val capabilities: HapticCapabilities by lazy { vibrator.hapticCapabilities() }
+        private val capabilities: HapticCapabilities by lazy { PublicHapticEffects.capabilities(vibrator) }
 
         override suspend fun play(
             character: VoiceCharacter,
@@ -141,7 +140,7 @@ class MediaVoicePreview
         private fun vibrate(haptic: Haptic) {
             // Keep and Off leave the vibration to WhatsApp or silence it; Auto needs per-clip envelopes (#97).
             val custom = haptic as? Haptic.Custom ?: return
-            val effect = HapticEffects.create(custom, capabilities) ?: return
+            val effect = PublicHapticEffects.create(custom, capabilities) ?: return
             runCatching { vibrator.vibrate(effect, NOTIFICATION_VIBRATION) }
         }
 
