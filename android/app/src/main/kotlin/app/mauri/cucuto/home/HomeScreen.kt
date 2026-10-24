@@ -739,7 +739,8 @@ internal fun previewHomeState(now: Long = PREVIEW_NOW): HomeState {
             .VoicePack(song.packId, "Songs", listOf(song))
     val chats =
         listOf(
-            Chat(ChatKey(WA, "100000000000001@lid"), null, "Ada", false, null, now - 60_000, 2),
+            // A Signal sender, named by her Android contact (ADR 0081).
+            Chat(ChatKey(ChatKey.SIGNAL, "contact:lk-ada"), null, "Ada", false, null, now - 60_000, 2),
             Chat(ChatKey(WA, "120300000000001@g.us"), null, "Book club", true, null, now - 3_600_000, 5),
             Chat(
                 ChatKey(WA, "100000000000002@lid"),
