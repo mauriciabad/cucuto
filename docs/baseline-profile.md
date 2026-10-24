@@ -35,7 +35,7 @@ Official guide: [Create Baseline Profiles](https://developer.android.com/topic/p
 The generator needs a device, either rooted or on API 33+. Use an Android 17 emulator, not the owner's phone: the
 phone runs the release-signed app, and the generator's `app-nonMinifiedRelease.apk` is signed with this machine's
 debug key, so it can't be installed there without uninstalling, which drops the module's LSPosed state. The committed
-profile was generated this way (2026-10-24, #226).
+profile was generated this way (2026-10-24, #226; again with the ringtone and contacts journeys, #350).
 
 There is no Gradle-managed device on purpose: a managed device boots empty, so the journeys would only see onboarding.
 The profile should follow a user who finished setup, so the emulator is prepared by hand once.
@@ -88,13 +88,14 @@ The profile should follow a user who finished setup, so the emulator is prepared
      -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
    ```
 
-   It takes about 15 minutes on an Apple Silicon Mac. The plugin runs every journey until the profile is stable and
+   It takes about 20 minutes on an Apple Silicon Mac. The plugin runs every journey until the profile is stable and
    writes `app/src/main/generated/baselineProfiles/baseline-prof.txt` and `startup-prof.txt`. The test report also
    lists the `StartupBenchmarks` tests as failed: Macrobenchmark skips them with an assumption during generation, and
    the build still passes.
-6. **Check and commit.** The files should name `app/mauri/cucuto/...` classes (navigation, Home, picker, Packs,
-   status) and Compose. Commit them in a `perf:` PR. The next release build merges them in, which changes the APK's
-   bytes, as expected (the reproducibility check compares two builds of the same commit).
+6. **Check and commit.** The files should name `app/mauri/cucuto/...` classes (navigation, Home, contact detail,
+   the pickers, ringtones and their rules, contacts, Packs, status) and Compose. Commit them in a `perf:` PR. The
+   next release build merges them in, which changes the APK's bytes, as expected (the reproducibility check
+   compares two builds of the same commit).
 7. Generate again when a journey changes a lot (a new shell, a new Home).
 
 The phone also works (`useConnectedDevices` stays on) if it runs a debug build from this machine; a release-signed
