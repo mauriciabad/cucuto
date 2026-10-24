@@ -187,4 +187,71 @@ class AlertRouterTest {
             )
         assertEquals(Outcome.SWAPPED, decision!!.outcome)
     }
+
+    private fun simulate(
+        target: String?,
+        key: String?,
+        pkg: String = Targets.SELF_PACKAGE,
+        channel: String = Targets.SIMULATE_CHANNEL,
+    ) = NotificationSnapshot(packageName = pkg, channelId = channel, simulatePackage = target, simulateKey = key)
+
+    @Test
+    fun simulatePlaysTheChatsVoiceAndIsReportedAsCucuto() {
+        val decision = router.decide(simulate("com.whatsapp", ana), table())!!
+        assertEquals(Outcome.SWAPPED, decision.outcome)
+        assertTrue(decision.clipUri in frog.clips.map { it.uri })
+        assertEquals(10L, decision.contactId)
+        assertEquals(ana, decision.matchedKey)
+        // Never reported as the messenger: the app must not count it as a message from the chat.
+        assertEquals(Targets.SELF_PACKAGE, decision.packageName)
+        assertEquals(AlertRouter.SIMULATED_DETAIL, decision.detail)
+    }
+
+    @Test
+    fun simulateUsesTheChatsPackage() {
+        val business = router.decide(simulate("com.whatsapp.w4b", ana), table())!!
+        assertEquals(cat.clips.single().uri, business.clipUri)
+        assertEquals(click, business.haptic)
+        assertEquals(13L, business.contactId)
+    }
+
+    @Test
+    fun simulateSharesTheShuffleBagWithRealMessages() {
+        // Simulated and real alerts interleaved still never repeat a clip: they draw from one rotation.
+        var previous: String? = null
+        repeat(200) { i ->
+            val snapshot = if (i % 2 == 0) simulate("com.whatsapp", ana) else snapshot(ana)
+            val clip = router.decide(snapshot, table())!!.clipUri
+            assertNotEquals(previous, clip)
+            previous = clip
+        }
+    }
+
+    @Test
+    fun simulateFollowsTheSameRulesAsARealMessage() {
+        val unassigned = router.decide(simulate("com.whatsapp", stranger), table())!!
+        assertEquals(Outcome.UNASSIGNED, unassigned.outcome)
+        assertNull(unassigned.clipUri)
+        assertEquals(stranger, unassigned.matchedKey)
+
+        val off = router.decide(simulate("com.whatsapp", ana), table(enabled = false))!!
+        assertEquals(Outcome.DISABLED, off.outcome)
+        assertNull(off.clipUri)
+
+        // A per-sender group without a sender plays the group's own voice.
+        val group = router.decide(simulate("com.whatsapp", family), table())!!
+        assertEquals(cat.clips.single().uri, group.clipUri)
+        assertTrue(group.identity.isGroup)
+    }
+
+    @Test
+    fun simulateRejectsOtherPackagesAndBadTargets() {
+        // Another app cannot use the simulate channel or extras: its notification is never touched.
+        assertNull(router.decide(simulate("com.whatsapp", ana, pkg = "org.example.spoof"), table()))
+        // Only WhatsApp chats can be simulated, and only on the simulate channel.
+        assertEquals(Outcome.NO_KEY, router.decide(simulate("org.telegram.messenger", ana), table())!!.outcome)
+        assertEquals(Outcome.NO_KEY, router.decide(simulate("com.whatsapp", null), table())!!.outcome)
+        assertEquals(Outcome.NO_KEY, router.decide(simulate("com.whatsapp", "x".repeat(300)), table())!!.outcome)
+        assertNull(router.decide(simulate("com.whatsapp", ana, channel = "other"), table()))
+    }
 }

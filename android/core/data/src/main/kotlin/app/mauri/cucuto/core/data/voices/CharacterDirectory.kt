@@ -28,6 +28,8 @@ data class VoicePack(
  * @property seedColor The pack's seed color as ARGB, or null (the app extracts one from the sprite).
  * @property clips The character's notification clips, in `pack.json` order.
  * @property haptic The character's own vibration (routing model; `Keep` leaves WhatsApp's).
+ * @property clipPaths Each clip's path from `pack.json`, index for index with [clips]: the name per-contact clip
+ *   toggles store (`AssignmentEntity.disabledClips`). Empty when unknown (previews and tests).
  */
 data class VoiceCharacter(
     val packId: String,
@@ -38,6 +40,7 @@ data class VoiceCharacter(
     val seedColor: Int?,
     val clips: List<File>,
     val haptic: Haptic,
+    val clipPaths: List<String> = emptyList(),
 ) {
     val voice: ChatVoice get() = ChatVoice(packId, id)
 }
@@ -73,6 +76,8 @@ class InstalledCharacterDirectory
                     name = pack.name,
                     characters =
                         characters.map { (id, character) ->
+                            val clips =
+                                character.clips.mapNotNull { clip -> root.resolveInside(clip.file)?.let { clip.file to it } }
                             VoiceCharacter(
                                 packId = pack.packId,
                                 id = id,
@@ -80,8 +85,9 @@ class InstalledCharacterDirectory
                                 sprite = character.sprite?.let { root.resolveInside(it) },
                                 spriteAnimated = character.spriteAnimated?.let { root.resolveInside(it) },
                                 seedColor = character.seedColor?.let(::parseSeedColor),
-                                clips = character.clips.mapNotNull { root.resolveInside(it.file) },
+                                clips = clips.map { it.second },
                                 haptic = character.haptic,
+                                clipPaths = clips.map { it.first },
                             )
                         },
                 )

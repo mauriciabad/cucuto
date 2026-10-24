@@ -41,6 +41,17 @@ interface VoicePreview {
         atNanos: Long? = null,
     ): Long?
 
+    /**
+     * Plays [clip] and, when it is [Haptic.Custom], [haptic], the way a notification plays them. Stops the previous
+     * preview. Contact detail uses it for single clips and for the in-app "Simulate message".
+     *
+     * @return The clip's duration in milliseconds, or null when nothing could play.
+     */
+    suspend fun playClip(
+        clip: File,
+        haptic: Haptic? = null,
+    ): Long?
+
     /** Stops the current clip and vibration. */
     fun stop()
 }
@@ -72,6 +83,22 @@ class MediaVoicePreview
             stop()
             val clip = pickClip(character.clips, lastClip) ?: return null
             lastClip = clip
+            return start(clip, if (withHaptic) character.haptic else null, atNanos)
+        }
+
+        override suspend fun playClip(
+            clip: File,
+            haptic: Haptic?,
+        ): Long? {
+            stop()
+            return start(clip, haptic, atNanos = null)
+        }
+
+        private suspend fun start(
+            clip: File,
+            haptic: Haptic?,
+            atNanos: Long?,
+        ): Long? {
             val prepared = MediaPlayer()
             try {
                 withContext(Dispatchers.IO) {
@@ -98,7 +125,7 @@ class MediaVoicePreview
                 finished.release()
             }
             prepared.start()
-            if (withHaptic) vibrate(character.haptic)
+            haptic?.let(::vibrate)
             return prepared.duration.toLong().takeIf { it > 0 }
         }
 

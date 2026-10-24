@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.service.notification.StatusBarNotification
 import app.mauri.cucuto.xposed.route.NotificationSnapshot
+import app.mauri.cucuto.xposed.route.Targets
 import java.lang.reflect.Method
 
 /**
@@ -39,9 +40,13 @@ internal class RecordReader(
         val extras: Bundle? = safe { notification?.extras }
         val lastMessage = extras?.let { lastMessage(it) }
         val person = lastMessage?.let { safe { it.getParcelable(KEY_SENDER_PERSON, Person::class.java) } }
+        val channel = safe { notification?.channelId }
+        // The simulate extras are read only from Cucuto's own simulate channel; the package is the one
+        // system_server attributes the notification to, which no other app can claim.
+        val simulate = pkg == Targets.SELF_PACKAGE && channel == Targets.SIMULATE_CHANNEL
         return NotificationSnapshot(
             packageName = pkg,
-            channelId = safe { notification?.channelId },
+            channelId = channel,
             shortcutId = safe { notification?.shortcutId },
             shortcutInfoId = safe { shortcut?.id },
             shortcutLabel = safe { (shortcut?.shortLabel ?: shortcut?.longLabel)?.toString() },
@@ -51,6 +56,8 @@ internal class RecordReader(
                 extras?.let { safe { it.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false) } } ?: false,
             senderKey = safe { person?.key },
             senderName = safe { person?.name?.toString() } ?: lastMessage?.let { text(it, KEY_SENDER) },
+            simulatePackage = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_PACKAGE) } else null,
+            simulateKey = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_KEY) } else null,
         )
     }
 

@@ -211,6 +211,86 @@
     <string name="picker_empty_body">Import a sound pack to fill this grid.</string>
     <string name="picker_loading">Loading characters</string>
 
+    <!-- Contact detail (#26) -->
+    <string name="contact_loading">Loading chat</string>
+    <string name="contact_subtitle_chat">WhatsApp chat</string>
+    <string name="contact_subtitle_group">WhatsApp group</string>
+    <string name="contact_subtitle_business_chat">WhatsApp Business chat</string>
+    <string name="contact_subtitle_business_group">WhatsApp Business group</string>
+    <string name="contact_speaks_as">Speaks as %1$s</string>
+    <string name="contact_from_pack">From %1$s</string>
+    <string name="contact_no_voice">No voice yet: WhatsApp\'s tone plays.</string>
+    <string name="contact_voice_missing">Its character came from a pack that is no longer installed. WhatsApp\'s tone plays until you choose another.</string>
+    <string name="contact_change">Change character</string>
+    <string name="contact_choose">Choose a character</string>
+    <string name="contact_remove">Remove voice</string>
+    <string name="contact_remove_title">Remove this voice?</string>
+    <string name="contact_remove_body">Messages from %1$s will play WhatsApp\'s tone again. You can choose a character any time.</string>
+    <string name="contact_remove_confirm">Remove</string>
+    <string name="contact_remove_cancel">Keep</string>
+    <string name="contact_failed">Couldn\'t save. Try again.</string>
+
+    <string name="contact_simulate">Simulate message</string>
+    <string name="contact_simulate_label">Play what this chat\'s next message will do</string>
+    <string name="contact_simulate_checking">Checking the module…</string>
+    <string name="contact_simulate_needs_voice">Choose a character to simulate a message.</string>
+    <string name="contact_simulate_module">Through the module: a real notification plays this chat\'s next clip and vibration, exactly like a WhatsApp message.</string>
+    <string name="contact_simulate_inapp_reboot">In-app preview: the module runs older code until the next reboot. Same clip rules, played by Cucuto.</string>
+    <string name="contact_simulate_inapp_off">In-app preview: the module isn\'t active. Same clip rules, played by Cucuto.</string>
+    <string name="contact_simulate_inapp_hooks">In-app preview: the module couldn\'t hook this Android version. Same clip rules, played by Cucuto.</string>
+    <string name="contact_simulate_inapp_unconfirmed">In-app preview: Cucuto can\'t confirm the module runs this version. The Diagnostics self-test checks it.</string>
+    <string name="contact_sim_sent">Sent through the module. Its report arrives in a few seconds.</string>
+    <string name="contact_sim_report">The module played %1$s.</string>
+    <string name="contact_sim_report_whatsapp">The module kept WhatsApp\'s tone: %1$s.</string>
+    <string name="contact_sim_inapp">Played %1$s in the app. %2$s</string>
+    <string name="contact_sim_haptic_custom">Its vibration played too.</string>
+    <string name="contact_sim_haptic_whatsapp">A real message keeps WhatsApp\'s own vibration.</string>
+    <string name="contact_sim_haptic_off">No vibration for this chat.</string>
+    <string name="contact_sim_whatsapp_tone">A message would play WhatsApp\'s own tone: %1$s.</string>
+    <string name="contact_sim_too_soon">Wait %1$d s: Android mutes an app\'s second alert this soon.</string>
+    <string name="contact_sim_blocked">Notifications are off for Cucuto. Turn them on to simulate through the module.</string>
+    <string name="contact_sim_failed">Couldn\'t play the simulation.</string>
+    <string name="contact_reason_unassigned">this chat has no voice</string>
+    <string name="contact_reason_disabled">Cucuto is switched off</string>
+    <string name="contact_reason_no_key">the chat couldn\'t be identified</string>
+    <string name="contact_reason_error">something went wrong</string>
+
+    <string name="contact_clips_header">Clips</string>
+    <string name="contact_clips_hint">Messages rotate through the clips that are on, never the same one twice in a row.</string>
+    <string name="contact_clip_play">Play %1$s</string>
+    <string name="contact_clip_last">At least one clip stays on</string>
+
+    <string name="contact_haptic_header">Vibration</string>
+    <string name="contact_haptic_character">The character\'s vibration</string>
+    <string name="contact_haptic_follow">Follows the voice</string>
+    <string name="contact_haptic_off">No vibration</string>
+    <string name="contact_haptic_custom">A custom pattern for this chat</string>
+    <string name="contact_haptic_editor">Vibration patterns for a single chat come with the haptic editor.</string>
+
+    <string name="contact_group_header">Group voice</string>
+    <string name="contact_group_one">One voice for the whole group</string>
+    <string name="contact_group_one_body">Every message in this group plays its character.</string>
+    <string name="contact_group_per_sender">Each sender\'s own voice</string>
+    <string name="contact_group_per_sender_body">Members with a voice of their own speak with it; everyone else uses the group\'s voice.</string>
+
+    <string name="contact_decisions_header">Recent alerts</string>
+    <string name="contact_decisions_empty">No alerts from this chat yet. Simulate a message, or wait for the next one.</string>
+    <string name="contact_decision_played">Played %1$s</string>
+    <string name="contact_decision_played_voice">Played its voice</string>
+    <string name="contact_decision_unassigned">WhatsApp\'s tone: no voice</string>
+    <string name="contact_decision_disabled">WhatsApp\'s tone: Cucuto was off</string>
+    <string name="contact_decision_no_key">WhatsApp\'s tone: chat not identified</string>
+    <string name="contact_decision_error">WhatsApp\'s tone: something went wrong</string>
+    <string name="contact_decision_simulated">Simulated</string>
+    <string name="contact_decision_message">Message</string>
+    <string name="contact_decision_per_sender">sender\'s voice</string>
+
+    <!-- The "Simulate message" notification (contact detail) -->
+    <string name="simulate_channel_name">Simulate message</string>
+    <string name="simulate_channel_description">Test alerts from a chat\'s detail screen. Keep its sound and vibration on.</string>
+    <string name="simulate_notification_title">Simulated message from %1$s</string>
+    <string name="simulate_notification_text">Cucuto played what this chat\'s next message will sound and feel like.</string>
+
     <!-- Design gallery (debug builds): the theme, shape and feedback building blocks for screen work. -->
     <string name="screen_gallery">Design gallery</string>
     <string name="gallery_subtitle">Theme, shapes and feedback</string>

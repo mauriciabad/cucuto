@@ -134,6 +134,17 @@ class FakeVoicePreview(
         return durationMs
     }
 
+    /** Clips played with [playClip], with their haptic. */
+    val clipPlays = mutableListOf<Pair<File, Haptic?>>()
+
+    override suspend fun playClip(
+        clip: File,
+        haptic: Haptic?,
+    ): Long? {
+        clipPlays += clip to haptic
+        return durationMs
+    }
+
     override fun stop() {
         stops++
     }

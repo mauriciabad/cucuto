@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.RingtoneManager
-import android.os.SystemClock
 import app.mauri.cucuto.R
 import app.mauri.cucuto.xposed.route.Targets
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,13 +26,15 @@ import javax.inject.Singleton
  *   that is not exempt is muted. The test is posted as [Notification.CATEGORY_REMINDER], which is exempt at full
  *   volume (like WhatsApp's conversations, which are exempt as conversations).
  * - Per-app cooldown: a second alert from the same app within 60 s plays at reduced volume (the hook still runs),
- *   and one within 10 s of the previous post is muted. So two tests must be at least [MIN_SPACING_MILLIS] apart.
+ *   and one within 10 s of the previous post is muted. So two alerts must be at least
+ *   [OwnAlertSpacing.MIN_SPACING_MILLIS] apart; the spacing is shared with "Simulate message".
  */
 @Singleton
 class SelfTestNotifier
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val spacing: OwnAlertSpacing,
     ) {
         sealed interface Result {
             data object Posted : Result
@@ -47,18 +48,12 @@ class SelfTestNotifier
             ) : Result
         }
 
-        @Volatile private var lastPostedAt: Long? = null
-
         suspend fun post(): Result =
             withContext(Dispatchers.IO) {
-                val now = SystemClock.elapsedRealtime()
-                lastPostedAt?.let { last ->
-                    val wait = last + MIN_SPACING_MILLIS - now
-                    if (wait > 0) return@withContext Result.TooSoon(((wait + 999) / 1000).toInt())
-                }
                 SelfTestSound.ensureFile(context.filesDir)
                 val manager = context.getSystemService(NotificationManager::class.java)
                 if (!manager.areNotificationsEnabled()) return@withContext Result.Blocked
+                spacing.tryAcquire()?.let { return@withContext Result.TooSoon(it) }
                 ensureChannel(manager)
                 val notification =
                     Notification
@@ -70,7 +65,6 @@ class SelfTestNotifier
                         .setAutoCancel(true)
                         .build()
                 manager.notify(NOTIFICATION_ID, notification)
-                lastPostedAt = now
                 Result.Posted
             }
 
@@ -101,11 +95,5 @@ class SelfTestNotifier
 
         companion object {
             private const val NOTIFICATION_ID = 0xC0C0
-
-            /**
-             * Android mutes an app's alert posted within `config_notifCooldownMuteMillis` (10 s in AOSP and on the
-             * Pixel) of its previous one; a little margin on top.
-             */
-            const val MIN_SPACING_MILLIS: Long = 12_000
         }
     }
