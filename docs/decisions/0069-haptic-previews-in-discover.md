@@ -1,7 +1,7 @@
 # 0069. Haptic previews in Discover: the pack's haptic in the index, auto envelopes on the phone
 
 - Status: accepted; amended 2026-10-24 (#301, owner on #284, item 6: "at least show a visual preview of the haptic
-  (also on the app would be nice)")
+  (also on the app would be nice)"); amended 2026-10-24 (#325: samples for ringtone-only characters)
 - Date: 2026-10-24
 - Issue: #272 (amends [ADR 0029](0029-discover-screen.md); owner on #175, item 7: "it has to be done eventually, make
   sure this is not forgotten")
@@ -87,6 +87,23 @@ haptic (also on the app would be nice)". Default 6 was "the website keeps sound-
 - `none`: "No vibration".
 - No `x-haptic`: nothing, as for playback (absent means unknown).
 - The drawing doesn't depend on the "App vibration" switch: it shows what the pack does, not what the preview plays.
+
+**Samples for ringtone-only characters (amendment 2026-10-24, #325).** The sample is a character's first clip, so a
+ringtone-only character (a song, [ADR 0063](0063-independent-voice-and-ringtone.md)) had no sample, no `x-haptic` and
+nothing to play in Discover. Three options were weighed: cut a preview from the ringtone at index time, point `sample`
+at the ringtone file itself (up to 6 min and 100 MiB, against "previews are small files"), or a new `x-ringtone` key
+that apps play from the start with range requests (a change in every app and a slow first second over the network).
+
+- **`packer index` cuts the sample**: the hook `ClipCuts` finds (the same heuristic as `packer cut` and the creators,
+  [ADR 0033](0033-ring-files-and-auto-cut-clips.md)) in the character's first ringtone, searched within its loop
+  (the song's body, not an intro or outro; the whole file for `loop: false`), 2.5 s with the auto-cut fades, Ogg Opus
+  at 96 kb/s. It is saved as `<character>-sample.ogg` like any sample, and gets `x-haptic` like any sample: `auto`
+  previews are computed from the cut, which is close to what the ringtone's vibration feels like.
+- **Without ffmpeg, no sample**: `index` warns and writes the entry without that `sample`, as before. The website's
+  helper has no encoder in common Kotlin, so it leaves it out too (`RepositoryIndexer.entry(cutSamples = false)`, its
+  default). An index stays valid either way, and the schema doesn't change: `sample` was already optional.
+- **Discover and the website change nothing**: a cut sample is a short Ogg Opus file like any other. The cut depends on
+  the ffmpeg version only within a few milliseconds of decoding, and the default repository is indexed by CI.
 
 ## Consequences
 

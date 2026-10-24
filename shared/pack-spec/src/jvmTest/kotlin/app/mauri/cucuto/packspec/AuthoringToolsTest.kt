@@ -171,6 +171,29 @@ class AuthoringToolsTest {
     }
 
     @Test
+    fun `with an encoder, a ringtone-only character gets a sample cut from its first ringtone`() {
+        val content = JvmPackIo.validatePath(valid.resolve("full-pack")).content!!
+        val download = Download("packs/full.soundpack.zip", 1234, "a".repeat(64))
+        val indexed = RepositoryIndexer.entry(content, 1, download, cutSamples = true)
+        val ringer = indexed.entry.characters!![2]
+        assertEquals("previews/app.mauri.fixtures.full/ringer-sample.ogg", ringer.sample)
+        assertEquals(Haptic("auto"), ringer.haptic, "a cut sample carries the haptic like any sample")
+        assertEquals(
+            RepositoryIndexer.Preview(
+                "characters/ringer/ring.ogg",
+                "previews/app.mauri.fixtures.full/ringer-sample.ogg",
+                RepositoryIndexer.SampleCut(0, null),
+            ),
+            indexed.previews.single { it.cut != null },
+        )
+        // Characters with clips keep their first clip, copied as is.
+        assertEquals(
+            RepositoryIndexer.entry(content, 1, download).entry.characters!![0],
+            indexed.entry.characters[0],
+        )
+    }
+
+    @Test
     fun `characters with a sample carry the pack's haptic as x-haptic, and the index reads back the same`() {
         val content = JvmPackIo.validatePath(valid.resolve("full-pack")).content!!
         val manifest = (content as PackContent.Single).pack.manifest
