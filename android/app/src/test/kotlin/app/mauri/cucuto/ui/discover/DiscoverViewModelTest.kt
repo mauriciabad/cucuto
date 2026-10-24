@@ -179,6 +179,45 @@ class DiscoverViewModelTest {
         }
 
     @Test
+    fun `a bundle shows once with its packs inside, and a pack inside it installs alone`() =
+        runTest(timeout = 30.seconds) {
+            // The default repository's shape (#247): the bundle, then the packs it contains, each on its own too.
+            serveDefault(
+                demoBundleEntry(),
+                packEntry("app.mauri.demo.cats", "Cats", tags = listOf("animals"), character = "Tabby"),
+                packEntry("app.mauri.demo.bells", "Bells", tags = listOf("objects"), character = "Ding"),
+            )
+            routes["/repo/packs/app.mauri.demo.bells-1.0.0.soundpack.zip"] = ok(packBytes)
+            store.installed.value = listOf(InstalledRef("app.mauri.demo.cats", "1.0.0", null, null))
+            val vm = viewModel()
+
+            val section = vm.awaitState { it.sections?.firstOrNull()?.loaded == true }.section()
+            val bundle = section.cards.single()
+            assertEquals(DEMO_BUNDLE_ID, bundle.id)
+            assertEquals(1, section.totalCards)
+            assertEquals(listOf("Cats", "Bells"), bundle.members.map { it.name })
+            assertEquals(listOf(InstallState.INSTALLED, InstallState.NEW), bundle.members.map { it.state })
+            assertEquals(InstallState.NEW, bundle.state)
+            assertEquals(1, bundle.installedMembers)
+
+            // Searching for a character inside finds the bundle once; so does a pack's tag.
+            vm.setQuery("tabby")
+            val searched = vm.awaitState { it.query == "tabby" }
+            assertEquals(listOf(DEMO_BUNDLE_ID), searched.section().cards.map { it.id })
+            vm.setQuery("")
+            vm.toggleTag("objects")
+            val tagged = vm.awaitState { it.tag == "objects" }
+            assertEquals(listOf(DEMO_BUNDLE_ID), tagged.section().cards.map { it.id })
+            vm.clearFilters()
+
+            // Bells' row installs Bells alone, from its own entry.
+            vm.install(bundle.members[1].card!!)
+            vm.awaitState { it.import is ImportUi.Review }
+            assertTrue(routes.paths().contains("/repo/packs/app.mauri.demo.bells-1.0.0.soundpack.zip"))
+            assertTrue(routes.paths().none { it.contains(DEMO_BUNDLE_ID) })
+        }
+
+    @Test
     fun `offline, the last copy stays browsable and says so`() =
         runTest(timeout = 30.seconds) {
             serveDefault(packEntry("app.mauri.demo.cats", "Cats"))

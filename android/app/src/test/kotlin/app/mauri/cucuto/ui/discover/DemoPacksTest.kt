@@ -140,12 +140,14 @@ class DemoPacksTest {
             val opened = vm.awaitState { it.sections?.firstOrNull()?.loaded == true }
             assertNull(opened.demo)
             assertNull(opened.focus)
-            assertEquals(
-                2,
+            // Cats is listed on its own and inside the bundle: it shows once, as a row of the bundle (#247).
+            val bundle =
                 opened.sections!!
                     .single()
-                    .cards.size,
-            )
+                    .cards
+                    .single()
+            assertEquals(DEMO_BUNDLE_ID, bundle.id)
+            assertEquals(listOf("app.mauri.demo.cats", null), bundle.members.map { it.card?.id })
             assertEquals(listOf(defaultPath), routes.paths())
 
             requests.offer()
@@ -217,7 +219,8 @@ class DemoPacksTest {
             )
 
             vm.clearFilters()
-            val cleared = vm.state.value
+            // Awaited: the index fetch resumed on OkHttp's thread, so the state can lag a moment behind under load.
+            val cleared = vm.awaitState { it.demo == null && it.focus == null }
             assertNull(cleared.demo)
             assertNull(cleared.focus)
             assertEquals(

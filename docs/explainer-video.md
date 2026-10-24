@@ -197,7 +197,7 @@ phone's own recorder at 60 fps) while a script or a steady hand drives the app. 
 system's lock screen and notifications, so they are always recorded on the device. Shots 2 and 10 are motion
 graphics built from `brand/` files.
 
-### An automated draft (explored)
+### An automated draft
 
 We looked for a way to make a draft video with no human editor. Findings:
 
@@ -216,11 +216,23 @@ We looked for a way to make a draft video with no human editor. Findings:
 3. **On the device.** UI Automator drives the app while `screenrecord` films it. The most real, but it needs the
    rooted phone with the module enabled and WhatsApp test accounts (`needs-device`), and it is the flakiest.
 
-**Decision: not built yet.** Route 1 waits for #41's stills, and route 2 means adding a frame-capture harness to
-the app's test sources while several UI agents are changing those screens. Neither is cheap today, and a slideshow
-would not look good on the Home page. The recommended path, tracked in #195: route 2
-for shots 3–8 once the screens settle, the device for shots 1 and 9, the brand animations for 2 and 10, and route 1's
-script to assemble everything with the sound and captions on the shot list's timeline.
+**Built: route 2 plus an assembly script** (#195, [ADR 0060](decisions/0060-explainer-video-draft-pipeline.md)).
+
+```sh
+cd android && ./gradlew :app:explainerDraft                          # English cut
+cd android && ./gradlew :app:explainerDraft -Pexplainer.languages=en,es  # both cuts
+```
+
+`renderExplainerFrames` records every shot on the JVM from the app's real screens and motion, with this brief's
+cast and the demo packs, stepping Compose's test clock one frame at a time (shots 4–8 are one take in the app shell;
+shot 2 is the app's own door; shot 10 the end card). `tools/video/explainer.main.kts` then puts the phone on the stage,
+places the CC0 clips and brand sounds at the shot list's times, and writes the deliverables below into
+`android/app/build/explainer/`, plus `explainer-review.<lang>.mp4` with both caption files as tracks. The manual
+`explainer-video` workflow (Actions tab) does the same and uploads the draft as an artifact. Nothing is committed.
+
+What the draft is not yet: there is no voice-over (pass `--voice-over-en FILE` to the script once one exists), shots 1
+and 9 are drawn stand-ins until device footage exists (#194), and the camera is static. So the website keeps its
+"coming soon" card until the final cut.
 
 ## Deliverables
 

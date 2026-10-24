@@ -6,8 +6,7 @@ import org.junit.Test
 /**
  * Every screen of the accessibility pass (#29) at Android's largest font size (200%), in English and in Spanish,
  * with the made-up content of [A11yScreens]. `LargeFontScreensTest` checks the same screens for cut-off text; these
- * goldens show how they reflow. The phone ringtone card is left out: in a full test run it sometimes renders as a
- * blank window on Robolectric (#226); its checks still run in `LargeFontScreensTest`.
+ * goldens show how they reflow.
  */
 class LargeFontScreenshotTest(
     variant: Variant,
@@ -34,6 +33,8 @@ class LargeFontScreenshotTest(
 
     @Test fun hapticEditor() = largeFont("haptic-editor")
 
+    @Test fun phoneRingtone() = largeFont("phone-ringtone")
+
     @Test fun creatorPack() = largeFont("creator-pack")
 
     @Test fun creatorCharacter() = largeFont("creator-character")
@@ -59,6 +60,18 @@ class LargeFontScreenshotTest(
     @Test fun creatorFinish() = largeFont("creator-finish")
 
     @Test fun assignVoice() = largeFont("assign-voice")
+
+    @Test fun creatorCropper() = largeFont("creator-cropper")
+
+    @Test fun diagnostics() = largeFont("diagnostics")
+
+    @Test fun dayNight() = largeFont("day-night")
+
+    @Test fun restorePassphrase() = largeFont("restore-passphrase")
+
+    @Test fun restorePacks() = largeFont("restore-packs")
+
+    @Test fun restoreConflicts() = largeFont("restore-conflicts")
 
     @Test fun ringtonePicker() = largeFont("ringtone-picker")
 
