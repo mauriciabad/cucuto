@@ -585,7 +585,9 @@ phone without asking.
 `packer build` turns into a canonical archive: paths relative to the YAML file, clip folders and globs, labels from
 file names, character IDs from names, and shorthands such as `when: day` and `haptic: auto`. See the
 [packer README](../tools/packer/README.md#packyaml). The pack creators in the app and on the website write `pack.json`
-directly.
+directly, with the shared authoring rules in `shared/pack-spec` (`packspec.authoring`, [ADR 0034](decisions/0034-in-app-pack-creator.md)):
+packer's canonical layout, slugs of the names for character IDs and clip file names, and suggested pack IDs of the form
+`local.<author>.<name>-<random>` (people without a domain of their own; the first install or export fixes the IDs).
 
 ## Implementations and fixtures
 

@@ -72,7 +72,7 @@ others and "automatic" are one tap away, and the character page previews them in
 **Haptics.** Each character picks "Follows the voice" (`auto`, the default; the importer computes the envelopes),
 "Off" (`none`), or "Custom". Custom shows only when the screen has a haptic editor hook (`onEditHaptic`, which calls
 `CreatorViewModel.setCustomHaptic`) or the character already has a pattern, from a duplicated pack. The haptic editor
-(#32) landed while this was built. Wiring its screen to the hook is a small follow-up.
+(#32) landed while this was built. Wiring its screen to the hook is a small follow-up (#185).
 
 **Draft, install, export.**
 
@@ -100,6 +100,6 @@ pages (pack, character, framing, recording, clip editor) stacked inside it.
   reference signals. Encoding and the Ogg muxer can only run on a device; the probe check and the AAC fallback make a
   bad muxer a lower-quality clip instead of a broken pack. Needs a device pass (`needs-device`).
 - `RECORD_AUDIO` joins the manifest. It is asked for only on the Record tap, and nothing records in the background.
-- Ringtones are not edited by the creator, and duplicated packs lose them. "Simulate message" (posting a real
+- Ringtones are not edited by the creator, and duplicated packs lose them (#185). "Simulate message" (posting a real
   notification) is not built; the preview plays as a notification without posting one.
-- Open defaults (ID scheme, default license, mono 96 kb/s, WebP) are listed in a `question` issue for the owner.
+- Open defaults (ID scheme, default license, mono 96 kb/s, WebP) are listed in #184 for the owner.
