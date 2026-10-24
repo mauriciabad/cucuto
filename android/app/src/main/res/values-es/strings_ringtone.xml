@@ -49,7 +49,7 @@
     <string name="ringtone_picker_title">Tono de llamada</string>
     <string name="ringtone_picker_subtitle">Cuando llame %1$s</string>
     <string name="ringtone_picker_hint">Toca una portada para oírla y luego elige cómo suenan sus versiones.</string>
-    <string name="ringtone_picker_follows_voice">El mismo personaje que los mensajes</string>
+    <string name="ringtone_picker_follows_voice">El mismo que los mensajes</string>
     <string name="ringtone_picker_mixed">Elegido para las llamadas. Los mensajes siguen con %1$s</string>
     <string name="ringtone_picker_calls_only">Solo para llamadas: los mensajes aún no tienen voz</string>
     <string name="ringtone_picker_assigned">Sonará cuando llame %1$s</string>
@@ -68,7 +68,7 @@
     <string name="ringtone_picker_current">Ya elegido</string>
     <string name="ringtone_picker_pick_first">Elige un personaje</string>
     <string name="ringtone_picker_empty_title">Aún no hay tonos</string>
-    <string name="ringtone_picker_empty_body">Ninguno de tus packs tiene tonos. Importa un pack con canciones en Packs o descarga uno en Descubrir.</string>
+    <string name="ringtone_picker_empty_body">Ninguno de tus packs tiene tonos. Importa un pack con tonos en Packs o descarga uno en Descubrir.</string>
     <string name="ringtone_picker_failed">No se ha podido guardar el tono. Vuelve a intentarlo.</string>
 
     <!-- Permission explanations -->
@@ -84,7 +84,7 @@
     <string name="ringtone_close">Cerrar</string>
 
     <!-- Settings -->
-    <string name="settings_section_ringtones">Tonos de llamada</string>
+    <string name="settings_section_ringtones">Llamadas</string>
     <string name="settings_ringtones_switch">Los personajes suenan en las llamadas</string>
     <string name="settings_ringtones_on">Activado: los contactos vinculados suenan con su personaje.</string>
     <string name="settings_ringtones_off">Desactivado: los tonos de Android se quedan como están.</string>

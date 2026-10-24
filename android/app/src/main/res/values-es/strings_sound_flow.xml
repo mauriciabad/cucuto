@@ -30,5 +30,5 @@
 
     <!-- Inicio: el tono de cada fila, para TalkBack -->
     <string name="home_chat_ringtone_a11y">Tono: %1$s</string>
-    <string name="home_chat_ringtone_default_a11y">Tono: el predeterminado del móvil</string>
+    <string name="home_chat_ringtone_default_a11y">Tono: predeterminado de Android</string>
 </resources>

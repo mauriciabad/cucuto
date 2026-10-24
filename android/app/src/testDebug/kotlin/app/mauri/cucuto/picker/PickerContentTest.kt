@@ -102,7 +102,7 @@ class PickerContentTest {
     @Test
     fun previewModeHasNoChat() {
         show(previewPickerState().copy(chatKey = null, chat = null, selected = null))
-        compose.onNodeWithText("Preview characters").assertIsDisplayed()
+        compose.onNodeWithText("Hear the characters").assertIsDisplayed()
         compose.onNode(hasContentDescription("Remove voice")).assertDoesNotExist()
     }
 

@@ -118,7 +118,7 @@
     <string name="onboarding_door_description">Cucuto\'s cuckoo clock: a little door opens and a bird calls</string>
 
     <string name="onboarding_welcome_title">Give every contact a voice</string>
-    <string name="onboarding_welcome_body">When someone messages you on WhatsApp, your phone plays a clip from the character you picked for them, with its own vibration.</string>
+    <string name="onboarding_welcome_body">When someone messages you on WhatsApp, your phone plays a clip from the character you picked for them, with its own vibration. Phone calls can ring with a character\'s ringtone too.</string>
     <string name="onboarding_welcome_point_packs">Characters come from sound packs you import. Cucuto ships empty.</string>
     <string name="onboarding_welcome_point_android">Android still decides when to ring: muted chats, Do Not Disturb and silent mode work as before.</string>
     <string name="onboarding_welcome_point_private">Everything stays on your phone. No account, no analytics.</string>
@@ -179,7 +179,7 @@
     <!-- Character picker -->
     <string name="picker_title">Choose a voice</string>
     <string name="picker_subtitle_for">For %1$s</string>
-    <string name="picker_subtitle_preview">Preview characters</string>
+    <string name="picker_subtitle_preview">Hear the characters</string>
     <string name="picker_hint">Tap a character to hear it. Tap it again to give it to this chat.</string>
     <string name="picker_hint_preview">Tap a character to hear it. Open a chat from Home to give it a voice.</string>
     <string name="picker_speaks_as">Speaks as %1$s</string>
@@ -571,7 +571,7 @@
     <string name="error_license_not_spdx">The license isn\'t a standard license name, so it\'s shown as written.</string>
     <string name="error_unreferenced_file">Some files aren\'t used by any character and were left out.</string>
     <string name="error_media_undecodable">A sound or picture is damaged or can\'t be played on this phone.</string>
-    <string name="error_clip_duration_out_of_range">A notification sound is too short or too long. It must last 0.2 to 30 seconds.</string>
+    <string name="error_clip_duration_out_of_range">A message clip is too short or too long. It must last 0.2 to 30 seconds.</string>
     <string name="error_ringtone_duration_out_of_range">A ringtone is too short or too long. It must last 5 seconds to 6 minutes.</string>
     <string name="error_image_too_large">A picture is too big. Pictures can be at most 512 pixels on each side.</string>
     <string name="error_svg_unsafe">A picture (SVG) contains scripts or outside links, so it was blocked for safety.</string>
