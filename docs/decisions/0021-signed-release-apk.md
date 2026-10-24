@@ -1,6 +1,6 @@
 # 0021. Signed release APK on tag
 
-- Status: accepted (defaults the owner may override, and the key the owner creates: #140)
+- Status: accepted (defaults the owner may override, and the key the owner creates: #140); release notes from Conventional Commits instead of GitHub's generated list since ADR 0046
 - Date: 2026-10-24
 - Issue: #44 (feeds #39, the release-driven website)
 

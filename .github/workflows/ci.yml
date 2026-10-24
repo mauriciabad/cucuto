@@ -41,6 +41,7 @@ jobs:
       android: ${{ (github.event_name == 'workflow_dispatch' && !inputs.site_only) || steps.filter.outputs.android == 'true' }}
       web: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.web == 'true' }}
       packs: ${{ (github.event_name == 'workflow_dispatch' && !inputs.site_only) || steps.filter.outputs.packs == 'true' }}
+      metadata: ${{ steps.filter.outputs.metadata == 'true' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -72,6 +73,10 @@ jobs:
               - "spec/**"
               - "packs/**"
               - ".github/workflows/ci.yml"
+            metadata:
+              - "fastlane/**"
+              - "tools/release/**"
+              - ".github/workflows/ci.yml"
 
   media-guard:
     name: No media outside the allowlist
@@ -83,7 +88,8 @@ jobs:
         run: |
           # Audio, image and zip files (packs are <name>.soundpack.zip, backups cucuto-backup-*.zip) may only live in these paths. Copyrighted content never enters the repo.
           # android/app/src/testDebug/screenshots/: golden images of the screenshot tests, rendered from the CC0 demo packs and made-up chats (ADR 0032).
-          allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|android/core/[^/]+/src/[^/]+/(res|assets|resources)/|android/app/src/testDebug/screenshots/[^/]+\.png$|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
+          # fastlane/metadata/android/<locale>/images/: the store listing's icon (from brand/) and screenshots, rendered by the same tests (ADR 0046).
+          allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|android/core/[^/]+/src/[^/]+/(res|assets|resources)/|android/app/src/testDebug/screenshots/[^/]+\.png$|fastlane/metadata/android/[^/]+/images/[^/]+\.png$|fastlane/metadata/android/[^/]+/images/phoneScreenshots/[^/]+\.png$|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
           ext='\.(ogg|opus|oga|mp3|m4a|aac|flac|wav|mid|midi|png|jpe?g|webp|gif|avif|jxl|svg|bmp|heic|heif|webm|mp4|mov|soundpack|zip)$'
           bad=$(git ls-files | grep -iE "$ext" | grep -vE "$allow" || true)
           if [ -n "$bad" ]; then
@@ -92,6 +98,19 @@ jobs:
             exit 1
           fi
           echo "Media allowlist OK"
+
+  # Store listing metadata (fastlane/, ADR 0046): the length limits F-Droid, IzzyOnDroid and Obtainium enforce, so a
+  # too-long description or changelog fails here instead of being cut off. The runner's Kotlin CLI runs the script.
+  store-metadata:
+    name: Store metadata
+    needs: changes
+    if: needs.changes.outputs.metadata == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check titles, descriptions and changelogs
+        run: kotlin tools/release/release-notes.main.kts --check
 
   # Android: `./gradlew build assembleDebugAndroidTest` split into three parallel jobs (assemble, unit tests, lint).
   # Instrumented tests need a device: they are only compiled here.
@@ -411,12 +430,12 @@ jobs:
 
       - name: Build repository index
         run: |
-          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"; export SOURCE_DATE_EPOCH
           tools/packer/cli/build/install/packer/bin/packer index -o dist/repo \
             --name "Cucuto demo packs" --homepage https://cucuto.mauri.app \
             --description "Free CC0 packs made for Cucuto." dist/
           tools/packer/cli/build/install/packer/bin/packer validate dist/repo/repository.json
-          (cd dist && sha256sum *.soundpack.zip | tee SHA256SUMS)
+          (cd dist && sha256sum -- *.soundpack.zip | tee SHA256SUMS)
 
       - name: Upload demo packs
         uses: actions/upload-artifact@v7
@@ -477,7 +496,7 @@ jobs:
   # The single required status check. Do not rename: the `main` ruleset requires a check named exactly `ci-ok`.
   ci-ok:
     name: ci-ok
-    needs: [changes, media-guard, android-assemble, android-test, android-lint, pack-spec-js, web, packs]
+    needs: [changes, media-guard, store-metadata, android-assemble, android-test, android-lint, pack-spec-js, web, packs]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

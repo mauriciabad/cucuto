@@ -10,7 +10,7 @@ class HomeScreenshotTest(
 ) : ScreenshotTest(variant) {
     @Test
     fun home() =
-        screenshot("home", web = "home") {
+        screenshot("home", web = "home", store = 1) {
             HomeContent(
                 state =
                     buildHomeState(
