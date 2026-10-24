@@ -25,7 +25,7 @@ needed for `--normalize`, `--trim-silence`, `--opus`, `--jxl` and `validate --de
 ### build
 
 ```sh
-packer build packs/chiptune-critters                  # writes ./app.mauri.demo.chiptune-critters-1.0.0.soundpack.zip
+packer build packs/chiptune-critters                  # writes ./app.mauri.demo.chiptune-critters-1.1.0.soundpack.zip
 packer build packs/chiptune-critters -o dist/         # into a folder
 packer build my-pack -o my-pack.soundpack.zip --opus --normalize --trim-silence --jxl
 ```
