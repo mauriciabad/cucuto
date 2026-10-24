@@ -103,6 +103,12 @@ ringtone back, as for ring files (ADR 0039).
 - **Home list rows**: a small record cover (24 dp) tucked against the avatar for a character ringtone, or a call icon
   for Android default, as in the header, so the row's text keeps its width. TalkBack reads it with the row
   ("Ringtone: K.K. Slider", "Ringtone: Android default").
+- **In transitions** (owner update 2026-10-24, #339): the avatar and its cover move as one group. The cover is its own
+  shared element (`SharedCompanion`, keyed by the chat) drawn above the avatar's in the shared transition overlay, so
+  it never hides under the flying avatar or pops above it when the transition starts or ends; its size and offset
+  interpolate from the row to the header. A screen that shows the avatar without the cover (the character picker,
+  the recent senders strip) keeps an empty, zero-size anchor at the avatar's corner, so the cover shrinks into or
+  grows out of the avatar.
 - The **Phone calls** row says what rings: the character with its rule, "Android default", "Left as is", or "No
   ringtone yet". ~~For a character with several versions, "See and edit the rules" under it opens the rules screen of
   [ADR 0074](0074-ringtone-rules-screen.md).~~

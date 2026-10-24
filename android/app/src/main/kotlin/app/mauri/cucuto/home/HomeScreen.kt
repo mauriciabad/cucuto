@@ -96,6 +96,7 @@ import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.contacts.PersonAddIcon
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.motion.SharedCompanion
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.ringtone.RingtoneBadge
 import app.mauri.cucuto.ui.ringtone.ringtoneDescription
@@ -105,6 +106,11 @@ import app.mauri.cucuto.ui.theme.CucutoTheme
 
 /** Key of a chat's avatar in shared-element transitions (home list or strip → picker header). */
 data class ChatAvatarKey(
+    val chat: ChatKey,
+)
+
+/** Key of the ringtone badge riding on a chat's avatar ([ChatAvatarKey]), so the two move as one group (#339). */
+data class ChatRingtoneBadgeKey(
     val chat: ChatKey,
 )
 
@@ -470,14 +476,18 @@ private fun RecentSender(
                         onClick = onOpen,
                     ).padding(vertical = 8.dp, horizontal = 4.dp),
         ) {
-            SharedElement(ChatAvatarKey(row.key)) {
-                VoiceAvatar(
-                    character = null,
-                    name = row.chat.displayName,
-                    contentDescription = null,
-                    size = 64.dp,
-                    speaking = pressed,
-                )
+            Box {
+                SharedElement(ChatAvatarKey(row.key)) {
+                    VoiceAvatar(
+                        character = null,
+                        name = row.chat.displayName,
+                        contentDescription = null,
+                        size = 64.dp,
+                        speaking = pressed,
+                    )
+                }
+                // No badge here: a ringtone badge from contact detail shrinks into the avatar's corner (#339).
+                SharedCompanion(ChatRingtoneBadgeKey(row.key), Modifier.align(Alignment.BottomEnd))
             }
             Text(
                 text = name,
@@ -556,20 +566,24 @@ internal fun ChatListItem(
         leadingContent = {
             // The ringtone's cover tucked against the avatar, like contact detail's header (ADR 0073), so the text
             // keeps its width. TalkBack reads it with the row.
+            // The badge is its own shared element drawn above the avatar's, so the pair flies as one group (#339).
             Box {
                 SharedElement(if (shared) ChatAvatarKey(row.key) else null) {
                     VoiceAvatar(character = row.character, name = row.chat.displayName, contentDescription = null)
                 }
-                row.ringtone?.let { ringtone ->
+                val ringtone = row.ringtone
+                val badgeKey = if (shared) ChatRingtoneBadgeKey(row.key) else null
+                if (ringtone != null) {
                     val description = ringtoneDescription(ringtone)
-                    RingtoneBadge(
-                        ringtone,
-                        RINGTONE_BADGE_SIZE,
+                    SharedCompanion(
+                        badgeKey,
                         Modifier
                             .align(Alignment.BottomEnd)
                             .offset(x = 6.dp, y = 4.dp)
                             .semantics { contentDescription = description },
-                    )
+                    ) { RingtoneBadge(ringtone, RINGTONE_BADGE_SIZE) }
+                } else {
+                    SharedCompanion(badgeKey, Modifier.align(Alignment.BottomEnd))
                 }
             }
         },
