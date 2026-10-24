@@ -42,8 +42,14 @@ class RuleText(
                 val time = condition.time
                 val keyword = (time as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
                 when {
-                    keyword == "day" -> add(resources.getString(R.string.ringtone_rules_by_day))
-                    keyword == "night" -> add(resources.getString(R.string.ringtone_rules_at_night))
+                    keyword == "day" -> {
+                        add(resources.getString(R.string.ringtone_rules_by_day))
+                    }
+
+                    keyword == "night" -> {
+                        add(resources.getString(R.string.ringtone_rules_at_night))
+                    }
+
                     condition.timeRange != null -> {
                         val (from, to) = condition.timeRange!!
                         add(resources.getString(R.string.ringtone_rules_time_range, from, to))
@@ -76,7 +82,12 @@ class RuleText(
     /** The whole of [view] in one sentence: "Live by day and Radio at night", "Always Live". */
     fun summary(view: RulesView): String {
         if (view.lines.isEmpty()) return ""
-        if (view.unconditional) return resources.getString(R.string.ringtone_rules_always, name(view.lines.first().variant))
+        if (view.unconditional) {
+            return resources.getString(
+                R.string.ringtone_rules_always,
+                name(view.lines.first().variant),
+            )
+        }
         val items =
             view.lines
                 .filter { it.shadowedBy == null }
@@ -121,6 +132,7 @@ class RuleText(
     /** "on 25 December", "from 24 December to 6 January" (`when.date`, ADR 0059). */
     private fun dates(span: DateSpan): String {
         val format = DateTimeFormatter.ofPattern(resources.getString(R.string.ringtone_rules_day_pattern), locale)
+
         fun day(monthDay: Int) = format.format(LocalDate.of(LEAP_YEAR, monthDay / 100, monthDay % 100))
         return if (span.from == span.to) {
             resources.getString(R.string.ringtone_rules_on_day, day(span.from))
@@ -150,6 +162,6 @@ class RuleText(
 fun rememberRuleText(): RuleText {
     val configuration = LocalConfiguration.current
     val resources = LocalContext.current.resources
-    val locale = configuration.locales[0] ?: Locale.getDefault()
+    val locale = configuration.locales[0] ?: Locale.ROOT
     return remember(resources, locale) { RuleText(resources, locale) }
 }

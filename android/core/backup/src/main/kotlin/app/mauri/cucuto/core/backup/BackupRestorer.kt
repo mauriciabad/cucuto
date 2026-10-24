@@ -245,7 +245,10 @@ class BackupRestorer(
                 variant = if (mode == RingtoneMode.FIXED) ringtone.rule.variant else null,
                 updatedAt = clock.now(),
                 followsVoice = follows,
-                rules = ringtone.rule.rules.takeIf { mode == RingtoneMode.CUSTOM }?.let(RingtoneRules::encode),
+                rules =
+                    ringtone.rule.rules
+                        .takeIf { mode == RingtoneMode.CUSTOM }
+                        ?.let(RingtoneRules::encode),
             )
         val outcome =
             when {

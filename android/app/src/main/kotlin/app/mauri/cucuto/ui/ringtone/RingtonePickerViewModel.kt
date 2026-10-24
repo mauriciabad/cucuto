@@ -290,7 +290,12 @@ class RingtonePickerViewModel
                 } else {
                     null
                 }
-            val rules = current.saved?.rules.orEmpty().takeIf { mode == RingtoneMode.CUSTOM }.orEmpty()
+            val rules =
+                current.saved
+                    ?.rules
+                    .orEmpty()
+                    .takeIf { mode == RingtoneMode.CUSTOM }
+                    .orEmpty()
             val selection =
                 RingtoneSelection(item.voice, followsVoice = follows(current, item.voice), mode, variant, rules)
             interaction.update { it.copy(edited = selection, failed = false) }
@@ -317,7 +322,12 @@ class RingtonePickerViewModel
                     null
                 }
             // "Your own rules" are only offered while stored for this character: picking the chip again brings them back.
-            val rules = state.value.saved?.rules.orEmpty().takeIf { mode == RingtoneMode.CUSTOM }.orEmpty()
+            val rules =
+                state.value.saved
+                    ?.rules
+                    .orEmpty()
+                    .takeIf { mode == RingtoneMode.CUSTOM }
+                    .orEmpty()
             interaction.update {
                 it.copy(edited = selection.copy(mode = mode, variant = variant, rules = rules), failed = false)
             }
@@ -328,7 +338,10 @@ class RingtonePickerViewModel
             val selection = state.value.selection ?: return
             if (state.value.assigned != null || state.value.selectedCharacter?.variant(file) == null) return
             interaction.update {
-                it.copy(edited = selection.copy(mode = RingtoneMode.FIXED, variant = file, rules = emptyList()), failed = false)
+                it.copy(
+                    edited = selection.copy(mode = RingtoneMode.FIXED, variant = file, rules = emptyList()),
+                    failed = false,
+                )
             }
         }
 
@@ -392,8 +405,16 @@ class RingtonePickerViewModel
             if (mode == RingtoneMode.RANDOM) return variants.first().file
             val now = LocalDateTime.ofInstant(Instant.ofEpochMilli(clock.now()), ZoneId.systemDefault())
             return VariantRules
-                .pick(variants, mode, fixed, RuleContext(now), current = null, reroll = false, random = Random(0), rules = rules)
-                ?.file ?: variants.first().file
+                .pick(
+                    variants,
+                    mode,
+                    fixed,
+                    RuleContext(now),
+                    current = null,
+                    reroll = false,
+                    random = Random(0),
+                    rules = rules,
+                )?.file ?: variants.first().file
         }
 
         override fun onCleared() {

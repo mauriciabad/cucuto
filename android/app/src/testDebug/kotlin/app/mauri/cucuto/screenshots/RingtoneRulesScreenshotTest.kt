@@ -24,13 +24,19 @@ class RingtoneRulesScreenshotTest(
     variant: Variant,
 ) : ScreenshotTest(variant) {
     @Test
-    fun ringtoneRules() = screenshot("ringtone-rules") { RingtoneRulesContent(demoRulesState(), RingtoneRulesActions()) }
+    fun ringtoneRules() =
+        screenshot("ringtone-rules") { RingtoneRulesContent(demoRulesState(), RingtoneRulesActions()) }
 
     companion object {
         /** Iris and the demo frog's day and night pond songs, with her own swapped rules. */
         fun demoRulesState(): RingtoneRulesState {
             val chat = DemoContent.chats().first { it.voice == DemoContent.critters.voice("frog") }
-            val frog = DemoContent.critters.voicePack().characters.first { it.id == "frog" }
+            val frog =
+                DemoContent.critters
+                    .voicePack()
+                    .characters
+                    .first { it.id == "frog" }
+
             fun entry(
                 path: String,
                 label: String,

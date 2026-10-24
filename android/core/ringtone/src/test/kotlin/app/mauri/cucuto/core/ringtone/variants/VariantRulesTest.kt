@@ -174,7 +174,9 @@ class VariantRulesTest {
             LocalDateTime.parse("2026-10-25T00:00"),
             VariantRules.nextBoundary(variants, RingtoneMode.CUSTOM, at(8), rules),
         )
-        assertNull(VariantRules.nextBoundary(variants, RingtoneMode.CUSTOM, at(8), listOf(RingtoneRuleEntry("day.ogg"))))
+        assertNull(
+            VariantRules.nextBoundary(variants, RingtoneMode.CUSTOM, at(8), listOf(RingtoneRuleEntry("day.ogg"))),
+        )
     }
 
     private fun pickCustom(

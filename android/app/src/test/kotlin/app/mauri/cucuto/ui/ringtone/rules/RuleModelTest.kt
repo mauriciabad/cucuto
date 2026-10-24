@@ -65,7 +65,8 @@ class RuleModelTest {
         val draft = RulesDraft.fromPack(entries)
         assertTrue(RulesDraft.isPack(entries, draft.rules))
         // The pack's own list of one season reads as that season and still compares equal.
-        val summer = RingtoneVariant("summer.ogg", condition = When(season = JsonArray(listOf(JsonPrimitive("summer")))))
+        val summer =
+            RingtoneVariant("summer.ogg", condition = When(season = JsonArray(listOf(JsonPrimitive("summer")))))
         assertTrue(RulesDraft.isPack(listOf(summer), RulesDraft.fromPack(listOf(summer)).rules))
         // The winter row offers the pack's own condition; the others do not need it.
         assertTrue(WhenChoice.PACK in draft.rows[2].choices)

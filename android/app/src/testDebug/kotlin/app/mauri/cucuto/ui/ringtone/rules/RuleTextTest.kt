@@ -25,10 +25,11 @@ class RuleTextTest {
             "k/party.ogg",
             condition =
                 When(
-                    time = buildJsonObject {
-                        put("from", "22:00")
-                        put("to", "06:00")
-                    },
+                    time =
+                        buildJsonObject {
+                            put("from", "22:00")
+                            put("to", "06:00")
+                        },
                     season = JsonArray(listOf(JsonPrimitive("summer"), JsonPrimitive("autumn"))),
                     weekday = JsonArray(listOf(JsonPrimitive("sat"), JsonPrimitive("sun"))),
                 ),
@@ -72,7 +73,10 @@ class RuleTextTest {
                     ),
             )
         assertEquals("on 25 December and from 31 December to 6 January", text.condition(holidays))
-        assertEquals("As the pack says: in summer and autumn", text.choice(WhenChoice.PACK, When(season = party.condition!!.season)))
+        assertEquals(
+            "As the pack says: in summer and autumn",
+            text.choice(WhenChoice.PACK, When(season = party.condition!!.season)),
+        )
     }
 
     @Test

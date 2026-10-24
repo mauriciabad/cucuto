@@ -107,9 +107,18 @@ enum class WhenChoice {
             val time = (condition.time as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
             val seasons = condition.seasons
             return when {
-                condition.weekday != null || condition.date != null -> PACK
-                condition.season == null && time == DAY_KEYWORD -> DAY
-                condition.season == null && time == NIGHT_KEYWORD -> NIGHT
+                condition.weekday != null || condition.date != null -> {
+                    PACK
+                }
+
+                condition.season == null && time == DAY_KEYWORD -> {
+                    DAY
+                }
+
+                condition.season == null && time == NIGHT_KEYWORD -> {
+                    NIGHT
+                }
+
                 condition.time == null && seasons.size == 1 -> {
                     when (seasons.single()) {
                         RuleContext.SPRING -> SPRING
@@ -120,7 +129,9 @@ enum class WhenChoice {
                     }
                 }
 
-                else -> PACK
+                else -> {
+                    PACK
+                }
             }
         }
     }
@@ -174,7 +185,11 @@ data class RulesDraft(
     val variants: List<RingtoneVariant>
         get() {
             val first = fallbackRow ?: return emptyList()
-            return (listOf(first) + rows.filter { it.on && it !== first }).map { it.variant.copy(condition = it.condition) }
+            return (
+                listOf(
+                    first,
+                ) + rows.filter { it.on && it !== first }
+            ).map { it.variant.copy(condition = it.condition) }
         }
 
     fun toggle(
@@ -184,7 +199,10 @@ data class RulesDraft(
         if (!on && onCount <= 1 && rows.getOrNull(index)?.on == true) return this
         val updated = rows.mapIndexed { i, row -> if (i == index) row.copy(on = on) else row }
         val fallbackOn = updated.getOrNull(fallback)?.on == true
-        return copy(rows = updated, fallback = if (fallbackOn) fallback else updated.indexOfFirst { it.on }.coerceAtLeast(0))
+        return copy(
+            rows = updated,
+            fallback = if (fallbackOn) fallback else updated.indexOfFirst { it.on }.coerceAtLeast(0),
+        )
     }
 
     fun choose(
@@ -219,7 +237,14 @@ data class RulesDraft(
                 }
             if (saved.isEmpty()) return fromPack(entries)
             val files = saved.map { it.file }.toSet()
-            val rest = entries.filter { it.file !in files }.distinctBy { it.file }.map { RuleRow(it, it.condition, on = false) }
+            val rest =
+                entries.filter { it.file !in files }.distinctBy { it.file }.map {
+                    RuleRow(
+                        it,
+                        it.condition,
+                        on = false,
+                    )
+                }
             return RulesDraft(saved + rest)
         }
 

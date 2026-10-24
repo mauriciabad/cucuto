@@ -144,7 +144,13 @@ class RingtonePickerViewModelTest {
             collect(vm)
             val state = vm.state.value
             assertEquals(
-                listOf(RingtoneMode.PACK, RingtoneMode.CUSTOM, RingtoneMode.RANDOM, RingtoneMode.TIME, RingtoneMode.FIXED),
+                listOf(
+                    RingtoneMode.PACK,
+                    RingtoneMode.CUSTOM,
+                    RingtoneMode.RANDOM,
+                    RingtoneMode.TIME,
+                    RingtoneMode.FIXED,
+                ),
                 state.modes,
             )
             assertEquals(RingtoneMode.CUSTOM, state.selection?.mode)
@@ -152,9 +158,17 @@ class RingtonePickerViewModelTest {
             assertFalse(state.canSave)
 
             vm.setMode(RingtoneMode.TIME)
-            assertEquals(emptyList<RingtoneRuleEntry>(), vm.state.value.selection?.rules)
+            assertEquals(
+                emptyList<RingtoneRuleEntry>(),
+                vm.state.value.selection
+                    ?.rules,
+            )
             vm.setMode(RingtoneMode.CUSTOM)
-            assertEquals(rules, vm.state.value.selection?.rules)
+            assertEquals(
+                rules,
+                vm.state.value.selection
+                    ?.rules,
+            )
             assertFalse(vm.state.value.canSave)
 
             // Another character never offers them.
@@ -180,7 +194,11 @@ class RingtonePickerViewModelTest {
                 ),
             )
             assertNull(vm.state.value.edited)
-            assertEquals(RingtoneMode.CUSTOM, vm.state.value.selection?.mode)
+            assertEquals(
+                RingtoneMode.CUSTOM,
+                vm.state.value.selection
+                    ?.mode,
+            )
         }
 
     @Test

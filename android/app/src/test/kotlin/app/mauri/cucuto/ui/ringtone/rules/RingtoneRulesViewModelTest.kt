@@ -92,7 +92,13 @@ class RingtoneRulesViewModelTest {
             assertEquals(RingtoneMode.PACK, state.mode)
             assertEquals(day.variant, state.ringingNow)
             assertEquals(
-                listOf(RingtoneMode.PACK, RingtoneMode.CUSTOM, RingtoneMode.RANDOM, RingtoneMode.TIME, RingtoneMode.FIXED),
+                listOf(
+                    RingtoneMode.PACK,
+                    RingtoneMode.CUSTOM,
+                    RingtoneMode.RANDOM,
+                    RingtoneMode.TIME,
+                    RingtoneMode.FIXED,
+                ),
                 state.modes,
             )
             assertFalse(state.canSave)
@@ -129,7 +135,11 @@ class RingtoneRulesViewModelTest {
             collect(vm)
             assertEquals(RingtoneMode.RANDOM, vm.state.value.mode)
             vm.setMode(RingtoneMode.CUSTOM)
-            assertEquals(RingtoneMode.PACK, vm.state.value.selection?.mode)
+            assertEquals(
+                RingtoneMode.PACK,
+                vm.state.value.selection
+                    ?.mode,
+            )
             assertTrue(vm.save())
             assertEquals(RingtoneMode.PACK, source.saved.single().mode)
             assertEquals(emptyList<RingtoneRuleEntry>(), source.saved.single().rules)
@@ -168,8 +178,17 @@ class RingtoneRulesViewModelTest {
             assertEquals(night.variant, vm.state.value.ringingNow)
             vm.toggleRow(0, false)
             vm.toggleRow(1, false)
-            assertEquals(listOf(false, true), vm.state.value.draft.rows.map { it.on })
-            assertEquals(listOf("frog/night.ogg"), vm.state.value.selection?.rules?.map { it.variant })
+            assertEquals(
+                listOf(false, true),
+                vm.state.value.draft.rows
+                    .map { it.on },
+            )
+            assertEquals(
+                listOf("frog/night.ogg"),
+                vm.state.value.selection
+                    ?.rules
+                    ?.map { it.variant },
+            )
         }
 
     @Test
@@ -209,7 +228,11 @@ class RingtoneRulesViewModelTest {
             collect(vm)
             vm.togglePreview("frog/night.ogg")
             assertEquals(listOf("frog/night.ogg"), preview.plays)
-            assertEquals("frog/night.ogg", vm.state.value.preview?.key)
+            assertEquals(
+                "frog/night.ogg",
+                vm.state.value.preview
+                    ?.key,
+            )
             vm.setMode(RingtoneMode.RANDOM)
             assertNull(vm.state.value.ringingNow)
             source.phoneState = false
@@ -239,7 +262,19 @@ class RingtoneRulesViewModelTest {
         ): Flow<RingtoneRulesData> =
             combine(this.chat, entries, row) { c, e, r ->
                 val character = listOf(frog, kettle).first { it.voice == voice }
-                RingtoneRulesData(character, "Chiptune critters", if (voice == frog.voice) e else emptyList(), c.takeIf { chat != null }, r.takeIf { chat != null })
+                RingtoneRulesData(
+                    character,
+                    "Chiptune critters",
+                    if (voice ==
+                        frog.voice
+                    ) {
+                        e
+                    } else {
+                        emptyList()
+                    },
+                    c.takeIf { chat != null },
+                    r.takeIf { chat != null },
+                )
             }
 
         override suspend fun save(

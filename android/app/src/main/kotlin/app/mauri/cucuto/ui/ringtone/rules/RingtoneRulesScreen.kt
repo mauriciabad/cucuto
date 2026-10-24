@@ -223,11 +223,17 @@ fun RingtoneRulesContent(
                 PackRules(state, text, actions)
                 val chatName = state.chat?.displayName ?: stringResource(R.string.chat_unnamed)
                 when {
-                    state.chatKey == null -> Hint(stringResource(R.string.ringtone_rules_view_only))
+                    state.chatKey == null -> {
+                        Hint(stringResource(R.string.ringtone_rules_view_only))
+                    }
+
                     state.otherCharacter -> {
                         Hint(stringResource(R.string.ringtone_rules_other_character, character.name, chatName))
                     }
-                    state.editable -> ContactRules(state, chatName, text, actions)
+
+                    state.editable -> {
+                        ContactRules(state, chatName, text, actions)
+                    }
                 }
             }
         }
@@ -256,7 +262,11 @@ private fun Header(
                 overflow = TextOverflow.Ellipsis,
             )
             state.packName?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Text(
                 state.ringingNow?.let { stringResource(R.string.ringtone_rules_now, text.name(it)) }
@@ -276,36 +286,50 @@ private fun PackRules(
     actions: RingtoneRulesActions,
 ) {
     val view = state.packView
-    SectionTitle(stringResource(R.string.ringtone_rules_pack_section))
-    Text(text.summary(view), style = MaterialTheme.typography.titleMedium)
-    Column {
-        view.lines.forEachIndexed { index, line ->
-            val item = state.entries.getOrNull(index)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = 4.dp),
-            ) {
-                RingtonePlayButton(
-                    preview = state.preview?.takeIf { it.key == line.variant.file },
-                    name = text.name(line.variant),
-                    onToggle = { actions.onTogglePreview(line.variant.file) },
-                    onStop = actions.onStopPreview,
-                    enabled = item?.audio != null,
-                )
-                Column(Modifier.weight(1f)) {
-                    Text(text.name(line.variant), style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        text.line(line, view),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle(stringResource(R.string.ringtone_rules_pack_section))
+        Text(text.summary(view), style = MaterialTheme.typography.titleMedium)
+        Column {
+            view.lines.forEachIndexed { index, line ->
+                RuleLineRow(line, view, state, text, actions, enabled = state.entries.getOrNull(index)?.audio != null)
             }
         }
+        text.fallback(view)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        if (mentionsDay(state.variants.map { it.condition })) Hint(stringResource(R.string.ringtone_rules_day_note))
     }
-    text.fallback(view)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-    if (mentionsDay(state.variants.map { it.condition })) Hint(stringResource(R.string.ringtone_rules_day_note))
+}
+
+/** One entry of the pack's rules: its play button, its name and when it rings. */
+@Composable
+private fun RuleLineRow(
+    line: RuleLine,
+    view: RulesView,
+    state: RingtoneRulesState,
+    text: RuleText,
+    actions: RingtoneRulesActions,
+    enabled: Boolean,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = 4.dp),
+    ) {
+        RingtonePlayButton(
+            preview = state.preview?.takeIf { it.key == line.variant.file },
+            name = text.name(line.variant),
+            onToggle = { actions.onTogglePreview(line.variant.file) },
+            onStop = actions.onStopPreview,
+            enabled = enabled,
+        )
+        Column(Modifier.weight(1f)) {
+            Text(text.name(line.variant), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text.line(line, view),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 /** The rule for this chat: a radio list, "One version"'s versions and "Your own rules"' editor under the chosen one. */
@@ -316,37 +340,49 @@ private fun ContactRules(
     text: RuleText,
     actions: RingtoneRulesActions,
 ) {
-    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-    SectionTitle(stringResource(R.string.ringtone_rules_contact_section, chatName))
-    if (state.modes.isEmpty()) {
-        Hint(stringResource(R.string.ringtone_rules_one_version))
-        return
-    }
-    Column(Modifier.selectableGroup()) {
-        for (mode in state.modes) {
-            val selected = state.mode == mode
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                        .selectable(selected = selected, role = Role.RadioButton) { if (!selected) actions.onMode(mode) }
-                        .padding(vertical = 4.dp),
-            ) {
-                RadioButton(selected = selected, onClick = null)
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(mode.label), style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        stringResource(mode.body),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        SectionTitle(stringResource(R.string.ringtone_rules_contact_section, chatName))
+        if (state.modes.isEmpty()) {
+            Hint(stringResource(R.string.ringtone_rules_one_version))
+        } else {
+            Column(Modifier.selectableGroup()) {
+                for (mode in state.modes) {
+                    val selected = state.mode == mode
+                    ModeRow(mode, selected) { if (!selected) actions.onMode(mode) }
+                    if (selected && mode == RingtoneMode.FIXED) Versions(state, text, actions)
+                    if (selected && mode == RingtoneMode.CUSTOM) OwnRules(state, text, actions)
                 }
             }
-            if (selected && mode == RingtoneMode.FIXED) Versions(state, text, actions)
-            if (selected && mode == RingtoneMode.CUSTOM) OwnRules(state, text, actions)
+        }
+    }
+}
+
+/** One rule of the radio list, with its one-line explanation. */
+@Composable
+private fun ModeRow(
+    mode: RingtoneMode,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
+                .padding(vertical = 4.dp),
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(mode.label), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(mode.body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -530,7 +566,16 @@ private fun RingtoneRulesPreview() {
  */
 internal fun previewRingtoneRulesState(
     character: VoiceCharacter =
-        VoiceCharacter("app.mauri.demo.songs", "bubblegum", "Bubblegum K.K.", null, null, 0xFFEC407A.toInt(), emptyList(), Haptic.Keep),
+        VoiceCharacter(
+            "app.mauri.demo.songs",
+            "bubblegum",
+            "Bubblegum K.K.",
+            null,
+            null,
+            0xFFEC407A.toInt(),
+            emptyList(),
+            Haptic.Keep,
+        ),
     files: (String) -> File? = { File(it) },
 ): RingtoneRulesState {
     fun entry(
@@ -542,7 +587,11 @@ internal fun previewRingtoneRulesState(
         listOf(
             entry("bubblegum/live.ogg", "Live", When(time = JsonPrimitive("day"))),
             entry("bubblegum/radio.ogg", "Radio", When(time = JsonPrimitive("night"))),
-            entry("bubblegum/winter.ogg", "Winter", When(time = JsonPrimitive("night"), season = JsonPrimitive("winter"))),
+            entry(
+                "bubblegum/winter.ogg",
+                "Winter",
+                When(time = JsonPrimitive("night"), season = JsonPrimitive("winter")),
+            ),
         )
     val key = ChatKey("com.whatsapp", "100000000000003@lid")
     val variants = entries.map { it.variant }
@@ -560,7 +609,13 @@ internal fun previewRingtoneRulesState(
         packName = "Songs",
         entries = entries,
         chat = Chat(key, 3, "Iris", false, character.voice, 0L, 1),
-        saved = RingtoneSelection(character.voice, followsVoice = true, mode = RingtoneMode.CUSTOM, rules = draft.rules),
+        saved =
+            RingtoneSelection(
+                character.voice,
+                followsVoice = true,
+                mode = RingtoneMode.CUSTOM,
+                rules = draft.rules,
+            ),
         now = LocalDateTime.parse("2026-10-24T12:00"),
     )
 }

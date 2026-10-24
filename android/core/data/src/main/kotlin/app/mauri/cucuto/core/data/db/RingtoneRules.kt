@@ -33,7 +33,8 @@ object RingtoneRules {
     private val serializer = ListSerializer(RingtoneRuleEntry.serializer())
 
     /** The stored text of [rules], or null for an empty list (no rules of its own). */
-    fun encode(rules: List<RingtoneRuleEntry>): String? = if (rules.isEmpty()) null else json.encodeToString(serializer, rules)
+    fun encode(rules: List<RingtoneRuleEntry>): String? =
+        if (rules.isEmpty()) null else json.encodeToString(serializer, rules)
 
     /** The rules in [text]; empty when there are none or the text cannot be read (the pack's rules then apply). */
     fun decode(text: String?): List<RingtoneRuleEntry> {

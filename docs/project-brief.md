@@ -531,7 +531,7 @@ Development is near the end (owner, 2026-10-24). From now on, occasional single 
 | M6 Website | Every page, release-driven builds, the default repository, JPEG XL, screenshots, GitHub Pages and DNS | Explainer video rework (#271); TypeScript 7 (#162, blocked upstream) |
 | M7 Open-source release | Public repo and docs, CI with the media guard, signed releases, backup and restore UI, Google Play bundle and listing | Contact re-linking (PR #266) and a wiped-phone restore (#43, owner); review sample chat (#285); Play account, video and defaults (#276, #286, #287, owner); clean-install end to end (#46, owner); F-Droid after v1 (#275) |
 | M8 Pack creator (v1.1) | In-app creator, website Create page and its tools, golden packs through every validator | Creator vibrations, ringtones and animated sprites (#185, PR #225) |
-| M9 Ringtones | Ring files and auto-cut clips, phone ringtones with variants, ringtone picker, independent voice and ringtone, day and night | Sound flow rethink (#298); pack rules per contact (#288); supervised device runs (#143, #228, owner); automatic WhatsApp call ringtones (#273, blocked on #228); the owner's K.K. check |
+| M9 Ringtones | Ring files and auto-cut clips, phone ringtones with variants, ringtone picker, independent voice and ringtone, day and night, the ringtone rules screen and per-contact rules (#288) | Sound flow rethink (#298); supervised device runs (#143, #228, owner); automatic WhatsApp call ringtones (#273, blocked on #228); the owner's K.K. check |
 
 No milestone: special clips (#120, PR #258), finding Drive backups on a fresh install (#163, needs #188).
 

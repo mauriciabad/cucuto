@@ -101,7 +101,9 @@ data class RingtoneRulesState(
     val mode: RingtoneMode get() = edit.mode ?: savedMode
 
     val variant: String?
-        get() = edit.variant ?: saved?.variant?.takeIf { v -> versions.any { it.file == v } } ?: versions.firstOrNull()?.file
+        get() =
+            edit.variant ?: saved?.variant?.takeIf { v -> versions.any { it.file == v } }
+                ?: versions.firstOrNull()?.file
 
     /** "Your own rules" as edited, else as stored, else a copy of the pack's. */
     val draft: RulesDraft
@@ -117,8 +119,14 @@ data class RingtoneRulesState(
             val base = saved ?: return null
             val single = modes.isEmpty()
             return when {
-                single -> base.copy(mode = RingtoneMode.PACK, variant = null, rules = emptyList())
-                mode == RingtoneMode.FIXED -> base.copy(mode = mode, variant = variant, rules = emptyList())
+                single -> {
+                    base.copy(mode = RingtoneMode.PACK, variant = null, rules = emptyList())
+                }
+
+                mode == RingtoneMode.FIXED -> {
+                    base.copy(mode = mode, variant = variant, rules = emptyList())
+                }
+
                 mode == RingtoneMode.CUSTOM -> {
                     val rules = draft.rules
                     if (rules.isEmpty() || RulesDraft.isPack(variants, rules)) {
@@ -128,7 +136,9 @@ data class RingtoneRulesState(
                     }
                 }
 
-                else -> base.copy(mode = mode, variant = null, rules = emptyList())
+                else -> {
+                    base.copy(mode = mode, variant = null, rules = emptyList())
+                }
             }
         }
 
@@ -213,7 +223,10 @@ class RingtoneRulesViewModel
 
         /** Rings [file] like the call, or pauses and resumes it when it is the one ringing. */
         fun togglePreview(file: String) {
-            val sound = state.value.versions.firstOrNull { it.file == file }?.sound() ?: return
+            val sound =
+                state.value.versions
+                    .firstOrNull { it.file == file }
+                    ?.sound() ?: return
             playback.toggle(file, sound)
         }
 
@@ -282,14 +295,21 @@ class RingtoneRulesViewModel
             edit { it.copy(mode = RingtoneMode.CUSTOM, draft = change(current.draft)) }
         }
 
-        private fun now(): LocalDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(clock.now()), ZoneId.systemDefault())
+        private fun now(): LocalDateTime =
+            LocalDateTime.ofInstant(Instant.ofEpochMilli(clock.now()), ZoneId.systemDefault())
 
         /** What rings for the chat: its stored ringtone, else its voice's own (which then rings by the pack's rules). */
         private fun ringing(data: RingtoneRulesData): RingtoneSelection? {
             val chat = data.chat
             RingtonePickerViewModel.saved(data.saved, chat?.voice)?.let { return it }
             val voice = chat?.voice ?: return null
-            return if (voice == this.voice && data.entries.isNotEmpty()) RingtoneSelection(voice, followsVoice = true) else null
+            return if (voice == this.voice &&
+                data.entries.isNotEmpty()
+            ) {
+                RingtoneSelection(voice, followsVoice = true)
+            } else {
+                null
+            }
         }
 
         override fun onCleared() {

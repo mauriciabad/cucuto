@@ -169,7 +169,10 @@ class PhoneRingtoneViewModel
             val follows = contact.ringtone?.followsVoice ?: true
             val previewVariant =
                 current
-                    ?: variants.takeIf { it.isNotEmpty() }?.let { previewVariant(it, mode, contact.ringtone?.variant, contact.ringtone?.rules) }
+                    ?: variants
+                        .takeIf {
+                            it.isNotEmpty()
+                        }?.let { previewVariant(it, mode, contact.ringtone?.variant, contact.ringtone?.rules) }
             return PhoneRingtoneUiState(
                 loading = false,
                 enabled = contact.enabled,

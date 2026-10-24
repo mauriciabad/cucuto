@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.ringtone.rules
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -8,7 +9,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.ui.ringtone.RingtoneSelection
@@ -47,7 +47,8 @@ class RingtoneRulesContentTest {
         compose.onNodeWithText("Live by day, Radio at night, and Winter at night, in winter").assertIsDisplayed()
         compose.onNodeWithText("Rings at night, in winter").assertIsDisplayed()
         compose.onNodeWithContentDescription("Play Radio").performClick()
-        compose.onNodeWithText("To change them for one contact, open the ringtone picker from the contact's chat.")
+        compose
+            .onNodeWithText("To change them for one contact, open the ringtone picker from the contact's chat.")
             .performScrollTo()
             .assertIsDisplayed()
         compose.onNodeWithText("Save").assertDoesNotExist()
@@ -73,9 +74,11 @@ class RingtoneRulesContentTest {
     fun anotherCharacterOnlyShowsTheRules() {
         val base = previewRingtoneRulesState()
         show(base.copy(saved = RingtoneSelection(base.voice.copy(characterId = "kettle"), followsVoice = false)))
-        compose.onNodeWithText(
-            "Bubblegum K.K. doesn't ring for Iris yet. Save it in the ringtone picker first, then change its rules here.",
-        ).performScrollTo().assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                "Bubblegum K.K. doesn't ring for Iris yet. Save it in the ringtone picker first, then change its rules here.",
+            ).performScrollTo()
+            .assertIsDisplayed()
         compose.onNodeWithText("Random per call").assertDoesNotExist()
     }
 
