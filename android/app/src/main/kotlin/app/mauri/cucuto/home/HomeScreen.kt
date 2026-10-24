@@ -150,6 +150,8 @@ fun HomeScreen(
         onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
         onDismissCelebration = journeyViewModel::dismissCelebration,
         setupCard = { SetupCardSection(onNavigate = onNavigate) },
+        // A demo chat that plays in the app, for reviewers and anyone without the module yet (ADR 0075).
+        onTrySampleChat = { onNavigate(CucutoDestination.SampleChat) },
     )
 }
 
@@ -173,6 +175,7 @@ fun HomeContent(
     onPreviewCharacters: () -> Unit = {},
     onDismissCelebration: () -> Unit = {},
     setupCard: @Composable () -> Unit = {},
+    onTrySampleChat: () -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf(state.query) }
     val latestOnQueryChange by rememberUpdatedState(onQueryChange)
@@ -239,6 +242,7 @@ fun HomeContent(
                         onOpenChat = open,
                         onPreviewCharacters = onPreviewCharacters,
                         onDismissCelebration = onDismissCelebration,
+                        onTrySampleChat = onTrySampleChat,
                         modifier = Modifier.animateItem(),
                     )
                 }
