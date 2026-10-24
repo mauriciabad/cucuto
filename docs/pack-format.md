@@ -597,6 +597,9 @@ directly.
   [ADR 0008](decisions/0008-pack-importer.md)).
 - The website validates with the same Kotlin code, `shared/pack-spec` compiled to JavaScript (owner decision on #60,
   [ADR 0022](decisions/0022-pack-spec-in-the-browser.md)), so it reports the same codes by construction.
+- The pack creators (the app's and the website's Create page) share `shared/pack-spec`'s `authoring` package: the
+  canonical layout, file names, `pack.json` serialization and clip processing, so both write the same packs
+  ([ADR 0038](decisions/0038-web-pack-creator.md)).
 - CI runs every fixture through all three: the JVM module (packer's build), the Android importer (`:core:pack` tests)
   and the browser build (`web/tests/pack-spec.test.ts` under Bun).
 - [`spec/fixtures/fixtures.json`](../spec/fixtures/fixtures.json) lists every golden fixture with its `kind`

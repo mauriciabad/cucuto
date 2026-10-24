@@ -5,6 +5,7 @@ import { test } from '@playwright/test';
 const paths = [
 	'/',
 	'/packs/',
+	'/create/',
 	'/install/',
 	'/authors/',
 	'/authors/pack-format/',

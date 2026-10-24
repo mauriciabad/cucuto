@@ -210,3 +210,19 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 > i would like to ask for a separate new feature related to backups. whatsapp can save the chat backup in google drive automatically, i would like to also have that feature and it also backs up the files needed and their source. so if i loose the phone, on the new one i'm ofered to restore a backup and it works even if the repositories are down or closed.
 
 The defaults stand. Automatic backups skip a backup identical to the last one, and include the pack files by default (#28, ADR 0028; new defaults in #166). The Google Drive backup request is #163.
+
+> I did this https://github.com/mauriciabad/cucuto/issues/140 . is it working? i want to install the apk on my pnohe
+
+(Owner set up release signing and pushed v0.1.0; the run failed on a workflow bug, fixed in #168.)
+
+> i allow you making releases
+
+(Lead released v0.1.1 and v0.1.2, signed with the owner's key, and installed them on the phone.)
+
+> it is unlocked. but i will go to sleep and i wont be able to reboot it. i will tell you when i go to sleep
+
+> can i disconnect my phone for a while?
+
+> check that all agents are unblocked
+
+> i go to sleep i leave you working alone

@@ -15,7 +15,13 @@ export const es: Messages = {
 		skipLink: 'Saltar al contenido',
 		homeLabel: 'Inicio de Cucuto',
 		navLabel: 'Principal',
-		nav: { packs: 'Packs', install: 'Instalar', authors: 'Crear packs', privacy: 'Privacidad' },
+		nav: {
+			packs: 'Packs',
+			create: 'Crear',
+			install: 'Instalar',
+			authors: 'Para autores',
+			privacy: 'Privacidad'
+		},
 		github: 'GitHub',
 		languageLabel: 'Idioma',
 		switchTo: 'Read in English',
@@ -178,7 +184,7 @@ export const es: Messages = {
 			{
 				q: '¿Puedo crear mis propios packs?',
 				aHtml:
-					'Sí. El formato de los packs es abierto y está documentado, y cualquiera puede alojar un repositorio de packs en una web estática. Consulta la <a href="{authors}">guía para crear packs</a>. Está previsto un creador de packs en la app y en esta web.'
+					'Sí. El formato de los packs es abierto y está documentado, y cualquiera puede alojar un repositorio de packs en una web estática. Consulta la <a href="{authors}">guía para crear packs</a>. Crea uno en el navegador con la página <a href="{create}">Crear</a>; está previsto un creador de packs en la app.'
 			},
 			{
 				q: '¿Por qué no está en Google Play?',
@@ -348,7 +354,7 @@ export const es: Messages = {
 			{
 				title: 'Con el creador de packs',
 				textHtml:
-					'Elige imágenes, graba o importa clips, recórtalos y exporta, en la app o en esta web, sin herramientas. <strong>Previsto.</strong>'
+					'Elige imágenes, graba o importa clips, recórtalos y descarga el pack en la página <a href="{create}">Crear</a>, en el navegador y sin herramientas. En la app: previsto.'
 			},
 			{
 				title: 'A mano',
@@ -421,6 +427,7 @@ export const es: Messages = {
 		siteTitle: 'Esta web',
 		site: [
 			'Todas las páginas, fuentes, imágenes y clips de muestra se sirven desde esta web; no hace peticiones a otros servicios. Para funcionar sin conexión y cargar más rápido, tu navegador guarda una copia de la web en su caché (un service worker). Esa copia se queda en tu dispositivo y puedes borrarla en los ajustes del navegador.',
+			'La página <a href="{create}">Crear</a> usa tu micrófono solo mientras grabas, y solo si lo permites. Las imágenes y los sonidos que añades allí se procesan en tu navegador y nunca salen de tu dispositivo.',
 			'La web está alojada en GitHub Pages, y el APK y los packs se descargan como archivos de versiones de GitHub. Como cualquier alojamiento web, GitHub recibe datos técnicos como tu dirección IP al servir un archivo; consulta la <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="external">declaración de privacidad de GitHub</a>.'
 		],
 		appTitle: 'La app',
@@ -459,7 +466,7 @@ export const es: Messages = {
 		title: 'Abrir un pack',
 		description: 'Abre archivos .soundpack.zip con la web app de Cucuto.',
 		leadHtml:
-			'Cucuto comprueba los archivos de pack que abras aquí (<code>.soundpack.zip</code>, o cualquier <code>.zip</code> de pack) con las mismas reglas que la app, en tu dispositivo. Previsualizarlos y editarlos llegará con el creador de packs; para instalar un pack, impórtalo en la app Cucuto de tu móvil.',
+			'Cucuto comprueba los archivos de pack que abras aquí (<code>.soundpack.zip</code>, o cualquier <code>.zip</code> de pack) con las mismas reglas que la app, en tu dispositivo. Para hacer el tuyo, usa la página <a href="{create}">Crear</a>; para instalar un pack, impórtalo en la app Cucuto de tu móvil.',
 		opened: 'Has abierto:',
 		browse: 'Ver packs gratuitos'
 	},
@@ -477,6 +484,143 @@ export const es: Messages = {
 			'Cada código se explica en el <a href="{packFormat}#error-codes">formato de pack</a>. Los detalles están en inglés.',
 		failed: 'No se ha podido comprobar el archivo ({error}).',
 		unavailable: 'El comprobador de packs no forma parte de esta versión de la web.'
+	},
+	create: {
+		title: 'Crear un pack',
+		description:
+			'Crea un pack de sonidos de Cucuto en el navegador: imágenes, clips grabados o importados, recortados y nivelados, comprobados y descargados como .soundpack.zip. No se sube nada.',
+		leadHtml:
+			'Elige imágenes, graba o importa sonidos y descarga un <code>.soundpack.zip</code> que la app importa. Usa las mismas reglas que la app, así que lo que hagas aquí se importa en cualquier sitio.',
+		privacy: 'Todo pasa en este dispositivo: las imágenes y los sonidos nunca se suben.',
+		offline:
+			'Funciona sin conexión: instala esta web como app desde el menú del navegador y crea packs sin internet.',
+		loading: 'Cargando el creador de packs…',
+		unavailable: 'El creador de packs no forma parte de esta versión de la web.',
+		loadFailed:
+			'No se ha podido cargar el creador de packs ({error}). Recarga la página para reintentarlo.',
+		wavNotice:
+			'Este navegador no sabe codificar Opus, así que los clips se guardan en WAV. Ocupan más, pero funcionan igual. Chrome, Edge y Firefox en el ordenador guardan Opus.',
+		details: {
+			title: 'Datos del pack',
+			name: 'Nombre del pack',
+			author: 'Autor',
+			authorHint: 'Tu nombre o apodo, se muestra en la app.',
+			license: 'Licencia',
+			licenses: {
+				'Personal use only':
+					'Solo uso personal: lo adecuado para clips e imágenes que no has hecho tú',
+				'CC0-1.0': 'CC0 1.0: cualquiera puede usarlo, sin condiciones',
+				'CC-BY-4.0': 'CC BY 4.0: cualquiera puede usarlo, citándote',
+				other: 'Otra licencia'
+			},
+			licenseOther: 'Tu licencia',
+			licenseOtherHintHtml:
+				'Un <a href="https://spdx.org/licenses/" rel="external">identificador SPDX</a> como <code>MIT</code>, o tus propias palabras, como «Solo uso personal».',
+			descriptionLabel: 'Descripción (opcional)',
+			packId: 'ID del pack',
+			packIdHint: 'Se forma con el autor y el nombre; no cambia en este borrador.'
+		},
+		characters: {
+			title: 'Personajes',
+			intro:
+				'Cada personaje es una imagen y uno o más clips. La app elige al azar uno de los clips del personaje para cada mensaje.',
+			add: 'Añadir un personaje',
+			empty: 'Todavía no hay personajes.',
+			heading: 'Personaje {n}',
+			name: 'Nombre',
+			remove: 'Quitar personaje',
+			color: 'Color',
+			colorHint: 'Sugerido a partir de la imagen. La app usa este color para el tema del personaje.'
+		},
+		picture: {
+			choose: 'Elegir una imagen',
+			change: 'Cambiar imagen',
+			alt: 'Imagen de {name}',
+			none: 'Todavía sin imagen',
+			failed: 'No se ha podido abrir esta imagen ({error}).'
+		},
+		crop: {
+			title: 'Encuadra la imagen',
+			help: 'Arrastra la imagen o usa las flechas del teclado para moverla. Haz zoom con el control deslizante, la rueda del ratón o las teclas + y −.',
+			area: 'Zona de encuadre de la imagen',
+			zoom: 'Zoom',
+			use: 'Usar imagen',
+			cancel: 'Cancelar'
+		},
+		clips: {
+			title: 'Clips',
+			record: 'Grabar',
+			stop: 'Parar la grabación',
+			recording: 'Grabando: {time} s de {max} s',
+			upload: 'Añadir archivos de audio',
+			play: 'Reproducir',
+			stopPlaying: 'Parar',
+			edit: 'Editar',
+			remove: 'Quitar',
+			label: 'Etiqueta',
+			weight: 'Peso',
+			weightHint: 'Con qué frecuencia suena comparado con los otros clips (1 es lo normal).',
+			seconds: '{s} s',
+			longHint:
+				'Dura más de 5 s. Android reproduce los sonidos de notificación hasta el final y baja el resto del audio mientras tanto: bien para una sintonía, pero los clips cortos son más ágiles.',
+			micFailed:
+				'El micrófono no está disponible ({error}). Revisa el permiso de micrófono de la web.',
+			noMic: 'Este navegador no puede grabar. Añade archivos de audio.',
+			decodeFailed: 'No se ha podido abrir {name}: este navegador no sabe reproducirlo.',
+			tooLong: '{name} dura más de 6 minutos, el audio más largo que abre el creador.',
+			recordingLabel: 'Grabación {n}'
+		},
+		clipEditor: {
+			title: 'Editar clip',
+			source: 'De {name}, {s} s',
+			start: 'Inicio',
+			end: 'Fin',
+			selection: 'Seleccionado: {s} s',
+			hook: 'Buscar el estribillo',
+			hookHint: 'Selecciona los {s} s más fuertes, normalmente el estribillo.',
+			trimSilence: 'Recortar el silencio de los extremos',
+			normalize: 'Nivelar el volumen, como hace packer',
+			play: 'Reproducir la selección',
+			save: 'Guardar clip',
+			cancel: 'Cancelar',
+			processing: 'Procesando…',
+			tooShort: 'Tras recortarlo, este clip dura {s} s. Los clips necesitan al menos 0,2 s.',
+			tooLong: 'Los clips pueden durar hasta 30 s. Acorta la selección.',
+			silent: 'Esta parte está en silencio. Elige otra parte o vuelve a grabar.',
+			failed: 'No se ha podido guardar el clip ({error}).'
+		},
+		haptics: {
+			title: 'Vibración',
+			text: 'Cada personaje vibra al ritmo de su voz: la app calcula el patrón a partir de cada clip al importar el pack. Los patrones personalizados se hacen en la app, porque los navegadores no pueden reproducirlos.'
+		},
+		build: {
+			title: 'Comprobar y descargar',
+			intro:
+				'Cucuto comprueba el pack con las mismas reglas que la app antes de que lo descargues.',
+			check: 'Comprobar el pack',
+			checking: 'Creando y comprobando…',
+			incomplete: 'Ya casi está:',
+			download: 'Descargar el pack',
+			share: 'Enviar a una app',
+			shareHint: 'Abre el menú para compartir del móvil, donde puedes elegir Cucuto.',
+			installHtml:
+				'Para instalarlo, abre el archivo en el móvil con la app Cucuto, o impórtalo desde la pantalla Packs. También puedes <a href="{authors}#host">publicarlo en un repositorio de packs</a>.',
+			stale:
+				'Has cambiado el pack desde esta comprobación. Vuelve a comprobarlo antes de descargarlo.',
+			failed: 'No se ha podido crear el pack ({error}).',
+			problems: {
+				PACK_NAME_MISSING: 'Ponle un nombre al pack.',
+				AUTHOR_MISSING: 'Añade un autor.',
+				LICENSE_MISSING: 'Elige una licencia.',
+				NO_CHARACTERS: 'Añade al menos un personaje.',
+				TOO_MANY_CHARACTERS: 'Un pack puede tener hasta 500 personajes.',
+				CHARACTER_NAME_MISSING: 'Ponle nombre al personaje {n}.',
+				SPRITE_MISSING: 'Elige una imagen para {name}.',
+				NO_CLIPS: 'Añade al menos un clip a {name}.',
+				TOO_MANY_CLIPS: '{name} tiene más de 200 clips.',
+				UNSUPPORTED_FILE: '{name} tiene un archivo que el formato de pack no acepta.'
+			}
+		}
 	},
 	error: {
 		notFoundTitle: 'Página no encontrada',
