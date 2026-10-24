@@ -85,7 +85,7 @@ export const en = {
 		video: {
 			soonBadge: 'Coming soon',
 			posterAlt:
-				'Illustration: a phone shows Cucuto’s character picker, where Bleep the frog is being assigned in a burst of confetti. Next to it, the cuckoo clock sings and three chats each have their own character.',
+				'Illustration: a phone shows Cucuto’s character picker, “Voice for Ada”, where Bleep the frog is being assigned in a burst of confetti, above Tweet, Mew, Bzz, Bong, Ting, Swish and Tootle.',
 			label: 'Cucuto explainer video',
 			play: 'Play the video',
 			unsupported:

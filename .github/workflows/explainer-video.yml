@@ -4,7 +4,7 @@ name: explainer-video
 # illustrated scenes in android/video rendered frame by frame on the JVM (Robolectric, no device), the English
 # voice-over spoken by a local open-source text-to-speech model (Kokoro-82M on sherpa-onnx, no cloud service), then
 # mixed and encoded with ffmpeg (CC0 demo-pack and brand sounds only). Manual only: run it from the Actions tab.
-# Nothing is committed or published.
+# The workflow commits nothing: an approved cut is published by hand (docs/explainer-video.md, Publishing; #302).
 
 on:
   workflow_dispatch:

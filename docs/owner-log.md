@@ -471,6 +471,15 @@ closed as not planned; #275, #308, #274 and #211 commented. Android developer ve
 through Play Console, is now #358 (Android Developer Console). The brief, distribution.md, releasing.md, install.md,
 maintaining.md, the README and ADRs 0021, 0046 and 0075 updated.)
 
+## 2026-10-24 — Chat with the lead (#302, publishing the explainer video)
+
+(The owner had watched the AI-voiced cut from the `explainer-video` workflow's artifact, run 40092869144, and
+answered #302 in chat. The lead read it as yes, publish now. The cut and its poster are committed as website assets
+in `web/static/video/` and `web/src/lib/assets/images/`, so Home plays it instead of "coming soon". ADR 0070
+(Published), ADR 0042 and docs/explainer-video.md (Publishing) updated; #302 closed.)
+
+> the video is ready to be published it is a moment
+
 ## 2026-10-24 — Testing v0.2.0 on the phone (ringtone badge in the Home → contact detail transition, #339)
 
 > the animation that moves the character from the list to the contact detail is smooth but the image of the ringtone has an issue with the zposition, while moving charavter is avobe but when stops (begining and end) the ringtone pops avobe the character. i think it should move along with the character as a group
