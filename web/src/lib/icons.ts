@@ -1,6 +1,19 @@
 // Material Symbols Rounded, weight 500 (Apache 2.0), inlined at build time and rendered by <Icon>. Kept in a plain
 // module so page copy (src/lib/i18n) can name icons with a checked type. Add icons here as pages need them.
+import add from '@material-symbols/svg-500/rounded/add.svg?raw';
+import addPhoto from '@material-symbols/svg-500/rounded/add_photo_alternate.svg?raw';
 import android from '@material-symbols/svg-500/rounded/android.svg?raw';
+import audioFile from '@material-symbols/svg-500/rounded/audio_file.svg?raw';
+import close from '@material-symbols/svg-500/rounded/close.svg?raw';
+import contentCut from '@material-symbols/svg-500/rounded/content_cut.svg?raw';
+import deleteIcon from '@material-symbols/svg-500/rounded/delete.svg?raw';
+import graphicEq from '@material-symbols/svg-500/rounded/graphic_eq.svg?raw';
+import mic from '@material-symbols/svg-500/rounded/mic.svg?raw';
+import musicNote from '@material-symbols/svg-500/rounded/music_note.svg?raw';
+import personAdd from '@material-symbols/svg-500/rounded/person_add.svg?raw';
+import share from '@material-symbols/svg-500/rounded/share.svg?raw';
+import wifiOff from '@material-symbols/svg-500/rounded/wifi_off.svg?raw';
+import zoomIn from '@material-symbols/svg-500/rounded/zoom_in.svg?raw';
 import arrowForward from '@material-symbols/svg-500/rounded/arrow_forward.svg?raw';
 import arrowOutward from '@material-symbols/svg-500/rounded/arrow_outward.svg?raw';
 import block from '@material-symbols/svg-500/rounded/block.svg?raw';
@@ -39,7 +52,20 @@ import visibilityOff from '@material-symbols/svg-500/rounded/visibility_off.svg?
 import warning from '@material-symbols/svg-500/rounded/warning-fill.svg?raw';
 
 const sources = {
+	add,
+	'add-photo': addPhoto,
 	android,
+	'audio-file': audioFile,
+	close,
+	'content-cut': contentCut,
+	delete: deleteIcon,
+	'graphic-eq': graphicEq,
+	mic,
+	'music-note': musicNote,
+	'person-add': personAdd,
+	share,
+	'wifi-off': wifiOff,
+	'zoom-in': zoomIn,
 	'arrow-forward': arrowForward,
 	'arrow-outward': arrowOutward,
 	block,

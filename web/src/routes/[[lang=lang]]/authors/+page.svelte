@@ -111,8 +111,8 @@ site/repo/
 
 	<h2 id="make" class="headline-small">{t.makeTitle}</h2>
 	<ol class="ways">
-		{#each t.make as way, i (way.title)}
-			<li class:planned={i === 1}>
+		{#each t.make as way (way.title)}
+			<li>
 				<h3 class="title-medium">{way.title}</h3>
 				<p class="body-medium on-surface-variant"><Html text={way.textHtml} /></p>
 			</li>
@@ -241,11 +241,6 @@ site/repo/
 		font: 800 2rem/1 var(--cucuto-font);
 		font-variation-settings: 'ROND' 100;
 		color: var(--md-sys-color-primary);
-	}
-
-	.ways li.planned {
-		background: var(--md-sys-color-surface-container-low);
-		box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant);
 	}
 
 	.ways p {
