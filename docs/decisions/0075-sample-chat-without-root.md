@@ -1,6 +1,6 @@
 # 0075. A sample chat to try a voice without root
 
-- Status: accepted. The defaults the owner may override are in the `question` issue linked from #285.
+- Status: accepted. The defaults the owner may override are in #308.
 - Date: 2026-10-24
 - Issues: #285 (this work), #274 and ADR 0071 (Google Play review notes), ADR 0025 (Simulate message), ADR 0063
   (independent voice and ringtone)
@@ -25,7 +25,7 @@ can't happen.
 
 **1. The sample chat isn't a chat in the database.** It's its own small screen, **Sample chat**, with its two choices
 (the message character and the ringtone character) stored as four keys in the app's settings DataStore
-(`SampleChatSettings`). Nothing is written to the contacts, keys, assignments or phone ringtone tables. So by
+(`SampleChatSettings` in `:core:data`). Nothing is written to the contacts, keys, assignments or phone ringtone tables. So by
 construction:
 
 - the routing table, which is built only from those tables (`ContactDao.observeRoutingRows`, `RoutingTableSource`),
@@ -34,8 +34,8 @@ construction:
 - no Android contact is linked or written and no system ringtone is set, so no contacts permission is involved;
 - Home's chat list, Assign a voice, the decision log and Diagnostics stay about real chats only.
 
-A unit test pins this: choosing and playing in the sample chat leaves the chat directory and the routing table
-untouched.
+`SampleChatIsolationTest` pins this: the compiled `sample` package may not refer to the chat directory, the contact,
+assignment or phone ringtone stores, the routing pipeline, Simulate message, notifications or Android contacts.
 
 **2. It plays in the app, with public APIs only, and posts nothing.** **Play a sample message** plays one of the
 character's clips and its vibration through `VoicePreview`, the same path as the character picker's preview:

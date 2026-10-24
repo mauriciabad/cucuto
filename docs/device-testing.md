@@ -151,6 +151,14 @@ the packs on the Packs tab first to see the import step). The demo bundle comes 
 - Back: from a pushed screen it pops; from another tab's root it goes to Home (predictive back previews Home); from
   Home it leaves the app. Tapping the selected tab again pops it to its root. Each tab keeps its scroll and stack.
 
+### Sample chat (#285, ADR 0075), the Play reviewer's path
+
+Works with the module off. With packs but no chat yet, Home's "Your characters are ready" card → **Try a sample
+chat**: the Demo banner shows, tapping a character previews it and makes it the voice, **Play a sample message** plays
+a clip with the character's vibration, and **Play a sample call** rings the ringtone until **Stop**. Nothing appears
+in the notification shade, Diagnostics' routing table keeps the same key count, and the sample chat isn't in a new
+backup.
+
 ## 3. Real WhatsApp messages
 
 Have someone send a 1:1 message and a group message (WhatsApp in the background, chats not muted).

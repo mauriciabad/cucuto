@@ -76,6 +76,7 @@ class SampleChatViewModel
         fun chooseVoice(voice: ChatVoice) {
             write { store.setVoice(voice) }
             val character = state.value.character(voice) ?: return
+            call.stop()
             play { preview.play(character) }
         }
 
