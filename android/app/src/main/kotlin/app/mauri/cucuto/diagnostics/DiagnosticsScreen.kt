@@ -104,7 +104,8 @@ fun DiagnosticsScreen(
                 InfoCard(
                     rows =
                         listOf(
-                            stringResource(R.string.diag_framework) to connectionText(state.connection),
+                            stringResource(R.string.diag_framework) to
+                                connectionText(state.connection, state.appUpdatedSinceBoot),
                             stringResource(R.string.diag_routing) to publishText(state.publish),
                         ) + moduleRows(state.moduleStatus, state.publish),
                 )
@@ -239,10 +240,19 @@ private fun SectionHeader(
 }
 
 @Composable
-private fun connectionText(connection: SinkConnection): String =
+private fun connectionText(
+    connection: SinkConnection,
+    appUpdatedSinceBoot: Boolean,
+): String =
     when (connection) {
         SinkConnection.Disconnected -> {
-            stringResource(R.string.diag_framework_disconnected)
+            stringResource(
+                if (appUpdatedSinceBoot) {
+                    R.string.diag_framework_disconnected_update
+                } else {
+                    R.string.diag_framework_disconnected
+                },
+            )
         }
 
         is SinkConnection.Connected -> {

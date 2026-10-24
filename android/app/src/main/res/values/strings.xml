@@ -9,6 +9,7 @@
     <string name="screen_diagnostics">Diagnostics</string>
     <string name="diag_framework">Xposed framework</string>
     <string name="diag_framework_disconnected">Not connected. Enable Cucuto in LSPosed (scope: System Framework) and reboot.</string>
+    <string name="diag_framework_disconnected_update">Not connected: Cucuto was updated since the last boot, and LSPosed only reconnects to it after a reboot. Reboot your phone to publish voice changes.</string>
     <string name="diag_framework_connected">Connected: %1$s, API %2$d</string>
     <string name="diag_framework_unsupported">%1$s does not support Remote Preferences</string>
     <string name="diag_routing">Routing table</string>
@@ -73,6 +74,7 @@
     <string name="status_module_awaiting">Enabled, but the module has not reported since this boot. Post a test notification: with the module active you hear a two-tone chirp instead of the default sound.</string>
     <string name="status_module_reboot">Enabled in LSPosed, but not loaded into the system yet. Reboot your phone.</string>
     <string name="status_module_reboot_update">Cucuto was updated since the last boot, and the system still runs the old module. Reboot your phone.</string>
+    <string name="status_module_reboot_reconnect">Cucuto was updated since the last boot, and LSPosed only reconnects to it after a reboot. Until then, voice changes can\'t reach the module. Reboot your phone.</string>
     <string name="status_module_unsupported">%1$s cannot run Cucuto: it does not offer Remote Preferences. Cucuto needs LSPosed with libxposed API 102.</string>
     <string name="status_module_not_enabled">Not enabled. In the LSPosed manager, turn on Cucuto with System Framework as its scope, then reboot.</string>
     <string name="status_scope_ok">LSPosed reports System Framework and nothing else.</string>
