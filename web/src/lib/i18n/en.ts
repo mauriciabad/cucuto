@@ -289,7 +289,7 @@ export const en = {
 			{
 				q: 'Is it on Google Play?',
 				aHtml:
-					'Not yet. A Google Play listing is being prepared. Until it is there, get the APK from <a href="{releases}" rel="external">GitHub</a>, or let Obtainium keep it updated (see the <a href="{install}">install guide</a>). Every copy is signed with the same certificate, so a later install from Play and an install from GitHub update each other. Either way, Cucuto needs root and LSPosed to change WhatsApp’s and Signal’s sounds.'
+					'No, and it won’t be: Google Play’s testing requirements don’t fit a project like this. Get the APK from <a href="{releases}" rel="external">GitHub</a>, or let Obtainium keep it updated (see the <a href="{install}">install guide</a>). F-Droid is planned after version 1. Either way, Cucuto needs root and LSPosed to change WhatsApp’s and Signal’s sounds.'
 			},
 			{
 				q: 'Is it free? Does it collect data?',
@@ -391,7 +391,7 @@ export const en = {
 		updatesHtml:
 			'Cucuto never checks for updates and never goes online to look for them. New versions appear on the <a href="{releases}" rel="external">releases page</a>, and Cucuto keeps working when you skip one. To get them on your phone without checking by hand, use <a href="{obtainium}" rel="external">Obtainium</a>, a free app that installs apps straight from their GitHub releases. After every update, reboot: the module loads the new version at boot.',
 		certificateHtml:
-			'Every Cucuto APK is signed with the same certificate, whose SHA-256 starts with <code>{cert}</code> (the full value is in the Obtainium settings below and on every release). Once Cucuto is listed on Google Play, Play will install it with that same certificate, so a copy from Play and a copy from GitHub or Obtainium update each other, without uninstalling.',
+			'Every Cucuto APK is signed with the same certificate, whose SHA-256 starts with <code>{cert}</code> (the full value is in the Obtainium settings below and on every release). The F-Droid build, once it’s there, is signed with that same certificate, so copies from GitHub, Obtainium and F-Droid update each other without uninstalling.',
 		obtainiumButton: 'Get it with Obtainium',
 		obtainiumHint:
 			'Opens Obtainium with Cucuto’s settings filled in. It works on a phone with Obtainium installed.',
