@@ -4,8 +4,8 @@ import android.os.SystemClock
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.mauri.cucuto.core.creator.CreatorHaptics
 import app.mauri.cucuto.core.data.chats.ChatHapticOverrides
-import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.routing.HapticOverride
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
@@ -64,17 +64,17 @@ sealed interface PasteOutcome {
 /**
  * What the haptic editor shows.
  *
- * @property chat The chat whose override is edited, or null for a scratch pad that only previews.
- * @property character The chat's character, to preview the pattern with its clips; null without a voice.
+ * @property target What the pattern is for, or null for a scratch pad that only previews.
+ * @property character A chat's character, to preview the pattern with its clips; null without a voice.
  * @property recording Non-null while "tap the rhythm" records.
  * @property playback Increments on every preview; the timeline sweeps a playhead over [playbackMs].
- * @property saved Set once the override is stored: the screen closes.
+ * @property saved Set once the pattern is stored (a chat) or handed back (a creator character): the screen closes.
  * @property paste The last "Paste pattern" outcome, until the screen has shown it.
  */
 @Immutable
 data class HapticEditorState(
     val loading: Boolean = true,
-    val chat: ChatKey? = null,
+    val target: HapticTarget? = null,
     val character: VoiceCharacter? = null,
     val draft: HapticDraft = HapticDraft(),
     val tool: HapticTool = HapticTool.Click,
@@ -86,12 +86,22 @@ data class HapticEditorState(
     val failed: Boolean = false,
     val paste: PasteOutcome? = null,
 ) {
-    val canSave: Boolean get() = chat != null && draft.haptic != null && recording == null && !saved
+    val canSave: Boolean get() = target != null && draft.haptic != null && recording == null && !saved
 
-    /** "Use Auto instead" stores the chat's auto vibration, which needs a voice like saving does. */
-    val canUseAuto: Boolean get() = chat != null && character != null && recording == null && !saved
+    /** A chat without a voice: its pattern cannot be saved yet. */
+    val needsVoice: Boolean get() = target is HapticTarget.Chat && !loading && character == null
 
-    val canPreviewWithClip: Boolean get() = character != null && draft.haptic != null
+    /** Who "Play with" plays: the chat's character, or the creator's character when it has a clip. */
+    val previewName: String?
+        get() = character?.name ?: (target as? HapticTarget.CreatorCharacter)?.takeIf { it.clip != null }?.name
+
+    /**
+     * "Use Auto instead" stores a chat's auto vibration, which needs a voice like saving does. Chats only: a creator
+     * character picks Auto in the creator itself.
+     */
+    val canUseAuto: Boolean get() = target is HapticTarget.Chat && character != null && recording == null && !saved
+
+    val canPreviewWithClip: Boolean get() = previewName != null && draft.haptic != null
 
     /** What the timeline draws: the live recording, else the draft. */
     val shownEvents: List<HapticEvent> get() = recording?.events ?: draft.events
@@ -99,30 +109,44 @@ data class HapticEditorState(
 
 /**
  * The haptic editor (brief, screen 7; #32): a timeline of presets and basic envelopes the user taps, drags and
- * previews, with "tap the rhythm" to record a pattern by tapping. Opened for a chat, it starts from the chat's custom
- * override (else its character's custom pack pattern) and saving stores a custom override (#33), which the routing
- * table carries to the module.
+ * previews, with "tap the rhythm" to record a pattern by tapping. What it edits is its [HapticTarget]:
+ * - a chat: it starts from the chat's custom override (else its character's custom pack pattern) and saving stores a
+ *   custom override (#33), which the routing table carries to the module;
+ * - a creator character (#185): it starts from the character's pattern and saving hands it back to the creator
+ *   ([HapticEditorResults]), which writes it into the pack.
  */
 @HiltViewModel(assistedFactory = HapticEditorViewModel.Factory::class)
 class HapticEditorViewModel
     @AssistedInject
     constructor(
-        @Assisted private val chat: ChatKey?,
+        @Assisted private val target: HapticTarget?,
         private val overrides: ChatHapticOverrides,
         private val characters: CharacterDirectory,
         private val preview: VoicePreview,
+        private val results: HapticEditorResults,
     ) : ViewModel() {
-        private val mutableState = MutableStateFlow(HapticEditorState(chat = chat, loading = chat != null))
+        private val mutableState =
+            MutableStateFlow(
+                HapticEditorState(
+                    target = target,
+                    loading = target is HapticTarget.Chat,
+                    draft =
+                        HapticDraft.of(
+                            (target as? HapticTarget.CreatorCharacter)?.pattern?.let(CreatorHaptics::fromPack),
+                        ),
+                ),
+            )
         val state: StateFlow<HapticEditorState> = mutableState.asStateFlow()
 
         private val recorder = RhythmRecorder()
         private var recordingJob: Job? = null
 
         init {
-            if (chat != null) load(chat)
+            if (target is HapticTarget.Chat) load(target)
         }
 
-        private fun load(chat: ChatKey) {
+        private fun load(target: HapticTarget.Chat) {
+            val chat = target.chat
             viewModelScope.launch {
                 val (stored, character) =
                     try {
@@ -306,20 +330,36 @@ class HapticEditorViewModel
             val current = mutableState.value
             val haptic = current.draft.haptic ?: return
             val character = current.character
+            val clip = (target as? HapticTarget.CreatorCharacter)?.clip
             mutableState.update { it.copy(playback = it.playback + 1, playbackMs = current.draft.durationMs) }
-            if (withClip && character != null) {
-                viewModelScope.launch { preview.play(character, haptic) }
-            } else {
-                preview.vibrate(haptic)
+            when {
+                withClip && character != null -> viewModelScope.launch { preview.play(character, haptic) }
+                withClip && clip != null -> viewModelScope.launch { preview.playClip(File(clip), haptic) }
+                else -> preview.vibrate(haptic)
             }
         }
 
-        /** Stores the pattern as the chat's custom vibration. */
+        /** Stores the pattern as the chat's custom vibration, or hands it back to the creator. */
         fun save() {
             val current = mutableState.value
-            val key = chat ?: return
             val haptic = current.draft.haptic ?: return
             if (!current.canSave) return
+            val key =
+                when (target) {
+                    is HapticTarget.Chat -> {
+                        target.chat
+                    }
+
+                    is HapticTarget.CreatorCharacter -> {
+                        results.send(CreatorHapticResult(target.characterKey, haptic))
+                        mutableState.update { it.copy(saved = true, dirty = false) }
+                        return
+                    }
+
+                    null -> {
+                        return
+                    }
+                }
             viewModelScope.launch {
                 val stored =
                     try {
@@ -335,7 +375,7 @@ class HapticEditorViewModel
 
         /** Stores "Auto" (follows each clip's loudness) as the chat's vibration and closes, like [save]. */
         fun useAuto() {
-            val key = chat ?: return
+            val key = (target as? HapticTarget.Chat)?.chat ?: return
             if (!mutableState.value.canUseAuto) return
             viewModelScope.launch {
                 val stored =
@@ -359,21 +399,32 @@ class HapticEditorViewModel
         suspend fun aiText(): String {
             val current = mutableState.value
             val character = current.character
+            val creator = target as? HapticTarget.CreatorCharacter
             val clips =
-                if (character == null) {
-                    emptyList()
-                } else {
-                    withContext(Dispatchers.IO) {
-                        character.clips.mapIndexed { i, file ->
-                            AiClip(
-                                path = character.clipPaths.getOrNull(i) ?: file.name,
-                                durationMs = if (i < HapticAiText.MAX_CLIPS) durationOf(file) else null,
-                                loudness = character.clipAutoHaptics.getOrNull(i),
-                            )
+                when {
+                    character != null -> {
+                        withContext(Dispatchers.IO) {
+                            character.clips.mapIndexed { i, file ->
+                                AiClip(
+                                    path = character.clipPaths.getOrNull(i) ?: file.name,
+                                    durationMs = if (i < HapticAiText.MAX_CLIPS) durationOf(file) else null,
+                                    loudness = character.clipAutoHaptics.getOrNull(i),
+                                )
+                            }
                         }
                     }
+
+                    // A creator character: its preview clip, by file name only (the draft path is private).
+                    creator?.clip != null -> {
+                        val file = File(creator.clip)
+                        withContext(Dispatchers.IO) { listOf(AiClip(file.name, durationOf(file), loudness = null)) }
+                    }
+
+                    else -> {
+                        emptyList()
+                    }
                 }
-            return HapticAiText.export(character?.name, clips, current.draft.events)
+            return HapticAiText.export(character?.name ?: creator?.name, clips, current.draft.events)
         }
 
         /**
@@ -411,7 +462,7 @@ class HapticEditorViewModel
 
         @AssistedFactory
         interface Factory {
-            fun create(chat: ChatKey?): HapticEditorViewModel
+            fun create(target: HapticTarget?): HapticEditorViewModel
         }
 
         private companion object {

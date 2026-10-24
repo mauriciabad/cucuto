@@ -1,14 +1,18 @@
 package app.mauri.cucuto.home
 
 import app.cash.turbine.test
+import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
+import app.mauri.cucuto.core.data.chats.LinkCandidate
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.testing.FakeCharacterDirectory
 import app.mauri.cucuto.testing.FakeChatDirectory
+import app.mauri.cucuto.testing.FakeContactChats
 import app.mauri.cucuto.testing.TestData.ADA
 import app.mauri.cucuto.testing.TestData.BEA
 import app.mauri.cucuto.testing.TestData.CRITTERS
 import app.mauri.cucuto.testing.TestData.NOW
+import app.mauri.cucuto.testing.TestData.WA
 import app.mauri.cucuto.testing.TestData.chat
 import app.mauri.cucuto.ui.discover.DemoPacksRequests
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +39,9 @@ class HomeViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = HomeViewModel(directory, characters, WallClock { NOW }, DemoPacksRequests())
+    private val contactChats = FakeContactChats()
+
+    private fun viewModel() = HomeViewModel(directory, characters, WallClock { NOW }, DemoPacksRequests(), contactChats)
 
     @Test
     fun startsLoadingThenShowsChatsAndTheStrip() =
@@ -91,6 +97,52 @@ class HomeViewModelTest {
         runTest {
             viewModel().dismissRecent(ADA)
             assertEquals(listOf(ADA), directory.dismissed)
+        }
+
+    @Test
+    fun chatsFromContactsWaitInTheirOwnSectionAndQuestionsLeaveTheStrip() =
+        runTest {
+            val leo1 = LinkCandidate(7, ChatKey(WA, "34600000007@s.whatsapp.net"), "Leo", listOf("+34600000007"), null)
+            val leo2 =
+                LinkCandidate(
+                    8,
+                    ChatKey(WA, "34600000008@s.whatsapp.net"),
+                    "Leo",
+                    listOf("+34600000008"),
+                    ChatVoice(CRITTERS, "frog"),
+                )
+            val sighting = ChatKey(WA, "100000000000009@lid")
+            directory.chats.value +=
+                listOf(
+                    chat(leo1.key, "Leo", lastSeenAt = null, contactId = 7).copy(awaitingLink = true),
+                    chat(leo2.key, "Leo", ChatVoice(CRITTERS, "frog"), lastSeenAt = null, contactId = 8)
+                        .copy(awaitingLink = true),
+                    chat(sighting, "Leo").copy(linkCandidates = listOf(leo1, leo2)),
+                )
+            val vm = viewModel()
+            vm.state.test {
+                var state = awaitItem()
+                while (state.loading) state = awaitItem()
+                assertEquals(listOf(leo1.key, leo2.key), state.waiting.map { it.key })
+                assertTrue(state.chats.none { it.chat.awaitingLink })
+                assertEquals(listOf(ADA), state.recent.map { it.key })
+                val question = state.question(sighting)!!
+                assertEquals(listOf(7L, 8L), question.candidates.map { it.candidate.contactId })
+                assertEquals("Bleep the frog", question.candidates[1].character?.name)
+                assertTrue("waiting chats are in Assign a voice", state.unassigned.any { it.key == leo1.key })
+
+                vm.setQuery("leo")
+                val searching = awaitItem()
+                assertTrue(searching.filtering && !searching.showQuestions)
+                assertEquals(2, searching.waiting.size)
+            }
+        }
+
+    @Test
+    fun answeringWhoIsThisGoesToTheLinker() =
+        runTest {
+            viewModel().confirmLink(ADA, 7)
+            assertEquals(listOf(ADA to 7L), contactChats.confirmed)
         }
 
     private suspend fun app.cash.turbine.ReceiveTurbine<HomeState>.skipUntilLoaded() {

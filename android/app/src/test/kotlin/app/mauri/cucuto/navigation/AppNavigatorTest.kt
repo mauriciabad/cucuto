@@ -3,6 +3,9 @@ package app.mauri.cucuto.navigation
 import androidx.compose.runtime.mutableStateOf
 import androidx.navigation3.runtime.NavKey
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.packspec.ControlPoint
+import app.mauri.cucuto.packspec.HapticEvent
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -165,6 +168,22 @@ class AppNavigatorTest {
                 CucutoDestination.ContactDetail(ada.chat!!),
                 CucutoDestination.RingtonePicker(ada.chat!!),
                 CucutoDestination.HapticEditor(),
+                CucutoDestination.HapticEditor(HapticTarget.Chat(ada.chat!!)),
+                CucutoDestination.HapticEditor(
+                    HapticTarget.CreatorCharacter(
+                        characterKey = "k1",
+                        name = "Kettle",
+                        pattern =
+                            listOf(
+                                HapticEvent(at = 0, preset = "CLICK", scale = 0.8),
+                                HapticEvent(
+                                    at = 100,
+                                    envelope = listOf(ControlPoint(1.0, 0.5, 50), ControlPoint(0.0, 0.5, 50)),
+                                ),
+                            ),
+                        clip = "/data/clip.ogg",
+                    ),
+                ),
                 CucutoDestination.Diagnostics,
                 CucutoDestination.Developer,
                 CucutoDestination.Gallery,
@@ -178,6 +197,8 @@ class AppNavigatorTest {
                 CucutoDestination.Repositories,
                 CucutoDestination.CreatorFinish("app.mauri.demo.critters"),
                 CucutoDestination.AssignVoice,
+                CucutoDestination.AddFromContacts,
+                CucutoDestination.ConfirmLink(ada.chat!!),
             )
         all.forEach { destination ->
             val json = Json.encodeToString(CucutoDestination.serializer(), destination)

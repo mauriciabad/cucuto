@@ -2,7 +2,7 @@
 
 Everything Play Console asks for, drafted so the owner can copy it in. Why and how: [ADR 0071](decisions/0071-google-play-bundle-and-listing.md).
 Policy assessment: [distribution.md → Google Play](distribution.md#google-play). The owner's checklist (account,
-keys, closed test, submission): #276. The defaults the owner may change (upload key, category, audience, upload
+keys, closed test, submission): #276. The defaults the owner answered (signing, category, audience, upload
 tool): #287.
 
 Keep this page true. A new permission, a new network call or a new data flow updates the
@@ -13,7 +13,7 @@ Keep this page true. A new permission, a new network call or a new data flow upd
 
 | Play needs | Where it comes from |
 | --- | --- |
-| App bundle (`.aab`) | Each `v*` release attaches `cucuto-<version>.aab`, signed with the upload key, once the `PLAY_UPLOAD_*` secrets exist ([releasing.md](releasing.md#google-play-bundle)) |
+| App bundle (`.aab`) | Each `v*` release attaches `cucuto-<version>.aab`, signed with the release key, which is Play's upload key ([releasing.md](releasing.md#google-play-bundle)) |
 | Target API 36 or higher | `targetSdk` 37. CI checks it (`Check Play requirements` in `ci.yml`) |
 | 16 KB page support | Checked on every PR: native libraries zip-aligned to 16 KB, ELF `LOAD` segments aligned to 16 KB. The Rust `libcucuto_jxl.so` passes as is (NDK r30 linker) |
 | Store listing, English and Spanish | `fastlane/metadata/android/{en-US,es-ES}/`: `title.txt`, `short_description.txt`, `full_description.txt`, `changelogs/<versionCode>.txt` |
@@ -29,49 +29,43 @@ end, and the image sizes, ratios and alpha.
 
 ## Signing
 
-One certificate on every channel, so Play installs and GitHub/Obtainium installs update each other (ADR 0071). Play
-signs the APKs it serves with **Cucuto's existing release key**. CI signs the bundle with a separate **upload key**.
+Owner update 2026-10-24 (#287, second answer; ADR 0071): Play signs the APKs it serves with **Cucuto's existing
+release key**, which the owner gives Play once with Google's PEPK tool. The **upload key is the same release key**:
+the release workflow already signs the bundle with it, from the secrets that sign the APK. No new keystore, no new
+secret.
 
-**Do this before the first bundle is uploaded to any track.** Play enrolls a new app in its own Google-generated keys
-on the first upload. The key can still be changed until a release reaches open testing or production, but every
-install made with Play's key in the meantime (internal or closed testers) would stop updating.
+Google's documentation ([Sign your app](https://developer.android.com/studio/publish/app-signing)): "To provide your
+own signing key for Google to use when signing your app, select **Change app signing key** and select one of the
+**Export and upload** options". And "If you do not generate a new upload key, you continue to use your app signing
+key as your upload key to sign each release." A separate upload key is optional; Google recommends one so it can be
+reset if lost, but nothing requires it.
 
-1. Play Console → Cucuto → **Protected with Play → Play Store distribution → Go to Play app signing** (older menus:
-   **Test and release → Setup → App signing**). Choose **Change the app signing key**, then **Provide a copy of
-   your app signing key** (in older menus: **Export and upload a key from Java keystore**).
-2. Download `pepk.jar` and the `encryption_public_key.pem` that Play shows on that page. Run, with JDK 21 and the
-   release keystore from #140 (it asks for the keystore password twice):
+1. **Before the first upload**, in Play Console → Cucuto → **Protected with Play → Play Store distribution → Go to
+   Play app signing** (older menus: **Test and release → Setup → App signing**): **Change app signing key** ("Use a
+   different key") → **Export and upload a key from Java keystore**. Download the PEPK tool and the encryption key
+   shown there, run the command Play Console shows on `~/cucuto-release-key/cucuto-release.jks` (alias `cucuto`),
+   and upload the encrypted output. The owner does this on their own machine (#276); the key never leaves it
+   unencrypted. Skip the optional upload certificate: the release key stays the upload key.
+2. Upload the first bundle (`cucuto-<version>.aab` from a GitHub release) to **Internal testing**.
+3. Check on the same Play app signing page: the **app signing key certificate** and the **upload key certificate**
+   SHA-256 both equal `RELEASE_CERT_SHA256` (the repository variable, also on every GitHub release and on the
+   website's Install page). If either differs, stop and ask on #276.
 
-   ```sh
-   java -jar pepk.jar --keystore="$HOME/cucuto-release-key/cucuto-release.jks" --alias=cucuto \
-     --output=cucuto-play-signing.zip --include-cert --rsa-aes-encryption \
-     --encryption-key-path=encryption_public_key.pem
-   ```
+The order matters: Play enrolls a new app in a Google-generated key on its first upload. The key can still be
+changed until a release reaches open testing or production, but installs made from Play with Google's key would then
+stop updating.
 
-   Upload `cucuto-play-signing.zip`. It holds the key encrypted for Google only. Delete the zip afterwards.
-3. Create the **upload key**, outside the repository. Back it up like the release key, though Google can reset it
-   if it's lost:
+The release key has every job now, so it stays as precious as before (releasing.md). With one key in both roles,
+Google can't reset the upload key on its own if it leaks: the GitHub APKs and Play would both need a new key.
 
-   ```sh
-   keytool -genkeypair -v -storetype PKCS12 -keystore "$HOME/cucuto-release-key/cucuto-upload.jks" -alias upload \
-     -keyalg RSA -keysize 4096 -sigalg SHA256withRSA -validity 18262 -dname "CN=Cucuto upload"
-   keytool -export -rfc -keystore "$HOME/cucuto-release-key/cucuto-upload.jks" -alias upload \
-     -file upload_certificate.pem
-   ```
+What users see: **Play installs and the APKs from GitHub, Obtainium or F-Droid carry the same certificate, so they
+update each other.** Obtainium's certificate pin accepts an app installed from Play, and Play updates an app
+installed from GitHub once it has a higher versionCode. Play installs arrive as split APKs (base, arm64, density),
+not byte-identical to the reproducible GitHub APK; LSPosed loads the module from the base APK. The module's own check
+(ADR 0010) only compares the module with the installed app, and both come from the same install.
 
-   Upload `upload_certificate.pem` where the page asks for the upload key certificate.
-4. Check: the page lists the **app signing key certificate** with the same SHA-256 as `RELEASE_CERT_SHA256` (the
-   repository variable, also on every GitHub release). If it differs, stop and ask on #276.
-5. Store the upload key for the release workflow: repository secrets `PLAY_UPLOAD_KEYSTORE_BASE64`
-   (`base64 -i cucuto-upload.jks`), `PLAY_UPLOAD_KEYSTORE_PASSWORD`, `PLAY_UPLOAD_KEY_ALIAS` (`upload`) and
-   `PLAY_UPLOAD_KEY_PASSWORD` (the same password: PKCS12 has one). Optionally, set the variable
-   `PLAY_UPLOAD_CERT_SHA256` to the upload certificate's SHA-256 (lowercase, no colons). Commands:
-   [releasing.md](releasing.md#google-play-bundle).
-
-What users see: Play installs arrive as split APKs (base, arm64, density). They aren't byte-identical to the GitHub
-APK, but they're signed by the same certificate. Installing the GitHub APK over a Play install (or the reverse) is a
-normal update that keeps data and the LSPosed setup. On Android 14+ the system may ask to confirm when a different
-store updates the app (update ownership).
+Android developer verification: Play Console registers the Play-signed app itself, with the release certificate.
+Check that the APKs outside Play are covered too (#276, step A4).
 
 ## Store listing
 
@@ -117,7 +111,7 @@ Name: `Root and LSPosed requirement`
 Any other information (paste this; under 500 characters):
 
 ```text
-Cucuto sets a notification sound and vibration per WhatsApp contact. That part is an LSPosed module: it needs Android 17 with root, which a review device lacks. No login. Without root: tap Skip, get the demo packs on Home, then Hear the characters (tap one to hear it and feel its vibration), browse Discover, and open Settings > Diagnostics to see what is missing. Video and full notes: https://github.com/mauriciabad/cucuto/blob/main/docs/google-play.md#review-notes
+Cucuto sets a notification sound and vibration per WhatsApp contact. That part is an LSPosed module: it needs Android 17 with root, which a review device lacks. No login. Without root: tap Skip, Get the demo packs on Home, then Try a sample chat: pick a character, tap Play a sample message and hear and feel what a message from that chat would do. Settings > Diagnostics shows what is missing. Video and notes: https://github.com/mauriciabad/cucuto/blob/main/docs/google-play.md#review-notes
 ```
 
 ### Content rating
@@ -234,15 +228,22 @@ nothing else:
 1. Open Cucuto. The setup explains the requirements; tap **Skip**.
 2. Home → **Get the demo packs** (or Packs → **Get free demo packs**). Discover downloads two small packs of CC0
    cartoon characters from `cucuto.mauri.app`.
-3. Back on Home, the card "Your characters are ready" → **Hear the characters**: tap a character to hear its
-   clip and feel its vibration.
-4. Discover: browse the pack repository and preview characters.
+3. Back on Home, the card "Your characters are ready" → **Try a sample chat**. This is the core feature, as a demo
+   (ADR 0075): a made-up chat, clearly labelled **Demo**, that works without the module.
+   - Tap a character under **Message voice** to give the sample chat that voice (it previews right away).
+   - Tap **Play a sample message**: the phone plays one of the character's clips with its vibration, as a WhatsApp
+     message from a chat with that voice would.
+   - Under **Call ringtone**, keep **Same as the voice** (Bleep the frog has a ringtone) or pick another, then
+     **Play a sample call** and **Stop**.
+   The sample chat posts no notification, isn't sent to the module, isn't in backups and needs no permission. Real
+   chats replace it on Home once the module sees their first message.
+4. **Hear the characters** on the same card, and Discover: browse the pack repository and preview characters.
 5. Settings → **Diagnostics** (and the setup card on Home) shows which check fails: the module in
    `system_server`, its LSPosed scope, WhatsApp, a pack. That's the honest state of a review device.
 6. Optional: the haptic editor (make a vibration or tap out a rhythm) and the pack creator (record or import a clip).
 
-Assigning a voice to a chat needs a chat, and chats appear when the module sees their first notification. A sample
-chat that works without the module is planned (#285).
+With root and the module, the same voice plays for the real chat's WhatsApp notifications, and contact detail's
+**Simulate message** sends a test through the module itself (shown in the video).
 
 **Video of the root feature:** `<link from #286>` (Diagnostics self-test, then a chat's voice played through the
 module on a rooted Android 17 phone).
@@ -255,7 +256,7 @@ module on a rooted Android 17 phone).
   ringtone setting that Android doesn't offer. The user enables it in LSPosed and can remove it there.
 - *Minimum functionality.* The app is a complete product for its audience (rooted phones), and the requirements are
   in the first lines of the description and in the app's setup. Without root, the app still works as a pack manager
-  and previewer, and it says plainly what's missing.
+  and previewer, the sample chat shows the core feature end to end in the app, and it says plainly what's missing.
 - *Intellectual property.* The name, icon and graphics are original (`brand/`). "WhatsApp" appears only to say which
   notifications the app works with, and the listing says Cucuto isn't affiliated with WhatsApp or Meta.
 

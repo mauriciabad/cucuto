@@ -241,6 +241,7 @@ fun ContactDetailContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "header") { Header(state = state, onBitmap = { bitmap = it }) }
+                if (state.chat?.awaitingLink == true) item(key = "not-linked") { NotLinkedCard(state.chatName()) }
                 item(key = "sounds") {
                     SoundsCard(
                         state = state,
@@ -442,6 +443,24 @@ private fun SoundsCard(
                 HorizontalDivider(Modifier.padding(horizontal = 12.dp))
                 phoneCalls()
             }
+        }
+    }
+}
+
+/** A chat added from contacts that has not messaged yet (ADR 0065): what happens on its first message. */
+@Composable
+private fun NotLinkedCard(name: String) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.contact_not_linked_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(stringResource(R.string.contact_not_linked_body, name), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -805,8 +824,8 @@ internal fun previewContactDetailState(): ContactDetailState {
         clips = clipRows(frog, settings.disabledClips),
         decisions =
             listOf(
-                DecisionRow(2, 0L, DecisionOutcome.SWAPPED, "ribbit", simulated = true, perSender = false),
-                DecisionRow(1, 0L, DecisionOutcome.SWAPPED, "croak", simulated = false, perSender = false),
+                DecisionRow(2, 0L, DecisionOutcome.SWAPPED, "Ribbit", simulated = true, perSender = false),
+                DecisionRow(1, 0L, DecisionOutcome.SWAPPED, "Croak", simulated = false, perSender = false),
             ),
         path = SimulatePath.InApp(InAppReason.RebootNeeded),
     )

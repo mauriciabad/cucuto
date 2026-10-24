@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Add a chat from contacts" and linking chats on their first message (#292, ADR 0065). Kept apart from strings.xml so
+     parallel UI work merges cleanly. -->
+<resources>
+    <!-- Entry points -->
+    <string name="contacts_add">Add a chat from contacts</string>
+    <string name="contacts_add_body">People who haven\'t messaged you yet</string>
+
+    <!-- Explainer -->
+    <string name="contacts_explainer_lead">Give a voice and a ringtone to someone before they message you.</string>
+    <string name="contacts_explainer_reads_title">What Cucuto reads</string>
+    <string name="contacts_explainer_reads_body">The WhatsApp entries your phone\'s contacts already hold: each person\'s name and WhatsApp number. WhatsApp itself puts them there.</string>
+    <string name="contacts_explainer_never_title">What it never reads</string>
+    <string name="contacts_explainer_never_body">Your messages, chats and groups, or any of WhatsApp\'s files. Nothing else about your contacts either.</string>
+    <string name="contacts_explainer_saves_title">What it saves</string>
+    <string name="contacts_explainer_saves_body">Only the people you pick. Nothing leaves your phone.</string>
+    <string name="contacts_explainer_why_title">Why it asks for your contacts</string>
+    <string name="contacts_explainer_why_body">Android keeps these entries with your contacts, so Cucuto needs permission to read them. It is the same permission phone ringtones use.</string>
+    <string name="contacts_explainer_first_title">Their first message</string>
+    <string name="contacts_explainer_first_body">WhatsApp names a chat only when it messages you. So when someone you add first writes, Cucuto checks their name against these entries and links the chat. That first message plays WhatsApp\'s tone; their voice plays from the next one. Phone ringtones work right away.</string>
+    <string name="contacts_explainer_code">Read the code on GitHub</string>
+    <string name="contacts_continue">Continue</string>
+    <string name="contacts_not_now">Not now</string>
+
+    <!-- List -->
+    <string name="contacts_loading">Reading WhatsApp entries</string>
+    <string name="contacts_search_hint">Search contacts</string>
+    <string name="contacts_search_clear">Clear search</string>
+    <string name="contacts_list_hint">Pick who you want to give a voice. Only they are saved.</string>
+    <string name="contacts_business">WhatsApp Business · %1$s</string>
+    <string name="contacts_known">Already in your chats</string>
+    <string name="contacts_no_matches">No contacts match</string>
+    <plurals name="contacts_add_button">
+        <item quantity="one">Add %1$d chat</item>
+        <item quantity="other">Add %1$d chats</item>
+    </plurals>
+    <string name="contacts_add_none">Pick someone to add</string>
+    <string name="contacts_failed">Couldn\'t save. Try again.</string>
+    <string name="contacts_empty_title">No WhatsApp contacts found</string>
+    <string name="contacts_empty_body">Your contacts have no WhatsApp entries. WhatsApp adds them when it is allowed to see your contacts. People who message you still show up on Home.</string>
+    <string name="contacts_back">Back</string>
+
+    <!-- Permission refused -->
+    <string name="contacts_denied_title">Nothing was read</string>
+    <string name="contacts_denied_body">Without the contacts permission, Cucuto can\'t see the WhatsApp entries. People who message you still show up on Home. You can allow it in Android\'s settings at any time.</string>
+    <string name="contacts_open_settings">Open settings</string>
+    <string name="contacts_try_again">Try again</string>
+
+    <!-- Home -->
+    <string name="home_waiting_header">Waiting for a first message</string>
+    <string name="home_waiting_body">Their first message plays WhatsApp\'s tone and links the chat. Their voice plays from the next one; phone ringtones work right away.</string>
+    <string name="home_chat_not_linked">Not linked yet: waits for their first message</string>
+    <string name="home_chat_voice_not_linked">%1$s · not linked yet</string>
+    <string name="home_questions_header">Who is this?</string>
+    <string name="home_question_body">Someone you added has this name. Tap to say who it is.</string>
+    <string name="home_journey_first_body_waiting">Pick a character. %1$s\'s voice plays once their first message links the chat.</string>
+
+    <!-- Confirm a link -->
+    <string name="confirm_link_title">Who is this?</string>
+    <string name="confirm_link_body">A chat named %1$s messaged you. More than one person could be %1$s, so Cucuto won\'t guess. Check the number in WhatsApp, then pick who it is. Their voice plays from their next message.</string>
+    <string name="confirm_link_voice">Voice: %1$s</string>
+    <string name="confirm_link_no_voice">No voice yet</string>
+    <string name="confirm_link_pick">Link to this person</string>
+    <string name="confirm_link_none">None of them</string>
+
+    <!-- Contact detail -->
+    <string name="contact_not_linked_title">Not linked yet</string>
+    <string name="contact_not_linked_body">Cucuto links this chat when %1$s first messages you on WhatsApp. That first message plays WhatsApp\'s tone; the voice plays from the next one. A phone ringtone works right away.</string>
+</resources>

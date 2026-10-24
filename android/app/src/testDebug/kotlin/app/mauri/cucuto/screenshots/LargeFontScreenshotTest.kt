@@ -77,6 +77,16 @@ class LargeFontScreenshotTest(
 
     @Test fun ringtoneRules() = largeFont("ringtone-rules")
 
+    @Test fun addFromContacts() = largeFont("add-from-contacts")
+
+    @Test fun addFromContactsList() = largeFont("add-from-contacts-list")
+
+    @Test fun confirmLink() = largeFont("confirm-link")
+
+    @Test fun homeFromContacts() = largeFont("home-from-contacts")
+
+    @Test fun sampleChat() = largeFont("sample-chat")
+
     private fun largeFont(screen: String) =
         // The onboarding's wavy progress bar never stops moving.
         screenshot(screen, fontScale = LARGEST_FONT_SCALE, animated = screen.startsWith("onboarding-")) {

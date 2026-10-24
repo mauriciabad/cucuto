@@ -8,19 +8,22 @@ import app.mauri.cucuto.packspec.media.AudioProbe
 import java.io.File
 import java.io.IOException
 
-/** What [PackDuplicator.duplicate] made, and what it had to leave out. */
+/** What [PackDuplicator.duplicate] made. */
 data class Duplicate(
     val draft: CreatorDraft,
-    /** Ringtones and animated sprites are not edited by the creator yet, so the copy has none. */
-    val droppedRingtones: Int,
-    val droppedAnimations: Int,
+    /** Ringtone variants and animated sprites kept as they are: the creator does not edit them yet. */
+    val keptRingtones: Int,
+    val keptAnimations: Int,
 )
 
 /**
  * "Duplicate and edit" (brief: packs installed from a repository can be duplicated and edited; the original stays
  * untouched): copies the active version of an installed pack into a new draft. The copy gets a new pack ID (so it
- * installs next to the original), version 1.0.0, and keeps the characters' IDs, names, sprites, colors, clips with
- * their labels and weights, and custom haptics. Files are copied as they are, in whatever format the pack uses.
+ * installs next to the original), version 1.0.0, and keeps everything the format lets a pack carry: the characters'
+ * IDs, names, descriptions, tags, sprites and animated sprites, colors, clips with their labels, weights and
+ * conditions, ringtone variants with all their settings, and haptics; the pack's homepage and tags. Files are copied
+ * as they are, in whatever format the pack uses; a file several entries share is copied once. Unknown `x-` keys are
+ * not kept.
  */
 class PackDuplicator(
     private val packs: PackStore,
@@ -40,23 +43,29 @@ class PackDuplicator(
         val manifest = packs.activeManifest(packId) ?: throw IOException("$packId has no readable manifest")
         drafts.clear()
 
+        val copied = mutableMapOf<String, String>()
+
         fun copy(
             path: String,
             prefix: String,
-        ): String {
-            val source = File(folder, path)
-            val ext = path.substringAfterLast('.', "").lowercase()
-            val target = drafts.newMediaFile(prefix, ext)
-            source.copyTo(target, overwrite = true)
-            return target.name
-        }
+        ): String =
+            copied.getOrPut(path) {
+                val source = File(folder, path)
+                val ext = path.substringAfterLast('.', "").lowercase()
+                val target = drafts.newMediaFile(prefix, ext)
+                source.copyTo(target, overwrite = true)
+                target.name
+            }
 
         val characters =
             manifest.characters.map { c ->
                 DraftCharacter(
                     id = c.id,
                     name = c.name,
+                    description = c.description,
+                    tags = c.tags,
                     sprite = copy(c.sprite, "sprite"),
+                    spriteAnimated = c.spriteAnimated?.let { copy(it, "sprite-anim") },
                     seedColor = c.seedColor,
                     clips =
                         c.clips.map { clip ->
@@ -66,8 +75,11 @@ class PackDuplicator(
                                 label = clip.label.orEmpty(),
                                 weight = clip.weight ?: 1.0,
                                 durationMs = durationMs(drafts.media(file)),
+                                `when` = clip.`when`,
+                                oneIn = clip.oneIn,
                             )
                         },
+                    ringtones = c.ringtones.map { DraftRingtone(copy(it.file, "ringtone"), it) },
                     haptic =
                         when (c.haptic?.mode) {
                             "none" -> HapticMode.NONE
@@ -92,12 +104,14 @@ class PackDuplicator(
                 cover = manifest.cover?.let { copy(it, "cover") },
                 characters = characters,
                 copiedFrom = manifest.name,
+                homepage = manifest.homepage,
+                tags = manifest.tags,
             )
         drafts.save(draft)
         return Duplicate(
             draft = draft,
-            droppedRingtones = manifest.characters.sumOf { it.ringtones.size },
-            droppedAnimations = manifest.characters.count { it.spriteAnimated != null },
+            keptRingtones = manifest.characters.sumOf { it.ringtones.size },
+            keptAnimations = manifest.characters.count { it.spriteAnimated != null },
         )
     }
 

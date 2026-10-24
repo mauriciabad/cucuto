@@ -1,7 +1,9 @@
 package app.mauri.cucuto.core.ringtone
 
+import app.mauri.cucuto.core.data.chats.WhatsAppContactsSource
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContacts
 import app.mauri.cucuto.core.ringtone.contacts.ResolverAndroidContacts
+import app.mauri.cucuto.core.ringtone.contacts.ResolverWhatsAppContacts
 import app.mauri.cucuto.core.ringtone.render.PlatformRingRenderer
 import app.mauri.cucuto.core.ringtone.render.RingFileRenderer
 import app.mauri.cucuto.core.ringtone.store.InstalledRingtoneCatalog
@@ -19,6 +21,9 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 interface RingtoneModule {
     @Binds fun androidContacts(contacts: ResolverAndroidContacts): AndroidContacts
+
+    /** The WhatsApp entries of Android's contacts, for "Add a chat from contacts" (ADR 0065). */
+    @Binds fun whatsAppContacts(contacts: ResolverWhatsAppContacts): WhatsAppContactsSource
 
     @Binds fun renderer(renderer: PlatformRingRenderer): RingFileRenderer
 

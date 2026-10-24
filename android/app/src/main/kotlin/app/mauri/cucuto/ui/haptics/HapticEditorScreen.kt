@@ -104,19 +104,20 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * The haptic editor (brief, screen 7; #32) for [chat]'s custom vibration, or a scratch pad when [chat] is null. Saving
- * stores the pattern as the chat's override and closes the screen ([onDone]); leaving with unsaved changes asks first.
+ * The haptic editor (brief, screen 7; #32) for a chat's custom vibration or a creator character's pattern ([target],
+ * #185), or a scratch pad when [target] is null. Saving stores the pattern (or hands it back to the creator) and
+ * closes the screen ([onDone]); leaving with unsaved changes asks first.
  */
 @Composable
 fun HapticEditorScreen(
-    chat: ChatKey?,
+    target: HapticTarget?,
     onBack: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel =
         hiltViewModel<HapticEditorViewModel, HapticEditorViewModel.Factory>(
-            creationCallback = { factory -> factory.create(chat) },
+            creationCallback = { factory -> factory.create(target) },
         )
     val state by viewModel.state.collectAsStateWithLifecycle()
     val feedback = LocalFeedback.current
@@ -140,14 +141,14 @@ fun HapticEditorScreen(
     val back = {
         when {
             state.recording != null -> viewModel.stopRecording()
-            state.dirty && state.chat != null -> confirmDiscard = true
+            state.dirty && state.target != null -> confirmDiscard = true
             else -> onBack()
         }
     }
     val backState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
     NavigationBackHandler(
         state = backState,
-        isBackEnabled = state.recording != null || (state.dirty && state.chat != null),
+        isBackEnabled = state.recording != null || (state.dirty && state.target != null),
         onBackCompleted = back,
     )
 
@@ -300,7 +301,7 @@ fun HapticEditorContent(
                 actions = {
                     // With large fonts Undo moves above the timeline, so the title keeps some room.
                     if (!largeFont) UndoButton(state, actions)
-                    if (state.chat != null) {
+                    if (state.target != null) {
                         Button(
                             onClick = actions.onSave,
                             enabled = state.canSave,
@@ -326,7 +327,7 @@ fun HapticEditorContent(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (state.chat != null && state.character == null) {
+            if (state.needsVoice) {
                 Text(
                     stringResource(R.string.haptic_editor_no_voice),
                     style = MaterialTheme.typography.bodyMedium,
@@ -726,11 +727,12 @@ private fun PreviewRow(
             Spacer(Modifier.size(8.dp))
             Text(stringResource(R.string.haptic_editor_play))
         }
-        if (state.character != null) {
+        val previewName = state.previewName
+        if (previewName != null) {
             FilledTonalButton(onClick = { actions.onPreview(true) }, enabled = state.canPreviewWithClip) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.haptic_editor_play_with_clip, state.character.name))
+                Text(stringResource(R.string.haptic_editor_play_with_clip, previewName))
             }
         }
         TextButton(onClick = actions.onClear, enabled = state.draft.events.isNotEmpty()) {
@@ -940,7 +942,7 @@ private fun HapticEditorPreview() {
             state =
                 HapticEditorState(
                     loading = false,
-                    chat = ChatKey("com.whatsapp", "100000000000001@lid"),
+                    target = HapticTarget.Chat(ChatKey("com.whatsapp", "100000000000001@lid")),
                     draft =
                         HapticDraft(
                             events =

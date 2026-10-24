@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Añadir un chat desde contactos" y vincular chats en su primer mensaje (#292, ADR 0065). -->
+<resources>
+    <!-- Entry points -->
+    <string name="contacts_add">Añadir un chat desde contactos</string>
+    <string name="contacts_add_body">Gente que aún no te ha escrito</string>
+
+    <!-- Explainer -->
+    <string name="contacts_explainer_lead">Dale una voz y un tono a alguien antes de que te escriba.</string>
+    <string name="contacts_explainer_reads_title">Qué lee Cucuto</string>
+    <string name="contacts_explainer_reads_body">Las entradas de WhatsApp que ya tienen los contactos de tu móvil: el nombre y el número de WhatsApp de cada persona. Las pone ahí el propio WhatsApp.</string>
+    <string name="contacts_explainer_never_title">Qué no lee nunca</string>
+    <string name="contacts_explainer_never_body">Tus mensajes, chats y grupos, ni ningún archivo de WhatsApp. Tampoco nada más de tus contactos.</string>
+    <string name="contacts_explainer_saves_title">Qué guarda</string>
+    <string name="contacts_explainer_saves_body">Solo a las personas que eliges. Nada sale de tu móvil.</string>
+    <string name="contacts_explainer_why_title">Por qué pide tus contactos</string>
+    <string name="contacts_explainer_why_body">Android guarda estas entradas con tus contactos, así que Cucuto necesita permiso para leerlas. Es el mismo permiso que usan los tonos de llamada.</string>
+    <string name="contacts_explainer_first_title">Su primer mensaje</string>
+    <string name="contacts_explainer_first_body">WhatsApp solo da nombre a un chat cuando te escribe. Así que, cuando alguien que añades te escribe por primera vez, Cucuto compara su nombre con estas entradas y vincula el chat. Ese primer mensaje suena con el tono de WhatsApp; su voz suena desde el siguiente. Los tonos de llamada funcionan desde ya.</string>
+    <string name="contacts_explainer_code">Ver el código en GitHub</string>
+    <string name="contacts_continue">Continuar</string>
+    <string name="contacts_not_now">Ahora no</string>
+
+    <!-- List -->
+    <string name="contacts_loading">Leyendo las entradas de WhatsApp</string>
+    <string name="contacts_search_hint">Buscar contactos</string>
+    <string name="contacts_search_clear">Borrar búsqueda</string>
+    <string name="contacts_list_hint">Elige a quién quieres darle una voz. Solo se guardan esas personas.</string>
+    <string name="contacts_business">WhatsApp Business · %1$s</string>
+    <string name="contacts_known">Ya está en tus chats</string>
+    <string name="contacts_no_matches">Ningún contacto coincide</string>
+    <plurals name="contacts_add_button">
+        <item quantity="one">Añadir %1$d chat</item>
+        <item quantity="many">Añadir %1$d chats</item>
+        <item quantity="other">Añadir %1$d chats</item>
+    </plurals>
+    <string name="contacts_add_none">Elige a alguien para añadir</string>
+    <string name="contacts_failed">No se ha podido guardar. Vuelve a intentarlo.</string>
+    <string name="contacts_empty_title">No hay contactos de WhatsApp</string>
+    <string name="contacts_empty_body">Tus contactos no tienen entradas de WhatsApp. WhatsApp las añade cuando puede ver tus contactos. La gente que te escribe sigue apareciendo en Inicio.</string>
+    <string name="contacts_back">Volver</string>
+
+    <!-- Permission refused -->
+    <string name="contacts_denied_title">No se ha leído nada</string>
+    <string name="contacts_denied_body">Sin el permiso de contactos, Cucuto no puede ver las entradas de WhatsApp. La gente que te escribe sigue apareciendo en Inicio. Puedes permitirlo en los ajustes de Android cuando quieras.</string>
+    <string name="contacts_open_settings">Abrir ajustes</string>
+    <string name="contacts_try_again">Volver a intentarlo</string>
+
+    <!-- Home -->
+    <string name="home_waiting_header">Esperando su primer mensaje</string>
+    <string name="home_waiting_body">Su primer mensaje suena con el tono de WhatsApp y vincula el chat. Su voz suena desde el siguiente; los tonos de llamada funcionan desde ya.</string>
+    <string name="home_chat_not_linked">Sin vincular: espera su primer mensaje</string>
+    <string name="home_chat_voice_not_linked">%1$s · sin vincular</string>
+    <string name="home_questions_header">¿Quién es?</string>
+    <string name="home_question_body">Alguien que has añadido se llama así. Toca para decir quién es.</string>
+    <string name="home_journey_first_body_waiting">Elige un personaje. La voz de %1$s sonará cuando su primer mensaje vincule el chat.</string>
+
+    <!-- Confirm a link -->
+    <string name="confirm_link_title">¿Quién es?</string>
+    <string name="confirm_link_body">Te ha escrito un chat llamado %1$s. Podría ser más de una persona, así que Cucuto no va a adivinarlo. Mira el número en WhatsApp y elige quién es. Su voz sonará desde su próximo mensaje.</string>
+    <string name="confirm_link_voice">Voz: %1$s</string>
+    <string name="confirm_link_no_voice">Aún sin voz</string>
+    <string name="confirm_link_pick">Vincular con esta persona</string>
+    <string name="confirm_link_none">Ninguna de ellas</string>
+
+    <!-- Contact detail -->
+    <string name="contact_not_linked_title">Sin vincular</string>
+    <string name="contact_not_linked_body">Cucuto vincula este chat cuando %1$s te escribe por primera vez por WhatsApp. Ese primer mensaje suena con el tono de WhatsApp; la voz suena desde el siguiente. Un tono de llamada funciona desde ya.</string>
+</resources>

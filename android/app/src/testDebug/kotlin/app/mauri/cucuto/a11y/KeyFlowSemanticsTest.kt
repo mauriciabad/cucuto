@@ -43,6 +43,7 @@ import app.mauri.cucuto.ui.haptics.HapticDraft
 import app.mauri.cucuto.ui.haptics.HapticEditorActions
 import app.mauri.cucuto.ui.haptics.HapticEditorContent
 import app.mauri.cucuto.ui.haptics.HapticEditorState
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import app.mauri.cucuto.ui.haptics.HapticTimeline
 import app.mauri.cucuto.ui.haptics.RhythmRecording
 import app.mauri.cucuto.ui.haptics.nextEventMs
@@ -131,7 +132,7 @@ class KeyFlowSemanticsTest {
                 state =
                     HapticEditorState(
                         loading = false,
-                        chat = ChatKey("com.whatsapp", "100000000000001@lid"),
+                        target = HapticTarget.Chat(ChatKey("com.whatsapp", "100000000000001@lid")),
                         draft = draft,
                         recording = recording,
                     ),
