@@ -89,7 +89,8 @@ generation. Tap **Post test notification** (allow notifications if asked).
 
 ## 2b. Status card and onboarding (#24)
 
-On a fresh install Cucuto opens on the onboarding flow; after it (or from Status → **Setup guide**) the Status card
+On a fresh install Cucuto opens on the onboarding flow; after it Home shows the status card until it is green once
+(it then lives in Settings → Setup, which also reopens the **Setup guide**). The card
 shows four checks. What each reads ([ADR 0015](decisions/0015-status-checks-and-onboarding.md)):
 
 - Before enabling: module "Not enabled", scope "Cucuto can read its scope once the module is enabled".
@@ -104,6 +105,21 @@ shows four checks. What each reads ([ADR 0015](decisions/0015-status-checks-and-
 **Look for:** the scope line really comes from LSPosed (`getScope()` returns `[system]`), and the module line never
 asks for a reboot right after one. If it does, `getRunningTargets()` does not list `system_server` as expected:
 record what LSPosed returns (a finding for #24).
+
+## 2c. First-run journey and navigation (#153)
+
+Replay it on a debug build with Settings → Developer → **Start over as a new user** (packs and voices stay; remove
+the packs on the Packs tab first to see the import step). The demo bundle comes from the `packs-v1` release:
+`adb push app.mauri.demo.all-1.0.0.soundpack.zip /sdcard/Download/`.
+
+- Onboarding is full screen; Done or Skip lands on Home with the bottom bar (Home, Packs, Discover, Settings).
+- Home: the setup card (only the checks still failing) and "Give your chats a voice". **Import the demo packs**
+  opens the file picker in Downloads; picking the bundle switches to Packs with the import review. After installing,
+  the snackbar's **Give voices** returns to Home, which now invites the newest recent sender.
+- Assigning that first voice: back on Home the cuckoo door pops open on the character, with the door call and a burst.
+- When the setup card turns green on Home it celebrates, says it moves to Settings, and collapses after about 4 s.
+- Back: from a pushed screen it pops; from another tab's root it goes to Home (predictive back previews Home); from
+  Home it leaves the app. Tapping the selected tab again pops it to its root. Each tab keeps its scroll and stack.
 
 ## 3. Real WhatsApp messages
 

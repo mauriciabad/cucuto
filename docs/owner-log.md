@@ -202,3 +202,10 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 > right now the app feels like it is fragmented. when do you plan to make it a complete experience? please, make sure you have more agents working in paralel all time
 
 (Lead opened #153 "App shell: one coherent experience", wrote the app structure contract (Home, Packs, Discover, Settings) and started 5 more parallel agents: shell #153, Settings + backup UI #28/#43, Discover #36, haptic editor #32/#33, groups + Business #20/#21.)
+
+## 2026-10-24 — The app feels fragmented (#153)
+
+> right now the app feels like it is fragmented. when do you plan to make it a complete experience?
+
+(Lead opened #153: one app shell with Home, Packs, Discover and Settings, onboarding then Home, the demo packs, the
+first voice, and no placeholders in release builds. Built in ADR 0027.)

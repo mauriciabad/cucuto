@@ -19,9 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -29,15 +27,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -68,11 +66,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.pack.ImportSource
+import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.packs.ImportUi
 import app.mauri.cucuto.packs.LibraryPack
 import app.mauri.cucuto.packs.PacksMessage
 import app.mauri.cucuto.packs.PacksUiState
 import app.mauri.cucuto.packs.PacksViewModel
+import app.mauri.cucuto.ui.components.CucutoTopBar
 import app.mauri.cucuto.ui.components.ParticleBurst
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
@@ -86,17 +86,17 @@ const val PACKS_WEBSITE_URL = "https://cucuto.mauri.app/packs/"
  * MIME types for the system file picker. Packs are zips (ADR 0007); `application/octet-stream` covers providers that
  * do not know the type (old `.soundpack` files, some cloud drives). The importer checks the contents either way.
  */
-private val PickerTypes = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
+internal val PackPickerTypes = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
 
 /**
  * The Packs screen (#27): installed packs with their characters (tap one to hear it), import from a file (system
  * picker, "Open with" and the share sheet), the import review, plain-words errors and removal with a confirmation.
- * Discover (#36) is one tap away in the top bar and at the end of the list.
+ * It is a top-level tab (ADR 0027): no back arrow. Discover (#36) is linked at the end of the list, and after an
+ * install the snackbar offers to go give the new characters to chats on Home.
  */
 @Composable
 fun PacksScreen(
-    onBack: () -> Unit,
-    onDiscover: () -> Unit,
+    onNavigate: (CucutoDestination) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PacksViewModel = hiltViewModel(),
 ) {
@@ -106,12 +106,12 @@ fun PacksScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) viewModel.importFrom(ImportSource.of(resolver, uri))
         }
-    val openPicker = { picker.launch(PickerTypes) }
+    val openPicker = { picker.launch(PackPickerTypes) }
 
     PacksContent(
         state = state,
-        onBack = onBack,
-        onDiscover = onDiscover,
+        onDiscover = { onNavigate(CucutoDestination.Discover) },
+        onAssignVoices = { onNavigate(CucutoDestination.Home) },
         onImport = openPicker,
         onRemove = viewModel::requestRemove,
         onConsumeMessage = viewModel::messageShown,
@@ -145,8 +145,8 @@ fun PacksScreen(
 @Composable
 private fun PacksContent(
     state: PacksUiState,
-    onBack: () -> Unit,
     onDiscover: () -> Unit,
+    onAssignVoices: () -> Unit,
     onImport: () -> Unit,
     onRemove: (LibraryPack) -> Unit,
     onConsumeMessage: () -> Unit,
@@ -165,6 +165,7 @@ private fun PacksContent(
     val packs = state.packs
     val expandedFab by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
     val currentOnConsumeMessage by rememberUpdatedState(onConsumeMessage)
+    val currentOnAssignVoices by rememberUpdatedState(onAssignVoices)
 
     LaunchedEffect(state.message) {
         val message = state.message ?: return@LaunchedEffect
@@ -186,28 +187,21 @@ private fun PacksContent(
                 }
             }
         currentOnConsumeMessage()
-        snackbar.showSnackbar(text)
+        // After an install, the next step of the journey is on Home: giving the new characters to chats.
+        val action =
+            resources.getString(R.string.packs_assign_voices).takeIf {
+                message is PacksMessage.Installed && message.names.isNotEmpty()
+            }
+        val result = snackbar.showSnackbar(text, actionLabel = action, duration = SnackbarDuration.Long)
+        if (result == SnackbarResult.ActionPerformed) currentOnAssignVoices()
     }
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.screen_packs)) },
-                subtitle = packs?.takeIf { it.isNotEmpty() }?.let { { Text(summaryText(it)) } },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(R.string.navigate_back),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onDiscover) {
-                        Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.packs_discover))
-                    }
-                },
+            CucutoTopBar(
+                title = stringResource(R.string.tab_packs),
+                subtitle = packs?.takeIf { it.isNotEmpty() }?.let { summaryText(it) },
                 scrollBehavior = scrollBehavior,
             )
         },

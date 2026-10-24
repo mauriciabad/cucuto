@@ -28,7 +28,12 @@ class HomeContentTest {
     private val opened = mutableListOf<ChatKey>()
     private val queries = mutableListOf<String>()
 
-    private fun show(state: HomeState) {
+    private var demoImports = 0
+
+    private fun show(
+        state: HomeState,
+        journey: JourneyStep = JourneyStep.None,
+    ) {
         compose.setContent {
             CucutoTheme(dynamicColor = false) {
                 HomeContent(
@@ -38,7 +43,8 @@ class HomeContentTest {
                     onDismissRecent = {},
                     onOpenChat = { opened += it },
                     onOpenPacks = {},
-                    onBack = {},
+                    journey = journey,
+                    onImportDemoPacks = { demoImports++ },
                 )
             }
         }
@@ -67,10 +73,35 @@ class HomeContentTest {
     fun typingSearchesAndNoChatsShowsTheEmptyState() {
         show(HomeState(loading = false))
         compose.onNodeWithText("No chats yet").assertIsDisplayed()
-        compose.onNodeWithText("No sound packs yet").assertIsDisplayed()
         compose.onNode(hasSetTextAction()).performTextInput("ada")
         compose.waitForIdle()
         assertEquals("ada", queries.last())
+    }
+
+    @Test
+    fun firstRunOffersTheDemoPacksInsteadOfAnEmptyList() {
+        show(HomeState(loading = false), JourneyStep.ImportPacks)
+        compose.onNodeWithText("Give your chats a voice").assertIsDisplayed()
+        compose.onNodeWithText("No chats yet").assertDoesNotExist()
+        compose.onNodeWithText("Import the demo packs").performClick()
+        assertEquals(1, demoImports)
+    }
+
+    @Test
+    fun afterTheImportOneTapGivesTheNewestSenderAVoice() {
+        val state = previewHomeState()
+        show(state, JourneyStep.GiveFirstVoice(state.recent.first()))
+        compose.onNodeWithText("Give Ada a voice").assertIsDisplayed()
+        compose.onNodeWithText("Choose a voice").performClick()
+        assertEquals(listOf(state.recent.first().key), opened)
+    }
+
+    @Test
+    fun theFirstVoiceIsCelebratedWithItsCharacter() {
+        val state = previewHomeState()
+        show(state, JourneyStep.FirstVoice(state.voiced.single()))
+        compose.onNodeWithText("Bea has a voice!").assertIsDisplayed()
+        compose.onNodeWithText("Next time Bea writes, you hear Bleep the frog.").assertIsDisplayed()
     }
 
     private fun ComposeContentTestRule.onAllNodesWithTextFirst(text: String) = onAllNodes(hasText(text)).onFirst()

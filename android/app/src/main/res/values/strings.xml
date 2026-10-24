@@ -45,7 +45,6 @@
     <string name="selftest_notification_text">If the module is active, this played Cucuto\'s chirp instead of the default sound.</string>
 
     <!-- Status -->
-    <string name="status_title">Status</string>
     <string name="status_hero_loading">Checking Cucuto…</string>
     <string name="status_hero_title">Getting Cucuto ready</string>
     <plurals name="status_hero_progress">
@@ -99,7 +98,6 @@
     <string name="status_action_unavailable">No app on this phone can open that.</string>
     <string name="status_self_test_posted">Posted. Listen for the chirp; this check turns green within about 10 seconds.</string>
     <string name="status_setup_guide">Setup guide</string>
-    <string name="status_screens_header">Preview screens</string>
 
     <!-- Onboarding -->
     <string name="onboarding_skip">Skip</string>
@@ -143,22 +141,35 @@
     <string name="onboarding_test_success">Cu-cu! Cucuto is working. Next, import a pack and give your first contact a voice.</string>
     <string name="onboarding_test_default_sound">Heard the default sound? The module is not active yet: check the steps before, or open the install guide.</string>
 
-    <!-- Screens -->
-    <string name="screen_home">Home</string>
-    <string name="screen_home_body">Your chats with their character as avatar, plus recent senders waiting for a voice.</string>
-    <string name="screen_picker">Character picker</string>
-    <string name="screen_picker_body">A grid of characters grouped by pack. Tap to preview, tap again to assign.</string>
-    <string name="screen_contact">Contact detail</string>
-    <string name="screen_contact_body">The assigned character, its clip pool, ringtone, haptic override and a Simulate message button.</string>
-    <string name="screen_packs">Packs</string>
-    <string name="screen_packs_body">Installed packs, import from a file, create a pack, update and remove.</string>
-    <string name="screen_discover">Discover</string>
-    <string name="screen_discover_body">Browse pack repositories, preview and download packs.</string>
-    <string name="screen_haptics">Haptic editor</string>
-    <string name="screen_haptics_body">Drop presets on a timeline, drag envelope points and preview with the clip.</string>
-    <string name="screen_settings">Settings</string>
-    <string name="screen_settings_body">Global switch, backup and restore, and the decision log for every recent notification.</string>
-    <string name="placeholder_coming">Coming in %1$s</string>
+    <!-- Shell: tabs and screen titles (ADR 0027) -->
+    <string name="tab_home">Home</string>
+    <string name="tab_packs">Packs</string>
+    <string name="tab_discover">Discover</string>
+    <string name="tab_settings">Settings</string>
+    <string name="screen_setup">Setup</string>
+    <string name="screen_developer">Developer</string>
+
+    <!-- Settings (entry point; #28 fills it in) -->
+    <string name="settings_group_module">Cucuto on this phone</string>
+    <string name="settings_setup_body">Module, LSPosed scope, WhatsApp and packs, with a fix for anything missing</string>
+    <string name="settings_diagnostics_body">What happened to each recent notification, and a test notification</string>
+    <string name="settings_group_developer">Debug build</string>
+    <string name="settings_developer_body">Design gallery and test tools. Only in debug builds.</string>
+
+    <!-- Developer (debug builds only) -->
+    <string name="developer_group_tools">Tools</string>
+    <string name="developer_gallery_body">Colors, shapes, the cuckoo door and every feedback moment</string>
+    <string name="developer_diagnostics_body">Includes the debug test voice</string>
+    <string name="developer_reset_first_run">Start over as a new user</string>
+    <string name="developer_reset_first_run_body">Shows onboarding and the Home first-run steps again. Packs, voices and settings stay.</string>
+    <string name="developer_reset_done">First-run state cleared</string>
+
+    <!-- Discover (entry point; #36 fills it in) -->
+    <string name="discover_title">Find more voices</string>
+    <string name="discover_body">Free packs made for Cucuto are on cucuto.mauri.app. Download one, then open it with Cucuto or import it on the Packs tab.</string>
+    <string name="discover_website">Get free packs</string>
+    <string name="discover_import">Import a pack file</string>
+
 
     <!-- Chats (shared by Home and the character picker) -->
     <string name="chat_unnamed">Unnamed chat</string>
@@ -180,11 +191,27 @@
     <string name="home_chat_group">Group · %1$s</string>
     <string name="home_empty_title">No chats yet</string>
     <string name="home_empty_body">When someone messages you on WhatsApp, they show up here. Tap them to give them a voice.</string>
+    <string name="home_open_packs">Open Packs</string>
+    <string name="home_setup_details">Details</string>
+    <string name="home_setup_moves">All set. From now on this card lives in Settings, under Setup.</string>
+    <string name="home_attention_title">Cucuto needs a hand</string>
+    <string name="home_attention_body">Something stopped working. Tap to see what and fix it.</string>
+    <string name="home_journey_import_title">Give your chats a voice</string>
+    <string name="home_journey_import_body">Start with the free demo packs: little characters made for Cucuto. Pick the demo packs file in Downloads.</string>
+    <string name="home_journey_import_button">Import the demo packs</string>
+    <string name="home_journey_import_website">Download them from cucuto.mauri.app</string>
+    <string name="home_journey_wait_title">Your characters are ready</string>
+    <string name="home_journey_wait_body">When someone messages you on WhatsApp, they show up here. Then give them a voice.</string>
+    <string name="home_journey_preview">Hear the characters</string>
+    <string name="home_journey_first_title">Give %1$s a voice</string>
+    <string name="home_journey_first_body">%1$s messaged you recently. Pick a character, and their next message plays it.</string>
+    <string name="home_journey_first_button">Choose a voice</string>
+    <string name="home_journey_done_title">%1$s has a voice!</string>
+    <string name="home_journey_done_body">Next time %1$s writes, you hear %2$s.</string>
+    <string name="home_journey_done_door">The cuckoo door pops open on %1$s</string>
+    <string name="home_journey_done_dismiss">Nice</string>
     <string name="home_empty_door">A closed cuckoo-clock door, waiting for someone to call</string>
     <string name="home_no_matches">No chats match</string>
-    <string name="home_no_packs_title">No sound packs yet</string>
-    <string name="home_no_packs_body">Import a sound pack to get characters to choose from.</string>
-    <string name="home_open_packs">Open Packs</string>
     <string name="home_fab">Assign a voice</string>
     <string name="home_sheet_title">Who gets a voice?</string>
     <string name="home_sheet_empty">Every chat has a voice. New senders show up here when they message you.</string>
@@ -278,6 +305,7 @@
     <!-- Packs screen (#27) -->
     <string name="packs_import">Import</string>
     <string name="packs_import_file">Import a pack</string>
+    <string name="packs_assign_voices">Give voices</string>
     <string name="packs_discover">Discover</string>
     <string name="packs_website">Website</string>
     <string name="packs_play_character">Play %1$s</string>

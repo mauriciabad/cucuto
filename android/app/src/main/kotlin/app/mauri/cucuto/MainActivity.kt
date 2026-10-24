@@ -5,7 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import app.mauri.cucuto.navigation.CucutoNavDisplay
+import app.mauri.cucuto.navigation.CucutoApp
 import app.mauri.cucuto.packs.IncomingImports
 import app.mauri.cucuto.packs.importSourceOf
 import app.mauri.cucuto.ui.feedback.FeedbackEngine
@@ -14,7 +14,7 @@ import app.mauri.cucuto.ui.theme.CucutoTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-/** The single activity. Screens are Navigation 3 entries inside [CucutoNavDisplay]. */
+/** The single activity: onboarding on first run, then the four-tab shell ([CucutoApp], ADR 0027). */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var feedbackEngine: FeedbackEngine
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CucutoTheme {
                 ProvideFeedback(feedbackEngine) {
-                    CucutoNavDisplay(pendingImport = incomingImports.pending)
+                    CucutoApp(pendingImport = incomingImports.pending)
                 }
             }
         }
@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         offerImport(intent)
     }
 
-    /** "Open with" and the share sheet: queue the zip for the Packs screen (#27). */
+    /** "Open with" and the share sheet: queue the zip for the Packs tab (#27), which the shell opens. */
     private fun offerImport(intent: Intent?) {
         importSourceOf(this, intent)?.let(incomingImports::offer)
     }

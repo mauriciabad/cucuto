@@ -6,21 +6,36 @@ import kotlinx.serialization.Serializable
 
 /**
  * Navigation 3 keys for every screen in the brief ("UX, game feel and Material 3 Expressive"). Keys are
- * serializable so the back stack survives process death.
+ * serializable so the back stacks survive process death.
+ *
+ * [Home], [Packs], [Discover] and [Settings] are the roots of the four top-level tabs ([TopLevelTab]); navigating to
+ * one of them switches tabs. Every other key is pushed onto the current tab's back stack (ADR 0027).
  */
 @Serializable
 sealed interface CucutoDestination : NavKey {
-    /** Status: the start destination once onboarding is done. */
-    @Serializable
-    data object Status : CucutoDestination
-
-    /** First-run onboarding (#24): the start destination until it is finished or skipped; reopened from Status. */
-    @Serializable
-    data object Onboarding : CucutoDestination
-
-    /** Contacts list with recent senders. */
+    /** Tab root: chats and recent senders, plus the setup card until every check is green. */
     @Serializable
     data object Home : CucutoDestination
+
+    /** Tab root: installed packs. */
+    @Serializable
+    data object Packs : CucutoDestination
+
+    /** Tab root: pack repositories (#36). */
+    @Serializable
+    data object Discover : CucutoDestination
+
+    /** Tab root: settings (#28). */
+    @Serializable
+    data object Settings : CucutoDestination
+
+    /** Settings → Setup: the four status checks (#24), the setup guide and Diagnostics. */
+    @Serializable
+    data object Setup : CucutoDestination
+
+    /** The setup guide reopened from Setup. First run shows it outside the tabs ([AppStage.Onboarding]). */
+    @Serializable
+    data object Onboarding : CucutoDestination
 
     /** Character picker assigning a voice to [chat], or only previewing characters when it is null. */
     @Serializable
@@ -28,33 +43,25 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey? = null,
     ) : CucutoDestination
 
-    /** Detail of one chat, keyed by `package + conversation key`. */
+    /** Detail of one chat, keyed by `package + conversation key` (#26). */
     @Serializable
     data class ContactDetail(
         val chat: ChatKey,
     ) : CucutoDestination
 
-    /** Installed packs. */
-    @Serializable
-    data object Packs : CucutoDestination
-
-    /** Pack repositories. */
-    @Serializable
-    data object Discover : CucutoDestination
-
-    /** Haptic editor for a character or a per-contact override. */
+    /** Haptic editor for a character or a per-contact override (#32). */
     @Serializable
     data class HapticEditor(
         val contactKey: String? = null,
     ) : CucutoDestination
 
-    /** Settings and diagnostics. */
-    @Serializable
-    data object Settings : CucutoDestination
-
-    /** Module status, the decision log and the self-test notification (#17). A real screen, not a placeholder. */
+    /** Module status, the decision log and the self-test notification (#17). */
     @Serializable
     data object Diagnostics : CucutoDestination
+
+    /** Settings → Developer (debug builds only): the design gallery and test tools. */
+    @Serializable
+    data object Developer : CucutoDestination
 
     /** Design gallery (debug builds only): theme, shapes and feedback building blocks (#22, #23). */
     @Serializable

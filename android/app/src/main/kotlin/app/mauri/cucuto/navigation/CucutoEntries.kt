@@ -1,0 +1,54 @@
+package app.mauri.cucuto.navigation
+
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import app.mauri.cucuto.BuildConfig
+import app.mauri.cucuto.diagnostics.DiagnosticsScreen
+import app.mauri.cucuto.home.HomeScreen
+import app.mauri.cucuto.packs.ui.PacksScreen
+import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.developer.DeveloperScreen
+import app.mauri.cucuto.ui.discover.DiscoverScreen
+import app.mauri.cucuto.ui.gallery.GalleryScreen
+import app.mauri.cucuto.ui.onboarding.OnboardingScreen
+import app.mauri.cucuto.ui.settings.SettingsScreen
+import app.mauri.cucuto.ui.status.SetupScreen
+
+/**
+ * Every screen of the app, by destination. Feature screens are self-contained composables in their own package;
+ * each one gets one `entry` here, as small as possible (contract of #153: other agents add only their own entry).
+ * Screens navigate with `onNavigate` (tab roots switch tabs, anything else is pushed) and close with `onBack`.
+ */
+fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
+    val navigate: (CucutoDestination) -> Unit = navigator::navigate
+    val goBack: () -> Unit = { navigator.goBack() }
+    return entryProvider {
+        // Tab roots: no back arrow; system back goes to Home (or leaves the app from Home).
+        entry<CucutoDestination.Home>(metadata = TabRootMetadata) { HomeScreen(onNavigate = navigate) }
+        entry<CucutoDestination.Packs>(metadata = TabRootMetadata) { PacksScreen(onNavigate = navigate) }
+        entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen(onNavigate = navigate) }
+        entry<CucutoDestination.Settings>(metadata = TabRootMetadata) { SettingsScreen(onNavigate = navigate) }
+
+        entry<CucutoDestination.Picker> { key ->
+            PickerScreen(
+                chat = key.chat,
+                onBack = goBack,
+                // Only this picker, and only if the user has not left it already.
+                onDone = { navigator.remove(key) },
+                onOpenPacks = { navigate(CucutoDestination.Packs) },
+            )
+        }
+        entry<CucutoDestination.Setup> { SetupScreen(onNavigate = navigate, onBack = goBack) }
+        // The setup guide reopened from Setup: finishing or skipping just closes it.
+        entry<CucutoDestination.Onboarding> { OnboardingScreen(onFinish = goBack, resume = false) }
+        entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
+        // ContactDetail (#26) and HapticEditor (#32) get their entries with their screens; nothing links to them yet.
+
+        // Debug builds only: R8 drops these screens from release builds.
+        if (BuildConfig.DEBUG) {
+            entry<CucutoDestination.Developer> { DeveloperScreen(onNavigate = navigate, onBack = goBack) }
+            entry<CucutoDestination.Gallery> { GalleryScreen(onBack = goBack) }
+        }
+    }
+}

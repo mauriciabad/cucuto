@@ -110,6 +110,9 @@ class StatusViewModel
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, StatusUiState())
 
+        /** Whether the card has ever been green (it then leaves Home for Settings → Setup); null while loading. */
+        val everGreen: StateFlow<Boolean?> = onboarding.celebrated.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
         private val celebrationChannel = Channel<Unit>(Channel.CONFLATED)
 
         /**

@@ -61,7 +61,7 @@ at absolute offsets that match the notes of the matching sound (assign: 0, 60, 1
 - "Remove animations" (`ANIMATOR_DURATION_SCALE` = 0, observed live) is `LocalReducedMotion`: particles, squash and
   stretch and sound arcs are dropped, the door cross-fades open; sound and haptics still play.
 
-**Gallery.** A debug-only "Design gallery" screen (linked from Status) shows every building block.
+**Gallery.** A debug-only "Design gallery" screen (Settings → Developer since ADR 0027) shows every building block.
 
 ## Consequences
 
