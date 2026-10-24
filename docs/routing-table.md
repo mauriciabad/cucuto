@@ -2,7 +2,8 @@
 
 The routing table is everything the module needs to swap a WhatsApp alert: which contact keys have a voice, which
 clips that voice plays, and which vibration goes with them. The app builds it from its database and publishes it to
-the module through libxposed Remote Preferences; the module keeps it in memory. This page is the contract between
+the module through libxposed Remote Preferences, a libxposed remote file and its own provider; the module keeps it
+in memory. This page is the contract between
 the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec`, `RoutingContract`).
 
 ## Transport
@@ -11,7 +12,7 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
 | --- | --- | --- |
 | API | `XposedServiceHelper.registerListener` → `XposedService.getRemotePreferences("routing")` | `XposedInterface.getRemotePreferences("routing")` |
 | Access | read/write (`edit().putString(…).commit()`) | read-only, plus `OnSharedPreferenceChangeListener` |
-| Keys | `table` (string, the encoded table), `generation` (long) | same |
+| Keys | `table` (string, the encoded table), `generation` (long, the latest publication's; see size limits) | same |
 
 - The app republishes whenever contacts, keys, assignments, installed packs or the global switch change
   (`RoutingPublisher`). A table equal to the published one is not written again. Tables with conditional clips
@@ -40,11 +41,22 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
 - Order of preference: Remote Preferences, the remote file, the provider. A table is installed only when its
   generation is newer than the one held, so each table loads once, and the module logs which path delivered it:
   `Routing table <gen> (via preferences|file|provider): N keys, M voices`.
-- Encoded tables larger than 256 Ki characters are not written, because Remote Preferences travel through Binder.
-  The publisher first retries without clip envelopes (`PublishState.Published.clipHapticsLeftOut`: sounds still
-  change, `auto` keeps WhatsApp's vibration) and only then gives up (`PublishState.TooLarge`). A heavy user (500
-  contacts, 950 keys, 176 voices of 12 clips) needs about 111 Ki characters, or about 195 Ki with a 16-point auto
-  envelope on every clip ([ADR 0020](decisions/0020-auto-haptics-at-import.md)).
+- **Size limits** ([ADR 0054](decisions/0054-routing-table-size-headroom.md)). Remote Preferences travel through
+  Binder, so they take at most 256 Ki characters (`RoutingContract.MAX_PREFERENCES_CHARS`). The remote file and the
+  provider pass a file descriptor; their only limit is the module's read limit, `RoutingFile.MAX_BYTES` (1 MiB plus
+  the frame header, the same in every released module), so the publisher writes tables of up to 1 MiB in UTF-8
+  (`RoutingContract.MAX_TABLE_BYTES`).
+  - A table over 256 Ki characters goes in full to the remote file and the app's copy at generation *N* + 1, and
+    Remote Preferences get the same table without clip envelopes at generation *N* (or keep their table when even
+    that is too large). The `generation` key is always the latest publication's, *N* + 1. Every module installs only
+    newer (0.1.3 on) or different (0.1.2) generations and re-reads the file on the nudge for *N* + 1, so it ends on
+    the full table; a module that misses the file pulls it from the provider
+    (`PublishState.Published.tooLargeForPreferences`).
+  - A table over 1 MiB is retried without clip envelopes (`PublishState.Published.clipHapticsLeftOut`: sounds still
+    change, `auto` keeps WhatsApp's vibration), and only then refused (`PublishState.TooLarge`).
+  - A heavy user with every feature on (1,150 keys, 180 voices of 12 clips, a 16-point envelope on every clip, six
+    clip conditions, mirrored clips; `HeavyUserTest` in `:xposed`) needs about 250 Ki characters: about a quarter of
+    the limit.
 
 ## Model
 
@@ -188,4 +200,8 @@ after 120 more.
 
 `RoutingScaleTest` (in `:core:routing`) builds the heavy-user table above and checks the encoded size, decoding time
 and lookup time, with and without an auto envelope on every clip. On a laptop JVM, decoding takes about 1 to 3 ms
-and a lookup about 0.1 µs, against the hook's 5 ms budget.
+and a lookup about 0.1 µs, against the hook's 5 ms budget. Four such users in one table (about 790 K characters,
+too large for Remote Preferences) decode in about 12 ms; decoding runs on the module's background thread when a
+table arrives, never on the notification path, and lookups do not depend on the table's size. `HeavyUserTest` and
+`RoutingIntegrationTest` (in `:xposed`, [ADR 0047](decisions/0047-routing-integration-suite.md)) check the size
+with every feature on and the file-only path end to end.

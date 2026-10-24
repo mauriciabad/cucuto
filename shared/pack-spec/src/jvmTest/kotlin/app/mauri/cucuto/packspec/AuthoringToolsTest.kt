@@ -164,5 +164,46 @@ class AuthoringToolsTest {
         assertEquals("previews/app.mauri.fixtures.bundle/cover.png", bundled.cover)
         assertEquals(2, bundled.packs!!.size)
         assertNull(bundled.characters)
+        assertTrue(
+            bundled.packs.flatMap { it.characters.orEmpty() }.all { it.haptic != null },
+            "bundled characters with a sample carry their haptic too",
+        )
+    }
+
+    @Test
+    fun `characters with a sample carry the pack's haptic as x-haptic, and the index reads back the same`() {
+        val content = JvmPackIo.validatePath(valid.resolve("full-pack")).content!!
+        val manifest = (content as PackContent.Single).pack.manifest
+        val entry = RepositoryIndexer.entry(content, 1, Download("packs/full.soundpack.zip", 1234, "a".repeat(64))).entry
+        val (robin, song, ringer) = entry.characters!!
+        assertEquals(manifest.characters[0].haptic, robin.haptic, "custom: the pattern as the pack has it")
+        assertEquals("custom", robin.haptic!!.mode)
+        assertEquals(Haptic("none"), song.haptic)
+        assertNull(ringer.haptic, "no sample, nothing to preview")
+        val minimal = RepositoryIndexer.entry(JvmPackIo.validatePath(valid.resolve("minimal-pack")).content!!, 1, entry.download).entry
+        assertEquals(Haptic("auto"), minimal.characters!!.single().haptic, "a pack without a haptic is auto")
+
+        val json = RepositoryIndexer.json(RepositoryIndexer.index("Mine", null, null, null, listOf(entry, minimal)))
+        assertTrue(DocumentValidator.validate(DocumentKind.REPOSITORY, json.encodeToByteArray()).isValid)
+        assertTrue("\"x-haptic\": {" in json, json)
+        assertTrue("\"haptic\"" !in json.replace("\"x-haptic\"", ""), "only the extension key, which older apps accept")
+        val read = SpecJson.decodeFromString(RepositoryIndex.serializer(), json)
+        assertEquals(listOf(minimal, entry).sortedBy { it.id }, read.packs)
+    }
+
+    @Test
+    fun `the schema checks x-haptic, and an index without it stays valid`() {
+        fun index(preview: String) =
+            """{"formatVersion":1,"name":"R","packs":[{"id":"a.b","type":"pack","name":"P","version":"1.0.0",""" +
+                """"characters":[{"id":"c","name":"C",$preview"sample":"c.ogg"}],""" +
+                """"download":{"url":"p.zip","size":100,"sha256":"${"a".repeat(64)}"}}]}"""
+
+        fun valid(preview: String) = DocumentValidator.validate(DocumentKind.REPOSITORY, index(preview).encodeToByteArray()).isValid
+        assertTrue(valid(""))
+        assertTrue(valid(""""x-haptic":{"mode":"auto"},"""))
+        assertTrue(valid(""""x-haptic":{"mode":"custom","events":[{"at":0,"preset":"TICK"}]},"""))
+        assertTrue(!valid(""""x-haptic":{"mode":"custom"},"""), "custom needs events")
+        assertTrue(!valid(""""x-haptic":{"mode":"loud"},"""))
+        assertTrue(!valid(""""haptic":{"mode":"auto"},"""), "older apps would reject a plain key, so the format has none")
     }
 }

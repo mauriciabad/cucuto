@@ -23,7 +23,7 @@ class RoutingScaleTest {
             "Routing table for 500 contacts: ${encoded.length} chars, ${table.routes.size} routes, ${table.voices.size} voices",
         )
         assertTrue("Encoded table is ${encoded.length} chars", encoded.length < 160 * 1024)
-        assertTrue(encoded.length < RoutingContract.MAX_ENCODED_CHARS * 2 / 3)
+        assertTrue(encoded.length < RoutingContract.MAX_PREFERENCES_CHARS * 2 / 3)
     }
 
     /**
@@ -51,11 +51,11 @@ class RoutingScaleTest {
         assertEquals(withEnvelopes, RoutingCodec.decode(encoded))
         assertTrue(
             "Encoded table is ${encoded.length} chars",
-            encoded.length < RoutingContract.MAX_ENCODED_CHARS * 7 / 8,
+            encoded.length < RoutingContract.MAX_PREFERENCES_CHARS * 7 / 8,
         )
         assertTrue(
             "Inline envelopes would fit, so the dictionary is pointless",
-            inline > RoutingContract.MAX_ENCODED_CHARS,
+            inline > RoutingContract.MAX_PREFERENCES_CHARS,
         )
     }
 
@@ -70,6 +70,30 @@ class RoutingScaleTest {
         val perDecodeMs = (System.nanoTime() - start) / runs / 1_000_000.0
         println("Decode with envelopes: %.2f ms".format(perDecodeMs))
         assertTrue("Decoding took $perDecodeMs ms", perDecodeMs < 100)
+    }
+
+    /**
+     * Issue #223: four heavy users in one table (2,000 contacts, 480 characters, 5,760 clip envelopes) are too large
+     * for Remote Preferences but fit the remote file and the provider pull, and the module decodes them off the
+     * notification path in a few milliseconds per heavy user (ADR 0054). Lookups do not depend on the table's size.
+     */
+    @Test
+    fun fourHeavyUsersFitTheFileAndDecodeOffTheNotificationPath() {
+        val table = buildLargeTable(autoEnvelopes = true, scale = 4)
+        val encoded = RoutingCodec.encode(table)
+        assertTrue("${encoded.length} chars", encoded.length > RoutingContract.MAX_PREFERENCES_CHARS)
+        assertTrue("${encoded.length} chars", RoutingFile.fits(encoded))
+        assertEquals(table, RoutingCodec.decode(RoutingFile.unframe(RoutingFile.frame(encoded))!!))
+        repeat(5) { RoutingCodec.decode(encoded) }
+        val runs = 5
+        val start = System.nanoTime()
+        repeat(runs) { RoutingCodec.decode(encoded) }
+        val perDecodeMs = (System.nanoTime() - start) / runs / 1_000_000.0
+        println(
+            "Four heavy users: ${encoded.length} chars (%.0f %% of the file limit), decoded in %.2f ms"
+                .format(encoded.length * 100.0 / RoutingContract.MAX_TABLE_BYTES, perDecodeMs),
+        )
+        assertTrue("Decoding took $perDecodeMs ms", perDecodeMs < 400)
     }
 
     @Test
@@ -108,8 +132,11 @@ class RoutingScaleTest {
         }
     }
 
-    private fun buildLargeTable(autoEnvelopes: Boolean = false): RoutingTable {
-        val characters = 120
+    private fun buildLargeTable(
+        autoEnvelopes: Boolean = false,
+        scale: Int = 1,
+    ): RoutingTable {
+        val characters = 120 * scale
         val voices =
             (0 until characters)
                 .map { c ->
@@ -123,7 +150,7 @@ class RoutingScaleTest {
                     )
                 }.toMutableList()
         val routes = ArrayList<Route>()
-        for (contact in 0 until 500) {
+        for (contact in 0 until 500 * scale) {
             val isGroup = contact % 10 == 0
             var voice = contact % characters
             if (contact % 9 == 0) {

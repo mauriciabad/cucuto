@@ -60,7 +60,7 @@ class HapticsDeviceTest {
                 )
             val wav = writeWav(File(dir, "clip.wav"), parts, sampleRate = 44_100, channels = 2)
 
-            val pcm = ClipPcmDecoder().decode(wav)
+            val pcm = ClipPcmDecoder().decode(wav, AutoHapticAnalyzer.MAX_DURATION_MS)
             assertEquals(44_100, pcm.sampleRate)
             assertTrue("decoded ${pcm.durationMs} ms", abs(pcm.durationMs - 1500) <= 30)
 

@@ -1,38 +1,31 @@
-<p>Cucuto plays a different character’s sound and vibration for each WhatsApp contact, like a cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss. Phone in your pocket, you already know who wrote.</p>
+Cucuto plays a different character’s sound and vibration for each WhatsApp contact, like a cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss. Phone in your pocket, you already know who wrote.
 
-<p><b>Read this first: Cucuto needs root and LSPosed.</b> It is a tool for phones that already have:</p>
-<ul>
-<li><b>Android 17.</b> It does not run on Android 16 or older.</li>
-<li><b>Root</b>, for example with Magisk, KernelSU or APatch. Cucuto does not root your phone for you.</li>
-<li><b>LSPosed</b> that loads modern modules (libxposed API 102). You enable Cucuto there with the System Framework scope and reboot.</li>
-<li><b>WhatsApp or WhatsApp Business</b>, with its own notification tone and vibration left on.</li>
-</ul>
-<p>Without root and LSPosed the app opens, but it can’t change a single sound. Cucuto is an early version: expect rough edges, and keep your root manager’s safe mode in mind in case the phone ever fails to boot.</p>
+<b>Read this first: Cucuto needs root and LSPosed.</b> It is a tool for phones that already have:
+• <b>Android 17.</b> It does not run on Android 16 or older.
+• <b>Root</b>, for example with Magisk, KernelSU or APatch. Cucuto does not root your phone for you.
+• <b>LSPosed</b> that loads modern modules (libxposed API 102). You enable Cucuto there with the System Framework scope and reboot.
+• <b>WhatsApp or WhatsApp Business</b>, with its own notification tone and vibration left on.
 
-<p><b>How it works</b></p>
-<ul>
-<li><b>Import a sound pack.</b> Open a .soundpack.zip file or download one from a pack repository. A pack is a cast of characters, each with a picture, a few short clips and its own vibration.</li>
-<li><b>Give a contact a character.</b> Pick a chat, tap a character to hear it, tap again to assign.</li>
-<li><b>Hear who it is.</b> When they message you, WhatsApp’s own notification plays their character’s voice and vibration.</li>
-</ul>
+Without root and LSPosed the app opens, but it can’t change a single sound. Cucuto is an early version: expect rough edges, and keep your root manager’s safe mode in mind in case the phone ever fails to boot.
 
-<p><b>Built to stay out of the way</b></p>
-<ul>
-<li>One sound, no duplicates: no second notification and no permanent icon in the status bar.</li>
-<li>Your settings still rule: muted chats, Do Not Disturb and silent mode work exactly as before, because Android still decides whether a message alerts.</li>
-<li>Safe fallback: if the module is off or anything fails, WhatsApp’s normal tone plays. You never miss a message because of Cucuto.</li>
-<li>Groups too: one character for the group, or a voice for each person in it.</li>
-<li>A vibration per character, so you can tell who wrote with the phone on vibrate. Make your own in the editor, or tap out the rhythm.</li>
-<li>Nothing runs in the background: no service, no persistent notification, no battery exemption.</li>
-</ul>
+<b>How it works</b>
+• <b>Import a sound pack.</b> Open a .soundpack.zip file or download one from a pack repository. A pack is a cast of characters, each with a picture, a few short clips and its own vibration.
+• <b>Give a contact a character.</b> Pick a chat, tap a character to hear it, tap again to assign.
+• <b>Hear who it is.</b> When they message you, the notification plays their character’s voice and vibration.
 
-<p><b>What it touches</b></p>
-<ul>
-<li>The module runs inside Android’s system process, where notifications are handled, and only looks at notifications from WhatsApp and WhatsApp Business. It never hooks the WhatsApp app and never reads what your messages say.</li>
-<li>No accounts, no ads, no analytics, no crash reporting. The app goes online only when you browse or download packs from a pack repository. Location is asked once, approximate, and only if you want day and night clips.</li>
-<li>Cucuto never checks for updates by itself. Update with your app store client, Obtainium or the GitHub release page, then reboot: the module loads the new version at boot.</li>
-</ul>
+<b>Built to stay out of the way</b>
+• One sound, no duplicates: no second notification and no permanent icon in the status bar.
+• Your settings still rule: muted chats, Do Not Disturb and silent mode work exactly as before, because Android still decides whether a message alerts.
+• Safe fallback: if the module is off or anything fails, the normal tone plays. You never miss a message because of Cucuto.
+• Groups too: one character for the group, or a voice for each person in it.
+• A vibration per character, so you can tell who wrote with the phone on vibrate. Make your own in the editor, or tap out the rhythm.
+• Nothing runs in the background: no service, no persistent notification, no battery exemption.
 
-<p>The app ships empty: no third-party content comes with it, and you are responsible for the packs you import. Free CC0 demo packs, the install guide and the pack format are at <a href="https://cucuto.mauri.app">cucuto.mauri.app</a>.</p>
+<b>What it touches</b>
+• The module runs inside Android’s system process, where notifications are handled, and only looks at notifications from WhatsApp and WhatsApp Business. It never hooks the WhatsApp app and never reads what your messages say.
+• No accounts, no ads, no analytics, no crash reporting. The app goes online only when you browse or download packs from a pack repository. Location is asked once, approximate, and only if you want day and night clips.
+• Cucuto never checks for updates by itself. Update it where you installed it from, then reboot: the module loads the new version at boot.
 
-<p>Free software under the GPL-3.0-or-later license. Not affiliated with WhatsApp or Meta.</p>
+The app ships empty: no third-party content comes with it, and you are responsible for the packs you import. Free CC0 demo packs, the install guide and the pack format are at https://cucuto.mauri.app
+
+Free software under the GPL-3.0-or-later license. Not affiliated with WhatsApp or Meta.

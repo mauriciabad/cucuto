@@ -35,6 +35,7 @@ data class VoicePack(
  *   a clip without one. Empty when unknown.
  * @property clipMoments Each clip's [Moment] (rare, first of the day, burst; ADR 0059), aligned with [clips]. Empty
  *   when unknown.
+ * @property ringtoneCount How many call ringtones the character has (0: messages only).
  */
 data class VoiceCharacter(
     val packId: String,
@@ -48,8 +49,15 @@ data class VoiceCharacter(
     val clipPaths: List<String> = emptyList(),
     val clipAutoHaptics: List<Haptic.Custom?> = emptyList(),
     val clipMoments: List<Moment> = emptyList(),
+    val ringtoneCount: Int = 0,
 ) {
     val voice: ChatVoice get() = ChatVoice(packId, id)
+
+    /** It can speak for messages: it has notification clips (ADR 0063). A song-only character cannot. */
+    val forMessages: Boolean get() = clips.isNotEmpty()
+
+    /** It can ring for calls: it has ringtones (ADR 0063). */
+    val forCalls: Boolean get() = ringtoneCount > 0
 
     /** The auto envelope of [clip], or null when it has none. */
     fun autoHapticOf(clip: File): Haptic.Custom? = clipAutoHaptics.getOrNull(clips.indexOf(clip))
@@ -102,6 +110,7 @@ class InstalledCharacterDirectory
                                 clipPaths = clips.map { it.second.file },
                                 clipAutoHaptics = clips.map { it.second.autoHaptic },
                                 clipMoments = clips.map { it.second.moment },
+                                ringtoneCount = character.ringtoneCount,
                             )
                         },
                 )

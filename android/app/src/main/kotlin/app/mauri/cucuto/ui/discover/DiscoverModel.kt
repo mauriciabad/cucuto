@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.discover
 
+import app.mauri.cucuto.core.data.routing.HapticJson
 import app.mauri.cucuto.core.repo.DEFAULT_REPOSITORY_URL
 import app.mauri.cucuto.core.repo.LinkError
 import app.mauri.cucuto.core.repo.LinkResult
@@ -9,14 +10,17 @@ import app.mauri.cucuto.core.repo.RepositoryLink
 import app.mauri.cucuto.core.repo.RepositoryLinks
 import app.mauri.cucuto.core.repo.RepositorySnapshot
 import app.mauri.cucuto.core.repo.ResolvedEntry
+import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.packs.ImportUi
 import app.mauri.cucuto.packs.PacksMessage
 import app.mauri.cucuto.packs.parseSeedColor
 import app.mauri.cucuto.packspec.CharacterPreview
 import app.mauri.cucuto.packspec.SemVer
+import app.mauri.cucuto.packspec.SpecJson
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import app.mauri.cucuto.packspec.Haptic as PackHaptic
 
 /** Everything the Discover screen shows. */
 data class DiscoverUiState(
@@ -127,6 +131,11 @@ data class RemoteCharacter(
     val sample: HttpUrl?,
     /** `seedColor` as ARGB, or null. */
     val seedColor: Int?,
+    /**
+     * The vibration that goes with the sample (`x-haptic`, ADR 0069): [Haptic.Auto] is computed from the sample,
+     * [Haptic.Keep] (pack mode `none`) and null (the index does not say) play the sample alone.
+     */
+    val haptic: Haptic? = null,
 )
 
 /** One-off results for a snackbar. Cleared with [DiscoverViewModel.messageShown]. */
@@ -347,7 +356,12 @@ private fun remoteCharacter(
     sprite = preview.sprite?.let(snapshot::resolve),
     sample = preview.sample?.let(snapshot::resolve),
     seedColor = parseSeedColor(preview.seedColor),
+    haptic = preview.haptic?.let(::previewHaptic),
 )
+
+/** A character's `x-haptic` (the pack format's `haptic` object) as the app plays it, read like an installed pack's. */
+internal fun previewHaptic(haptic: PackHaptic): Haptic =
+    HapticJson.fromPack(SpecJson.encodeToJsonElement(PackHaptic.serializer(), haptic))
 
 /**
  * Pack [packId] is installed when a pack with its ID is, whatever file it came from. An older installed version than

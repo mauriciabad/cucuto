@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.data.db
 
+import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.ForeignKey
 import androidx.room3.PrimaryKey
@@ -9,11 +10,15 @@ import androidx.room3.PrimaryKey
  * Android through the contact's linked Android contact ([ContactEntity.androidLookupKey]), whose `CUSTOM_RINGTONE`
  * `:core:ringtone` sets (ADR 0039).
  *
- * @property packId The character's pack, or null to follow the contact's voice (the brief: "assigning a character
- *   assigns both its notification clips and its ringtones"). The picker (#53) sets an explicit character to mix.
+ * @property packId The character's pack, or null for the contact's voice. The voice and the ringtone are independent
+ *   choices (ADR 0063): with [followsVoice] this is the character kept while the voice has no ringtones (null when
+ *   none), without it the character the user picked in the ringtone picker.
  * @property characterId The character, null together with [packId].
  * @property mode How the variant is chosen (backup schema `ringtone.rule.mode`).
  * @property variant Ringtone file (path from `pack.json`) for [RingtoneMode.FIXED]; null means the first variant.
+ * @property followsVoice The user never picked a ringtone: it rings with the voice's character whenever that has
+ *   ringtones, and the chat directory updates [packId] when the voice changes ([app.mauri.cucuto.core.data.chats.PhoneRingtoneFollow]). False once the
+ *   user picks a character other than the voice's. Defaults to "no character of its own", the meaning before ADR 0063.
  */
 @Entity(
     tableName = "phone_ringtones",
@@ -33,6 +38,7 @@ data class PhoneRingtoneEntity(
     val mode: RingtoneMode = RingtoneMode.PACK,
     val variant: String? = null,
     val updatedAt: Long,
+    @ColumnInfo(defaultValue = "1") val followsVoice: Boolean = packId == null,
 )
 
 /** How a phone ringtone picks its variant (docs/pack-format.md, "Variant resolution"; backup `rule.mode`). */

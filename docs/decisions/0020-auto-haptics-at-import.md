@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-24
-- Issues: #97, #98
+- Issues: #97, #98, #267 (parallel analysis)
 
 ## Context
 
@@ -27,6 +27,16 @@ nothing. `:core:pack` stays free of audio code; the app plugs in `AutoHaptics` (
 **Every clip, bounded.** All notification clips are analysed whatever their character's pack haptic, because a
 per-contact `auto` override can apply to any character (#33). Only the first 2 s of each clip are decoded and
 analysed, so a 30 s clip costs the same as a short one, and the decoder has a 10 s timeout per clip.
+
+**Several clips at once (#267).** `AutoHaptics.analyzePack` decodes and analyses clips on a bounded pool, like the
+import test-decodes ([ADR 0061](0061-fast-import-checks.md)): the platform decoders mostly wait for the codec
+process, one packet at a time, so several clips at once go almost proportionally faster. The app passes
+`PackImporter.DEFAULT_DECODE_PARALLELISM` (CPU cores, at least 2 and at most 8); `AutoHaptics` defaults to the same
+bound, since `:core:haptics` does not depend on `:core:pack`. The workers run on `Dispatchers.IO`, because the work is
+blocking waits rather than CPU. The stored file keeps manifest order and is the same as one at a time, clip for clip.
+Progress still comes from the calling coroutine, from 0 to the clip count, one step per finished clip, so
+`PackImporter.install` (a `channelFlow`, #181) reports `ImportProgress.Analyzing` as before. A clip that fails is left
+out, and the analyser never fails an import.
 
 **Redo stale analyses in the background.** At app start, `AutoHapticsRunner.start` analyses again, once per process,
 every installed pack whose file is missing or `AutoHaptics.isStale` (new analyser version, restore on a phone with a
@@ -61,7 +71,10 @@ app update) skips `H` lines and trailing fields, so it reads new tables correctl
   195 Ki with a 16-point envelope on every one of its 1,440 clips, under the 256 Ki limit. `RoutingScaleTest` checks
   both.
 - Clip envelopes in the table differ from the stored analysis by at most 8 thousandths and 19 ms per point.
-- Installing takes longer: tens of milliseconds per clip, shown as progress. The first start after this update
+- Installing takes longer, shown as progress. Decoding 2 s of Opus took about 140 ms on an emulator, mostly waiting
+  for the codec process (ADR 0061), so clips are analysed several at once (#267). The first start after this update
   analyses packs installed before it, in the background.
+- Up to 8 codec instances are busy while a pack is analysed, and up to 16 if the background refresh overlaps an
+  import, well under the 32 instances each codec allows.
 - The diagnostics screen does not yet say when clip envelopes were left out; `PublishState` carries it for later.
 - How auto haptics feel can only be judged on the device (`needs-device`).

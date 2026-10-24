@@ -88,7 +88,11 @@
         "name": { "$ref": "common.schema.json#/$defs/name" },
         "sprite": { "$ref": "common.schema.json#/$defs/urlReference" },
         "sample": { "description": "A short preview clip.", "$ref": "common.schema.json#/$defs/urlReference" },
-        "seedColor": { "$ref": "common.schema.json#/$defs/color" }
+        "seedColor": { "$ref": "common.schema.json#/$defs/color" },
+        "x-haptic": {
+          "description": "The character's haptic from pack.json, so apps can play the vibration with the sample. For auto, apps compute the envelope from the sample. Absent means unknown (play the sample without vibration). Named as an extension key so that apps that predate it accept it (docs/pack-format.md#pack-repositories).",
+          "$ref": "pack.schema.json#/$defs/haptic"
+        }
       },
       "patternProperties": { "^x-": true },
       "additionalProperties": false

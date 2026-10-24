@@ -52,8 +52,8 @@ Not done:
   and the emulator's software audio decoders support it. It needs MediaCodec's asynchronous mode and new output
   callbacks, though, and could not be tested on a real device here. Left for a follow-up (#268).
 - **Decoding less** (only the container length, or shorter windows) would weaken the check the brief asks for.
-- **Auto haptics** (ADR 0020) runs at install and decodes the first 2 s of every clip, one at a time. Running it in
-  parallel would speed up installing in the same way; it is a separate change in `:core:haptics` (#267).
+- **Auto haptics** (ADR 0020) runs at install and decoded the first 2 s of every clip, one at a time. It was a
+  separate change in `:core:haptics`: since #267 it uses the same bound, `DEFAULT_DECODE_PARALLELISM` (ADR 0020).
 
 ## Consequences
 

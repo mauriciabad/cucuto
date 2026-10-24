@@ -4,6 +4,17 @@ The brief for the explainer video on the website's Home page (issue #42). Hand t
 video, a person or an agent. It says what to show, what to say and what to deliver. How the site plays the
 video is in [ADR 0042](decisions/0042-explainer-video-and-slot.md).
 
+> **Owner update 2026-10-24 (#194).** "dont involve humans, AI voice. Dont use the real app ui not phone
+> recordings, you can make a simplified version for the video. Only english video". And: "the point of not using
+> real screenshots is to make the video evergreen, so if i update the ui the video doesnt get outdated. would be
+> nice that the video project files were saved so if i want to add a new feature to the video it is doable, but
+> this is NOT a priority, just a optional nice to have."
+>
+> So: **one English cut** with an **AI voice-over**, **no people** on or behind the camera, and **no real app
+> screens or phone recordings**. Every phone shot is a **simplified, illustrated UI** drawn for the video. The video
+> is **source in the repository** (scenes, timeline, voice script, sound cues), so a new feature means a new scene.
+> The draft pipeline from #195 still renders the real screens; reworking it is #271.
+
 Rules from the [project brief](project-brief.md#website) that this video must follow:
 
 - **Demo packs only.** Use the CC0 packs in [`packs/`](../packs) (Chiptune critters, Kitchen orchestra) and the brand
@@ -13,8 +24,13 @@ Rules from the [project brief](project-brief.md#website) that this video must fo
 - **Made-up people only.** Every name, chat and message on screen is invented: **Ada**, **Bea** and **Leo**, the
   same cast as the app's tests. No real contact, profile picture or phone number ever appears. See
   [Staging and privacy](#staging-and-privacy).
-- **The real app.** Every app shot shows a flow that exists in Cucuto today, with the real screens and the real
-  motion and sound. Nothing is mocked up to look better than the app.
+- **An illustrated app, true to the flows.** ~~The real app: the real screens.~~ Every phone shot is a simplified,
+  evergreen drawing of a flow that exists in Cucuto (owner, #194). The drawings use the brand (colors, shapes, the
+  cuckoo door, the demo pack art) but not the app's exact layout or text, so a UI change doesn't date the video.
+  Never show a feature Cucuto doesn't have, or make a step look easier than it is (setup still needs root and
+  LSPosed).
+- **Machines only.** No human voice, actor, hand or phone recording. The voice-over is synthesized (an open
+  text-to-speech model whose license allows publishing the result).
 - **Never autoplays with sound.** The site plays it muted at most, and never moves when the viewer asks for reduced
   motion (ADR 0042).
 
@@ -24,7 +40,7 @@ Rules from the [project brief](project-brief.md#website) that this video must fo
 | --- | --- |
 | Length | **58 s** (target 45–60 s; never longer than 60 s) |
 | Frame | 16:9, 1920 × 1080, 60 fps (Cucuto's springs look choppy at 30 fps) |
-| Languages | Two cuts on the same timeline: English (app in English, English voice-over) and Spanish (app in Spanish, Spanish voice-over). Captions in both languages work on both cuts. |
+| Languages | **English only** (owner, #194): one cut with an English AI voice-over. English and Spanish captions; `/es/` plays the English cut with Spanish captions on. ~~Two cuts on the same timeline.~~ |
 | Tone | The brand voice ([`brand/README.md`](../brand/README.md#voice-and-tone)): friendly, short, concrete; playful in the moments of joy, plain about requirements. At most one exclamation mark in the whole script. |
 | Message | Each WhatsApp contact gets their own character's sound and vibration, so you know who wrote without looking. Free, open source, for rooted Android 17 with LSPosed. |
 
@@ -55,8 +71,10 @@ One idea, in four movements:
 
 ## Shot list
 
-Times are the edit's timeline, the same for both cuts. "App" shots are screen recordings of the real app (see
-[Producing the footage](#producing-the-footage)); keep the touch indicator on so viewers see each tap. The phone is
+Times are the edit's timeline. "App" shots are the **illustrated** phone UI (owner, #194), not recordings of the real
+app: the same steps, drawn simply, with a drawn touch indicator so viewers see each tap. The screen names, button
+labels and quotes below describe the flow; the drawings may simplify or drop them (few words on screen, large).
+Shots 1 and 9 are illustrated too: a drawn lock screen with generic notification cards (no WhatsApp branding). The phone is
 framed in a simple device outline, centered, on the brand's cream background (`#FFF4F0`) with the soft sound
 rings of the [social card](../brand/web/og-image.png). Camera moves are slow and small: a push-in of 5 % at most,
 no shake, no whip pans.
@@ -71,8 +89,8 @@ no shake, no whip pans.
 | 6 | 00:26.0–00:36.0 | **Tap to hear, tap to assign** | App: the picker, "Choose a voice · For Ada". Tap Mew the cat (it squashes and speaks), then Tootle the kettle, then Bleep the frog ("Tap again to assign"). Tap the frog again: the tile morphs, the burst fires in green, the snackbar says "Bleep the frog now speaks for Ada". Hold on the snackbar. | VO 26.1–27.7 s. Cat `mew.ogg` at 27.8 s, kettle `whistle.ogg` at 28.9 s, frog `ribbit.ogg` at 30.0 s. VO 30.9–32.5 s. Assign at 32.6 s: `assign.ogg`, frog `ribbit.ogg` on its second note (+130 ms). |
 | 7 | 00:36.0–00:40.0 | **The cuckoo door** | App: back on Home, the first-voice card "Ada has a voice!": the cuckoo door pops open on the frog, with a burst in its colors. | `assign.ogg` with the door at 36.45 s, frog `croak.ogg` +130 ms. VO 37.4–40.0 s. |
 | 8 | 00:40.0–00:46.0 | **Simulate message** | App: Ada's contact detail (frog avatar, clip pool). Tap **Simulate message** at 41.6 s; the card says "Through the module…". Show the vibration as two quick ripples around the phone outline (the frog's haptic is two clicks). | VO 40.3–43.0 s. Frog clip at 43.3 s (record the take that plays `ribbit.ogg`). |
-| 9 | 00:46.0–00:53.0 | **The real thing** | The phone on a table, screen on, locked. A real WhatsApp message from Ada lands ("Dinner at 8? 🍝") and the phone plays the frog and wiggles. Then one from Bea ("Running 5 min late"): the kettle whistles. Bea was given Tootle the kettle off camera. | Frog `ribbit.ogg` at 46.8 s, kettle `whistle.ogg` at 49.4 s. VO 50.6–52.8 s. |
-| 10 | 00:53.0–00:58.0 | **End card** | The Cucuto logo ([`brand/logo/cucuto-logo.svg`](../brand/logo/cucuto-logo.svg), light variant) on cream, the line "Give each contact a voice." and **cucuto.mauri.app**. Fine print: "Free and open source · Android 17 · Needs root and LSPosed · Not affiliated with WhatsApp or Meta". Spanish cut: "Dale voz a cada contacto." and "Gratis y de código abierto · Android 17 · Necesita root y LSPosed · Sin relación con WhatsApp ni Meta". | `assign.ogg` once at 53.2 s. VO 54.0–57.6 s. Silence to the end. |
+| 9 | 00:46.0–00:53.0 | **The real thing** | The illustrated phone, screen on, locked. A message from Ada lands ("Dinner at 8? 🍝") and the phone plays the frog and wiggles. Then one from Bea ("Running 5 min late"): the kettle whistles. Bea was given Tootle the kettle off camera. | Frog `ribbit.ogg` at 46.8 s, kettle `whistle.ogg` at 49.4 s. VO 50.6–52.8 s. |
+| 10 | 00:53.0–00:58.0 | **End card** | The Cucuto logo ([`brand/logo/cucuto-logo.svg`](../brand/logo/cucuto-logo.svg), light variant) on cream, the line "Give each contact a voice." and **cucuto.mauri.app**. Fine print: "Free and open source · Android 17 · Needs root and LSPosed · Not affiliated with WhatsApp or Meta". (English only; the Spanish end card is dropped with the Spanish cut, #194.) | `assign.ogg` once at 53.2 s. VO 54.0–57.6 s. Silence to the end. |
 
 **Poster frame.** The frame at 00:32.8 (the burst around the frog tile, snackbar not yet up) is the poster. Export it
 as described in [Deliverables](#deliverables). Until the video exists, the site shows an illustrated, text-free
@@ -80,12 +98,12 @@ poster with the same idea ([`web/src/lib/assets/images/explainer-poster.svg`](..
 
 ## Voice-over script
 
-One calm, warm narrator per language. Not a hype voice. The Spanish cut uses Spain Spanish with "tú", in the voice
-of the website's Spanish pages. Pronounce Cucuto "koo-KOO-toe" in English and as written in Spanish. Say the URL as
-"cucuto dot mauri dot app" in English and "cucuto punto mauri punto app" in Spanish. Each line must fit its slot;
-the Spanish lines are written short so both cuts share one timeline.
+One calm, warm **AI narrator in English** (owner, #194). Not a hype voice. Pronounce Cucuto "koo-KOO-toe" (spell it
+phonetically in the text-to-speech input if needed) and say the URL as "cucuto dot mauri dot app". Each line must
+fit its slot. The Spanish column is no longer spoken: it is the text of the Spanish captions (`explainer.es.vtt`)
+for `/es/`, in Spain Spanish with "tú".
 
-| # | Slot | English | Spanish |
+| # | Slot | English (spoken) | Spanish (captions only) |
 | --- | --- | --- | --- |
 | 1 | 03.0–04.9 | Same sound every time. Who was that? | Siempre el mismo sonido. ¿Quién era? |
 | 2 | 06.2–08.9 | Cucuto gives each WhatsApp contact a voice. | Cucuto da voz a cada contacto de WhatsApp. |
@@ -99,11 +117,13 @@ the Spanish lines are written short so both cuts share one timeline.
 | 9 | 50.6–52.8 | Now you know who wrote, without looking. | Ahora sabes quién te escribe, sin mirar. |
 | 10 | 54.0–57.6 | Cucuto. Free and open source, at cucuto.mauri.app. | Cucuto. Gratis y de código abierto, en cucuto.mauri.app. |
 
-About 95 words in each language, roughly 2.4 words a second while the narrator speaks. The gaps are
-on purpose: the characters do the talking.
+About 95 words, roughly 2.4 words a second while the narrator speaks. The gaps are on purpose: the characters do
+the talking.
 
-Who records it is an open question (#194). The default: a human volunteer
-voice for the final cuts, credited in the release notes if they agree. A synthetic voice is fine for drafts only.
+**The voice is AI-generated** (owner, #194: "dont involve humans, AI voice"; this replaces the earlier default of a
+human volunteer). Use an open text-to-speech model run locally, whose model and voice licenses allow publishing the
+audio, and record the model, voice and settings next to the script so the voice can be regenerated identically
+when a line changes (#271). No cloned or celebrity voice.
 
 ## Sound design
 
@@ -112,7 +132,7 @@ Only two sources, both CC0:
 - **Character clips** from the demo packs, unedited except for level: [`packs/chiptune-critters`](../packs/chiptune-critters)
   (frog `ribbit`, `croak`, `hop`; cat `mew`, `mrrp`, `purr`; bird; bee) and
   [`packs/kitchen-orchestra`](../packs/kitchen-orchestra) (kettle `whistle`, `bubble`, `reel-hook`; pot; glass;
-  whisk). Use the files in `packs/*/*/clips/`, or record them from the phone so the device's speaker colors them.
+  whisk). Use the files in `packs/*/*/clips/` (no phone recordings, #194).
 - **Brand UI sounds** from [`brand/sounds`](../brand/sounds): `assign.ogg` (the "cu-cu!" call), `success.ogg`,
   `tap.ogg`. Rules in [`sound-and-haptics.md`](../brand/sound-and-haptics.md): one UI sound at a time, and the
   character clip starts on the call's second note, about 130 ms after `assign.ogg`.
@@ -133,8 +153,8 @@ Specifics:
 
 ## Captions
 
-Closed captions in WebVTT, one file per language: `explainer.en.vtt` and `explainer.es.vtt`. Both cuts share the
-timeline, so the same two files serve both. Drafts that match this script are already in
+Closed captions in WebVTT, one file per language: `explainer.en.vtt` and `explainer.es.vtt`, both timed to the one
+English cut (`/es/` shows the Spanish ones). Drafts that match this script are already in
 [`web/static/video/`](../web/static/video); adjust the times to the final edit and keep the cue IDs.
 
 - **Captions for deaf and hard-of-hearing viewers (SDH)**: the voice-over plus every meaningful sound in square
@@ -160,13 +180,14 @@ Check every item before delivery.
 - [ ] No flashing more than three times a second (WCAG 2.3.1). The bursts are small and brief; check the whole
       cut with a photosensitive epilepsy analyzer (for example PEAT) and keep its report.
 - [ ] Gentle motion: no camera shake, no fast zooms, push-ins of 5 % at most, nothing spinning behind text.
-- [ ] Text on screen (app UI, end card) has a contrast of at least 4.5:1, is at least 32 px tall at 1080p, and
+- [ ] Text on screen (illustrated UI, end card) has a contrast of at least 4.5:1, is at least 32 px tall at 1080p, and
       stays up long enough to read twice.
 - [ ] Loudness −16 LUFS integrated, true peak −1 dBTP; the voice is clearly above everything else.
 - [ ] Made-up people only: no real name, number, profile picture, chat or wallpaper photo anywhere, including the
       status bar, notification shade and keyboard suggestions. Check frame by frame around shots 1 and 9.
 - [ ] Only CC0 demo-pack sounds and brand sounds in the mix; no WhatsApp tone, no music.
-- [ ] Both cuts share the timeline, so both caption files line up with both cuts.
+- [ ] Both caption files line up with the English cut.
+- [ ] No real app screenshot or phone recording anywhere: every phone shot is the illustrated UI (#194).
 
 The site's side (in place now, ADR 0042): native controls, keyboard operable, never autoplays with sound, never
 autoplays when the viewer prefers reduced motion or saves data, pauses when scrolled away, captions on by default
@@ -174,32 +195,26 @@ whenever the video plays muted or the page language differs from the audio, and 
 
 ## Staging and privacy
 
-- **Record on a clean profile.** Cucuto's Home lists real people from real WhatsApp notifications, so never record
-  on a phone with real chats in Cucuto's data. Use a test phone, or clear Cucuto's data first (Settings › Apps ›
-  Cucuto › Storage) and restore afterwards from a backup.
-- **WhatsApp test accounts.** Shots 1 and 9 need real WhatsApp messages. Use test accounts only: the recording
-  phone runs a second WhatsApp account, and a second phone sends as "Ada", "Bea" and "Leo" (#194). Save them in the
-  recording phone's contacts under those names with no photo, so no number shows. Turn off the owner's own
-  WhatsApp account's notifications during the shoot.
-- **No real numbers.** If a number would ever show (an unsaved sender, a profile page), use the fictional range
-  `+44 7700 900000`–`+44 7700 900999` that Ofcom reserves for drama, and prefer to avoid the shot altogether.
-- **Status bar.** Turn on Android's demo mode (`adb shell settings put global sysui_demo_allowed 1`, then the
-  `com.android.systemui.demo` broadcasts) for a fixed 12:00 clock, full battery and signal, and no notification icons.
-- **Device.** Rooted Android 17 with LSPosed and the module enabled (System Framework scope), the demo packs from
-  the latest `packs-v*` release, touch indicator on (Developer options › Show taps), animations at 1×, dark mode
-  off for the English and Spanish cuts alike, app language set per cut (Settings › System › Languages › App
-  languages › Cucuto).
+Everything is drawn, so there is no shoot, no phone and no WhatsApp account (owner, #194). The earlier staging
+rules (a clean Cucuto profile, WhatsApp test accounts, Android's demo mode, the recording device) are dropped.
 
-## Producing the footage
+- **Made-up people only.** Ada, Bea and Leo, drawn with initials or demo-pack characters, never photos.
+- **No numbers.** No phone number is ever drawn. If one is unavoidable, use the fictional range
+  `+44 7700 900000`–`+44 7700 900999` that Ofcom reserves for drama.
+- **No WhatsApp branding.** Notification cards are generic (no WhatsApp logo, green or tone); the voice-over and the
+  end card may name WhatsApp in words, with the "Not affiliated" line.
 
-Shots 3–8 are app footage. Record them with `adb shell screenrecord --bit-rate 20M --size 1080x2400` (or the
-phone's own recorder at 60 fps) while a script or a steady hand drives the app. Shots 1 and 9 also need the
-system's lock screen and notifications, so they are always recorded on the device. Shots 2 and 10 are motion
-graphics built from `brand/` files.
+## Producing the video
+
+All shots are rendered from source, with no device (owner, #194): the illustrated phone UI (shots 1 and 3–9) and the
+motion graphics built from `brand/` files (shots 2 and 10). The project lives in the repository so a new feature can
+be added as a new scene: the scenes, the timeline (this shot list with its times), the voice-over text and voice
+settings, and the sound cues. Renders, masters and stems are build output, not committed (#271).
 
 ### An automated draft
 
-We looked for a way to make a draft video with no human editor. Findings:
+We looked for a way to make a draft video with no human editor. Findings (from #42, before the owner's answer on
+#194; routes 2 and 3 use the real app, which the owner has now ruled out):
 
 1. **From the scripted screenshots (#41).** Once the screenshot pipeline captures one still per shot (Home with
    recent senders, the picker, the burst, contact detail…), a small Kotlin script (`*.main.kts`) can build an
@@ -230,21 +245,30 @@ places the CC0 clips and brand sounds at the shot list's times, and writes the d
 `android/app/build/explainer/`, plus `explainer-review.<lang>.mp4` with both caption files as tracks. The manual
 `explainer-video` workflow (Actions tab) does the same and uploads the draft as an artifact. Nothing is committed.
 
-What the draft is not yet: there is no voice-over (pass `--voice-over-en FILE` to the script once one exists), shots 1
-and 9 are drawn stand-ins until device footage exists (#194), and the camera is static. So the website keeps its
-"coming soon" card until the final cut.
+What the draft is not yet: there is no voice-over (pass `--voice-over-en FILE` to the script once one exists), and
+the camera is static. So the website keeps its "coming soon" card until the final cut.
+
+**To be reworked (#271).** The owner's answer on #194 rules out the app's real screens and device footage, and the
+Spanish cut. The pipeline keeps its frame-stepped Compose recorder and the ffmpeg assembly script, but:
+
+- the phone shows illustrated scenes drawn for the video that never import the app's screens;
+- shots 1 and 9 stay drawn, and become final rather than stand-ins;
+- an English AI voice-over is generated from the script;
+- only the English cut is rendered (Spanish captions stay).
+
+Until then, the draft above is a timing reference only.
 
 ## Deliverables
 
 Web files go in `web/static/video/` (served at `/video/…`; the site's service worker never precaches them). The
-site finds them at build time: the English cut makes the player appear, the Spanish cut is used on `/es/` when it
-exists, and the English cut plays there with Spanish captions until then.
+site finds them at build time: the English cut makes the player appear, and `/es/` plays it with Spanish captions.
+There is no Spanish cut (owner, #194). The site's support for an optional `explainer.es.*` stays harmless and
+unused.
 
 | File | What | Spec |
 | --- | --- | --- |
 | `explainer.webm` | English cut, modern browsers | AV1 (SVT-AV1, `-crf 34 -preset 4`, 10-bit `yuv420p10le`) + Opus 96 kb/s stereo, 1920 × 1080, 60 fps. Budget 10 MB. |
 | `explainer.mp4` | English cut, everything else (Safari without AV1 hardware) | H.264 High 4.2 (`libx264 -crf 22 -preset slow -pix_fmt yuv420p`) + AAC-LC 128 kb/s, `-movflags +faststart`, 1920 × 1080, 60 fps. Budget 16 MB. |
-| `explainer.es.webm`, `explainer.es.mp4` | Spanish cut | Same specs. |
 | `explainer.en.vtt`, `explainer.es.vtt` | Captions | WebVTT, UTF-8, LF line endings, SDH (see [Captions](#captions)). |
 | `web/src/lib/assets/images/explainer-poster.png` | Poster frame | The frame at 00:32.8 of the English cut, 1920 × 1080 PNG. The site encodes it to JPEG XL, AVIF and PNG at build time (`?picture`), so the poster is served as JPEG XL with fallbacks for browsers that can't decode it; replace the import of `explainer-poster.svg` in `ExplainerVideo.svelte` with it and delete the SVG. |
 
@@ -258,9 +282,10 @@ ffmpeg -i master-en.mov -c:v libx264 -profile:v high -level 4.2 -crf 22 -preset 
 ffmpeg -ss 32.8 -i master-en.mov -frames:v 1 explainer-poster.png
 ```
 
-Kept outside the repository (large; attach them to a GitHub release or keep them with the project files): the
-lossless masters (ProRes 422 HQ or FFV1), the stems (voice, clips, UI sounds), the edit project and the
-photosensitivity report.
+**In the repository (the project files, owner #194):** the scene sources, the timeline, the voice-over text with
+its text-to-speech settings, the sound cue list and the assembly script, so anyone can re-render the video or add
+a scene. **Kept outside the repository** (large and rebuildable; attach them to a GitHub release if worth keeping):
+the lossless masters (FFV1), the stems (voice, clips, UI sounds) and the photosensitivity report.
 
 Optional, not used by the site: a vertical 1080 × 1920 cut for social posts, same timeline, phone filling the frame,
 captions burned in.

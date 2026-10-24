@@ -63,4 +63,7 @@ object RepositoryModule {
 interface DiscoverBindings {
     @Binds
     fun discoverStore(store: RoomDiscoverStore): DiscoverStore
+
+    @Binds
+    fun sampleHaptics(haptics: DeviceSampleHaptics): SampleHaptics
 }
