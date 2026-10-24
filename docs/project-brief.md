@@ -524,7 +524,7 @@ Development is near the end (owner, 2026-10-24). From now on, occasional single 
 | M0 Device spike | Gate passed (GO, [M0 report](m0-report.md)): hook points, swaps, DND, silent, bursts, WaEnhancer X | Muted-chat parity check (#12, owner) |
 | M1 Core engine | Everything: importer, routing table, production hook, clip mirror, timing and battery | — |
 | M2 Contacts and senders | Recent senders, group policy, WhatsApp Business | Add chats from Android contacts (#292); group sender device check (#157, owner) |
-| M3 UI and game feel | All screens and the four-tab shell, feedback engine, Spanish, accessibility pass | Picker folding and random picks (#289, #290); TalkBack and Scanner walkthrough on the phone (#226, owner) |
+| M3 UI and game feel | All screens and the four-tab shell, feedback engine, Spanish, accessibility pass, picker folding and "Surprise me" | TalkBack and Scanner walkthrough on the phone (#226, owner) |
 | M4 Haptics | Everything: pack haptics, auto haptics, editor, per-contact override, AI-written patterns | — |
 | M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, credentials, verification | Draw haptic previews (#301); import speed (#279, #268); Drive folder source, v1.1 (#37, blocked on #188) |
 | M6 Website | Every page, release-driven builds, the default repository, JPEG XL, screenshots, GitHub Pages and DNS | Explainer video rework (#271); TypeScript 7 (#162, blocked upstream) |
