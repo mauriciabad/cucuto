@@ -219,8 +219,8 @@ class DemoPacksTest {
             )
 
             vm.clearFilters()
-            // Awaited: the index fetch resumed on OkHttp's thread, so the state can lag a moment behind under load.
-            val cleared = vm.awaitState { it.demo == null && it.focus == null }
+            // Read right away: every dispatcher runs on the test scheduler, so the state is never behind (#261).
+            val cleared = vm.state.value
             assertNull(cleared.demo)
             assertNull(cleared.focus)
             assertEquals(
