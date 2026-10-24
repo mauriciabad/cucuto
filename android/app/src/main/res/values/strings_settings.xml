@@ -26,6 +26,11 @@
     <string name="settings_remove_animations_body">No particles, bounces or swinging door in Cucuto. Sounds and vibration still play.</string>
     <string name="settings_remove_animations_system">On for every app in Android\'s accessibility settings.</string>
 
+    <!-- Language (#107, ADR 0036): opens Android's per-app language page -->
+    <string name="settings_section_language">Language</string>
+    <string name="settings_language">App language</string>
+    <string name="settings_language_system">Same as the phone</string>
+
     <!-- Backup and restore -->
     <string name="settings_section_backup">Backup and restore</string>
     <string name="settings_backup_now">Back up to a file</string>
@@ -197,16 +202,16 @@
     <string name="settings_version">Version</string>
     <string name="settings_version_value">%1$s (%2$d)</string>
     <string name="settings_website">Website</string>
-    <string name="settings_website_url">https://cucuto.mauri.app</string>
+    <string name="settings_website_url" translatable="false">https://cucuto.mauri.app</string>
     <string name="settings_source">Source code</string>
-    <string name="settings_source_url">https://github.com/mauriciabad/cucuto</string>
+    <string name="settings_source_url" translatable="false">https://github.com/mauriciabad/cucuto</string>
     <string name="settings_licenses">Licenses</string>
     <string name="settings_licenses_body">Cucuto is free software under the GPL, version 3 or later.</string>
     <string name="licenses_title">Licenses</string>
     <string name="licenses_close">Close</string>
-    <string name="licenses_app">Cucuto</string>
+    <string name="licenses_app" translatable="false">Cucuto</string>
     <string name="licenses_app_body">GNU General Public License, version 3 or later. You may share and change it under the same terms.</string>
-    <string name="licenses_font">Google Sans Flex</string>
+    <string name="licenses_font" translatable="false">Google Sans Flex</string>
     <string name="licenses_font_body">SIL Open Font License 1.1.</string>
     <string name="licenses_packs">Demo sound packs</string>
     <string name="licenses_packs_body">CC0 1.0: public domain, free for any use.</string>
@@ -214,9 +219,9 @@
     <string name="licenses_libraries_body">Android Jetpack, Kotlin, kotlinx, Material Color Utilities, Coil, OkHttp, Dagger Hilt and libxposed (Apache License 2.0); Bouncy Castle (the MIT-style Bouncy Castle Licence); jxl-rs and its Rust dependencies (BSD 3-Clause, MIT or Apache License 2.0).</string>
     <string name="licenses_your_packs">Packs you import keep their own licenses, shown on each pack.</string>
     <string name="licenses_read">Read the license</string>
-    <string name="licenses_gpl_url">https://www.gnu.org/licenses/gpl-3.0.html</string>
-    <string name="licenses_ofl_url">https://openfontlicense.org</string>
-    <string name="licenses_cc0_url">https://creativecommons.org/publicdomain/zero/1.0/</string>
+    <string name="licenses_gpl_url" translatable="false">https://www.gnu.org/licenses/gpl-3.0.html</string>
+    <string name="licenses_ofl_url" translatable="false">https://openfontlicense.org</string>
+    <string name="licenses_cc0_url" translatable="false">https://creativecommons.org/publicdomain/zero/1.0/</string>
 
     <!-- Developer (debug builds only) -->
     <string name="settings_section_developer">Developer</string>

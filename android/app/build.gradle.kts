@@ -18,6 +18,14 @@ android {
         versionName = "0.1.0"
     }
 
+    androidResources {
+        // Per-app language (Android 13+ system settings, ADR 0036): AGP writes the LocaleConfig and the manifest's
+        // android:localeConfig from the values-* folders; res/resources.properties names the default (English).
+        generateLocaleConfig = true
+        // Ship only the app's languages, so library strings never mix a third language into the UI.
+        localeFilters += listOf("en", "es")
+    }
+
     buildFeatures {
         // BuildConfig.DEBUG gates the design gallery.
         buildConfig = true
