@@ -45,34 +45,31 @@ internal fun MacrobenchmarkScope.home() {
  * and the ringtone rules, from the picker or else from the detail. Back on Home at the end.
  */
 internal fun MacrobenchmarkScope.contactDetail() {
-    if (!openFirstChatDetail()) return
+    if (!openFirstChatDetail()) return backToHome()
     scrollMainList()
-    if (tapInMainList(By.text(appString("contact_row_calls")))) {
+    if (tapInMainList(By.text(appString("contact_row_calls")), expect = By.text(appString("ringtone_picker_title")))) {
         scrollMainList()
-        if (tapInMainList(By.text(appString("ringtone_rules_open")))) {
+        val rules = By.text(appString("ringtone_rules_title"))
+        if (tapInMainList(By.text(appString("ringtone_rules_open")), expect = rules)) {
             scrollMainList()
             back()
         }
         back()
     }
-    // The rules again, from the detail's "Phone calls" row, when the ringtone has versions.
-    if (tapInMainList(By.text(appString("ringtone_rules_open")))) back()
     backToHome()
 }
 
 /**
- * The character picker: the first chat on Home (through its detail when it has a voice), scrolled, a pack folded and
- * unfolded, and a search typed and cleared.
+ * The character picker: the first chat on Home (through its detail's "Messages" row when it has a voice), scrolled,
+ * a pack folded and unfolded, and a search typed.
  */
 internal fun MacrobenchmarkScope.picker() {
     openTab("tab_home")
-    val chat = findInMainList(By.res(CHAT_ROW)) ?: return
-    chat.click()
-    device.waitForIdle()
-    // A chat with a voice opens its detail first; "Change character" leads to the picker.
-    device.findObject(By.text(appString("contact_change")))?.let {
-        it.click()
-        device.waitForIdle()
+    val searchField = By.text(appString("picker_search_hint"))
+    if (openFirstChatDetail()) {
+        if (!tapInMainList(By.text(appString("contact_row_messages")), expect = searchField)) return backToHome()
+    } else if (!device.wait(Until.hasObject(searchField), TIMEOUT_MS)) {
+        return backToHome()
     }
     scrollMainList()
     device.wait(Until.findObject(By.res(PACK_HEADER)), TIMEOUT_MS)?.let { header ->
@@ -103,14 +100,15 @@ internal fun MacrobenchmarkScope.packs() {
     scrollMainList()
 }
 
-/** Opens the first chat on Home; true when it has a voice, so its contact detail is on screen. */
+/**
+ * Opens the first chat on Home: true when its contact detail shows (the chat has a voice; detail is found by its
+ * "Messages" row). A chat without a voice opens the character picker instead, left on screen.
+ */
 private fun MacrobenchmarkScope.openFirstChatDetail(): Boolean {
     openTab("tab_home")
     val chat = findInMainList(By.res(CHAT_ROW)) ?: return false
     click(chat)
-    if (device.wait(Until.hasObject(By.text(appString("contact_change"))), TIMEOUT_MS)) return true
-    back()
-    return false
+    return device.wait(Until.hasObject(By.text(appString("contact_row_messages"))), TIMEOUT_MS)
 }
 
 /** Taps a tab of the navigation bar by its label (a string resource of the app). */
@@ -146,11 +144,17 @@ private fun MacrobenchmarkScope.hideKeyboard() {
     if (shell("dumpsys input_method").contains("mInputShown=true")) back()
 }
 
-/** Scrolls the main list until [selector] shows, then taps it. False when it never shows. */
-private fun MacrobenchmarkScope.tapInMainList(selector: BySelector): Boolean {
+/**
+ * Scrolls the main list until [selector] shows, then taps it and, given [expect], waits for that to show (the next
+ * screen). False when either never shows.
+ */
+private fun MacrobenchmarkScope.tapInMainList(
+    selector: BySelector,
+    expect: BySelector? = null,
+): Boolean {
     val target = findInMainList(selector) ?: return false
     click(target)
-    return true
+    return expect == null || device.wait(Until.hasObject(expect), TIMEOUT_MS)
 }
 
 /** [selector] on screen, scrolling the main list towards [direction] a few times until it shows. */
