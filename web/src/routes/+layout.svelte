@@ -37,6 +37,7 @@
 		(
 			[
 				['/packs/', t.layout.nav.packs],
+				['/create/', t.layout.nav.create],
 				['/install/', t.layout.nav.install],
 				['/authors/', t.layout.nav.authors],
 				['/privacy/', t.layout.nav.privacy]
@@ -132,6 +133,8 @@
 
 	.top-bar {
 		position: sticky;
+		/* The nav scrolls sideways on phones; never let it widen the page (mobile browsers zoom out to fit). */
+		overflow-x: clip;
 		top: 0;
 		z-index: 5;
 		background: color-mix(in srgb, var(--md-sys-color-surface) 88%, transparent);
