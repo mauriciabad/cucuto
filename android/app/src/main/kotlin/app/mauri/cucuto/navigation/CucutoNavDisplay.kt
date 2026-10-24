@@ -122,6 +122,7 @@ private fun entries(
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onBack = goBack,
                 onOpenDetail = { chat -> navigate(CucutoDestination.ContactDetail(chat)) },
+                onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
         }
     }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,13 +27,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -101,6 +103,7 @@ fun HomeScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenDetail: (ChatKey) -> Unit = onOpenChat,
+    onOpenDiscover: () -> Unit = onOpenPacks,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -114,6 +117,11 @@ fun HomeScreen(
         onOpenPacks = onOpenPacks,
         onBack = onBack,
         modifier = modifier,
+        // Discover installs the demo bundle from the default repository, through the usual review (#179).
+        onGetDemoPacks = {
+            viewModel.requestDemoPacks()
+            onOpenDiscover()
+        },
     )
 }
 
@@ -130,6 +138,7 @@ fun HomeContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenDetail: (ChatKey) -> Unit = onOpenChat,
+    onGetDemoPacks: () -> Unit = onOpenPacks,
 ) {
     var query by rememberSaveable { mutableStateOf(state.query) }
     val latestOnQueryChange by rememberUpdatedState(onQueryChange)
@@ -186,7 +195,7 @@ fun HomeContent(
                 item(key = "filters") { PackFilters(state, onTogglePack) }
             }
             if (!state.hasPacks) {
-                item(key = "no-packs") { NoPacksCard(onOpenPacks) }
+                item(key = "no-packs") { NoPacksCard(onGetDemoPacks, onOpenPacks) }
             }
             if (state.showRecent) {
                 item(key = "recent") { RecentSenders(state.recent, onOpen = open, onDismiss = onDismissRecent) }
@@ -308,7 +317,10 @@ private fun PackFilters(
 }
 
 @Composable
-private fun NoPacksCard(onOpenPacks: () -> Unit) {
+private fun NoPacksCard(
+    onGetDemoPacks: () -> Unit,
+    onOpenPacks: () -> Unit,
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -316,7 +328,10 @@ private fun NoPacksCard(onOpenPacks: () -> Unit) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.home_no_packs_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.home_no_packs_body), style = MaterialTheme.typography.bodyMedium)
-            FilledTonalButton(onClick = onOpenPacks) { Text(stringResource(R.string.home_open_packs)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = onGetDemoPacks) { Text(stringResource(R.string.home_get_demo_packs)) }
+                TextButton(onClick = onOpenPacks) { Text(stringResource(R.string.home_open_packs)) }
+            }
         }
     }
 }

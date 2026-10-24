@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
+import app.mauri.cucuto.ui.discover.DemoPacksRequests
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +25,7 @@ class HomeViewModel
         private val chats: ChatDirectory,
         characters: CharacterDirectory,
         private val clock: WallClock,
+        private val demoPacks: DemoPacksRequests,
     ) : ViewModel() {
         private val query = MutableStateFlow("")
         private val packFilter = MutableStateFlow<String?>(null)
@@ -46,6 +48,12 @@ class HomeViewModel
         fun dismissRecent(chat: ChatKey) {
             viewModelScope.launch { chats.dismissRecent(chat) }
         }
+
+        /**
+         * "Get the demo packs" (#179): asks Discover, which the caller opens next, to install the demo bundle from the
+         * default repository. Nothing is fetched here.
+         */
+        fun requestDemoPacks() = demoPacks.offer()
 
         private companion object {
             const val STOP_TIMEOUT_MS = 5_000L

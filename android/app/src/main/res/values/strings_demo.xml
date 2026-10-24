@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The demo packs in one tap from Home through Discover (#179). Kept apart from strings.xml so parallel UI work merges cleanly. -->
+<resources>
+    <string name="home_get_demo_packs">Get the demo packs</string>
+    <string name="discover_demo_focus">Demo packs only</string>
+    <string name="discover_demo_show_all">Show every pack</string>
+    <string name="discover_demo_finding">Getting the demo packs…</string>
+    <string name="discover_demo_failed_title">Couldn\'t get the demo packs</string>
+    <string name="discover_demo_not_listed">The demo packs aren\'t in the Cucuto repository right now.</string>
+    <string name="discover_demo_fallback">You can also download them from cucuto.mauri.app and choose the file.</string>
+    <string name="discover_demo_pick_file">Choose a file</string>
+</resources>
