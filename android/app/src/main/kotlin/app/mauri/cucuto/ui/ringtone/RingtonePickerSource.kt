@@ -66,14 +66,16 @@ data class RingtonePackItem(
 /**
  * What the ringtone picker shows for one chat.
  *
- * @property chat The chat (null while unknown); its contact holds the phone ringtone.
+ * @property chat The chat (null while unknown, and for the sample chat); its contact holds the phone ringtone.
  * @property saved The stored phone ringtone, or null when the chat has none.
  * @property packs Installed packs with at least one character that has ringtones, characters in `pack.json` order.
+ * @property voice The chat's message character ("Same as the voice" rings with it).
  */
 data class RingtonePickerData(
     val chat: Chat?,
     val saved: PhoneRingtoneEntity?,
     val packs: List<RingtonePackItem>,
+    val voice: ChatVoice? = chat?.voice,
 )
 
 /** The ringtone picker's data and its one write, behind an interface so the view model is tested with a fake. */

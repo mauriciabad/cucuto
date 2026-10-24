@@ -68,6 +68,7 @@ internal fun RingtoneOtherChoices(
     onChoose: (RingtoneChoice) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    choices: List<RingtoneChoice> = OtherRingtoneChoices,
 ) {
     Column(modifier.fillMaxWidth()) {
         Text(
@@ -80,7 +81,7 @@ internal fun RingtoneOtherChoices(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(horizontal = 4.dp),
         ) {
-            for (choice in OtherRingtoneChoices) {
+            for (choice in choices) {
                 val selected = chosen == choice
                 FilterChip(
                     selected = selected,

@@ -17,7 +17,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,7 +54,6 @@ internal fun JourneyCard(
     onGetDemoPacks: () -> Unit,
     onImportDemoPacks: () -> Unit,
     onOpenChat: (ChatKey) -> Unit,
-    onPreviewCharacters: () -> Unit,
     onDismissCelebration: () -> Unit,
     modifier: Modifier = Modifier,
     onRestoreBackup: () -> Unit = {},
@@ -72,7 +70,7 @@ internal fun JourneyCard(
         }
 
         JourneyStep.WaitForMessages -> {
-            WaitForMessagesCard(onTrySampleChat, onPreviewCharacters, onAddFromContacts, modifier)
+            WaitForMessagesCard(onTrySampleChat, onAddFromContacts, modifier)
         }
 
         is JourneyStep.GiveFirstVoice -> {
@@ -128,13 +126,12 @@ private fun ImportPacksCard(
 
 /**
  * Packs are in, nobody has messaged since: say what happens next, offer the sample chat (ADR 0075: a demo that plays a
- * voice in the app, without the module), let the user hear the characters, or add someone from contacts before they
- * message (ADR 0065).
+ * voice in the app, without the module, and the one way to try characters, #346), or add someone from contacts before
+ * they message (ADR 0065).
  */
 @Composable
 private fun WaitForMessagesCard(
     onTrySampleChat: () -> Unit,
-    onPreviewCharacters: () -> Unit,
     onAddFromContacts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -151,11 +148,6 @@ private fun WaitForMessagesCard(
             shapes = ButtonDefaults.shapes(),
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.home_journey_sample)) }
-        OutlinedButton(
-            onClick = onPreviewCharacters,
-            shapes = ButtonDefaults.shapes(),
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.home_journey_preview)) }
         AddFromContactsButton(onAddFromContacts, Modifier.fillMaxWidth())
     }
 }
@@ -302,7 +294,7 @@ private val DOOR_SIZE = 140.dp
 @Composable
 private fun ImportPacksPreview() {
     CucutoTheme(dynamicColor = false) {
-        JourneyCard(JourneyStep.ImportPacks, {}, {}, {}, {}, {})
+        JourneyCard(JourneyStep.ImportPacks, {}, {}, {}, {})
     }
 }
 
@@ -310,7 +302,7 @@ private fun ImportPacksPreview() {
 @Composable
 private fun WaitForMessagesPreview() {
     CucutoTheme(dynamicColor = false) {
-        JourneyCard(JourneyStep.WaitForMessages, {}, {}, {}, {}, {})
+        JourneyCard(JourneyStep.WaitForMessages, {}, {}, {}, {})
     }
 }
 
@@ -318,7 +310,7 @@ private fun WaitForMessagesPreview() {
 @Composable
 private fun GiveFirstVoicePreview() {
     CucutoTheme(dynamicColor = false) {
-        JourneyCard(JourneyStep.GiveFirstVoice(previewHomeState().recent.first()), {}, {}, {}, {}, {})
+        JourneyCard(JourneyStep.GiveFirstVoice(previewHomeState().recent.first()), {}, {}, {}, {})
     }
 }
 
@@ -326,6 +318,6 @@ private fun GiveFirstVoicePreview() {
 @Composable
 private fun FirstVoicePreview() {
     CucutoTheme(dynamicColor = false) {
-        JourneyCard(JourneyStep.FirstVoice(previewHomeState().voiced.first()), {}, {}, {}, {}, {})
+        JourneyCard(JourneyStep.FirstVoice(previewHomeState().voiced.first()), {}, {}, {}, {})
     }
 }

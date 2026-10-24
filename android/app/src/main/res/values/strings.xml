@@ -179,9 +179,7 @@
     <!-- Character picker -->
     <string name="picker_title">Choose a voice</string>
     <string name="picker_subtitle_for">For %1$s</string>
-    <string name="picker_subtitle_preview">Hear the characters</string>
     <string name="picker_hint">Tap a character to hear it. Tap it again to give it to this chat.</string>
-    <string name="picker_hint_preview">Tap a character to hear it. Open a chat from Home to give it a voice.</string>
     <string name="picker_speaks_as">Speaks as %1$s</string>
     <string name="picker_no_voice">No voice yet: WhatsApp\'s tone</string>
     <string name="picker_assigned">%1$s now speaks for %2$s</string>

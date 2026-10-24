@@ -2,6 +2,7 @@ package app.mauri.cucuto.core.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
@@ -13,11 +14,13 @@ import javax.inject.Singleton
 
 /**
  * What the sample chat remembers (ADR 0075): its message character and, when the user picked one, its ringtone
- * character. Null ringtone means "same as the voice" (ADR 0063's default).
+ * character. Null ringtone means "same as the voice" (ADR 0063's default). [ringtoneDefault] is "Android default"
+ * (ADR 0073), picked in the ringtone picker (#346); it wins over [ringtone].
  */
 data class SampleChatChoice(
     val voice: ChatVoice? = null,
     val ringtone: ChatVoice? = null,
+    val ringtoneDefault: Boolean = false,
 )
 
 /**
@@ -29,8 +32,11 @@ interface SampleChatStore {
 
     suspend fun setVoice(voice: ChatVoice)
 
-    /** [ringtone] null follows the voice. */
+    /** [ringtone] null follows the voice. Either way, the ringtone is a character again (not "Android default"). */
     suspend fun setRingtone(ringtone: ChatVoice?)
+
+    /** Rings with "Android default" (ADR 0073); [setRingtone] goes back to a character. */
+    suspend fun setRingtoneDefault()
 }
 
 /**
@@ -49,6 +55,7 @@ class SampleChatSettings
                     SampleChatChoice(
                         voice = voiceOf(prefs[VOICE_PACK], prefs[VOICE_CHARACTER]),
                         ringtone = voiceOf(prefs[RINGTONE_PACK], prefs[RINGTONE_CHARACTER]),
+                        ringtoneDefault = prefs[RINGTONE_DEFAULT] == true,
                     )
                 }.distinctUntilChanged()
 
@@ -61,6 +68,7 @@ class SampleChatSettings
 
         override suspend fun setRingtone(ringtone: ChatVoice?) {
             dataStore.edit {
+                it.remove(RINGTONE_DEFAULT)
                 if (ringtone == null) {
                     it.remove(RINGTONE_PACK)
                     it.remove(RINGTONE_CHARACTER)
@@ -69,6 +77,10 @@ class SampleChatSettings
                     it[RINGTONE_CHARACTER] = ringtone.characterId
                 }
             }
+        }
+
+        override suspend fun setRingtoneDefault() {
+            dataStore.edit { it[RINGTONE_DEFAULT] = true }
         }
 
         private fun voiceOf(
@@ -81,5 +93,6 @@ class SampleChatSettings
             val VOICE_CHARACTER = stringPreferencesKey("sample_chat_voice_character")
             val RINGTONE_PACK = stringPreferencesKey("sample_chat_ringtone_pack")
             val RINGTONE_CHARACTER = stringPreferencesKey("sample_chat_ringtone_character")
+            val RINGTONE_DEFAULT = booleanPreferencesKey("sample_chat_ringtone_default")
         }
     }

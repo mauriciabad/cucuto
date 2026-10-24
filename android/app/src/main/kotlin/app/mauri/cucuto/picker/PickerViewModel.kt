@@ -12,6 +12,7 @@ import app.mauri.cucuto.core.data.settings.PickerKind
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
+import app.mauri.cucuto.sample.SampleChatPickerTarget
 import app.mauri.cucuto.ui.components.PackChip
 import app.mauri.cucuto.ui.components.packChips
 import app.mauri.cucuto.ui.components.selectedChip
@@ -23,10 +24,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -34,8 +37,10 @@ import kotlinx.coroutines.launch
 /**
  * What the character picker shows.
  *
- * @property chatKey The chat being assigned, or null when only previewing characters.
- * @property chat That chat as the directory knows it (null while loading, or for a chat not seen yet).
+ * @property chatKey The chat being assigned, or null for the sample chat ([sample]).
+ * @property chat That chat as the directory knows it (null while loading, for a chat not seen yet, or the sample chat).
+ * @property sample The picker gives a voice to the sample chat (ADR 0075, #346), kept in its own settings.
+ * @property sampleVoice The sample chat's voice (a real chat's is [Chat.voice]).
  * @property selected The character the first tap previewed; a second tap on it assigns.
  * @property speaking The character whose clip is playing (its sprite bounces).
  * @property assigned Set once an assignment is saved: the screen celebrates, then closes.
@@ -50,6 +55,8 @@ data class PickerState(
     val loading: Boolean = true,
     val chatKey: ChatKey? = null,
     val chat: Chat? = null,
+    val sample: Boolean = false,
+    val sampleVoice: ChatVoice? = null,
     val packs: List<VoicePack> = emptyList(),
     val selected: ChatVoice? = null,
     val speaking: ChatVoice? = null,
@@ -60,7 +67,10 @@ data class PickerState(
     val folds: PackFolds = PackFolds(),
     val roll: SurpriseRoll<ChatVoice>? = null,
 ) {
-    val canAssign: Boolean get() = chatKey != null
+    val canAssign: Boolean get() = chatKey != null || sample
+
+    /** The voice stored for the chat (or the sample chat). */
+    val voice: ChatVoice? get() = if (sample) sampleVoice else chat?.voice
 
     /** One chip per pack with message characters, with their count; empty with fewer than two such packs. */
     val chips: List<PackChip> get() = packChips(packs, { it.packId }, { it.name }, { it.characters.size })
@@ -81,14 +91,14 @@ data class PickerState(
                 chipPack = selectedChip(chips, packFilter),
                 query = query,
                 folds = folds,
-                currentPack = chat?.voice?.packId,
+                currentPack = voice?.packId,
             )
 
     /** The selected character came from "Surprise me": the screen offers to re-roll or use it. */
     val rolled: Boolean get() = roll != null && roll.pick == selected && assigned == null
 
     /** The chat's voice: the one just assigned, else the stored one. */
-    val currentVoice: ChatVoice? get() = assigned ?: chat?.voice
+    val currentVoice: ChatVoice? get() = assigned ?: voice
 
     fun character(voice: ChatVoice?): VoiceCharacter? =
         voice?.let { v ->
@@ -116,7 +126,8 @@ enum class PickerTap { Preview, Assign }
 /**
  * The character picker (brief, screen 3): tap previews (the sprite bounces, a clip plays, the haptic fires), a second
  * tap assigns. Assigning goes through [ChatDirectory], which republishes the routing table, so the chat's next
- * notification plays the new character.
+ * notification plays the new character. With no [chatKey], the picker gives a voice to the sample chat (ADR 0075,
+ * #346) through [sampleChat] instead: it never reads or writes the chat directory then.
  */
 @HiltViewModel(assistedFactory = PickerViewModel.Factory::class)
 class PickerViewModel
@@ -124,23 +135,33 @@ class PickerViewModel
     constructor(
         @Assisted private val chatKey: ChatKey?,
         private val chats: ChatDirectory,
+        private val sampleChat: SampleChatPickerTarget,
         characters: CharacterDirectory,
         private val preview: VoicePreview,
         private val foldSettings: PickerFoldSettings,
     ) : ViewModel() {
-        private val interaction = MutableStateFlow(PickerState(chatKey = chatKey))
+        private val interaction = MutableStateFlow(PickerState(chatKey = chatKey, sample = chatKey == null))
         private var previewJob: Job? = null
+
+        /** The chat, or the sample chat's voice: only one of them is read. */
+        private val target: Flow<Pair<Chat?, ChatVoice?>> =
+            if (chatKey == null) {
+                sampleChat.observeVoice().map { null to it }
+            } else {
+                chats.observeChats().map { all -> all.firstOrNull { chatKey in it.keys } to null }
+            }
 
         val state: StateFlow<PickerState> =
             combine(
-                chats.observeChats(),
+                target,
                 characters.observePacks(),
                 foldSettings.observe(PickerKind.Voice),
                 interaction,
-            ) { all, packs, remembered, local ->
+            ) { (chat, sampleVoice), packs, remembered, local ->
                 local.copy(
                     loading = false,
-                    chat = chatKey?.let { key -> all.firstOrNull { key in it.keys } },
+                    chat = chat,
+                    sampleVoice = sampleVoice,
                     packs = voicePacks(packs),
                     folds = local.folds.copy(remembered = remembered),
                 )
@@ -222,13 +243,16 @@ class PickerViewModel
             character: VoiceCharacter,
             clipAtNanos: Long?,
         ) {
-            val key = chatKey ?: return
             if (interaction.value.assigned != null) return
             interaction.update { it.copy(selected = character.voice, assigned = character.voice, failed = false) }
             speak(character, withHaptic = false, atNanos = clipAtNanos)
             viewModelScope.launch {
                 try {
-                    chats.assign(key, character.packId, character.id)
+                    if (chatKey == null) {
+                        sampleChat.assignVoice(character.voice)
+                    } else {
+                        chats.assign(chatKey, character.packId, character.id)
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -280,6 +304,7 @@ class PickerViewModel
 
         @AssistedFactory
         interface Factory {
+            /** [chatKey] null: the sample chat (ADR 0075). */
             fun create(chatKey: ChatKey?): PickerViewModel
         }
 

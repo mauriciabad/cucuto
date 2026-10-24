@@ -9,9 +9,12 @@ import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.data.settings.PickerKind
+import app.mauri.cucuto.core.data.settings.SampleChatChoice
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
 import app.mauri.cucuto.packspec.LoopRange
 import app.mauri.cucuto.packspec.When
+import app.mauri.cucuto.sample.FakeSampleChatStore
+import app.mauri.cucuto.sample.SampleChatPickerTarget
 import app.mauri.cucuto.testing.FakePickerFoldSettings
 import app.mauri.cucuto.testing.TestData.ADA
 import app.mauri.cucuto.testing.TestData.CLUB
@@ -52,6 +55,7 @@ class RingtonePickerViewModelTest {
     private val source = FakeSource()
     private val preview = FakePreview()
     private val folds = FakePickerFoldSettings()
+    private val sampleStore = FakeSampleChatStore()
 
     /** 2026-10-24 at noon, local time: the day version wins "Day and night" and the pack's rules. */
     private val noon =
@@ -106,9 +110,63 @@ class RingtonePickerViewModelTest {
         File("/packs/$file"),
     )
 
-    private fun viewModel(chat: ChatKey = ADA) = RingtonePickerViewModel(chat, source, preview, { noon }, folds)
+    private fun viewModel(chat: ChatKey? = ADA) =
+        RingtonePickerViewModel(
+            chat,
+            source,
+            SampleChatPickerTarget(sampleStore) { source.packs },
+            preview,
+            { noon },
+            folds,
+        )
 
     private fun TestScope.collect(vm: RingtonePickerViewModel) = backgroundScope.launch { vm.state.collect {} }
+
+    @Test
+    fun withoutAChatItChoosesTheSampleChatsRingtoneAndNeverTouchesThePhoneRingtones() =
+        runTest(dispatcher) {
+            sampleStore.state.value = SampleChatChoice(voice = frog.voice)
+            val vm = viewModel(chat = null)
+            collect(vm)
+            val state = vm.state.value
+            assertTrue(state.sample)
+            assertNull(state.chat)
+            // "Same as the voice" (ADR 0063), no rule to pick (the pack's rule rings), no "Leave as is".
+            assertEquals(RingtoneSelection(frog.voice, followsVoice = true), state.selection)
+            assertTrue(state.modes.isEmpty())
+            assertEquals(listOf(RingtoneChoice.ANDROID_DEFAULT), state.otherChoices)
+
+            vm.select(kettleItem)
+            assertTrue(vm.save())
+            assertEquals(kettle.voice, sampleStore.state.value.ringtone)
+            assertTrue(source.saved.isEmpty())
+            assertTrue(source.others.isEmpty())
+        }
+
+    @Test
+    fun theSampleChatCanRingWithAndroidDefaultButNotLeaveAsIs() =
+        runTest(dispatcher) {
+            sampleStore.state.value = SampleChatChoice(voice = frog.voice, ringtone = kettle.voice)
+            val vm = viewModel(chat = null)
+            collect(vm)
+            assertEquals(
+                kettle.voice,
+                vm.state.value.selection
+                    ?.voice,
+            )
+            assertFalse(
+                vm.state.value.selection!!
+                    .followsVoice,
+            )
+
+            vm.chooseOther(RingtoneChoice.UNCHANGED)
+            assertEquals(RingtoneChoice.CHARACTER, vm.state.value.choice)
+            vm.chooseOther(RingtoneChoice.ANDROID_DEFAULT)
+            assertTrue(vm.save())
+
+            assertTrue(sampleStore.state.value.ringtoneDefault)
+            assertTrue(source.others.isEmpty())
+        }
 
     @Test
     fun androidDefaultAndLeaveAsIsAreSavedAsTheirOwnChoice() =

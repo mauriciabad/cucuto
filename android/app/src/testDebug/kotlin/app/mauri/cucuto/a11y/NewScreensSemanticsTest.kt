@@ -145,13 +145,13 @@ class NewScreensSemanticsTest {
                 onGetDemoPacks = {},
             )
         }
-        compose.onNode(hasText("Demo", substring = true) and hasText("WhatsApp", substring = true)).assertExists()
-        compose.onNode(hasText("Voice: Bleep the frog") and isPoliteLiveRegion()).assertExists()
+        compose.onNodeWithText("Demo").assertExists()
+        compose.onNode(hasText("not a WhatsApp chat", substring = true)).assertExists()
+        compose.onNode(hasText("Speaks as Bleep the frog") and isPoliteLiveRegion()).assertExists()
         compose.onNodeWithText("Play a sample message").assert(hasState("Playing"))
-        compose.onAllNodesWithText("Chiptune critters").filterToOne(isHeading()).assertExists()
-        compose
-            .onNodeWithContentDescription("Bleep the frog")
-            .assert(hasState("Selected, Playing"))
+        // Contact detail's Sounds card, whose rows open the real pickers (#346).
+        compose.onAllNodesWithText("Sounds").filterToOne(isHeading()).assertExists()
+        compose.onNodeWithText("Same as the messages").assertExists()
     }
 
     private fun hasState(state: String) = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, state)

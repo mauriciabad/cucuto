@@ -24,7 +24,6 @@
     <string name="home_journey_restore">Restaurar una copia</string>
     <string name="home_journey_wait_title">Tus personajes están listos</string>
     <string name="home_journey_wait_body">Cuando alguien te escriba por WhatsApp, aparecerá aquí. Luego dale una voz.</string>
-    <string name="home_journey_preview">Escuchar los personajes</string>
     <string name="home_journey_first_title">Dale una voz a %1$s</string>
     <string name="home_journey_first_body">%1$s te ha escrito hace poco. Elige un personaje y su próximo mensaje lo usará.</string>
     <string name="home_journey_first_button">Elegir una voz</string>

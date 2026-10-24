@@ -24,7 +24,6 @@
     <string name="home_journey_restore">Restore from backup</string>
     <string name="home_journey_wait_title">Your characters are ready</string>
     <string name="home_journey_wait_body">When someone messages you on WhatsApp, they show up here. Then give them a voice.</string>
-    <string name="home_journey_preview">Hear the characters</string>
     <string name="home_journey_first_title">Give %1$s a voice</string>
     <string name="home_journey_first_body">%1$s messaged you recently. Pick a character, and their next message plays it.</string>
     <string name="home_journey_first_button">Choose a voice</string>

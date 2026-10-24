@@ -21,6 +21,7 @@ import app.mauri.cucuto.picker.PackSection
 import app.mauri.cucuto.picker.SurprisePick
 import app.mauri.cucuto.picker.SurpriseRoll
 import app.mauri.cucuto.picker.packSections
+import app.mauri.cucuto.sample.SampleChatPickerTarget
 import app.mauri.cucuto.ui.components.PackChip
 import app.mauri.cucuto.ui.components.packChips
 import app.mauri.cucuto.ui.components.selectedChip
@@ -86,6 +87,10 @@ data class RingtonePickerState(
     val loading: Boolean = true,
     val chatKey: ChatKey? = null,
     val chat: Chat? = null,
+    /** The picker chooses for the sample chat (ADR 0075, #346): no chat key, saved to the sample chat's settings. */
+    val sample: Boolean = false,
+    /** The sample chat's message character (a real chat's is [Chat.voice]). */
+    val sampleVoice: ChatVoice? = null,
     val packs: List<RingtonePackItem> = emptyList(),
     val saved: RingtoneSelection? = null,
     val savedChoice: RingtoneChoice? = null,
@@ -114,7 +119,14 @@ data class RingtonePickerState(
         get() = selectedChip(chips, packFilter)?.let { id -> packs.filter { it.packId == id } } ?: packs
 
     /** The chat's message character. */
-    val voice: ChatVoice? get() = chat?.voice
+    val voice: ChatVoice? get() = if (sample) sampleVoice else chat?.voice
+
+    /**
+     * The choices besides a character (ADR 0073). The sample chat has no Android contact, so "Leave as is" means
+     * nothing there.
+     */
+    val otherChoices: List<RingtoneChoice>
+        get() = if (sample) listOf(RingtoneChoice.ANDROID_DEFAULT) else OtherRingtoneChoices
 
     /** The pack sections the grid shows: chip, search and folds applied; the ringing character's pack unfolded. */
     val sections: List<PackSection<RingtoneCharacterItem>>
@@ -165,6 +177,8 @@ data class RingtonePickerState(
      * stored for it (they are created and edited on the rules screen, ADR 0074).
      */
     fun modesFor(item: RingtoneCharacterItem): List<RingtoneMode> {
+        // The sample call follows the pack's rule (ADR 0075): no rule to choose, no rules screen.
+        if (sample) return emptyList()
         val modes = PhoneRingtoneViewModel.modesFor(item.variants.map { it.variant })
         val own = saved?.takeIf { it.voice == item.voice && it.mode == RingtoneMode.CUSTOM && it.rules.isNotEmpty() }
         if (own == null || modes.isEmpty()) return modes
@@ -177,7 +191,7 @@ data class RingtonePickerState(
      */
     val canSave: Boolean
         get() =
-            chatKey != null && !isGroup && !done &&
+            (chatKey != null || sample) && !isGroup && !done &&
                 when (choice) {
                     RingtoneChoice.CHARACTER -> {
                         selectedCharacter != null && (savedChoice != RingtoneChoice.CHARACTER || selection != saved)
@@ -205,24 +219,27 @@ data class RingtonePickerState(
  * (ADR 0073), and saves. The message voice and the
  * ringtone are independent (ADR 0063): the message character keeps following the voice, the character kept while the
  * voice has no ringtones keeps following too, and any other character is the user's own pick.
+ * With no [chatKey], it chooses for the sample chat (ADR 0075, #346) through [sampleChat], which keeps the choice in
+ * the sample chat's settings: nothing reaches the chat directory, the phone ringtone store or contacts.
  */
 @HiltViewModel(assistedFactory = RingtonePickerViewModel.Factory::class)
 class RingtonePickerViewModel
     @AssistedInject
     constructor(
-        @Assisted private val chatKey: ChatKey,
+        @Assisted private val chatKey: ChatKey?,
         private val source: RingtonePickerSource,
+        private val sampleChat: SampleChatPickerTarget,
         private val preview: RingtonePreview,
         private val clock: WallClock,
         private val foldSettings: PickerFoldSettings,
     ) : ViewModel() {
-        private val interaction = MutableStateFlow(RingtonePickerState(chatKey = chatKey))
+        private val interaction = MutableStateFlow(RingtonePickerState(chatKey = chatKey, sample = chatKey == null))
         private val playback = RingtonePlayback<PlayingVariant>(viewModelScope, preview)
         private var lastSaved: PhoneRingtoneEntity? = null
 
         // A save elsewhere (the rules screen on top, ADR 0074) replaces an unsaved choice made here before it.
         private val data =
-            source.observe(chatKey).onEach { data ->
+            (if (chatKey == null) sampleChat.observeRingtone() else source.observe(chatKey)).onEach { data ->
                 val before = lastSaved
                 lastSaved = data.saved
                 if (before != null && data.saved != before && interaction.value.assigned == null) {
@@ -240,8 +257,9 @@ class RingtonePickerViewModel
                 local.copy(
                     loading = false,
                     chat = data.chat,
+                    sampleVoice = data.voice.takeIf { chatKey == null },
                     packs = data.packs,
-                    saved = saved(data.saved, data.chat?.voice),
+                    saved = saved(data.saved, data.voice),
                     savedChoice = data.saved?.choice,
                     playing = playing?.key,
                     preview = playing,
@@ -345,7 +363,7 @@ class RingtonePickerViewModel
          * [RingtoneChoice.UNCHANGED]. A character comes from [select].
          */
         fun chooseOther(choice: RingtoneChoice) {
-            if (choice == RingtoneChoice.CHARACTER || state.value.done) return
+            if (choice !in state.value.otherChoices || state.value.done) return
             stopPreview()
             interaction.update { it.copy(pending = choice, failed = false) }
         }
@@ -416,7 +434,11 @@ class RingtonePickerViewModel
                 try {
                     // Following the voice stores no character; a kept one (the voice has no ringtones) is stored.
                     val character = selection.voice.takeUnless { selection.followsVoice && it == current.voice }
-                    source.save(chatKey, current.contactId, character, selection.followsVoice, mode, variant, rules)
+                    if (chatKey == null) {
+                        sampleChat.saveRingtone(character)
+                    } else {
+                        source.save(chatKey, current.contactId, character, selection.followsVoice, mode, variant, rules)
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -435,7 +457,10 @@ class RingtonePickerViewModel
             interaction.update { it.copy(otherSaved = choice, failed = false) }
             viewModelScope.launch {
                 try {
-                    source.saveOther(chatKey, current.contactId, choice)
+                    when {
+                        chatKey != null -> source.saveOther(chatKey, current.contactId, choice)
+                        choice == RingtoneChoice.ANDROID_DEFAULT -> sampleChat.saveAndroidDefault()
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -494,7 +519,8 @@ class RingtonePickerViewModel
 
         @AssistedFactory
         interface Factory {
-            fun create(chatKey: ChatKey): RingtonePickerViewModel
+            /** [chatKey] null: the sample chat (ADR 0075). */
+            fun create(chatKey: ChatKey?): RingtonePickerViewModel
         }
 
         internal companion object {

@@ -156,7 +156,6 @@ fun HomeScreen(
         onImportDemoPacks = { demoPicker.launch(PackPickerTypes) },
         // Someone moving to a new phone looks here first, not in Settings (ADR 0050).
         onRestoreBackup = pickBackup,
-        onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
         onDismissCelebration = journeyViewModel::dismissCelebration,
         onAddFromContacts = { onNavigate(CucutoDestination.AddFromContacts) },
         onOpenQuestion = { chat -> onNavigate(CucutoDestination.ConfirmLink(chat)) },
@@ -183,7 +182,6 @@ fun HomeContent(
     onGetDemoPacks: () -> Unit = {},
     onImportDemoPacks: () -> Unit = {},
     onRestoreBackup: () -> Unit = {},
-    onPreviewCharacters: () -> Unit = {},
     onDismissCelebration: () -> Unit = {},
     onAddFromContacts: () -> Unit = {},
     onOpenQuestion: (ChatKey) -> Unit = {},
@@ -253,7 +251,6 @@ fun HomeContent(
                         onImportDemoPacks = onImportDemoPacks,
                         onRestoreBackup = onRestoreBackup,
                         onOpenChat = open,
-                        onPreviewCharacters = onPreviewCharacters,
                         onDismissCelebration = onDismissCelebration,
                         onAddFromContacts = onAddFromContacts,
                         onTrySampleChat = onTrySampleChat,

@@ -1,8 +1,9 @@
 # 0075. A sample chat to try a voice without root
 
-- Status: accepted. The defaults the owner may override are in #308.
+- Status: accepted, amended 2026-10-24 (#346: contact detail's layout and the real pickers; "Hear the characters"
+  removed). The defaults the owner may override are in #308.
 - Date: 2026-10-24
-- Issues: #285 (this work), #274 and ADR 0071 (Google Play review notes), ADR 0025 (Simulate message), ADR 0063
+- Issues: #285 (this work), #346 (the amendment), #274 and ADR 0071 (Google Play review notes), ADR 0025 (Simulate message), ADR 0063
   (independent voice and ringtone)
 
 ## Context
@@ -51,19 +52,41 @@ banner says that it isn't a WhatsApp chat, that the sound plays in the app and n
 module, and that real chats appear on Home after the module sees their first message.
 
 **4. Where it's offered.** Home's **"Your characters are ready"** card (packs installed, no chat yet, ADR 0027's
-first-run journey) gets **Try a sample chat** as its main action, above **Hear the characters**. That card goes
+first-run journey) gets **Try a sample chat** as its main action. Amended (#346): **Hear the characters** (the
+character picker in a preview-only mode) is gone, so the sample chat is the one way to try characters before a real
+chat arrives, and the character picker always gives a voice to something. That card goes
 away as soon as the module reports the first real chat, so the entry does too, and there's nothing to remove: no
 contact was ever created. Without packs, the sample chat offers **Get the demo packs**. Default, not in #285's
 first draft: no entry in Diagnostics, which is about the module, not about trying a voice.
 
-**5. Choices.** Tapping a character picks it and previews it (as in the picker). The ringtone defaults to **Same as
-the voice** when the message character has ringtones (ADR 0063's default), else the first character with ringtones
-can be picked. The choices stay for the next visit; that's all the sample chat stores.
+**5. Choices, with the real pickers (amended, #346).** The first version had its own small picker: a grid of
+characters under "Messages" and chips under "Phone calls", without folding, search, "Surprise me", album covers or
+"Android default". A reviewer learnt one flow and real users another. Now the sample chat looks like contact detail
+(ADR 0063): a header with the chat's avatar (the ringtone's cover tucked against it), the **Demo** label and the
+banner, then the **Sounds** card with its **Messages** and **Phone calls** rows, built from the same composables
+(`SoundRow`, `RecordCover`, `RingtoneBadge`). Below it, a "Try it" card holds **Play a sample message** and **Play a
+sample call** where contact detail has Simulate message.
+
+Each row opens the real picker, pointed at the sample chat: `CucutoDestination.Picker` and
+`CucutoDestination.RingtonePicker` with no chat key (`chat = null`) mean the sample chat. Their view models then read
+and write only `SampleChatStore` (through `SampleChatPickerTarget` in the `sample` package), never the chat directory
+or the phone ringtone store, so the guarantees of point 1 hold, and `SampleChatIsolationTest` keeps checking the
+`sample` package. The pickers work as for a real chat: a first tap previews, a second tap (or "Use") gives the voice,
+with the burst and the cuckoo call; the ringtone picker offers the covers, search, folding, "Surprise me" and
+**Android default**. What the sample chat can't use is left out there: "Leave as is" (no Android contact to leave
+alone), the rule chips and the rules screen (ADR 0074; the sample call follows the pack's rule, point 2), removing
+the voice, and step 2 after the voice (each row is chosen apart). The ringtone still defaults to **Same as the voice**
+when the message character has ringtones (ADR 0063's default). With **Android default**, the sample call can't ring
+the phone's own ringtone (that would need its URI, outside the pack previews), so the button is off and says so.
+
+`SampleChatSettings` gains one key, `sample_chat_ringtone_default`, for that choice. The choices stay for the next
+visit; that's all the sample chat stores.
 
 ## Consequences
 
 - A reviewer without root can go from install to hearing and feeling a character for a chat in under two minutes:
-  Skip, Get the demo packs, Try a sample chat, pick a character, Play a sample message. The review notes in
+  Skip, Get the demo packs, Try a sample chat, Messages, pick a character (tap, then tap again), Play a sample
+  message. The review notes in
   [google-play.md](../google-play.md#review-notes) and the App access text describe that path.
 - The sample chat is a preview, not Simulate message: it doesn't run the router, so it ignores day-and-night clip
   rules and per-contact clip toggles and haptic overrides, which it doesn't offer. Simulate message (ADR 0025) stays

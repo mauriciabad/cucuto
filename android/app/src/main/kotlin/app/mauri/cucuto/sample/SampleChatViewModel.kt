@@ -2,7 +2,6 @@ package app.mauri.cucuto.sample
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.settings.SampleChatStore
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
@@ -31,9 +30,10 @@ import javax.inject.Inject
 
 /**
  * The sample chat (ADR 0075): a demo chat that gets a voice and a ringtone and plays them in the app, for Play
- * reviewers and anyone without the module. It reads the installed characters and writes only [SampleChatStore]:
- * never the chat directory, so nothing reaches the routing table, the module, backups or Android contacts. Playing
- * uses the app's previews (public APIs only) and posts no notification.
+ * reviewers and anyone without the module. It reads the installed characters and [SampleChatStore], which the real
+ * pickers write through [SampleChatPickerTarget] (#346): never the chat directory, so nothing reaches the routing
+ * table, the module, backups or Android contacts. Playing uses the app's previews (public APIs only) and posts no
+ * notification.
  */
 @HiltViewModel
 class SampleChatViewModel
@@ -41,7 +41,7 @@ class SampleChatViewModel
     constructor(
         characters: CharacterDirectory,
         ringtones: SampleRingtones,
-        private val store: SampleChatStore,
+        store: SampleChatStore,
         private val preview: VoicePreview,
         ringtonePreview: RingtonePreview,
         private val clock: WallClock,
@@ -71,20 +71,6 @@ class SampleChatViewModel
                     playFailed = l.playFailed,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), SampleChatState())
-
-        /** Gives the sample chat [voice] and lets the user hear it, as the character picker's first tap does. */
-        fun chooseVoice(voice: ChatVoice) {
-            write { store.setVoice(voice) }
-            val character = state.value.character(voice) ?: return
-            call.stop()
-            play { preview.play(character) }
-        }
-
-        /** Rings with [ringtone], or with the voice's own ringtone when null ("Same as the voice"). */
-        fun chooseRingtone(ringtone: ChatVoice?) {
-            call.stop()
-            write { store.setRingtone(ringtone) }
-        }
 
         /** "Play a sample message": one of the character's clips with its vibration, in the app. */
         fun playMessage() {
@@ -139,18 +125,6 @@ class SampleChatViewModel
                         local.update { it.copy(speaking = false) }
                     }
                 }
-        }
-
-        private fun write(block: suspend () -> Unit) {
-            viewModelScope.launch {
-                try {
-                    block()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // A demo choice that could not be saved is simply not remembered.
-                }
-            }
         }
 
         private fun now(): LocalDateTime =

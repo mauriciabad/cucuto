@@ -84,7 +84,7 @@ import kotlinx.coroutines.delay
 import java.io.File
 
 /**
- * The character picker (brief, screen 3) for [chat], or a preview-only grid when it is null. The first tap on a
+ * The character picker (brief, screen 3) for [chat], or for the sample chat when it is null (ADR 0075). The first tap on a
  * character previews it, a second tap assigns it with the "cu-cu!" call, the rising haptic and a particle burst in the
  * character's colors; the character's own clip lands on the call's second note. Then the screen closes ([onDone]).
  */
@@ -185,7 +185,7 @@ fun PickerContent(
 
     val grid = rememberLazyGridState()
     val sections =
-        remember(state.packs, state.packFilter, state.query, state.folds, state.chat?.voice) { state.sections }
+        remember(state.packs, state.packFilter, state.query, state.folds, state.voice) { state.sections }
     // Full-width items before the first pack: the header, the search field and the chips.
     val leading = if (state.chips.isEmpty()) 2 else 3
     PickerScrollToRoll(grid, state.roll?.count) { sections.gridIndexOf(leading) { it.voice == state.roll?.pick } }
@@ -207,16 +207,7 @@ fun PickerContent(
             },
             topBar = {
                 MediumFlexibleTopAppBar(
-                    // Without a chat nothing can be chosen, so the title says what the screen does: the same words as
-                    // Home's "Hear the characters" button that opens it.
-                    title = {
-                        Text(
-                            stringResource(
-                                if (state.canAssign) R.string.picker_title else R.string.picker_subtitle_preview,
-                            ),
-                            Modifier.semantics { heading() },
-                        )
-                    },
+                    title = { Text(stringResource(R.string.picker_title), Modifier.semantics { heading() }) },
                     subtitle = {
                         if (state.canAssign) {
                             Text(
@@ -337,8 +328,11 @@ private fun LazyGridScope.fullWidth(
 
 @Composable
 private fun PickerState.chatName(): String =
-    chat?.name()
-        ?: stringResource(if (chatKey?.isGroupKey == true) R.string.chat_unnamed_group else R.string.chat_unnamed)
+    when {
+        sample -> stringResource(R.string.sample_chat_title)
+        chatKey?.isGroupKey == true -> chat?.name() ?: stringResource(R.string.chat_unnamed_group)
+        else -> chat?.name() ?: stringResource(R.string.chat_unnamed)
+    }
 
 @Composable
 private fun PickerHeader(
@@ -349,20 +343,22 @@ private fun PickerHeader(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        val key = state.chatKey
-        if (key != null) {
+        if (state.canAssign) {
             val current = state.character(state.currentVoice)
             val name = state.chatName()
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                SharedElement(ChatAvatarKey(key)) {
+                val avatar: @Composable () -> Unit = {
                     VoiceAvatar(
                         character = current,
-                        name = state.chat?.displayName,
+                        name = state.chat?.displayName ?: name.takeIf { state.sample },
                         contentDescription = null,
                         size = 72.dp,
                         beat = beat,
                     )
                 }
+                // The sample chat isn't on Home, so its avatar has no row to fly from.
+                val key = state.chatKey
+                if (key != null) SharedElement(ChatAvatarKey(key)) { avatar() } else avatar()
                 Column(Modifier.weight(1f)) {
                     Text(
                         name,
@@ -393,7 +389,7 @@ private fun PickerHeader(
             }
         }
         Text(
-            text = stringResource(if (state.canAssign) R.string.picker_hint else R.string.picker_hint_preview),
+            text = stringResource(R.string.picker_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

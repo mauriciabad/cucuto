@@ -70,6 +70,7 @@ share bounds with the Setup screen's card. `setupCardMode` is a pure function.
 
 1. no pack: "Give your chats a voice" with **Get the demo packs** (and **Choose a file from Downloads**);
 2. packs but no chats: "Your characters are ready" and **Hear the characters** (the preview-only picker);
+   amended 2026-10-24 (#346, ADR 0075): **Try a sample chat** replaces it, and the preview-only picker is gone;
 3. packs and chats but no voice: "Give Ada a voice", one tap to the picker for the newest recent sender;
 4. the first voice: the cuckoo door pops open on the new character (`Feedback.DoorOpen` with a burst in its colors),
    once (`first_voice_celebrated`), until dismissed. It is shown only while exactly one chat has a voice.

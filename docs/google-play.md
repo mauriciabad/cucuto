@@ -230,14 +230,16 @@ nothing else:
    cartoon characters from `cucuto.mauri.app`.
 3. Back on Home, the card "Your characters are ready" → **Try a sample chat**. This is the core feature, as a demo
    (ADR 0075): a made-up chat, clearly labelled **Demo**, that works without the module.
-   - Tap a character under **Messages** to give the sample chat that voice (it previews right away).
+   It looks like a real chat's detail screen.
+   - Tap **Messages**: the character picker opens. Tap a character to hear it, tap it again to give it to the
+     sample chat.
    - Tap **Play a sample message**: the phone plays one of the character's clips with its vibration, as a WhatsApp
      message from a chat with that voice would.
-   - Under **Phone calls**, keep **Same as the messages** (Bleep the frog has a ringtone) or pick another, then
-     **Play a sample call** and **Stop**.
+   - **Phone calls** follows the messages when the character has a ringtone (Bleep the frog has one); tap it to pick
+     another in the ringtone picker, then **Play a sample call** and **Stop**.
    The sample chat posts no notification, isn't sent to the module, isn't in backups and needs no permission. Real
    chats replace it on Home once the module sees their first message.
-4. **Hear the characters** on the same card, and Discover: browse the pack repository and preview characters.
+4. Discover: browse the pack repository and preview characters.
 5. Settings → **Diagnostics** (and the setup card on Home) shows which check fails: the module in
    `system_server`, its LSPosed scope, WhatsApp, a pack. That's the honest state of a review device.
 6. Optional: the haptic editor (make a vibration or tap out a rhythm) and the pack creator (record or import a clip).

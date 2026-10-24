@@ -123,7 +123,7 @@ fun cucutoEntries(
             )
         }
         entry<CucutoDestination.RingtonePicker>(
-            clazzContentKey = { "ringtone/${it.chat.packageName}/${it.chat.conversationKey}" },
+            clazzContentKey = { "ringtone/${it.chat?.packageName}/${it.chat?.conversationKey}" },
         ) { key ->
             RingtonePickerScreen(
                 chat = key.chat,
@@ -132,8 +132,10 @@ fun cucutoEntries(
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onOpenDiscover = { navigate(CucutoDestination.Discover) },
                 step = key.step,
+                // The sample chat has no rules screen (ADR 0075): its call follows the pack's rule.
                 onOpenRules = { voice ->
-                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
+                    val chat = key.chat ?: return@RingtonePickerScreen
+                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, chat))
                 },
             )
         }
@@ -224,8 +226,14 @@ fun cucutoEntries(
         }
 
         // Home: the sample chat, a demo that plays in the app without the module (ADR 0075).
+        // Its rows open the real pickers with no chat key, which choose for the sample chat (#346).
         entry<CucutoDestination.SampleChat> {
-            SampleChatScreen(onBack = goBack, onOpenDiscover = { navigate(CucutoDestination.Discover) })
+            SampleChatScreen(
+                onBack = goBack,
+                onOpenDiscover = { navigate(CucutoDestination.Discover) },
+                onChooseVoice = { navigate(CucutoDestination.Picker(chat = null)) },
+                onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(chat = null)) },
+            )
         }
 
         // Debug builds only: R8 drops these screens from release builds.

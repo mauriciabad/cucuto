@@ -4,7 +4,10 @@ import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.settings.PickerKind
 import app.mauri.cucuto.core.data.settings.RememberedFolds
+import app.mauri.cucuto.core.data.settings.SampleChatChoice
 import app.mauri.cucuto.core.data.voices.VoicePack
+import app.mauri.cucuto.sample.FakeSampleChatStore
+import app.mauri.cucuto.sample.SampleChatPickerTarget
 import app.mauri.cucuto.testing.FakeCharacterDirectory
 import app.mauri.cucuto.testing.FakeChatDirectory
 import app.mauri.cucuto.testing.FakePickerFoldSettings
@@ -21,6 +24,7 @@ import app.mauri.cucuto.testing.TestData.owl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -44,6 +48,7 @@ class PickerViewModelTest {
     private val directory = FakeChatDirectory(listOf(chat(ADA, "Ada")))
     private val preview = FakeVoicePreview()
     private val folds = FakePickerFoldSettings()
+    private val sampleStore = FakeSampleChatStore()
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -54,7 +59,14 @@ class PickerViewModelTest {
     private fun viewModel(
         chat: ChatKey? = ADA,
         packs: List<VoicePack> = TestData.packs,
-    ) = PickerViewModel(chat, directory, FakeCharacterDirectory(packs), preview, folds)
+    ) = PickerViewModel(
+        chat,
+        directory,
+        SampleChatPickerTarget(sampleStore) { flowOf(emptyList()) },
+        FakeCharacterDirectory(packs),
+        preview,
+        folds,
+    )
 
     /** Keeps [PickerViewModel.state] subscribed, as the screen does. */
     private fun TestScope.collect(vm: PickerViewModel) = backgroundScope.launch { vm.state.collect {} }
@@ -148,16 +160,27 @@ class PickerViewModelTest {
         }
 
     @Test
-    fun withoutAChatTheGridOnlyPreviews() =
+    fun withoutAChatItGivesTheSampleChatAVoiceAndNeverTouchesTheChats() =
         runTest(dispatcher) {
+            sampleStore.state.value = SampleChatChoice(voice = owl.voice)
             val vm = viewModel(chat = null)
             collect(vm)
-            assertFalse(vm.state.value.canAssign)
+            assertTrue(vm.state.value.sample)
+            assertTrue(vm.state.value.canAssign)
+            assertNull(vm.state.value.chat)
+            assertEquals(owl.voice, vm.state.value.currentVoice)
+
             assertEquals(PickerTap.Preview, vm.tap(frog))
-            assertEquals(PickerTap.Preview, vm.tap(frog))
+            assertEquals(PickerTap.Assign, vm.tap(frog))
             vm.assign(frog, null)
+
+            // Kept in the sample chat's settings only (ADR 0075): no chat assigned, nothing for the routing table.
+            assertEquals(frog.voice, sampleStore.state.value.voice)
+            assertEquals(frog.voice, vm.state.value.currentVoice)
             assertTrue(directory.assigned.isEmpty())
-            assertEquals(2, preview.plays.size)
+            vm.unassign()
+            assertTrue(directory.unassigned.isEmpty())
+            assertEquals(frog.voice, sampleStore.state.value.voice)
         }
 
     @Test

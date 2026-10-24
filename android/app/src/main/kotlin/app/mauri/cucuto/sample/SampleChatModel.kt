@@ -9,6 +9,7 @@ import app.mauri.cucuto.core.ringtone.variants.RuleContext
 import app.mauri.cucuto.core.ringtone.variants.VariantRules
 import app.mauri.cucuto.ui.ringtone.RingSound
 import app.mauri.cucuto.ui.ringtone.RingtoneCharacterItem
+import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import app.mauri.cucuto.ui.ringtone.RingtonePackItem
 
 /**
@@ -41,11 +42,25 @@ data class SampleChatState(
     /** The ringtone the user picked, if it's still installed. */
     val pickedRingtone: RingtoneCharacterItem? get() = choice.ringtone?.let(::ringtone)
 
+    /** "Android default" is the ringtone (ADR 0073): there's no sample call to play. */
+    val ringtoneDefault: Boolean get() = choice.ringtoneDefault
+
     /** "Same as the voice" is the ringtone: nothing else picked (or it's gone) and the voice has ringtones. */
-    val ringtoneFollowsVoice: Boolean get() = pickedRingtone == null && voiceRingtone != null
+    val ringtoneFollowsVoice: Boolean get() = !ringtoneDefault && pickedRingtone == null && voiceRingtone != null
 
     /** What "Play a sample call" rings: the picked ringtone, else the voice's own, else none. */
-    val ringtone: RingtoneCharacterItem? get() = pickedRingtone ?: voiceRingtone
+    val ringtone: RingtoneCharacterItem? get() = if (ringtoneDefault) null else pickedRingtone ?: voiceRingtone
+
+    /** The ringtone as contact detail's header shows it: its cover, or the call icon for "Android default". */
+    val ringtoneDisplay: RingtoneDisplay?
+        get() =
+            when {
+                ringtoneDefault -> RingtoneDisplay.AndroidDefault
+                else -> ringtone?.let { RingtoneDisplay.Character(it.character) }
+            }
+
+    /** The message character's pack name, as contact detail's Messages row shows it. */
+    val packName: String? get() = choice.voice?.let { v -> packs.firstOrNull { it.packId == v.packId }?.name }
 
     fun character(voice: ChatVoice): VoiceCharacter? =
         packs.firstOrNull { it.packId == voice.packId }?.characters?.firstOrNull { it.id == voice.characterId }

@@ -19,6 +19,7 @@ import app.mauri.cucuto.testing.TestData.owl
 import app.mauri.cucuto.ui.discover.DemoPacksRequests
 import app.mauri.cucuto.ui.ringtone.RingSound
 import app.mauri.cucuto.ui.ringtone.RingtoneCharacterItem
+import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import app.mauri.cucuto.ui.ringtone.RingtonePackItem
 import app.mauri.cucuto.ui.ringtone.RingtonePreview
 import app.mauri.cucuto.ui.ringtone.RingtoneVariantItem
@@ -51,7 +52,7 @@ import java.time.ZonedDateTime
 @OptIn(ExperimentalCoroutinesApi::class)
 class SampleChatViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
-    private val store = FakeStore()
+    private val store = FakeSampleChatStore()
     private val preview = FakeVoicePreview()
     private val ringer = FakeRinger()
     private val characters = FakeCharacterDirectory()
@@ -96,16 +97,27 @@ class SampleChatViewModelTest {
         }
 
     @Test
-    fun choosingAVoiceRemembersItAndPlaysItWithItsVibration() =
+    fun aVoiceGivenInThePickerShowsUpWithItsPack() =
         runTest(dispatcher) {
             val vm = viewModel()
             collect(vm)
 
-            vm.chooseVoice(frog.voice)
+            // The character picker writes through SampleChatPickerTarget (#346).
+            SampleChatPickerTarget(store) { ringtones }.assignVoice(frog.voice)
 
-            assertEquals(frog.voice, store.state.value.voice)
             assertEquals(frog, vm.state.value.character)
-            assertEquals(listOf(FakeVoicePreview.Play("frog", withHaptic = true, atNanos = null)), preview.plays)
+            assertEquals("Chiptune critters", vm.state.value.packName)
+        }
+
+    @Test
+    fun aSampleMessageBouncesTheAvatarWhileItPlays() =
+        runTest(dispatcher) {
+            store.state.value = SampleChatChoice(voice = frog.voice)
+            val vm = viewModel()
+            collect(vm)
+
+            vm.playMessage()
+
             assertTrue(vm.state.value.speaking)
             advanceTimeBy(600)
             runCurrent()
@@ -173,8 +185,7 @@ class SampleChatViewModelTest {
             val vm = viewModel()
             collect(vm)
 
-            vm.chooseRingtone(kettle.voice)
-            assertEquals(kettle.voice, store.state.value.ringtone)
+            store.setRingtone(kettle.voice)
             assertFalse(vm.state.value.ringtoneFollowsVoice)
             vm.toggleCall()
             assertEquals(
@@ -185,10 +196,24 @@ class SampleChatViewModelTest {
                     .removePrefix("/packs/"),
             )
 
-            vm.chooseRingtone(null)
+            vm.stopCall()
+            store.setRingtone(null)
             assertNull(vm.ringing.value)
-            assertNull(store.state.value.ringtone)
             assertTrue(vm.state.value.ringtoneFollowsVoice)
+        }
+
+    @Test
+    fun androidDefaultHasNoSampleCall() =
+        runTest(dispatcher) {
+            store.state.value = SampleChatChoice(voice = frog.voice, ringtoneDefault = true)
+            val vm = viewModel()
+            collect(vm)
+
+            assertNull(vm.state.value.ringtone)
+            assertFalse(vm.state.value.ringtoneFollowsVoice)
+            assertEquals(RingtoneDisplay.AndroidDefault, vm.state.value.ringtoneDisplay)
+            vm.toggleCall()
+            assertTrue(ringer.sounds.isEmpty())
         }
 
     @Test
@@ -245,15 +270,6 @@ class SampleChatViewModelTest {
         },
     )
 
-    private class FakeStore : SampleChatStore {
-        val state = MutableStateFlow(SampleChatChoice())
-        override val choice: Flow<SampleChatChoice> = state
-
-        override suspend fun setVoice(voice: ChatVoice) = state.update { it.copy(voice = voice) }
-
-        override suspend fun setRingtone(ringtone: ChatVoice?) = state.update { it.copy(ringtone = ringtone) }
-    }
-
     private class FakeRinger : RingtonePreview {
         val sounds = mutableListOf<RingSound>()
         var stops = 0
@@ -271,4 +287,17 @@ class SampleChatViewModelTest {
             stops++
         }
     }
+}
+
+/** The sample chat's settings in memory, as [app.mauri.cucuto.core.data.settings.SampleChatSettings] keeps them. */
+internal class FakeSampleChatStore : SampleChatStore {
+    val state = MutableStateFlow(SampleChatChoice())
+    override val choice: Flow<SampleChatChoice> = state
+
+    override suspend fun setVoice(voice: ChatVoice) = state.update { it.copy(voice = voice) }
+
+    override suspend fun setRingtone(ringtone: ChatVoice?) =
+        state.update { it.copy(ringtone = ringtone, ringtoneDefault = false) }
+
+    override suspend fun setRingtoneDefault() = state.update { it.copy(ringtoneDefault = true) }
 }

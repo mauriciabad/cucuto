@@ -6,18 +6,15 @@
     <string name="sample_chat_title">Chat de ejemplo</string>
     <string name="sample_chat_demo_label">Demo</string>
     <string name="sample_chat_banner">Esto es una demostración, no un chat de WhatsApp. Cucuto reproduce el sonido y la vibración aquí, en la app: no se publica nada y nada llega a WhatsApp ni al módulo. Tus chats de verdad aparecen en Inicio cuando el módulo ve su primer mensaje.</string>
-    <string name="sample_chat_voice_none">Aún no tiene voz. Elige una abajo.</string>
-    <string name="sample_chat_voice_current">Voz: %1$s</string>
+    <string name="sample_chat_voice_none">Aún no tiene voz</string>
+    <string name="sample_chat_try_title">Pruébalo</string>
     <string name="sample_chat_play_message">Reproducir un mensaje de ejemplo</string>
     <string name="sample_chat_play_message_hint">Reproduce uno de los clips del personaje con su vibración, como lo haría un mensaje de este chat.</string>
-    <string name="sample_chat_voice_section">Mensajes</string>
-    <string name="sample_chat_ringtone_section">Llamadas</string>
-    <string name="sample_chat_ringtone_same">El mismo que los mensajes</string>
+    <string name="sample_chat_play_message_needs_voice">Elige un personaje en Mensajes para oír un mensaje de ejemplo.</string>
     <string name="sample_chat_ringtone_none">Ninguno de tus packs tiene tonos todavía.</string>
-    <string name="sample_chat_ringtone_pick">Elige un tono para oír una llamada de ejemplo.</string>
+    <string name="sample_chat_ringtone_default">Las llamadas sonarían con el tono del propio teléfono, así que no hay llamada de ejemplo que reproducir.</string>
     <string name="sample_chat_play_call">Reproducir una llamada de ejemplo</string>
     <string name="sample_chat_stop_call">Parar</string>
-    <string name="sample_chat_choose_label">Elegir</string>
     <string name="sample_chat_failed">No se ha podido reproducir este sonido.</string>
     <string name="sample_chat_empty">Primero consigue un pack: el chat de ejemplo necesita un personaje que hable.</string>
 </resources>

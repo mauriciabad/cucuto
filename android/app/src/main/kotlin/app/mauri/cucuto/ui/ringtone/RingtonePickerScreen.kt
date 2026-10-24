@@ -135,11 +135,11 @@ data class RingtonePickerActions(
  * covers of every character with ringtones, a tap plays one with a spinning record, each version plays on its own,
  * then a rule and "Ring with …" saves it with the assign call and a burst in the character's colors ([onDone] closes).
  * "Android default" and "Leave as is" sit above the covers (ADR 0073). With [step], it is step 2 of assigning a voice
- * from Home: optional, with Skip ([onDone] too).
+ * from Home: optional, with Skip ([onDone] too). With [chat] null, it chooses for the sample chat (ADR 0075).
  */
 @Composable
 fun RingtonePickerScreen(
-    chat: ChatKey,
+    chat: ChatKey?,
     onBack: () -> Unit,
     onDone: () -> Unit,
     onOpenPacks: () -> Unit,
@@ -401,11 +401,15 @@ private fun OtherChoices(
     onChoose = actions.onChooseOther,
     enabled = !state.done,
     modifier = Modifier.padding(top = 4.dp),
+    choices = state.otherChoices,
 )
 
 @Composable
 private fun RingtonePickerState.chatName(): String? =
-    chat?.displayName ?: chatKey?.let { stringResource(R.string.chat_unnamed) }
+    when {
+        sample -> stringResource(R.string.sample_chat_title)
+        else -> chat?.displayName ?: chatKey?.let { stringResource(R.string.chat_unnamed) }
+    }
 
 /** The chosen character: its record, its versions with play buttons, and the rule that picks one. */
 @Composable

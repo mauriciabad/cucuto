@@ -6,18 +6,15 @@
     <string name="sample_chat_title">Sample chat</string>
     <string name="sample_chat_demo_label">Demo</string>
     <string name="sample_chat_banner">This is a demo, not a WhatsApp chat. Cucuto plays the sound and the vibration here, in the app: nothing is posted and nothing reaches WhatsApp or the module. Your real chats show up on Home once the module sees their first message.</string>
-    <string name="sample_chat_voice_none">No voice yet. Pick one below.</string>
-    <string name="sample_chat_voice_current">Voice: %1$s</string>
+    <string name="sample_chat_voice_none">No voice yet</string>
+    <string name="sample_chat_try_title">Try it</string>
     <string name="sample_chat_play_message">Play a sample message</string>
     <string name="sample_chat_play_message_hint">Plays one of the character\'s clips with its vibration, like a message from this chat would.</string>
-    <string name="sample_chat_voice_section">Messages</string>
-    <string name="sample_chat_ringtone_section">Phone calls</string>
-    <string name="sample_chat_ringtone_same">Same as the messages</string>
+    <string name="sample_chat_play_message_needs_voice">Choose a character under Messages to hear a sample message.</string>
     <string name="sample_chat_ringtone_none">None of your packs has ringtones yet.</string>
-    <string name="sample_chat_ringtone_pick">Pick a ringtone to hear a sample call.</string>
+    <string name="sample_chat_ringtone_default">Calls would ring with the phone\'s own ringtone, so there\'s no sample call to play.</string>
     <string name="sample_chat_play_call">Play a sample call</string>
     <string name="sample_chat_stop_call">Stop</string>
-    <string name="sample_chat_choose_label">Choose</string>
     <string name="sample_chat_failed">Couldn\'t play this sound.</string>
     <string name="sample_chat_empty">Get a pack first: the sample chat needs a character to speak.</string>
 </resources>
