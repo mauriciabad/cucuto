@@ -4,6 +4,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import app.mauri.cucuto.BuildConfig
+import app.mauri.cucuto.contact.ContactDetailScreen
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
@@ -52,7 +53,16 @@ fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
         ) { key ->
             HapticEditorScreen(chat = key.chat, onBack = goBack, onDone = { navigator.remove(key) })
         }
-        // ContactDetail (#26) gets its entry with its screen; nothing links to it yet.
+        entry<CucutoDestination.ContactDetail>(
+            clazzContentKey = { "contact/${it.chat.packageName}/${it.chat.conversationKey}" },
+        ) { key ->
+            ContactDetailScreen(
+                chat = key.chat,
+                onBack = goBack,
+                onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
+                onEditPattern = { navigate(CucutoDestination.HapticEditor(key.chat)) },
+            )
+        }
 
         // Debug builds only: R8 drops these screens from release builds.
         if (BuildConfig.DEBUG) {

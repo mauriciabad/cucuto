@@ -7,11 +7,6 @@
     <string name="tab_settings">Settings</string>
     <string name="screen_setup">Setup</string>
     <string name="screen_developer">Developer</string>
-    <string name="settings_group_module">Cucuto on this phone</string>
-    <string name="settings_setup_body">Module, LSPosed scope, WhatsApp and packs, with a fix for anything missing</string>
-    <string name="settings_diagnostics_body">What happened to each recent notification, and a test notification</string>
-    <string name="settings_group_developer">Debug build</string>
-    <string name="settings_developer_body">Design gallery and test tools. Only in debug builds.</string>
     <string name="developer_group_tools">Tools</string>
     <string name="developer_gallery_body">Colors, shapes, the cuckoo door and every feedback moment</string>
     <string name="developer_diagnostics_body">Includes the debug test voice</string>

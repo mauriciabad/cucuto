@@ -29,6 +29,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.sync.Mutex
@@ -89,13 +90,14 @@ class PackImporter(
         selection: PackSelection = PackSelection.default(import),
         activate: Boolean = true,
     ): Flow<ImportEvent> =
-        flow {
+        // channelFlow, not flow: the analyzer reports progress from its own dispatcher (ADR 0020), which flow forbids.
+        channelFlow {
             if (!import.claim()) {
                 val message = "This import was already installed or discarded"
-                emit(ImportEvent.Finished(ImportResult.Failed(FailureReason.NOT_PREPARED, message)))
-                return@flow
+                send(ImportEvent.Finished(ImportResult.Failed(FailureReason.NOT_PREPARED, message)))
+                return@channelFlow
             }
-            val progress: suspend (ImportProgress) -> Unit = { emit(ImportEvent.Progress(it)) }
+            val progress: suspend (ImportProgress) -> Unit = { send(ImportEvent.Progress(it)) }
             val result =
                 try {
                     // Outside the lock: the staging folders belong to this import, and analysis can take a while.
@@ -110,7 +112,7 @@ class PackImporter(
                 } finally {
                     withContext(NonCancellable) { store.deleteStaging(import.stagingDir) }
                 }
-            emit(ImportEvent.Finished(result))
+            send(ImportEvent.Finished(result))
         }.flowOn(ioDispatcher)
 
     /** Drops a prepared import and its unpacked files. Does nothing if it was already installed or discarded. */

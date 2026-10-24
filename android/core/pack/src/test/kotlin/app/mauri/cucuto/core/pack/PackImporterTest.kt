@@ -217,6 +217,20 @@ class PackImporterTest {
         }
 
     @Test
+    fun `an analyzer may report progress from its own dispatcher`() =
+        runTest {
+            // The app's auto haptics analyses on Dispatchers.Default (device finding in v0.1.1: every import failed).
+            val analyzer =
+                PackAnalyzer { _, _, progress ->
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { progress(1, 1) }
+                }
+            val importer = importer(analyzer = analyzer)
+            val events = importer.install(importer.ready(minimal("1.0.0"))).toList()
+            assertTrue((events.last() as ImportEvent.Finished).result is ImportResult.Installed)
+            assertTrue(events.any { (it as? ImportEvent.Progress)?.progress is ImportProgress.Analyzing })
+        }
+
+    @Test
     fun `a failing analysis never fails the import`() =
         runTest {
             val analyzer = RecordingAnalyzer(fail = true)

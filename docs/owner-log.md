@@ -203,9 +203,10 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 
 (Lead opened #153 "App shell: one coherent experience", wrote the app structure contract (Home, Packs, Discover, Settings) and started 5 more parallel agents: shell #153, Settings + backup UI #28/#43, Discover #36, haptic editor #32/#33, groups + Business #20/#21.)
 
-## 2026-10-24 — The app feels fragmented (#153)
+## 2026-10-23 — Answer on #108 (backup and restore defaults (conflicts, automatic backups, crypto))
 
-> right now the app feels like it is fragmented. when do you plan to make it a complete experience?
+> LGTM, but if backups are identical saving many of them seems unnecesary.
+>
+> i would like to ask for a separate new feature related to backups. whatsapp can save the chat backup in google drive automatically, i would like to also have that feature and it also backs up the files needed and their source. so if i loose the phone, on the new one i'm ofered to restore a backup and it works even if the repositories are down or closed.
 
-(Lead opened #153: one app shell with Home, Packs, Discover and Settings, onboarding then Home, the demo packs, the
-first voice, and no placeholders in release builds. Built in ADR 0027.)
+The defaults stand. Automatic backups skip a backup identical to the last one, and include the pack files by default (#28, ADR 0028; new defaults in #166). The Google Drive backup request is #163.
