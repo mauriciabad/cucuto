@@ -3,11 +3,11 @@ package app.mauri.cucuto.provider
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
+import app.mauri.cucuto.core.data.chats.AlertSightings
 import app.mauri.cucuto.core.data.db.DecisionLogEntity
 import app.mauri.cucuto.core.data.db.DecisionOutcome
 import app.mauri.cucuto.core.data.di.ApplicationScope
 import app.mauri.cucuto.core.data.repository.DecisionLogRepository
-import app.mauri.cucuto.core.data.repository.SeenSenderRepository
 import app.mauri.cucuto.xposed.events.DecisionEvent
 import app.mauri.cucuto.xposed.events.ModuleStatus
 import app.mauri.cucuto.xposed.route.Targets
@@ -30,7 +30,8 @@ data class ReceivedStatus(
 
 /**
  * Stores what the module reports: each decision in the decision log, each conversation (except the self-test) in
- * the "recent senders" feed, and the module's status for the Diagnostics screen. Raw keys and names stay in the
+ * the "recent senders" feed (with the senders of per-sender groups, [AlertSightings]), and the module's status for
+ * the Diagnostics screen. Raw keys and names stay in the
  * app's private database and are never logged.
  */
 @Singleton
@@ -39,7 +40,7 @@ class ModuleEventSink
     constructor(
         @param:ApplicationContext private val context: Context,
         private val decisionLog: DecisionLogRepository,
-        private val seenSenders: SeenSenderRepository,
+        private val sightings: AlertSightings,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
         private val _status = MutableStateFlow(loadStatus())
@@ -59,7 +60,7 @@ class ModuleEventSink
                         decisionLog.record(event.toEntity())
                         val key = event.conversationKey
                         if (key != null && event.packageName != Targets.SELF_PACKAGE) {
-                            seenSenders.record(
+                            sightings.record(
                                 packageName = event.packageName,
                                 conversationKey = key,
                                 displayName = event.displayName,

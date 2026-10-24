@@ -157,6 +157,9 @@ class CucutoModule : XposedModule() {
                 append("alert ").append(event.packageName).append(' ').append(event.outcome)
                 append(" key=").append(ModuleLog.keyShape(event.conversationKey))
                 append(" group=").append(event.isGroup)
+                if (event.isGroup) {
+                    append(" sender=").append(ModuleLog.senderShape(event.senderKey, event.senderName != null))
+                }
                 if (event.contactId != null) append(" contact=#").append(event.contactId)
                 event.clipUri?.let { append(" clip=").append(it) }
                 event.detail?.let { append(" (").append(it).append(')') }

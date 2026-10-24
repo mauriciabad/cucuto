@@ -48,7 +48,10 @@ Lookup (`RoutingTable.resolve(package, conversationKey, senderKey)`):
 3. If that route is a per-sender group and the sender's key has a voice, play the sender's voice.
 4. Otherwise play the conversation's voice, or change nothing if it has none.
 
-A group with the default policy (one voice per group) never uses its members' voices.
+A group with the default policy (one voice per group) never uses its members' voices. The sender key is the
+`Person` key of the alerting record's newest MessagingStyle message, read only for groups; every lookup stays within
+one package, so WhatsApp and WhatsApp Business never share a route
+([ADR 0031](decisions/0031-group-policy-and-whatsapp-business.md)).
 
 ## Encoding
 
