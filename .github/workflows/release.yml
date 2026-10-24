@@ -19,9 +19,9 @@ name: release
 # replaced key fails the release instead of shipping an APK that cannot update existing installs.
 #
 # Google Play (ADR 0071, owner update #287): the same build also makes the app bundle, signed with the same release
-# key, and attaches cucuto-<version>.aab and its checksum. For Play that key is only the upload key: Play App Signing
-# re-signs what it serves with a Google-generated key. Nothing here uploads to Play: the owner does
-# (docs/releasing.md).
+# key, and attaches cucuto-<version>.aab and its checksum. For Play that key is the upload key, and Play App Signing
+# re-signs what it serves with the same release key, which the owner gave Play with PEPK. Nothing here uploads to
+# Play: the owner does (docs/releasing.md).
 #
 # Actions are pinned to full commit SHAs (this workflow handles the signing key); Dependabot keeps the pins and their
 # version comments current. To retry a failed run (for example after adding the secrets), re-run it from the
@@ -192,10 +192,9 @@ jobs:
           (cd dist && sha256sum "cucuto-$VERSION.apk" | tee "cucuto-$VERSION.apk.sha256")
           echo "CERT_SHA256=$cert" >> "$GITHUB_ENV"
 
-      # Google Play's app bundle (ADR 0071, owner update #287). The release key is Play's upload key: the first
-      # bundle uploaded to Play Console registers it, and Play App Signing re-signs the APKs it serves with a
-      # Google-generated app signing key. bundletool reads the bundle's manifest and settings; pinned by version and
-      # checksum like the actions above.
+      # Google Play's app bundle (ADR 0071, owner updates #287). The release key is Play's upload key and, given to
+      # Play with PEPK, its app signing key too, so Play installs and these APKs share one certificate. bundletool
+      # reads the bundle's manifest and settings; pinned by version and checksum like the actions above.
       - name: Verify the Play bundle
         env:
           BUNDLETOOL_VERSION: "1.18.3"
