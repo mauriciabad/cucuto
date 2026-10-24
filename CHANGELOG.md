@@ -7,6 +7,15 @@ What changed in each Cucuto release, newest first. Downloads and checksums are o
 Each section is written from the commits since the previous release by `tools/release/release-notes.main.kts`, then
 edited by hand where the commit titles are too technical (see [docs/releasing.md](docs/releasing.md)).
 
+## [1.0.1] - 2026-10-24
+
+### Docs
+
+- Record the Google Cloud project for Drive sign-in (#188) ([#381](https://github.com/mauriciabad/cucuto/pull/381))
+- Redact personal email and Cloud project number (#188) ([#382](https://github.com/mauriciabad/cucuto/pull/382))
+
+[Release](https://github.com/mauriciabad/cucuto/releases/tag/v1.0.1) · [All changes](https://github.com/mauriciabad/cucuto/compare/v1.0.0...v1.0.1)
+
 ## [1.0.0]
 
 The first stable version.
