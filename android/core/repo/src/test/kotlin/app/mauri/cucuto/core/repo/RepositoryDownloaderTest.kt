@@ -28,6 +28,9 @@ class RepositoryDownloaderTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
+    @get:Rule
+    val clients = TestClients()
+
     private lateinit var server: MockWebServer
     private lateinit var workDir: File
     private lateinit var downloader: RepositoryDownloader
@@ -59,7 +62,7 @@ class RepositoryDownloaderTest {
                 workDir = File(root, "cache/pack-import"),
                 verifier = MediaVerifier(audio, image),
             )
-        downloader = RepositoryDownloader(testClient(), importer, workDir)
+        downloader = RepositoryDownloader(clients.client(), importer, workDir)
     }
 
     @After
@@ -73,7 +76,7 @@ class RepositoryDownloaderTest {
             server.enqueue(ok(indexJson()))
             server.enqueue(ok(minimalPack.readBytes()))
             val access = RepositoryAccess(server.at("/repository.json"))
-            val snapshot = (testClient().fetchIndex(access) as RepoResult.Success).value.snapshot
+            val snapshot = (clients.client().fetchIndex(access) as RepoResult.Success).value.snapshot
 
             val events = downloader.downloadAndPrepare(snapshot.entries.first(), access).toList()
 
@@ -92,7 +95,7 @@ class RepositoryDownloaderTest {
             server.enqueue(ok(indexJson(sha = "2".repeat(64))))
             server.enqueue(ok(minimalPack.readBytes()))
             val access = RepositoryAccess(server.at("/repository.json"))
-            val snapshot = (testClient().fetchIndex(access) as RepoResult.Success).value.snapshot
+            val snapshot = (clients.client().fetchIndex(access) as RepoResult.Success).value.snapshot
 
             val events = downloader.downloadAndPrepare(snapshot.entries.first(), access).toList()
 

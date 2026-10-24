@@ -615,17 +615,21 @@
     <string name="discover_sign_in">Iniciar sesión</string>
     <string name="discover_sign_in_to">Iniciar sesión en %1$s</string>
     <string name="discover_retry">Reintentar</string>
-    <plurals name="discover_bundle_packs">
-        <item quantity="one">Colección con %1$d pack: %2$s</item>
-        <item quantity="many">Colección con %1$d packs: %2$s</item>
-        <item quantity="other">Colección con %1$d packs: %2$s</item>
+    <plurals name="discover_bundle_label">
+        <item quantity="one">Colección · %1$d pack</item>
+        <item quantity="many">Colección · %1$d packs</item>
+        <item quantity="other">Colección · %1$d packs</item>
     </plurals>
+    <string name="discover_bundle_installed_some">%1$d de %2$d instalados</string>
     <string name="discover_version">versión %1$s</string>
     <string name="discover_needs_newer">Necesita un Cucuto más nuevo</string>
     <string name="discover_update_available">Actualización disponible</string>
     <string name="discover_installed">Instalado</string>
     <string name="discover_install">Instalar</string>
+    <string name="discover_install_all">Instalar todos</string>
+    <string name="discover_install_member">Instalar %1$s</string>
     <string name="discover_update">Actualizar</string>
+    <string name="discover_update_member">Actualizar %1$s</string>
     <string name="discover_install_again">Volver a instalar</string>
     <string name="discover_repository_empty">Este repositorio aún no tiene packs.</string>
     <string name="discover_no_matches">Ningún pack coincide con tu búsqueda.</string>

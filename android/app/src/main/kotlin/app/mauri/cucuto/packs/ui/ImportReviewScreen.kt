@@ -252,10 +252,22 @@ private fun ProgressBar(
     modifier: Modifier = Modifier,
 ) {
     val fraction = progress?.fraction()
-    if (fraction != null) {
-        LinearWavyProgressIndicator(progress = { fraction }, modifier = modifier.fillMaxWidth())
-    } else {
-        LinearWavyProgressIndicator(modifier = modifier.fillMaxWidth())
+    Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (fraction != null) {
+            LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+        } else {
+            LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        // "Testing 120 of 389 files": large packs spend most of the import here (#241). Not a live region, so
+        // TalkBack reads the step above once instead of every file.
+        if (progress is ImportProgress.Decoding && progress.total > 0) {
+            Text(
+                pluralStringResource(R.plurals.import_testing_count, progress.total, progress.done, progress.total),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
     }
 }
 

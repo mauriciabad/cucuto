@@ -18,16 +18,22 @@ import app.mauri.cucuto.packs.ReviewPack
 import app.mauri.cucuto.packspec.Character
 import app.mauri.cucuto.packspec.Clip
 import app.mauri.cucuto.packspec.PackManifest
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 import okio.Buffer
@@ -62,15 +68,44 @@ fun repositoryServer(): MockWebServer =
 /** [path] on this server, addressed as `localhost`. */
 fun MockWebServer.at(path: String): HttpUrl = url(path).newBuilder().host("localhost").build()
 
-fun testClient(): RepositoryClient =
-    RepositoryClient(
-        httpClient =
-            RepositoryClient
-                .defaultHttpClient()
-                .newBuilder()
-                .sslSocketFactory(TestTls.client.sslSocketFactory(), TestTls.client.trustManager)
-                .build(),
-    )
+/** The production HTTP settings, trusting [TestTls]. One per test; [shutDown] it afterwards. */
+fun testHttpClient(): OkHttpClient =
+    RepositoryClient
+        .defaultHttpClient()
+        .newBuilder()
+        .sslSocketFactory(TestTls.client.sslSocketFactory(), TestTls.client.trustManager)
+        .build()
+
+/**
+ * The repository client over [http], with its blocking work on [io]: a dispatcher of the test's scheduler (see
+ * [DiscoverTestDispatchers]), never `Dispatchers.IO`.
+ */
+fun testClient(
+    http: OkHttpClient,
+    io: CoroutineDispatcher,
+): RepositoryClient = RepositoryClient(httpClient = http, ioDispatcher = io)
+
+/** Stops [this] client's threads and closes its connections, so nothing outlives the test that made it. */
+fun OkHttpClient.shutDown() {
+    dispatcher.executorService.shutdownNow()
+    connectionPool.evictAll()
+}
+
+/**
+ * The dispatchers of a Discover test (#261): `Dispatchers.Main` ([main], set with `Dispatchers.setMain`) and every
+ * "IO" dispatcher ([io]) share one [kotlinx.coroutines.test.TestCoroutineScheduler], which `runTest` adopts from
+ * `Dispatchers.Main`.
+ *
+ * So the view model's code only ever runs on the test thread, one step at a time. With `Dispatchers.IO`, a fetch
+ * resumed the view model (an unconfined `Main`) on an IO thread, which then ran the state pipeline at the same time as
+ * the test: a `vm.state.value` read right after an action could miss that action, and leftover work could fail the
+ * next test. OkHttp still runs the calls on its own threads; their callbacks are dispatched back to the scheduler.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class DiscoverTestDispatchers {
+    val main: TestDispatcher = UnconfinedTestDispatcher()
+    val io: TestDispatcher = StandardTestDispatcher(main.scheduler)
+}
 
 fun ok(body: String): MockResponse =
     MockResponse

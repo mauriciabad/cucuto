@@ -17,8 +17,8 @@ CI (the `packs` job in `.github/workflows/ci.yml`) also builds them into one bun
 packer=tools/packer/cli/build/install/packer/bin/packer
 $packer build packs/chiptune-critters -o dist/
 $packer build packs/kitchen-orchestra -o dist/
-$packer bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.0.0 --license CC0-1.0 \
-  --author "Cucuto contributors" --cover packs/chiptune-critters/cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
+$packer bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.1.0 --license CC0-1.0 \
+  --author "Cucuto contributors" --cover packs/demo-bundle-cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
 $packer index -o dist/repo --name "Cucuto demo packs" --homepage https://cucuto.mauri.app dist/
 ```
 
