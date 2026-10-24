@@ -2,6 +2,7 @@ package app.mauri.cucuto.core.data.chats
 
 import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
@@ -58,27 +59,34 @@ class PhoneRingtoneFollow
             if (row != null && !row.followsVoice) return
             val newRings = new != null && capability.hasRingtones(new)
             val oldRings = old != null && capability.hasRingtones(old)
-            val updated = followed(row, contactId, old, oldRings, newRings) ?: return
+            val updated = followed(row, contactId, old, new, oldRings, newRings) ?: return
             dao.upsert(updated.copy(updatedAt = clock.now()))
         }
 
         internal companion object {
             /**
-             * The row after a voice change, or null when nothing changes. [row] is the stored ringtone (null: none
-             * yet); [oldRings] and [newRings] say whether the old and new voices have ringtones.
+             * The row after the voice changed from [old] to [new], or null when nothing changes. [row] is the stored
+             * ringtone (null: none yet); [oldRings] and [newRings] say whether the old and new voices have ringtones.
              */
             fun followed(
                 row: PhoneRingtoneEntity?,
                 contactId: Long,
                 old: ChatVoice?,
+                new: ChatVoice?,
                 oldRings: Boolean,
                 newRings: Boolean,
             ): PhoneRingtoneEntity? {
                 if (row != null && !row.followsVoice) return null
                 if (newRings) {
                     // Follow the new voice. Without a row, the voice already rings once the contact is linked.
-                    if (row == null || row.packId == null) return null
-                    return row.copy(packId = null, characterId = null, followsVoice = true)
+                    if (row == null) return null
+                    // What rang before: the kept character, else the old voice.
+                    val before = row.packId?.let { pack -> row.characterId?.let { ChatVoice(pack, it) } } ?: old
+                    val updated =
+                        row.copy(packId = null, characterId = null, followsVoice = true).let {
+                            if (before == new) it else it.forAnotherCharacter()
+                        }
+                    return updated.takeIf { it != row }
                 }
                 // The new voice cannot ring: keep what rang before (a kept character, else the old voice's own).
                 if (row?.packId != null) return null
@@ -89,5 +97,17 @@ class PhoneRingtoneFollow
                     followsVoice = true,
                 )
             }
+
+            /**
+             * The rule once another character rings: "One version" and "Your own rules" name the previous character's
+             * ringtone files, so they go back to the pack's rules (the picker does the same when another cover is
+             * picked). The other rules work for any character and stay.
+             */
+            private fun PhoneRingtoneEntity.forAnotherCharacter(): PhoneRingtoneEntity =
+                if (mode == RingtoneMode.FIXED || mode == RingtoneMode.CUSTOM) {
+                    copy(mode = RingtoneMode.PACK, variant = null, rules = null)
+                } else {
+                    this
+                }
         }
     }

@@ -265,6 +265,36 @@ entries' conditions that the user edits in the app (versions turned off, other c
 are resolved with the same algorithm, over the contact's list instead of the manifest; entries whose file the pack no
 longer has are skipped, and an empty list falls back to the pack's conditions.
 
+#### How the app shows clips and ringtones
+
+Non-normative: what users of the Cucuto app see, so authors can write packs that read well
+([ADR 0063](decisions/0063-independent-voice-and-ringtone.md), [ADR 0073](decisions/0073-sound-flow-message-then-ringtone.md),
+[ADR 0074](decisions/0074-ringtone-rules-screen.md)).
+
+- **Two pickers.** A contact's message sound and ringtone are chosen one after the other, in two pickers. The
+  character picker lists only characters with `clips`; the ringtone picker lists only characters with `ringtones`,
+  shown as record covers. A **ringtone-only pack** (songs, no clips) never appears among message sounds, and a
+  clip-only pack never appears among ringtones. Most packs are one kind; a character with both is the rare case.
+  Next to the pack characters, the ringtone picker always offers "Android default" and "Leave as is".
+- **The pack's rules in plain words.** A character with two or more ringtone files has a **Ringtone rules** screen
+  (from the ringtone picker and from the Packs tab). It reads every entry back in `ringtones` order: "Rings by day",
+  "Rings in summer and autumn", "Rings from 22:00 to 06:00, every Saturday and Sunday", "Rings on 25 December", and
+  "Rings the rest of the time" for an entry without `when`. A summary sentence uses the labels ("Live by day, Radio
+  at night"), and a pack without conditions reads "Always Live". Write a `label` for every ringtone: without one,
+  the file name is shown.
+- **The screen points out mistakes.** An entry that can never ring, because an earlier entry has the same
+  condition, says so. When the conditions leave some moments uncovered, a last line says which entry rings then: the
+  first one. Put the everyday version first and the special ones after it.
+- **Per-contact rules.** Users can keep the pack's rules (the default), switch a contact to "Random per call" (by
+  `weight`), "One version", or edit **their own rules**: a copy of the entries' conditions with versions turned off,
+  other conditions picked from a menu (any time, by day, at night, a season, or the pack's own condition) and another
+  "when none of these apply" version. "Day and night" is offered only when a version has the tag `day` or `night`,
+  and "By season" only when one has a season name (`spring`, `summer`, `autumn`, `winter`) as a tag; tags are
+  compared ignoring case. Rules a user saved survive a pack update as long as the files keep their paths.
+- **Special clips are labeled** in the contact's clip list: "First message of the day", "Message 3 in a row", "Rare:
+  about 1 in 25 messages". Clip conditions have no rules screen: a message plays a random clip from those whose
+  condition holds, and users switch single clips off instead.
+
 ### Ring files
 
 Android plays a contact's ringtone through Telecom, which loops the **whole file** and knows nothing about loop points
@@ -678,7 +708,8 @@ authority: readers detect the type from the contents.
   - `ringtoneChoice` replaces `ringtone` for a ringtone that is not a pack character
     ([ADR 0073](decisions/0073-sound-flow-message-then-ringtone.md)): `"android-default"` (the phone's default
     ringtone; Cucuto clears a ringtone of the contact's own) or `"unchanged"` (Cucuto never touches the contact's
-    ringtone). A contact has at most one of the two. Older readers ignore it and leave the contact's ringtone alone.
+    ringtone). A contact has at most one of the two. Cucuto before 0.2.0 refuses a backup that uses it
+    (or the `custom` rule): contacts allow no unknown field, so its schema check fails.
   - `ringtone.undo` is device-local: the Android contact's own ringtone before Cucuto (`originalRingtone`, absent for
     the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
     contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later
@@ -703,6 +734,9 @@ file names, character IDs from names, and shorthands such as `when: day` and `ha
 directly, with the shared authoring rules in `shared/pack-spec` (`packspec.authoring`, [ADR 0034](decisions/0034-in-app-pack-creator.md)):
 packer's canonical layout, slugs of the names for character IDs and clip file names, and suggested pack IDs of the form
 `local.<author>.<name>-<random>` (people without a domain of their own; the first install or export fixes the IDs).
+Both creators edit every field of this document except animated sprites: clip conditions, special clips, ringtone
+variants with their conditions, loops and fade-ins, haptics, the pack's homepage and tags and a character's
+description, through the shared `ConditionForm` and `RingtoneForm` ([ADR 0049](decisions/0049-creator-haptics-and-pass-through.md)).
 
 ## Implementations and fixtures
 

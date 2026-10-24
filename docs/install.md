@@ -23,8 +23,8 @@ module reads who sent each WhatsApp notification. That stays in Cucuto's private
 ## Steps
 
 1. **Download and install the APK.** Get the latest `.apk` from
-   [GitHub Releases](https://github.com/mauriciabad/cucuto/releases) and open it on the phone. There is no release yet:
-   see [Before the first release](#before-the-first-release).
+   [GitHub Releases](https://github.com/mauriciabad/cucuto/releases) and open it on the phone. Android asks you to
+   allow installs from that app (your browser or file manager) the first time.
 2. **Enable the module in LSPosed.** Open the LSPosed manager, go to **Modules**, turn on **Cucuto** and check that its
    scope is **System Framework** only. Cucuto asks for exactly that scope, so it is usually ticked already. Don't add
    WhatsApp: Cucuto never hooks the WhatsApp app.
@@ -35,19 +35,36 @@ module reads who sent each WhatsApp notification. That stays in Cucuto's private
    later from Settings › Setup › **Setup guide**. The status card on Home then checks that the module is active, the LSPosed scope is
    right, WhatsApp is installed and at least one pack is imported. Each failing check tells you how to fix it.
 5. **Import a pack and assign characters.** Import a `.soundpack.zip` file or pick one from the
-   [free packs](https://cucuto.mauri.app/packs/), then choose a chat and tap a character. Keep WhatsApp's own tone and
-   vibration on: Cucuto replaces them per contact. To import, open **Packs** › **Import a pack**, or open or share a
-   `.soundpack.zip` file with Cucuto from any app. (The chat list and character picker are still being built.)
+   [free packs](https://cucuto.mauri.app/packs/), then choose a chat, tap a character and, if you like, a ringtone
+   (step 2 of the same flow: a song from a pack, **Android default** or **Leave as is**). Someone who hasn't written
+   since you installed Cucuto? Add them with **Add a chat from contacts**. Keep WhatsApp's own tone and vibration on:
+   Cucuto replaces them per contact. To import, open **Packs** › **Import a pack**, or open or share a
+   `.soundpack.zip` file with Cucuto from any app.
 
 ## Test it
 
-In Cucuto, open Status › **Diagnostics** and tap **Post test notification** (the setup guide's last step and the
+In Cucuto, open Settings › **Diagnostics** and tap **Post test notification** (the setup guide's last step and the
 status card offer the same button). With the module active you hear a two-tone rising chirp and feel a short click-tick
 instead of the default sound. The decision shows up in Diagnostics, and the module check turns green, within about
 10 seconds.
 
 Right after a reboot the module check reads "Enabled, but the module has not reported since this boot" until the first
 alert: the module only reports when it handles a notification, so post the test notification once.
+
+Before the module is set up (or on a phone without root), **Try a sample chat** on Home plays a character's message
+sound, vibration and ringtone in the app. It shows while you have packs and no chats yet.
+
+## Updates and Google Play
+
+Cucuto never checks for updates and never goes online to look for them. New versions appear on
+[GitHub Releases](https://github.com/mauriciabad/cucuto/releases); [Obtainium](https://github.com/ImranR98/Obtainium)
+can install them for you (the website's [Install page](https://cucuto.mauri.app/install/#updates) has a one-tap
+setup). After every update, reboot: the module loads the new version at boot.
+
+Every Cucuto APK is signed with the same certificate, SHA-256 `6ded92bf…` (the full value is on every release and on
+the Install page). A Google Play listing is being prepared. Play will install Cucuto with that same certificate
+([google-play.md › Signing](google-play.md#signing)), so a copy from Play and a copy from GitHub or Obtainium update
+each other without uninstalling.
 
 ## Troubleshooting
 
@@ -82,13 +99,14 @@ Try these in order:
 
 ## Turn it off or uninstall
 
-To pause Cucuto, turn off the **Cucuto voices** switch (Status › Diagnostics for now): every chat goes back to
+To pause Cucuto, turn off the **Cucuto voices** switch (in Settings, or the Quick Settings tile): every chat goes back to
 WhatsApp's tone right away. To remove it completely, disable the module in LSPosed, reboot and uninstall the app.
 Uninstalling deletes your imported packs and assignments.
 
-## Before the first release
+## Debug builds
 
-Until the first signed release ([#44](https://github.com/mauriciabad/cucuto/issues/44)), install a debug build. Either
+To test unreleased changes, install a debug build. It has another signature, so a release build must be uninstalled first (back up before: uninstalling deletes your
+packs and voices). Either
 download the `cucuto-debug-apk` artifact from a recent
 [ci run on `main`](https://github.com/mauriciabad/cucuto/actions/workflows/ci.yml?query=branch%3Amain) that changed
 the app (needs a GitHub account; artifacts expire after 14 days), or build it (setup in [CONTRIBUTING.md](../CONTRIBUTING.md#building)):

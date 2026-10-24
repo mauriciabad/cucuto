@@ -191,6 +191,76 @@ class MigrationTest {
             }
         }
 
+    /**
+     * A v0.1.8 database (version 4, the last release before #317 and #318) opened by the current app: 4 to 5 to 6 in
+     * one go. Every phone ringtone stays a character with the pack's or its own rule, the undo records stay, and the
+     * sync query resolves the voice for the ringtone that follows it.
+     */
+    @Test
+    fun aVersion4DatabaseMigratesToVersion6WithItsRingtonesAndUndoRecords() =
+        runTest {
+            file.delete()
+            helper.createDatabase(4).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO contacts (id, displayName, isGroup, groupPolicy, shuffleSeed, createdAt, updatedAt, " +
+                        "androidLookupKey, androidDisplayName) VALUES " +
+                        "(1, 'Ada', 0, 'GROUP', 7, 1, 1, 'lk-ada', 'Ada'), " +
+                        "(2, 'Bruno', 0, 'GROUP', 8, 1, 1, 'lk-bruno', 'Bruno'), " +
+                        "(3, 'Carla', 0, 'GROUP', 9, 1, 1, NULL, NULL)",
+                )
+                connection.execSQL(
+                    "INSERT INTO assignments (contactId, packId, characterId, disabledClips, updatedAt) " +
+                        "VALUES (1, 'app.mauri.demo.critters', 'frog', '[]', 1)",
+                )
+                connection.execSQL(
+                    "INSERT INTO phone_ringtones (contactId, packId, characterId, mode, variant, updatedAt, " +
+                        "followsVoice) VALUES (1, NULL, NULL, 'TIME', NULL, 1, 1), " +
+                        "(2, 'com.example.songs', 'bubblegum', 'FIXED', 'radio.ogg', 1, 0), " +
+                        "(3, 'com.example.songs', 'bubblegum', 'PACK', NULL, 1, 1)",
+                )
+                connection.execSQL(
+                    "INSERT INTO contact_ringtone_writes (lookupKey, contactId, originalRingtone, writtenUri, " +
+                        "variant, userChanged, writtenAt) VALUES ('lk-ada', 1, 'content://media/own/1', " +
+                        "'content://media/cucuto/7', 'frog/day.ogg', 0, 1), " +
+                        "('lk-bruno', 2, NULL, 'content://media/cucuto/8', 'radio.ogg', 1, 1)",
+                )
+            }
+            helper.runMigrationsAndValidate(CucutoDatabase.VERSION, CucutoMigrations.ALL.toList()).close()
+            val db =
+                Room
+                    .databaseBuilder(ApplicationProvider.getApplicationContext(), CucutoDatabase::class.java, file.path)
+                    .setDriver(AndroidSQLiteDriver())
+                    .addMigrations(*CucutoMigrations.ALL)
+                    .build()
+            try {
+                val dao = db.phoneRingtoneDao()
+                val follows = dao.get(1)!!
+                assertEquals(RingtoneChoice.CHARACTER, follows.choice)
+                assertTrue(follows.followsVoice)
+                assertEquals(RingtoneMode.TIME, follows.mode)
+                assertEquals(null, follows.rules)
+                val picked = dao.get(2)!!
+                assertEquals(RingtoneChoice.CHARACTER, picked.choice)
+                assertEquals(false, picked.followsVoice)
+                assertEquals("radio.ogg", picked.variant)
+                assertEquals(RingtoneChoice.CHARACTER, dao.get(3)!!.choice)
+
+                val rows = dao.syncRows().associateBy { it.contactId }
+                assertEquals(setOf(1L, 2L, 3L), rows.keys)
+                assertEquals("frog", rows.getValue(1).characterId)
+                assertEquals("lk-ada", rows.getValue(1).lookupKey)
+                assertEquals("bubblegum", rows.getValue(2).characterId)
+                assertEquals(null, rows.getValue(3).lookupKey)
+
+                val writes = dao.writes().associateBy { it.lookupKey }
+                assertEquals("content://media/own/1", writes.getValue("lk-ada").originalRingtone)
+                assertEquals("content://media/cucuto/7", writes.getValue("lk-ada").writtenUri)
+                assertTrue(writes.getValue("lk-bruno").userChanged)
+            } finally {
+                db.close()
+            }
+        }
+
     @Test
     fun dataWrittenAtVersion1SurvivesOpeningWithRoom() =
         runTest {
