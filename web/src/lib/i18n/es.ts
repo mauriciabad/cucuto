@@ -584,7 +584,7 @@ export const es: Messages = {
 			update:
 				'Se guarda como actualización: el mismo ID de pack, versión {version}. La app sustituye el pack instalado y conserva la voz de cada contacto.',
 			copy: 'Guardarlo como un pack nuevo, con su propio ID y la versión 1.0.0, para instalarlo junto al original',
-			kept: 'Se conservan tal cual del original, aunque esta página aún no los edita. Tonos de llamada: {ringtones}. Imágenes animadas: {animations}.',
+			kept: 'Las imágenes animadas se conservan tal cual del original, aunque esta página aún no las edita: {animations}.',
 			undecodable:
 				'Clips que este navegador no puede reproducir: {n}. Se quedan en el pack tal cual, sin vista previa ni edición.'
 		},
@@ -624,14 +624,16 @@ export const es: Messages = {
 		characters: {
 			title: 'Personajes',
 			intro:
-				'Cada personaje es una imagen y uno o más clips. La app elige al azar uno de los clips del personaje para cada mensaje.',
+				'Cada personaje es una imagen con clips para los mensajes, tonos para las llamadas o ambos. La app elige al azar uno de los clips del personaje para cada mensaje.',
 			add: 'Añadir un personaje',
 			empty: 'Todavía no hay personajes.',
 			heading: 'Personaje {n}',
 			name: 'Nombre',
 			remove: 'Quitar personaje',
 			color: 'Color',
-			colorHint: 'Sugerido a partir de la imagen. La app usa este color para el tema del personaje.'
+			colorHint:
+				'Sugerido a partir de la imagen. La app usa este color para el tema del personaje.',
+			description: 'Descripción (opcional)'
 		},
 		picture: {
 			choose: 'Elegir una imagen',
@@ -670,6 +672,123 @@ export const es: Messages = {
 			decodeFailed: 'No se ha podido abrir {name}: este navegador no sabe reproducirlo.',
 			tooLong: '{name} dura más de 6 minutos, el audio más largo que abre el creador.',
 			recordingLabel: 'Grabación {n}'
+		},
+		conditions: {
+			clipTitle: 'Cuándo suena',
+			ringtoneTitle: 'Cuándo suena',
+			intro: 'Déjalo todo como está para que el clip pueda sonar con cualquier mensaje.',
+			ringtoneIntro:
+				'La app hace sonar la versión más específica cuya condición se cumple, y la primera cuando no se cumple ninguna.',
+			moment: 'Qué mensaje',
+			momentAny: 'Cualquier mensaje, en la rotación',
+			momentFirst: 'El primer mensaje del día del chat (los días empiezan a las 4:00)',
+			momentBurst: 'Un mensaje seguido, cada uno a menos de un minuto del anterior',
+			burst: 'Número de mensaje',
+			rare: 'Clip raro: fuera de la rotación, suena de vez en cuando',
+			oneIn: 'Más o menos un mensaje de cada',
+			time: 'Momento del día',
+			timeAny: 'A cualquier hora',
+			timeDay: 'De día',
+			timeNight: 'De noche',
+			timeHours: 'Entre dos horas',
+			dayHint:
+				'El día va del amanecer al anochecer en el lugar configurado en la app (de 7:00 a 19:00 hasta que configures uno).',
+			from: 'Desde',
+			to: 'Hasta',
+			hoursHint: 'Incluye «desde», excluye «hasta» y puede pasar de medianoche (22:00 a 06:00).',
+			seasons: 'Estaciones',
+			seasonsHint: 'Sin elegir: todo el año. Se invierten al sur del ecuador.',
+			weekdays: 'Días de la semana',
+			weekdaysHint: 'Sin elegir: todos los días.',
+			dates: 'Fechas',
+			datesHint:
+				'Días del año, cada año, como mes-día (12-25). Añade un día final para un intervalo; puede pasar de año.',
+			dateFrom: 'Día',
+			dateTo: 'Hasta (opcional)',
+			date: 'Fecha {n}',
+			addDate: 'Añadir una fecha',
+			removeDate: 'Quitar la fecha {n}',
+			save: 'Guardar',
+			cancel: 'Cancelar',
+			problems: {
+				TIME_INVALID: 'Escribe las horas como HH:MM, por ejemplo 22:00.',
+				TIME_RANGE_EMPTY: 'Las horas empiezan y acaban a la vez. Elige otro final.',
+				DATE_INVALID:
+					'La fecha {n} no es un día del año. Escríbela como mes-día, por ejemplo 12-25.',
+				TOO_MANY_DATES: 'Una condición puede tener hasta 50 fechas.',
+				BURST_OUT_OF_RANGE: 'El número de mensaje va de 2 a 50.',
+				ONE_IN_OUT_OF_RANGE: 'Un clip raro suena más o menos en un mensaje de cada 2 a 10.000.',
+				RINGTONE_DURATION_OUT_OF_RANGE: 'Los tonos de llamada duran de 5 segundos a 6 minutos.',
+				LOOP_INVALID:
+					'El bucle debe durar al menos 1 segundo y acabar antes que la canción. Mueve su inicio o su final.',
+				FADE_IN_OUT_OF_RANGE: 'La entrada gradual dura de 0 a 10 segundos.',
+				WEIGHT_OUT_OF_RANGE: 'La frecuencia va de 0,1 a 100.'
+			} as Record<string, string>
+		},
+		summary: {
+			day: 'De día',
+			night: 'De noche',
+			hours: 'De {from} a {to}',
+			firstOfDay: 'Primer mensaje del día',
+			burst: 'Mensaje {n} seguido',
+			rare: 'Raro: más o menos 1 de cada {n}',
+			dateRange: 'Del {from} al {to}',
+			always: 'Siempre',
+			seasons: {
+				spring: 'Primavera',
+				summer: 'Verano',
+				autumn: 'Otoño',
+				winter: 'Invierno'
+			} as Record<string, string>
+		},
+		ringtones: {
+			title: 'Tonos de llamada',
+			intro:
+				'Canciones para las llamadas de los contactos que eligen este personaje como tono. Varias versiones de una canción pueden sonar en momentos distintos, como de día y de noche. Un personaje puede tener solo tonos de llamada.',
+			add: 'Añadir un tono de llamada',
+			hint: 'Archivos de audio de 5 segundos a 6 minutos, que se guardan en su propio formato.',
+			play: 'Reproducir',
+			stopPlaying: 'Parar',
+			label: 'Etiqueta',
+			edit: 'Editar',
+			addVersion: 'Añadir una versión',
+			remove: 'Quitar',
+			versionLabel: '{label} (versión {n})',
+			untitled: 'Tono {n}',
+			tooShort: '{name} dura {s} s. Los tonos de llamada necesitan al menos 5 segundos.',
+			tooLong: '{name} dura más de 6 minutos, lo máximo para un tono de llamada.',
+			unsupported:
+				'{name} no está en un formato que acepten los packs. Usa Ogg, Opus, MP3, M4A, AAC, FLAC o WAV.',
+			decodeFailed: 'No se ha podido abrir {name}: este navegador no puede reproducirlo.',
+			noPreview: 'Este navegador no puede reproducir este archivo; se queda en el pack tal cual.'
+		},
+		ringtoneEditor: {
+			title: 'Editar tono de llamada',
+			source: '{name}, {s} s',
+			label: 'Etiqueta',
+			loop: 'Repetición',
+			loopWhole: 'Repetir toda la canción',
+			loopOnce: 'Sonar una vez y luego silencio',
+			loopSection: 'Sonar una intro una vez y luego repetir una parte',
+			loopStart: 'El bucle empieza',
+			loopEnd: 'El bucle acaba',
+			playLoop: 'Reproducir el bucle',
+			fadeIn: 'Entrada gradual',
+			fadeInValue: '{s} s',
+			weight: 'Frecuencia en «aleatorio en cada llamada»',
+			weightHint:
+				'Comparada con las otras versiones, cuando un contacto elige una versión al azar en cada llamada (1 es lo normal).',
+			save: 'Guardar',
+			cancel: 'Cancelar'
+		},
+		more: {
+			title: 'Más datos (opcional)',
+			homepage: 'Página web',
+			homepageHint: 'Una página sobre el pack, que empiece por https://.',
+			homepageInvalid: 'Escribe una dirección completa que empiece por https://.',
+			tags: 'Etiquetas',
+			tagsHint: 'Palabras separadas por comas, por ejemplo: animales, 8-bit.',
+			tagsResult: 'Se guardan como: {tags}'
 		},
 		clipEditor: {
 			title: 'Editar clip',
@@ -784,7 +903,7 @@ export const es: Messages = {
 				TOO_MANY_CHARACTERS: 'Un pack puede tener hasta 500 personajes.',
 				CHARACTER_NAME_MISSING: 'Ponle nombre al personaje {n}.',
 				SPRITE_MISSING: 'Elige una imagen para {name}.',
-				NO_CLIPS: 'Añade al menos un clip a {name}.',
+				NO_CLIPS: 'Añade un clip o un tono de llamada a {name}.',
 				TOO_MANY_CLIPS: '{name} tiene más de 200 clips.',
 				UNSUPPORTED_FILE: '{name} tiene un archivo que el formato de pack no acepta.'
 			}
@@ -827,7 +946,13 @@ export const es: Messages = {
 			versionHint: 'Súbela en cada actualización que compartas, por ejemplo 1.0.1.',
 			license: 'Licencia (opcional)',
 			licenseHint: 'Cada pack conserva su propia licencia.',
-			description: 'Descripción (opcional)'
+			description: 'Descripción (opcional)',
+			homepage: 'Página web (opcional)',
+			homepageHint: 'Una página sobre el paquete, que empiece por https://.',
+			homepageInvalid: 'Escribe una dirección completa que empiece por https://.',
+			tags: 'Etiquetas (opcional)',
+			tagsHint: 'Palabras separadas por comas, por ejemplo: animales, 8-bit.',
+			tagsResult: 'Se guardan como: {tags}'
 		},
 		build: {
 			title: 'Comprobar y descargar',

@@ -128,7 +128,14 @@ test('opens an existing pack and keeps everything the format allows', async ({ p
 	await expect(
 		page.getByText('Saves as an update: the same pack ID, version 2.1.0.')
 	).toBeVisible();
-	await expect(page.getByText('Ringtones: 6. Animated pictures: 1.')).toBeVisible();
+	await expect(
+		page.getByText(/^Animated pictures are kept from the original.*: 1\.$/)
+	).toBeVisible();
+	// Ringtone versions are listed for editing, with their conditions in plain words.
+	await expect(character(page, 1).locator('.ringtones li')).toHaveCount(5);
+	await expect(character(page, 1).locator('.ringtones li .condition').nth(1)).toHaveText(
+		'At night · Autumn and Winter'
+	);
 	await expect(page.getByLabel('Pack name')).toHaveValue('Full pack');
 	await expect(page.locator('article.character')).toHaveCount(3);
 	await expect(page.locator('.pack-id code')).toHaveText('app.mauri.fixtures.full');
@@ -158,7 +165,12 @@ test('opens an existing pack and keeps everything the format allows', async ({ p
 	const rules = (clips: { when?: unknown; oneIn?: number }[]) =>
 		clips.map((c) => ({ when: c.when, oneIn: c.oneIn }));
 	expect(rules(manifest.characters[0].clips)).toEqual(rules(original.characters[0].clips));
-	expect(manifest.characters[1].ringtones).toHaveLength(5);
+	// Ringtone entries come back as they were, apart from their file names.
+	const withoutFile = (entries: Record<string, unknown>[]) =>
+		entries.map((entry) => ({ ...entry, file: undefined }));
+	expect(withoutFile(manifest.characters[1].ringtones)).toEqual(
+		withoutFile(original.characters[1].ringtones)
+	);
 	expect(manifest.characters[2].ringtones).toHaveLength(1);
 
 	// Saved as a copy instead: a new derived ID and version 1.0.0.
@@ -287,6 +299,11 @@ test('bundles several packs into one file', async ({ page }) => {
 	await expect(page.getByText('Give the bundle a name.')).toBeVisible();
 	await page.getByLabel('Bundle name').fill('All my packs');
 	await page.getByLabel('Author (optional)').fill('Playwright');
+	await page.getByRole('textbox', { name: 'Homepage (optional)' }).fill('http://example.com');
+	await expect(page.getByText('Write a full address that starts with https://.')).toBeVisible();
+	await page.getByRole('textbox', { name: 'Homepage (optional)' }).fill('https://example.com');
+	await page.getByRole('textbox', { name: 'Tags (optional)' }).fill('Demo, Animals');
+	await expect(page.getByText('Saved as: demo, animals')).toBeVisible();
 	await expect(page.getByLabel('Bundle ID')).toHaveValue(
 		/^local\.playwright\.all-my-packs-[a-z0-9]{6}$/
 	);
@@ -301,6 +318,8 @@ test('bundles several packs into one file', async ({ page }) => {
 	const result = (await validator()).validateArchive(file.bytes);
 	expect(result.valid).toBe(true);
 	expect(result.kind).toBe('bundle');
+	const bundle = JSON.parse(new TextDecoder().decode(unzipSync(file.bytes)['bundle.json']));
+	expect(bundle).toMatchObject({ homepage: 'https://example.com', tags: ['demo', 'animals'] });
 	expect(result.packs.map((p) => p.id)).toEqual([
 		'app.mauri.fixtures.minimal',
 		'app.mauri.fixtures.full'
