@@ -48,3 +48,15 @@ Framework, and the hooks would never load in `system_server`.
 `system` stays: it loads the module into `system_server` only, the single process the hooks need, which is the least
 intrusive scope that works. No compatibility entry for legacy Xposed (`android`) is added. The answer also became a
 project-wide principle, "minimum intrusion", recorded in the brief's constraints table and in `CLAUDE.md`.
+
+## Amendment (2026-10-24, owner answer on #145): an optional WhatsApp scope
+
+> Not hooking the WhatsApp app is a preference, not a requirement. [...] It is pretty important that ringtones can be
+> set automatically in whatsapp calls too. so i would change the rule just for this feature.
+
+`system` stays the module's only **required** scope, and the default `scope.list` keeps WhatsApp unticked. "Never
+WhatsApp" (Consequences, first bullet) becomes "never WhatsApp by default": a feature that cannot work from
+`system_server`, today only automatic WhatsApp call ringtones (#215), may use an optional, opt-in WhatsApp scope that
+the user enables in LSPosed after a plain explanation. How that scope is declared without being pre-selected
+(`scope.list` with `staticScope=true`, or a runtime scope request through the libxposed service) is decided in #215;
+`ModuleMetadataTest` follows. Rules and limits: [ADR 0051](0051-optional-whatsapp-scope.md).

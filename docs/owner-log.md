@@ -226,3 +226,49 @@ The defaults stand. Automatic backups skip a backup identical to the last one, a
 > check that all agents are unblocked
 
 > i go to sleep i leave you working alone
+
+## 2026-10-24 — Answer on #145 (WhatsApp call ringtones set by hand in WhatsApp for v1?)
+
+> Not hooking the WhatsApp app is a preference, not a requirement. My main concern is that users may think the app could spy them or something, that was why the no hooking rule (in adition to being compatible with WA Enhancer X). but if we inform the user why we need each permision they will understand, and ultimately they dont have to give the permission if they wont use ringtones. we have to think how to inform them well and proof we wont hack them, maybe telling them that the code is open source and they can read it (or their AI agent) may be a good point.
+>
+> It is pretty important that ringtones can be set automatically in whatsapp calls too. so i would change the rule just for this feature.
+
+(Phone ringtones, #52 / ADR 0039, follow the first part: each permission is asked only when the feature is used,
+after a plain explanation that points to the open-source code. WhatsApp call ringtones stay guided by hand in that PR;
+making them automatic, with a WhatsApp-side change allowed for this feature only, is left to the lead as a separate
+issue.)
+
+The answer above is applied in full by the owner-answers PR: "never hook the WhatsApp process" becomes "don't hook it
+by default" in `CLAUDE.md`, the brief, ADR 0002 and ADR 0023. An optional, opt-in WhatsApp scope is allowed only for
+features that need it, starting with automatic WhatsApp call ringtones, explained to the user first and compatible
+with WaEnhancer X ([ADR 0051](decisions/0051-optional-whatsapp-scope.md)). Spike: #215.
+
+## 2026-10-24 — Answer on #150 (instant sounds: OK to keep copies of assigned clips in Android/media?)
+
+> For me that's fine.
+>
+> Given my answer in https://github.com/mauriciabad/cucuto/issues/145#issuecomment-6377185080 maybe a hook would also solve the issue. I let you decide what is best; I simply pointed out that there's a new option there.
+
+The clip mirror stays (ADR 0018). A WhatsApp hook cannot remove the delay, which comes from SystemUI waiting for
+Cucuto's process; #216 writes down whether any hook beats the mirror (default: keep it).
+
+## 2026-10-24 — Answer on #166 (Settings and backup UI defaults (automatic backups, password, restore conflicts))
+
+> 9 i preffer a screen unless the content is very minimal and temporary.
+> other LGTM
+
+Defaults 1 to 8 stand. Item 9: the restore flow becomes a screen. "Screens over dialogs" is now a UI rule in the brief
+(ADR 0028); the restore flow and the other non-trivial dialogs and sheets are converted in #218.
+
+## 2026-10-24 — Answer on #170 (haptic editor and per-contact vibration: defaults to confirm)
+
+> I'd also recommend users using AI to generate the vibrations based on the soundwaves for more precise results.
+
+Issue closed by the owner: the three defaults stand (ADR 0030). The AI recommendation, with "copy for AI" and "paste
+pattern" in the haptic editor and the creators, is #217; auto haptics from the waveform already exist (#97, #149).
+
+## 2026-10-24 — Comment on #140 (owner action: create the release signing key and set its secrets)
+
+> I did it https://github.com/mauriciabad/cucuto/releases/tag/v0.1.1
+
+(Already acted on: the lead released v0.1.1 and v0.1.2 with the owner's key, see the entries above. No change needed.)

@@ -31,12 +31,16 @@ data class DiscoverUiState(
     val import: ImportUi = ImportUi.Idle,
     val form: RepositoryForm? = null,
     val message: DiscoverMessage? = null,
+    /** The one entry ID shown, when Home asked for the demo packs; cleared with the other filters. */
+    val focus: String? = null,
+    /** The demo packs Home asked for (#179), or null. */
+    val demo: DemoPacksUi? = null,
 ) {
     /** True while any repository is being fetched (pull to refresh). */
     val refreshing: Boolean get() = sections.orEmpty().any { it.loading }
 
     /** True when a search or tag filter hides entries. */
-    val filtering: Boolean get() = query.isNotBlank() || tag != null
+    val filtering: Boolean get() = query.isNotBlank() || tag != null || focus != null
 }
 
 /** One repository: where it is, how its last fetch went, and its entries that match the filters. */
@@ -208,6 +212,7 @@ internal fun sections(
     installed: List<InstalledRef>,
     query: String,
     tag: String?,
+    focus: String? = null,
 ): List<RepositorySection> =
     repositories.filter { it.enabled }.map { repo ->
         val load = loads[repo.id] ?: RepoLoad(loading = true)
@@ -220,7 +225,7 @@ internal fun sections(
             loading = load.loading,
             error = load.error,
             loaded = snapshot != null,
-            cards = cards.filter { it.matches(query, tag) },
+            cards = cards.filter { it.matches(query, tag) && (focus == null || it.id == focus) },
             totalCards = cards.size,
         )
     }

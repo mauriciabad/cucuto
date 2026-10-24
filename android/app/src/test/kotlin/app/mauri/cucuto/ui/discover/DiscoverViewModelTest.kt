@@ -42,6 +42,7 @@ class DiscoverViewModelTest {
     private lateinit var store: FakeDiscoverStore
     private val catalog = FakeCatalog()
     private val links = IncomingRepoLinks()
+    private val demoRequests = DemoPacksRequests()
     private val client = testClient()
     private lateinit var indexCache: FileIndexCache
 
@@ -72,6 +73,7 @@ class DiscoverViewModelTest {
                 downloader = PackDownloader(client, catalog, tmp.newFolder()),
                 catalog = catalog,
                 links = links,
+                demoRequests = demoRequests,
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         return vm
