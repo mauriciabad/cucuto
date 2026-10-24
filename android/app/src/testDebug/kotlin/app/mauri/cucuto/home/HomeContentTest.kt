@@ -106,10 +106,10 @@ class HomeContentTest {
         compose.onNodeWithText("Get the demo packs").performClick()
         assertEquals(1, demoRequests)
         // Offline fallback: a demo packs file already in Downloads.
-        compose.onNodeWithText("Pick a file from Downloads").performClick()
+        compose.onNodeWithText("Choose a file from Downloads").performClick()
         assertEquals(1, demoImports)
         // A new phone: the restore flow starts right here, not only in Settings.
-        compose.onNodeWithText("Restore a backup").performClick()
+        compose.onNodeWithText("Restore from backup").performClick()
         assertEquals(1, restores)
     }
 

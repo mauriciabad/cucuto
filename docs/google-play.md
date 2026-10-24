@@ -230,10 +230,10 @@ nothing else:
    cartoon characters from `cucuto.mauri.app`.
 3. Back on Home, the card "Your characters are ready" → **Try a sample chat**. This is the core feature, as a demo
    (ADR 0075): a made-up chat, clearly labelled **Demo**, that works without the module.
-   - Tap a character under **Message voice** to give the sample chat that voice (it previews right away).
+   - Tap a character under **Messages** to give the sample chat that voice (it previews right away).
    - Tap **Play a sample message**: the phone plays one of the character's clips with its vibration, as a WhatsApp
      message from a chat with that voice would.
-   - Under **Call ringtone**, keep **Same as the voice** (Bleep the frog has a ringtone) or pick another, then
+   - Under **Phone calls**, keep **Same as the messages** (Bleep the frog has a ringtone) or pick another, then
      **Play a sample call** and **Stop**.
    The sample chat posts no notification, isn't sent to the module, isn't in backups and needs no permission. Real
    chats replace it on Home once the module sees their first message.

@@ -4,7 +4,7 @@
     <string name="settings_title">Ajustes</string>
 
     <!-- Cucuto voices -->
-    <string name="settings_section_voices">Voces de Cucuto</string>
+    <string name="settings_section_voices">Mensajes</string>
     <string name="settings_voices_switch">Voces de Cucuto</string>
     <string name="settings_voices_on">Activadas: cada contacto habla con su personaje.</string>
     <string name="settings_voices_off">Desactivadas: todos los chats usan el tono y la vibración de WhatsApp.</string>

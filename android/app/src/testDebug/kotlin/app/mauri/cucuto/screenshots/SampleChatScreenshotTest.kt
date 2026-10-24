@@ -18,7 +18,7 @@ import java.io.File
 /**
  * The sample chat (#285, ADR 0075), the path a Play reviewer takes without root: Home's "Your characters are ready"
  * card with **Try a sample chat**, then the sample chat with Bleep the frog as its voice and its pond song as the
- * ringtone ("Same as the voice"). Sprites come from the demo packs.
+ * ringtone ("Same as the messages"). Sprites come from the demo packs.
  */
 class SampleChatScreenshotTest(
     variant: Variant,
