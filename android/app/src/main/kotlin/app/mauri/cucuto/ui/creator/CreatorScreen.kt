@@ -1,8 +1,6 @@
 package app.mauri.cucuto.ui.creator
 
 import android.Manifest
-import android.content.ClipData
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,13 +31,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -52,16 +48,15 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.creator.HapticMode
-import app.mauri.cucuto.core.pack.PackImporter
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.haptics.HapticTarget
-import kotlinx.coroutines.launch
 
 /**
  * The in-app pack creator (#47): a pack in a few steps, all on the phone. The Packs screen opens it ("Create a pack",
  * or "Duplicate and edit" with [sourcePackId]). Its own pages (pack, character, picture framing, recording, clip
- * editing) stack inside this one destination; system back walks them back before leaving.
+ * editing) stack inside this one destination; system back walks them back before leaving. "Check and finish" is a
+ * screen of its own above it ([onOpenFinish], [CreatorFinishScreen], ADR 0055) on this view model.
  *
  * @param onEditHaptic Opens the haptic editor for a character's pattern (#185); the editor hands the pattern back
  *   through `HapticEditorResults`. Null hides the custom option for characters that have no pattern yet.
@@ -71,14 +66,13 @@ fun CreatorScreen(
     sourcePackId: String?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenFinish: () -> Unit = {},
     onEditHaptic: ((HapticTarget.CreatorCharacter) -> Unit)? = null,
     viewModel: CreatorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val resources = LocalResources.current
-    val context = LocalContext.current
     val feedback = LocalFeedback.current
-    val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val currentOnMessage by rememberUpdatedState(viewModel::messageShown)
 
@@ -123,23 +117,6 @@ fun CreatorScreen(
             )
         }
     }
-    val exporter =
-        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PackImporter.MIME_TYPE)) { uri ->
-            if (uri != null) viewModel.export(uri)
-        }
-    val share: () -> Unit = {
-        scope.launch {
-            val uri = viewModel.shareUri() ?: return@launch
-            val send =
-                Intent(Intent.ACTION_SEND)
-                    .setType(PackImporter.MIME_TYPE)
-                    .putExtra(Intent.EXTRA_STREAM, uri)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            send.clipData = ClipData.newRawUri(null, uri)
-            context.startActivity(Intent.createChooser(send, resources.getString(R.string.creator_share_title)))
-        }
-    }
-
     val backState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
     NavigationBackHandler(
         state = backState,
@@ -193,7 +170,10 @@ fun CreatorScreen(
                             onRemoveCover = viewModel::removeCover,
                             onOpenCharacter = viewModel::openCharacter,
                             onAddCharacter = viewModel::addCharacter,
-                            onCheck = viewModel::check,
+                            onCheck = {
+                                viewModel.check()
+                                onOpenFinish()
+                            },
                             onStartOver = viewModel::startNew,
                         )
                     }
@@ -283,19 +263,6 @@ fun CreatorScreen(
         )
     }
     state.busy?.takeIf { it.kind != Busy.Kind.SAVING_PICTURE }?.let { BusyDialog(it) }
-    state.finish?.let { finish ->
-        FinishSheet(
-            finish = finish,
-            onInstall = viewModel::install,
-            onExport = { name -> exporter.launch(name) },
-            onShare = share,
-            onDone = {
-                viewModel.closeFinish()
-                onBack()
-            },
-            onDismiss = viewModel::closeFinish,
-        )
-    }
 }
 
 /** What the picture picker picks for when it is not a character. */
@@ -373,7 +340,7 @@ private fun StartPromptDialog(
 
 /** A blocking "working on it" card for decoding and copying, with progress when known. */
 @Composable
-private fun BusyDialog(busy: Busy) {
+internal fun BusyDialog(busy: Busy) {
     Dialog(onDismissRequest = {
     }, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
         Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
@@ -403,14 +370,14 @@ private fun busyText(kind: Busy.Kind): Int =
         Busy.Kind.COPYING_PACK -> R.string.creator_busy_copying
     }
 
-private fun feedbackFor(message: CreatorMessage): Feedback =
+internal fun feedbackFor(message: CreatorMessage): Feedback =
     when (message) {
         is CreatorMessage.Installed, CreatorMessage.Exported -> Feedback.Success
         CreatorMessage.ClipSaved, is CreatorMessage.Duplicated -> Feedback.Confirm
         else -> Feedback.Error
     }
 
-private fun messageText(
+internal fun messageText(
     resources: android.content.res.Resources,
     message: CreatorMessage,
 ): String =

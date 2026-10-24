@@ -7,10 +7,10 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,18 +28,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,60 +58,133 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.pack.ImportProgress
 import app.mauri.cucuto.core.pack.InstallAction
+import app.mauri.cucuto.navigation.OnEntryPopped
 import app.mauri.cucuto.packs.ImportProblem
 import app.mauri.cucuto.packs.ImportUi
 import app.mauri.cucuto.packs.ProblemItem
 import app.mauri.cucuto.packs.ReviewPack
 import app.mauri.cucuto.packs.warningItems
+import app.mauri.cucuto.ui.components.BottomActionBar
+import app.mauri.cucuto.ui.components.PushedScreen
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.theme.LocalReducedMotion
 import kotlinx.coroutines.delay
 
 /**
- * The import, start to end, in one sheet: progress while the file is read and checked, then the review (pick packs of
- * a bundle, see what installing does, meet the characters one by one) or the problem in plain words. The sheet
- * cannot be dismissed while packs are being installed.
+ * The import review as a screen of the tab it runs on (Packs or Discover, ADR 0055), for the import in [import]:
+ * marks the review as open while it is on screen ([reviewPending], [onShow]: [ImportController.showReview]), closes it when the screen leaves its back stack
+ * ([onClose]: back, the back arrow, Cancel, OK), and leaves by itself ([onDone]) when the import is over (installed)
+ * or was never there (after process death the import, its temporary files and the file's permission are gone).
+ * Back is blocked while packs are being installed.
+ *
+ * [ImportController.showReview]: app.mauri.cucuto.packs.ImportController.showReview
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImportSheet(
+fun ImportReviewRoute(
     import: ImportUi,
+    reviewPending: Boolean,
+    onShow: () -> Unit,
     onSelect: (packId: String, selected: Boolean) -> Unit,
     onInstall: () -> Unit,
     onPickAnother: (() -> Unit)?,
     onClose: () -> Unit,
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+) {
+    // Also an import started from here ("Choose another file"): this screen already shows it.
+    val currentOnShown by rememberUpdatedState(onShow)
+    val currentOnDone by rememberUpdatedState(onDone)
+    LaunchedEffect(reviewPending) { if (reviewPending) currentOnShown() }
+    OnEntryPopped(onClose)
+    val over = import == ImportUi.Idle
+    LaunchedEffect(over) { if (over) currentOnDone() }
+    val installing = (import as? ImportUi.Review)?.installing == true
+    val backState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+    NavigationBackHandler(state = backState, isBackEnabled = installing, onBackCompleted = {})
+    // While it slides out after the install, the screen keeps showing the review instead of going blank.
+    var shown by remember { mutableStateOf(import) }
+    if (!over) shown = import
+    ImportReviewScreen(
+        import = shown,
+        onSelect = onSelect,
+        onInstall = onInstall,
+        onPickAnother = onPickAnother,
+        onBack = onBack,
+    )
+}
+
+/**
+ * The import, start to end: progress while the file is read and checked, then the review (pick packs of a bundle,
+ * see what installing does, meet the characters one by one) or the problem in plain words. Install, Cancel and OK sit
+ * in the bottom bar; the screen cannot be left while packs are being installed.
+ */
+@Composable
+fun ImportReviewScreen(
+    import: ImportUi,
+    onSelect: (packId: String, selected: Boolean) -> Unit,
+    onInstall: () -> Unit,
+    onPickAnother: (() -> Unit)?,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val installing by rememberUpdatedState((import as? ImportUi.Review)?.installing == true)
-    val sheetState =
-        rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-            confirmValueChange = { it != SheetValue.Hidden || !installing },
-        )
-    ModalBottomSheet(
-        onDismissRequest = { if (!installing) onClose() },
+    val installing = (import as? ImportUi.Review)?.installing == true
+    PushedScreen(
+        title = stringResource(R.string.packs_import),
+        onBack = onBack,
         modifier = modifier,
-        sheetState = sheetState,
-        sheetGesturesEnabled = !installing,
-    ) {
+        backEnabled = !installing,
+        bottomBar = {
+            when (import) {
+                is ImportUi.Review -> {
+                    if (!installing) {
+                        BottomActionBar {
+                            TextButton(onClick = onBack) { Text(stringResource(R.string.import_cancel)) }
+                            Button(onClick = onInstall, enabled = import.canInstall, shapes = ButtonDefaults.shapes()) {
+                                Text(installLabel(import))
+                            }
+                        }
+                    }
+                }
+
+                is ImportUi.Problem -> {
+                    BottomActionBar {
+                        if (onPickAnother != null) {
+                            TextButton(onClick = onPickAnother) { Text(stringResource(R.string.import_pick_another)) }
+                        }
+                        Button(onClick = onBack, shapes = ButtonDefaults.shapes()) {
+                            Text(stringResource(R.string.import_ok))
+                        }
+                    }
+                }
+
+                ImportUi.Idle, is ImportUi.Working -> {
+                    Unit
+                }
+            }
+        },
+    ) { padding ->
         Column(
             modifier =
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
+                    .consumeWindowInsets(padding)
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = 24.dp),
+                    .padding(padding)
+                    .padding(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             when (import) {
                 ImportUi.Idle -> Unit
-                is ImportUi.Working -> WorkingContent(import.progress, import.download, onCancel = onClose)
-                is ImportUi.Review -> ReviewContent(import, onSelect, onInstall, onClose)
-                is ImportUi.Problem -> ProblemContent(import.problem, onPickAnother, onClose)
+                is ImportUi.Working -> WorkingContent(import.progress, import.download, onCancel = onBack)
+                is ImportUi.Review -> ReviewContent(import, onSelect)
+                is ImportUi.Problem -> ProblemContent(import.problem)
             }
         }
     }
@@ -190,13 +259,10 @@ private fun ProgressBar(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReviewContent(
     state: ImportUi.Review,
     onSelect: (String, Boolean) -> Unit,
-    onInstall: () -> Unit,
-    onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val review = state.review
@@ -260,17 +326,6 @@ private fun ReviewContent(
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
                 ProgressBar(state.progress)
-            }
-        } else {
-            FlowRow(
-                Modifier.padding(horizontal = 24.dp).fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(onClick = onCancel) { Text(stringResource(R.string.import_cancel)) }
-                Button(onClick = onInstall, enabled = state.canInstall, shapes = ButtonDefaults.shapes()) {
-                    Text(installLabel(state))
-                }
             }
         }
     }
@@ -368,12 +423,9 @@ private fun RevealedCharacters(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProblemContent(
     problem: ImportProblem,
-    onPickAnother: (() -> Unit)?,
-    onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val feedback = LocalFeedback.current
@@ -423,16 +475,6 @@ private fun ProblemContent(
                     )
                 }
             }
-        }
-        FlowRow(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (onPickAnother != null) {
-                TextButton(onClick = onPickAnother) { Text(stringResource(R.string.import_pick_another)) }
-            }
-            Button(onClick = onClose, shapes = ButtonDefaults.shapes()) { Text(stringResource(R.string.import_ok)) }
         }
     }
 }

@@ -121,6 +121,12 @@ class PacksViewModel
             }
         }
 
+        /** An import started and its review screen should open ([ImportController.showReview]). */
+        val showImportReview: StateFlow<Boolean> = imports.showReview
+
+        /** The import review screen is open. */
+        fun importReviewShown() = imports.reviewShown()
+
         /** Starts importing [source] (the file picker, "Open with" or the share sheet), replacing any open import. */
         fun importFrom(source: ImportSource) = imports.start { catalog.prepare(source) }
 

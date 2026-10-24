@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.discover
 
+import android.content.res.Resources
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,7 +63,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,10 +83,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.pack.ImportSource
-import app.mauri.cucuto.packs.ImportUi
+import app.mauri.cucuto.navigation.CucutoDestination
+import app.mauri.cucuto.navigation.OnEntryPopped
+import app.mauri.cucuto.navigation.parentViewModel
 import app.mauri.cucuto.packs.plainWords
 import app.mauri.cucuto.packs.ui.ClipPlayer
-import app.mauri.cucuto.packs.ui.ImportSheet
+import app.mauri.cucuto.packs.ui.ImportReviewRoute
 import app.mauri.cucuto.packs.ui.installedText
 import app.mauri.cucuto.packs.ui.rememberClipPlayer
 import app.mauri.cucuto.packs.ui.sizeText
@@ -121,19 +123,23 @@ data class DiscoverActions(
 /**
  * The Discover screen (#36, ADR 0029): pack repositories with their packs as cards (tap a character to hear it, as on
  * the Packs screen), search and tag filters, install and update through the import review, and repositories added by
- * URL or "Add to app" link, with optional sign-in. Offline, the last copy of each index stays browsable.
+ * URL or "Add to app" link, with optional sign-in. Offline, the last copy of each index stays browsable. The import
+ * review, the repository form and the saved repositories are screens of their own on this tab (ADR 0055), opened
+ * through [onNavigate].
  *
  * @param onBack Shows a back arrow when Discover is not a top-level destination.
  */
 @Composable
 fun DiscoverScreen(
     modifier: Modifier = Modifier,
+    onNavigate: (CucutoDestination) -> Unit = {},
     onBack: (() -> Unit)? = null,
     viewModel: DiscoverViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val showReview by viewModel.showImportReview.collectAsStateWithLifecycle()
+    val showForm by viewModel.showForm.collectAsStateWithLifecycle()
     val previews = remember(viewModel) { PreviewLoader(viewModel::preview) }
-    var showRepositories by rememberSaveable { mutableStateOf(false) }
     val resolver = LocalContext.current.applicationContext.contentResolver
     val picker =
         rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
@@ -162,37 +168,132 @@ fun DiscoverScreen(
         state = state,
         previews = previews,
         actions = actions,
-        onOpenRepositories = { showRepositories = true },
+        onOpenRepositories = { onNavigate(CucutoDestination.Repositories) },
         onBack = onBack,
         modifier = modifier,
     )
 
-    val import = state.import
-    if (import != ImportUi.Idle) {
-        ImportSheet(
-            import = import,
-            onSelect = viewModel::setSelected,
-            onInstall = viewModel::confirmInstall,
-            // The demo packs fall back to the file picker; other Discover installs have no file to pick again.
-            onPickAnother = actions.onPickFile.takeIf { state.demo == DemoPacksUi.Importing },
-            onClose = viewModel::closeImport,
-        )
+    // An install, the demo packs or a pack link started an import; a tap, a sign-in or a link opened the form.
+    val navigate by rememberUpdatedState(onNavigate)
+    LaunchedEffect(showReview) {
+        if (showReview) {
+            navigate(CucutoDestination.ImportReview(CucutoDestination.ImportFrom.Discover))
+            viewModel.importReviewShown()
+        }
     }
-    state.form?.let { form ->
-        RepositoryFormSheet(
-            form = form,
+    OpenRepositoryForm(showForm, onNavigate, onOpen = viewModel::formShown)
+}
+
+/** Opens the repository form's screen when the view model asks for it ([DiscoverViewModel.showForm]). */
+@Composable
+private fun OpenRepositoryForm(
+    showForm: Boolean,
+    onNavigate: (CucutoDestination) -> Unit,
+    onOpen: () -> Unit,
+) {
+    val navigate by rememberUpdatedState(onNavigate)
+    val currentOnOpen by rememberUpdatedState(onOpen)
+    LaunchedEffect(showForm) {
+        if (showForm) {
+            navigate(CucutoDestination.RepositoryForm)
+            currentOnOpen()
+        }
+    }
+}
+
+/**
+ * The import review of the Discover tab ([CucutoDestination.ImportReview] from Discover), on the Discover screen's view
+ * model ([parentViewModel]). The demo packs fall back to the file picker; other Discover installs have no file to pick
+ * again.
+ */
+@Composable
+fun DiscoverImportReview(
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+    viewModel: DiscoverViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val pending by viewModel.showImportReview.collectAsStateWithLifecycle()
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val picker =
+        rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
+            if (uri != null) viewModel.importFile(ImportSource.of(resolver, uri))
+        }
+    ImportReviewRoute(
+        import = state.import,
+        reviewPending = pending,
+        onShow = viewModel::importReviewShown,
+        onSelect = viewModel::setSelected,
+        onInstall = viewModel::confirmInstall,
+        onPickAnother = { picker.launch(PackPickerTypes) }.takeIf { state.demo == DemoPacksUi.Importing },
+        onClose = viewModel::closeImport,
+        onBack = onBack,
+        onDone = onDone,
+    )
+}
+
+/**
+ * Discover → add a repository, a pack link or sign in ([CucutoDestination.RepositoryForm]), on the Discover screen's
+ * view model. Leaves by itself once the form is done (saved, signed in, or a pack link handed to the import) or gone
+ * (after process death, the form and anything typed in it are not kept: passwords never go into saved state).
+ */
+@Composable
+fun DiscoverRepositoryForm(
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+    viewModel: DiscoverViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val pending by viewModel.showForm.collectAsStateWithLifecycle()
+    LaunchedEffect(pending) { if (pending) viewModel.formShown() }
+    OnEntryPopped(viewModel::closeForm)
+    val form = state.form
+    val currentOnDone by rememberUpdatedState(onDone)
+    LaunchedEffect(form == null) { if (form == null) currentOnDone() }
+    // While it slides out, the screen keeps showing the last form instead of going blank.
+    var shown by remember { mutableStateOf(form) }
+    if (form != null) shown = form
+    shown?.let {
+        RepositoryFormScreen(
+            form = it,
             onChange = viewModel::updateForm,
             onSubmit = viewModel::submitForm,
-            onDismiss = viewModel::closeForm,
+            onBack = onBack,
         )
     }
-    if (showRepositories) {
-        RepositoriesSheet(
-            repositories = state.repositories,
-            actions = actions,
-            onDismiss = { showRepositories = false },
-        )
+}
+
+/** Discover → Repositories ([CucutoDestination.Repositories]), on the Discover screen's view model. */
+@Composable
+fun DiscoverRepositories(
+    onBack: () -> Unit,
+    onNavigate: (CucutoDestination) -> Unit,
+    viewModel: DiscoverViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val showForm by viewModel.showForm.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val feedback = LocalFeedback.current
+    val resources = LocalResources.current
+    LaunchedEffect(state.message) {
+        val message = state.message ?: return@LaunchedEffect
+        message.feedback()?.let(feedback::fire)
+        viewModel.messageShown()
+        snackbar.showSnackbar(message.text(resources))
     }
+    RepositoriesScreen(
+        repositories = state.repositories,
+        actions =
+            DiscoverActions(
+                onAdd = viewModel::openAdd,
+                onSignIn = viewModel::openSignIn,
+                onSetEnabled = viewModel::setEnabled,
+                onRemove = viewModel::remove,
+            ),
+        onBack = onBack,
+        snackbar = snackbar,
+    )
+    OpenRepositoryForm(showForm, onNavigate, onOpen = viewModel::formShown)
 }
 
 /** Loads a preview file (cover, sprite, sample) of a repository entry; null when it cannot be shown. */
@@ -223,39 +324,12 @@ internal fun DiscoverContent(
 
     LaunchedEffect(state.message) {
         val message = state.message ?: return@LaunchedEffect
-        val text =
-            when (message) {
-                is DiscoverMessage.Installed -> {
-                    celebration = feedback.fire(Feedback.Success)
-                    installedText(resources, message.installed)
-                }
-
-                is DiscoverMessage.Added -> {
-                    feedback.fire(Feedback.Confirm)
-                    resources.getString(R.string.discover_added, message.name)
-                }
-
-                is DiscoverMessage.SignedIn -> {
-                    feedback.fire(Feedback.Confirm)
-                    resources.getString(R.string.discover_signed_in, message.name)
-                }
-
-                is DiscoverMessage.Removed -> {
-                    feedback.fire(Feedback.Confirm)
-                    resources.getString(R.string.discover_removed, message.name)
-                }
-
-                is DiscoverMessage.AlreadyAdded -> {
-                    resources.getString(R.string.discover_already_added, message.name)
-                }
-
-                DiscoverMessage.BadLink -> {
-                    feedback.fire(Feedback.Error)
-                    resources.getString(R.string.discover_bad_link)
-                }
-            }
+        message.feedback()?.let { kind ->
+            val beat = feedback.fire(kind)
+            if (message is DiscoverMessage.Installed) celebration = beat
+        }
         currentOnConsume()
-        snackbar.showSnackbar(text)
+        snackbar.showSnackbar(message.text(resources))
     }
 
     Scaffold(
@@ -327,6 +401,26 @@ internal fun DiscoverContent(
         }
     }
 }
+
+/** The snackbar text of a message. */
+internal fun DiscoverMessage.text(resources: Resources): String =
+    when (this) {
+        is DiscoverMessage.Installed -> installedText(resources, installed)
+        is DiscoverMessage.Added -> resources.getString(R.string.discover_added, name)
+        is DiscoverMessage.SignedIn -> resources.getString(R.string.discover_signed_in, name)
+        is DiscoverMessage.Removed -> resources.getString(R.string.discover_removed, name)
+        is DiscoverMessage.AlreadyAdded -> resources.getString(R.string.discover_already_added, name)
+        DiscoverMessage.BadLink -> resources.getString(R.string.discover_bad_link)
+    }
+
+/** The feedback a message fires with it, if any. */
+internal fun DiscoverMessage.feedback(): Feedback? =
+    when (this) {
+        is DiscoverMessage.Installed -> Feedback.Success
+        is DiscoverMessage.Added, is DiscoverMessage.SignedIn, is DiscoverMessage.Removed -> Feedback.Confirm
+        is DiscoverMessage.AlreadyAdded -> null
+        DiscoverMessage.BadLink -> Feedback.Error
+    }
 
 private fun LazyListScope.discoverItems(
     state: DiscoverUiState,

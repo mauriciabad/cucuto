@@ -123,6 +123,23 @@ class AppNavigatorTest {
     }
 
     @Test
+    fun aScreenHandsOverToAnotherSoBackSkipsIt() {
+        val restore = CucutoDestination.Restore("content://old")
+        navigator.navigate(CucutoDestination.Settings)
+        navigator.navigate(restore)
+
+        navigator.replace(restore, CucutoDestination.Restore("content://new"))
+        assertEquals(
+            listOf(CucutoDestination.Settings, CucutoDestination.Restore("content://new")),
+            navigator.stack(TopLevelTab.Settings),
+        )
+
+        // Gone already (the user left): the new screen is simply pushed.
+        navigator.replace(restore, CucutoDestination.Diagnostics)
+        assertEquals(CucutoDestination.Diagnostics, navigator.current)
+    }
+
+    @Test
     fun removingNeverDropsATabRoot() {
         navigator.remove(CucutoDestination.Home)
 
@@ -169,6 +186,16 @@ class AppNavigatorTest {
                 CucutoDestination.Diagnostics,
                 CucutoDestination.Developer,
                 CucutoDestination.Gallery,
+                CucutoDestination.Restore("content://backup"),
+                CucutoDestination.BackupExport,
+                CucutoDestination.Licenses,
+                CucutoDestination.ImportReview(CucutoDestination.ImportFrom.Packs),
+                CucutoDestination.ImportReview(CucutoDestination.ImportFrom.Discover),
+                CucutoDestination.PackDetail("app.mauri.demo.critters"),
+                CucutoDestination.RepositoryForm,
+                CucutoDestination.Repositories,
+                CucutoDestination.CreatorFinish("app.mauri.demo.critters"),
+                CucutoDestination.AssignVoice,
             )
         all.forEach { destination ->
             val json = Json.encodeToString(CucutoDestination.serializer(), destination)

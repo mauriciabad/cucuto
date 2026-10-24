@@ -79,7 +79,7 @@ import java.io.File
  */
 internal object A11yScreens {
     val all: List<Pair<String, @Composable () -> Unit>> =
-        listOf(
+        listOf<Pair<String, @Composable () -> Unit>>(
             "status-card" to { StatusCardScreen() },
             "onboarding-requirements" to { OnboardingScreen(OnboardingStep.Requirements) },
             "onboarding-enable" to { OnboardingScreen(OnboardingStep.Enable) },
@@ -96,7 +96,7 @@ internal object A11yScreens {
             "creator-character" to { CreatorCharacterScreen() },
             "creator-recorder" to { CreatorRecorderScreen() },
             "creator-clip-editor" to { CreatorClipEditorScreen() },
-        )
+        ) + A11yPushedScreens.all
 
     /** The screen called [name] in [all]. */
     fun content(name: String): @Composable () -> Unit = all.first { it.first == name }.second

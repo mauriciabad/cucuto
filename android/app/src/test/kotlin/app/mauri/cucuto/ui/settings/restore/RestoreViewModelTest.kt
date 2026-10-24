@@ -14,6 +14,7 @@ import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.backup.ZipContentType
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.testing.FakeCharacterDirectory
+import app.mauri.cucuto.ui.settings.FakeAutoBackup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -30,7 +31,8 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestoreViewModelTest {
     private val gateway = FakeBackupGateway()
-    private val viewModel by lazy { RestoreViewModel(gateway, FakeCharacterDirectory()) }
+    private val autoBackup = FakeAutoBackup()
+    private val viewModel by lazy { RestoreViewModel(gateway, FakeCharacterDirectory(), autoBackup) }
 
     @Before
     fun setUp() {
@@ -73,6 +75,7 @@ class RestoreViewModelTest {
             assertEquals(null, done.reusableSource)
             viewModel.keepForBackups()
             assertFalse(step<RestoreStep.Done>().keptForBackups)
+            assertEquals(emptyList<String>(), autoBackup.chosenFiles)
         }
 
     @Test
@@ -88,6 +91,35 @@ class RestoreViewModelTest {
 
             viewModel.keepForBackups()
             assertTrue(step<RestoreStep.Done>().keptForBackups)
+            assertEquals(listOf("content://drive/backup"), autoBackup.chosenFiles)
+        }
+
+    @Test
+    fun `keeping the file stays off when the permission is refused`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports += BackupTestData.report(applied = listOf("1"))
+            autoBackup.failChoose = true
+
+            viewModel.open("content://drive/backup")
+            viewModel.keepForBackups()
+            assertFalse(step<RestoreStep.Done>().keptForBackups)
+        }
+
+    @Test
+    fun `the screen opens its file once, and again in a new view model after process death`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.PassphraseRequired
+            viewModel.start("content://backup")
+            viewModel.submitPassphrase("wrong".toCharArray())
+            // Shown again (rotation, back from another tab): the restore carries on where it was.
+            viewModel.start("content://backup")
+            assertEquals(listOf(null, "wrong"), gateway.openedWith)
+
+            val restored = RestoreViewModel(gateway, FakeCharacterDirectory(), autoBackup)
+            restored.start("content://backup")
+            assertEquals(listOf(null, "wrong", null), gateway.openedWith)
+            assertFalse((restored.step.value as RestoreStep.Passphrase).wrong)
         }
 
     @Test

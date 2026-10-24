@@ -130,7 +130,7 @@ data class Busy(
     enum class Kind { OPENING_PICTURE, SAVING_PICTURE, OPENING_AUDIO, COPYING_PACK }
 }
 
-/** The "Check and finish" sheet. */
+/** The "Check and finish" screen. */
 sealed interface FinishUi {
     data object Checking : FinishUi
 

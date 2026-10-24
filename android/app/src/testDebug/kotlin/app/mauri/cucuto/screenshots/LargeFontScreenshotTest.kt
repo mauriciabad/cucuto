@@ -42,6 +42,24 @@ class LargeFontScreenshotTest(
 
     @Test fun creatorClipEditor() = largeFont("creator-clip-editor")
 
+    @Test fun restore() = largeFont("restore")
+
+    @Test fun backupExport() = largeFont("backup-export")
+
+    @Test fun licenses() = largeFont("licenses")
+
+    @Test fun importReview() = largeFont("import-review")
+
+    @Test fun packDetail() = largeFont("pack-detail")
+
+    @Test fun repositoryForm() = largeFont("repository-form")
+
+    @Test fun repositories() = largeFont("repositories")
+
+    @Test fun creatorFinish() = largeFont("creator-finish")
+
+    @Test fun assignVoice() = largeFont("assign-voice")
+
     private fun largeFont(screen: String) =
         screenshot(screen, fontScale = LARGEST_FONT_SCALE) {
             A11yScreens.content(screen)()

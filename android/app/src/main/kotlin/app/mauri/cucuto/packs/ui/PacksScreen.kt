@@ -51,7 +51,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,7 +74,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.navigation.CucutoDestination
-import app.mauri.cucuto.packs.ImportUi
+import app.mauri.cucuto.navigation.parentViewModel
 import app.mauri.cucuto.packs.LibraryPack
 import app.mauri.cucuto.packs.PacksMessage
 import app.mauri.cucuto.packs.PacksUiState
@@ -100,7 +99,8 @@ internal val PackPickerTypes = arrayOf("application/zip", "application/x-zip-com
 
 /**
  * The Packs screen (#27): installed packs with their characters (tap one to hear it), import from a file (system
- * picker, "Open with" and the share sheet), the import review, plain-words errors and removal with a confirmation.
+ * picker, "Open with" and the share sheet) and removal with a confirmation. The import review and a pack's detail are
+ * screens of their own on this tab ([PacksImportReview], [PackDetailScreen], ADR 0055).
  * It is a top-level tab (ADR 0027): no back arrow. Discover (#36) is linked at the end of the list, and after an
  * install the snackbar offers to go give the new characters to chats on Home.
  */
@@ -111,6 +111,7 @@ fun PacksScreen(
     viewModel: PacksViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val showReview by viewModel.showImportReview.collectAsStateWithLifecycle()
     val resolver = LocalContext.current.applicationContext.contentResolver
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -127,20 +128,16 @@ fun PacksScreen(
         onConsumeMessage = viewModel::messageShown,
         modifier = modifier,
         onCreate = { source -> onNavigate(CucutoDestination.Creator(source)) },
+        onOpenPack = { id -> onNavigate(CucutoDestination.PackDetail(id)) },
     )
 
-    val import = state.import
-    if (import != ImportUi.Idle) {
-        ImportSheet(
-            import = import,
-            onSelect = viewModel::setSelected,
-            onInstall = viewModel::install,
-            onPickAnother = {
-                viewModel.closeImport()
-                openPicker()
-            },
-            onClose = viewModel::closeImport,
-        )
+    // Every import (the picker, "Open with", the share sheet, Home's demo file) is reviewed on its own screen.
+    val navigate by rememberUpdatedState(onNavigate)
+    LaunchedEffect(showReview) {
+        if (showReview) {
+            navigate(CucutoDestination.ImportReview(CucutoDestination.ImportFrom.Packs))
+            viewModel.importReviewShown()
+        }
     }
     state.removal?.let { removal ->
         RemovePackDialog(
@@ -150,6 +147,36 @@ fun PacksScreen(
             onDismiss = viewModel::cancelRemove,
         )
     }
+}
+
+/**
+ * The import review of the Packs tab ([CucutoDestination.ImportReview] from Packs), on the Packs screen's view model
+ * ([parentViewModel]). "Choose another file" opens the picker again and replaces the import.
+ */
+@Composable
+fun PacksImportReview(
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+    viewModel: PacksViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val pending by viewModel.showImportReview.collectAsStateWithLifecycle()
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) viewModel.importFrom(ImportSource.of(resolver, uri))
+        }
+    ImportReviewRoute(
+        import = state.import,
+        reviewPending = pending,
+        onShow = viewModel::importReviewShown,
+        onSelect = viewModel::setSelected,
+        onInstall = viewModel::install,
+        onPickAnother = { picker.launch(PackPickerTypes) },
+        onClose = viewModel::closeImport,
+        onBack = onBack,
+        onDone = onDone,
+    )
 }
 
 /** Stateless Packs screen, for previews and the screenshot tests. */
@@ -164,6 +191,7 @@ internal fun PacksContent(
     onConsumeMessage: () -> Unit,
     modifier: Modifier = Modifier,
     onCreate: (sourcePackId: String?) -> Unit = {},
+    onOpenPack: (packId: String) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val listState = rememberLazyListState()
@@ -174,7 +202,6 @@ internal fun PacksContent(
     val uriHandler = LocalUriHandler.current
     val openWebsite = { uriHandler.openUri(PACKS_WEBSITE_URL) }
     var celebration by remember { mutableStateOf<FeedbackBeat?>(null) }
-    var detailId by rememberSaveable { mutableStateOf<String?>(null) }
     val packs = state.packs
     val expandedFab by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
     val currentOnConsumeMessage by rememberUpdatedState(onConsumeMessage)
@@ -271,7 +298,7 @@ internal fun PacksContent(
                             PackCard(
                                 pack = pack,
                                 player = player,
-                                onOpen = { detailId = pack.id },
+                                onOpen = { onOpenPack(pack.id) },
                                 modifier = animateItemUnlessReduced(),
                             )
                         }
@@ -284,23 +311,6 @@ internal fun PacksContent(
                 modifier = Modifier.align(Alignment.Center).size(360.dp),
             )
         }
-    }
-
-    val detail = packs?.firstOrNull { it.id == detailId }
-    if (detail != null) {
-        PackDetailSheet(
-            pack = detail,
-            player = player,
-            onRemove = {
-                detailId = null
-                onRemove(detail)
-            },
-            onDismiss = { detailId = null },
-            onDuplicate = {
-                detailId = null
-                onCreate(detail.id)
-            },
-        )
     }
 }
 
