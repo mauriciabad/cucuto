@@ -228,13 +228,18 @@ private fun JourneyTitle(text: String) {
         text = text,
         style = MaterialTheme.typography.headlineSmall,
         textAlign = TextAlign.Center,
-        modifier = Modifier.semantics { heading() },
+        modifier = Modifier.fillMaxWidth().semantics { heading() },
     )
 }
 
 @Composable
 private fun JourneyBody(text: String) {
-    Text(text = text, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 private val DOOR_SIZE = 140.dp

@@ -227,8 +227,8 @@
 
     <!-- Developer (debug builds only) -->
     <string name="settings_section_developer">Desarrollo</string>
-    <string name="settings_gallery">Galería de diseño</string>
-    <string name="settings_gallery_body">Tema, formas, movimiento y todos los eventos de respuesta.</string>
+    <string name="settings_developer">Desarrollo</string>
+    <string name="settings_developer_body">Galería de diseño, Diagnóstico con la voz de prueba y un reinicio del primer uso.</string>
     <string name="settings_build">Compilación</string>
     <string name="settings_build_value">%1$s, %2$s</string>
 

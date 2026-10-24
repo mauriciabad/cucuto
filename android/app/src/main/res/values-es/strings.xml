@@ -56,7 +56,6 @@
     <string name="selftest_notification_text">Si el módulo está activo, ha sonado el gorjeo de Cucuto en lugar del sonido predeterminado.</string>
 
     <!-- Status -->
-    <string name="status_title">Estado</string>
     <string name="status_hero_loading">Comprobando Cucuto…</string>
     <string name="status_hero_title">Preparando Cucuto</string>
     <plurals name="status_hero_progress">
@@ -110,7 +109,6 @@
     <string name="status_action_unavailable">Ninguna app de este móvil puede abrir eso.</string>
     <string name="status_self_test_posted">Enviada. Escucha el gorjeo; esta comprobación se pondrá verde en unos 10 segundos.</string>
     <string name="status_setup_guide">Guía de configuración</string>
-    <string name="status_screens_header">Pantallas de muestra</string>
 
     <!-- Onboarding -->
     <string name="onboarding_skip">Saltar</string>
@@ -154,23 +152,6 @@
     <string name="onboarding_test_success">¡Cu-cu! Cucuto funciona. Ahora importa un pack y dale voz a tu primer contacto.</string>
     <string name="onboarding_test_default_sound">¿Has oído el sonido predeterminado? El módulo aún no está activo: revisa los pasos anteriores o abre la guía de instalación.</string>
 
-    <!-- Screens -->
-    <string name="screen_home">Inicio</string>
-    <string name="screen_home_body">Tus chats con su personaje como avatar, y los remitentes recientes que esperan una voz.</string>
-    <string name="screen_picker">Selector de personajes</string>
-    <string name="screen_picker_body">Una cuadrícula de personajes agrupados por pack. Toca para escuchar y vuelve a tocar para asignar.</string>
-    <string name="screen_contact">Detalle del contacto</string>
-    <string name="screen_contact_body">El personaje asignado, sus clips, el tono de llamada, la vibración personalizada y un botón para simular un mensaje.</string>
-    <string name="screen_packs">Packs</string>
-    <string name="screen_packs_body">Packs instalados, importar desde un archivo, crear un pack, actualizar y quitar.</string>
-    <string name="screen_discover">Descubrir</string>
-    <string name="screen_discover_body">Explora repositorios de packs, escucha y descarga packs.</string>
-    <string name="screen_haptics">Editor de vibración</string>
-    <string name="screen_haptics_body">Coloca patrones predefinidos en una línea de tiempo, arrastra los puntos de la envolvente y pruébala con el clip.</string>
-    <string name="screen_settings">Ajustes</string>
-    <string name="screen_settings_body">Interruptor de voces, copia de seguridad y restauración, y el registro de decisiones de cada notificación reciente.</string>
-    <string name="placeholder_coming">Llegará en %1$s</string>
-
     <!-- Chats (shared by Home and the character picker) -->
     <string name="chat_unnamed">Chat sin nombre</string>
     <string name="chat_unnamed_group">Grupo sin nombre</string>
@@ -193,8 +174,6 @@
     <string name="home_empty_body">Cuando alguien te escriba por WhatsApp, aparecerá aquí. Tócalo para darle una voz.</string>
     <string name="home_empty_door">Una puerta de reloj de cuco cerrada, esperando a que alguien llame</string>
     <string name="home_no_matches">Ningún chat coincide</string>
-    <string name="home_no_packs_title">Aún no hay packs de sonidos</string>
-    <string name="home_no_packs_body">Importa un pack de sonidos para tener personajes entre los que elegir.</string>
     <string name="home_open_packs">Abrir Packs</string>
     <string name="home_fab">Asignar una voz</string>
     <string name="home_sheet_title">¿Quién recibe una voz?</string>

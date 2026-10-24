@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app shell: tabs, Setup, Developer and the first-run journey on Home (#153, ADR 0027). -->
+<resources>
+    <string name="tab_home">Inicio</string>
+    <string name="tab_packs">Packs</string>
+    <string name="tab_discover">Descubrir</string>
+    <string name="tab_settings">Ajustes</string>
+    <string name="screen_setup">Configuración</string>
+    <string name="screen_developer">Desarrollo</string>
+    <string name="developer_group_tools">Herramientas</string>
+    <string name="developer_gallery_body">Colores, formas, la puerta del cuco y cada momento de respuesta</string>
+    <string name="developer_diagnostics_body">Incluye la voz de prueba de depuración</string>
+    <string name="developer_reset_first_run">Empezar de cero como usuario nuevo</string>
+    <string name="developer_reset_first_run_body">Vuelve a mostrar la introducción y los primeros pasos de Inicio. Los packs, las voces y los ajustes se quedan.</string>
+    <string name="developer_reset_done">Primer uso restablecido</string>
+    <string name="home_setup_details">Detalles</string>
+    <string name="home_setup_moves">Todo listo. A partir de ahora esta tarjeta está en Ajustes, en Configuración.</string>
+    <string name="home_attention_title">Cucuto necesita una mano</string>
+    <string name="home_attention_body">Algo ha dejado de funcionar. Toca para ver qué y arreglarlo.</string>
+    <string name="home_journey_import_title">Dale voz a tus chats</string>
+    <string name="home_journey_import_body">Empieza con los packs de demostración gratis: personajes pequeños hechos para Cucuto. Elige el archivo de los packs en Descargas.</string>
+    <string name="home_journey_import_button">Importar los packs de demostración</string>
+    <string name="home_journey_import_website">Descárgalos de cucuto.mauri.app</string>
+    <string name="home_journey_wait_title">Tus personajes están listos</string>
+    <string name="home_journey_wait_body">Cuando alguien te escriba por WhatsApp, aparecerá aquí. Luego dale una voz.</string>
+    <string name="home_journey_preview">Escuchar los personajes</string>
+    <string name="home_journey_first_title">Dale una voz a %1$s</string>
+    <string name="home_journey_first_body">%1$s te ha escrito hace poco. Elige un personaje y su próximo mensaje lo usará.</string>
+    <string name="home_journey_first_button">Elegir una voz</string>
+    <string name="home_journey_done_title">¡%1$s ya tiene voz!</string>
+    <string name="home_journey_done_body">La próxima vez que %1$s te escriba, oirás a %2$s.</string>
+    <string name="home_journey_done_door">La puerta del cuco se abre y aparece %1$s</string>
+    <string name="home_journey_done_dismiss">¡Genial!</string>
+    <string name="packs_assign_voices">Dar voces</string>
+</resources>
