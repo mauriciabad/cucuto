@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haptic editor: Copy for AI and Paste pattern (#217). Kept apart from strings.xml so parallel UI work merges cleanly. -->
+<resources>
+    <string name="haptic_ai_clip_label">Cucuto vibration prompt</string>
+    <string name="haptic_ai_title">Ask an AI</string>
+    <string name="haptic_ai_body">Auto already makes a vibration from each clip\'s loudness, with no work. For one that hits the beats, copy this sound\'s details into an AI chat of your choice (attach the sound too if it takes audio), then paste its answer back here and play it. Cucuto itself sends nothing anywhere.</string>
+    <string name="haptic_ai_copy">Copy for AI</string>
+    <string name="haptic_ai_paste">Paste pattern</string>
+    <string name="haptic_ai_use_auto">Use Auto instead</string>
+    <string name="haptic_ai_pasted">Pattern pasted. Play it, then save it.</string>
+    <string name="haptic_ai_pasted_adjusted">Pattern pasted. Some events were moved to leave 50 ms after each tap, or dropped to end within 5 seconds. Play it, then save it.</string>
+    <string name="haptic_ai_problem_title">That pattern doesn\'t fit</string>
+    <string name="haptic_ai_problem_hint">Tell the AI what\'s wrong and ask it for a corrected pattern.</string>
+    <string name="haptic_ai_problem_ok">OK</string>
+    <string name="haptic_ai_problem_empty_clipboard">The clipboard has no text. Copy the AI\'s answer first.</string>
+    <string name="haptic_ai_spot_pattern">The pattern</string>
+    <string name="haptic_ai_spot_event">Event %d</string>
+    <string name="haptic_ai_spot_point">Event %1$d, point %2$d</string>
+    <string name="haptic_ai_problem_not_json">There\'s no pattern in what you copied. Copy the AI\'s whole answer, or just the JSON part that starts with { or [.</string>
+    <string name="haptic_ai_problem_not_custom">This pattern\'s mode is \"%s\". Only custom patterns, with events, can be pasted.</string>
+    <string name="haptic_ai_problem_no_events">The pattern has no events. It needs at least one.</string>
+    <string name="haptic_ai_problem_too_many_events">The pattern has too many events. The limit is %d.</string>
+    <string name="haptic_ai_problem_not_an_event">Event %d needs either a \"preset\" or an \"envelope\", not both.</string>
+    <string name="haptic_ai_problem_missing_field">%1$s has no \"%2$s\".</string>
+    <string name="haptic_ai_problem_unknown_field">%1$s has a field Cucuto doesn\'t know: \"%2$s\".</string>
+    <string name="haptic_ai_problem_not_whole">%1$s: \"%2$s\" must be a whole number of milliseconds, not %3$s.</string>
+    <string name="haptic_ai_problem_out_of_range">%1$s: \"%2$s\" must be a number from %3$d to %4$d, not %5$s.</string>
+    <string name="haptic_ai_problem_unknown_preset">Event %1$d uses the preset \"%2$s\". Use CLICK, TICK or LOW_TICK.</string>
+    <string name="haptic_ai_problem_point_count">Event %1$d\'s envelope needs 1 to %2$d points, and it has %3$d.</string>
+    <string name="haptic_ai_problem_not_closed">Event %d\'s envelope must end with intensity 0, so the vibration stops.</string>
+    <string name="haptic_ai_problem_unsorted">Event %d starts before the one above it. Events must be sorted by start time (\"at\").</string>
+    <string name="haptic_ai_problem_overlap">Event %1$d starts at %2$d ms, but the swell before it lasts until %3$d ms.</string>
+    <string name="haptic_ai_problem_too_long">The pattern lasts %1$d ms. The limit is %2$d ms.</string>
+</resources>
