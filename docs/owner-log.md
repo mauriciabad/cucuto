@@ -479,3 +479,10 @@ in `web/static/video/` and `web/src/lib/assets/images/`, so Home plays it instea
 (Published), ADR 0042 and docs/explainer-video.md (Publishing) updated; #302 closed.)
 
 > the video is ready to be published it is a moment
+
+## 2026-10-24 — Testing v0.2.0 on the phone (ringtone badge in the Home → contact detail transition, #339)
+
+> the animation that moves the character from the list to the contact detail is smooth but the image of the ringtone has an issue with the zposition, while moving charavter is avobe but when stops (begining and end) the ringtone pops avobe the character. i think it should move along with the character as a group
+
+(#339: the ringtone cover became a shared element of its own, drawn above the avatar's, so the pair flies as one
+group; ADR 0073 and brand/motion.md updated.)

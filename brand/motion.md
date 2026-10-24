@@ -38,7 +38,7 @@ that overshoots looks broken, so they are always critically damped.
 | The cuckoo door opening, the bird popping out | fast spatial | The signature moment |
 | Bird going back in, door closing | default spatial | Calmer exit than entrance |
 | Card expand, list item reorder, FAB menu, bottom sheet | default spatial | |
-| Shared element grid → detail, screen transitions | default spatial | Predictive back scrubs the same spring |
+| Shared element grid → detail, screen transitions | default spatial | Predictive back scrubs the same spring. Things attached to a shared element (an avatar's ringtone badge) fly with it as one group, above it the whole way, never popping at the start or end (#339) |
 | Hero and onboarding illustrations, carousels settling | slow spatial | |
 | Ripple-free state layers, selection color, icon fill | fast effects | |
 | Fades in and out, color scheme change to a character's colors | default effects | |

@@ -66,6 +66,7 @@ import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.home.ChatAvatarKey
+import app.mauri.cucuto.home.ChatRingtoneBadgeKey
 import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.components.PackFilterChips
 import app.mauri.cucuto.ui.components.ParticleBurst
@@ -76,6 +77,7 @@ import app.mauri.cucuto.ui.components.selectedChip
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.motion.SharedCompanion
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -354,14 +356,18 @@ private fun PickerHeader(
             val current = state.character(state.currentVoice)
             val name = state.chatName()
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                SharedElement(ChatAvatarKey(key)) {
-                    VoiceAvatar(
-                        character = current,
-                        name = state.chat?.displayName,
-                        contentDescription = null,
-                        size = 72.dp,
-                        beat = beat,
-                    )
+                Box {
+                    SharedElement(ChatAvatarKey(key)) {
+                        VoiceAvatar(
+                            character = current,
+                            name = state.chat?.displayName,
+                            contentDescription = null,
+                            size = 72.dp,
+                            beat = beat,
+                        )
+                    }
+                    // No badge here: contact detail's ringtone badge shrinks into the avatar's corner (#339).
+                    SharedCompanion(ChatRingtoneBadgeKey(key), Modifier.align(Alignment.BottomEnd))
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
