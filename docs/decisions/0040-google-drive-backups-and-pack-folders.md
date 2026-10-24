@@ -1,6 +1,6 @@
 # 0040. Google Drive: one SAF file for automatic backups now, the Drive API behind an interface
 
-- Status: accepted (owner decisions pending: #187, owner action #188)
+- Status: accepted (owner decisions pending: #187; the Google Cloud project from #188 exists since 2026-10-25)
 - Date: 2026-10-24
 - Issues: #163 (automatic backups to Google Drive, the owner's request on #108), #37 (a Drive folder as a pack
   source), #46 (private packs from Drive on a clean install)
@@ -126,3 +126,18 @@ the user's Drive. Question #187 asks whether the owner wants a stored passphrase
   worth a security assessment.
 - To check on the device (`needs-device`): whether Drive appears in the folder picker on Android 17, which write mode
   Drive accepts, and that a rewritten file shows a new version in Drive (docs/device-testing.md, section 4d).
+
+## Update 2026-10-25: the Google Cloud project exists (#188)
+
+The owner created it with an agent. Nothing here is secret, and nothing goes into GitHub secrets or the app:
+
+- Project ID `cucuto-app` (number 50484089495), owned by the owner's Google account. Google Drive API and Google
+  Picker API enabled.
+- Google Auth Platform: app name Cucuto, External, **In production**. Home page `https://cucuto.mauri.app`, privacy
+  policy `https://cucuto.mauri.app/privacy/`, authorized domain `mauri.app`. No logo, so no brand verification.
+- Data access: `https://www.googleapis.com/auth/drive.file` only (non-sensitive).
+- Android OAuth clients for `app.mauri.cucuto`: "Cucuto Android (release key)", SHA-1
+  `74:4B:E3:74:38:2F:16:E4:38:26:4E:74:F1:1E:8E:49:3F:3D:58:46` (`CN=Cucuto`, read from the installed release APK),
+  and "Cucuto Android (debug key)", SHA-1 `61:8E:2E:AC:C7:80:F5:4B:49:5B:16:44:F9:85:4C:A7:53:40:B4:DF` (the
+  default `~/.android/debug.keystore` on the owner's Mac). A Google Play build with Play App Signing would need a
+  third client with the Play signing key's SHA-1.

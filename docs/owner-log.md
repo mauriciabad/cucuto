@@ -637,3 +637,38 @@ read as WhatsApp-only.)
 > I'll deffer the 273 decision for after v1. i'm doing 188 in paralel, it is fine if it is after v1
 
 (#329 and #374 were closed and **v1.0.0** was released and installed on the phone. #273 stays open for a decision after v1, and the owner is setting up #188.)
+
+## 2026-10-25: Google Cloud project for Drive sign-in (#188)
+
+The owner set up #188 with an agent driving the Cloud console in Chrome while the owner watched.
+
+> I want  https://github.com/mauriciabad/cucuto/issues/188 Google Cloud project for Drive sign-in. Can you open the browser, i login, and you do the setup for me, i will be looking to catch any mistakes. but i'm always lost in google admin...
+
+> or meybe it has an mcp or similar
+
+> lets install the browser tool so we can do it
+
+> i also installed the claude chrome extension
+
+> i use aliases, can we make cucutogoogle@a.mauri.app ?
+
+(The user support email can only be the signed-in account or a Google Group it manages, so the alias went into the developer contact instead.)
+
+> okay  mauriciabad1@gmail.com is fine
+
+> I agree
+
+(To the Google API Services User Data Policy.)
+
+> can we add a logo?
+
+> okay, skip the logo for now
+
+(A logo triggers brand verification, which needs `mauri.app` verified in Search Console.)
+
+> is it fine that we did not download the json oauth client id?
+
+> yes you can publish it
+
+(Project `cucuto-app`, Drive and Picker APIs enabled, scope `drive.file` only, Android clients for the release and
+debug keys, published to production. Details on #188.)
