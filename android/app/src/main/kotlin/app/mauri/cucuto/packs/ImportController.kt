@@ -14,10 +14,11 @@ import kotlinx.coroutines.launch
 
 /**
  * The import, start to end, as one state machine shared by the Packs and Discover screens: a file (or a download)
- * is prepared, reviewed and installed, or ends in a problem in plain words. [state] drives [ImportSheet]. Lives in
- * a view model's [scope]; call [clear] from `onCleared`.
+ * is prepared, reviewed and installed, or ends in a problem in plain words. [state] drives the import review screen
+ * ([ImportReviewScreen]), which [showReview] asks the owner's screen to open. Lives in a view model's [scope]; call
+ * [clear] from `onCleared`.
  *
- * [ImportSheet]: app.mauri.cucuto.packs.ui.ImportSheet
+ * [ImportReviewScreen]: app.mauri.cucuto.packs.ui.ImportReviewScreen
  */
 class ImportController(
     private val catalog: PackCatalog,
@@ -26,7 +27,21 @@ class ImportController(
     private val _state = MutableStateFlow<ImportUi>(ImportUi.Idle)
     val state: StateFlow<ImportUi> = _state.asStateFlow()
 
+    private val _showReview = MutableStateFlow(false)
+
+    /**
+     * True from [start] until the screen has opened the review ([reviewShown]): an import began, from a tap or from
+     * elsewhere ("Open with", Home's demo packs), and wants its screen. An event kept as state, so it waits while the
+     * screen is away and is never handled twice.
+     */
+    val showReview: StateFlow<Boolean> = _showReview.asStateFlow()
+
     private var job: Job? = null
+
+    /** The review screen is open; see [showReview]. */
+    fun reviewShown() {
+        _showReview.value = false
+    }
 
     /**
      * Starts an import from [steps] (usually [PackCatalog.prepare], preceded by download steps for repositories),
@@ -38,6 +53,7 @@ class ImportController(
         job?.cancel()
         if (current is ImportUi.Review) catalog.discard(current.review)
         _state.value = ImportUi.Working(progress = null)
+        _showReview.value = true
         val flow = steps()
         job =
             scope.launch {
@@ -166,6 +182,7 @@ class ImportController(
             }
         }
         _state.value = ImportUi.Idle
+        _showReview.value = false
     }
 
     /** Drops a prepared import that was never installed. For the owner's `onCleared`. */

@@ -1,10 +1,13 @@
 package app.mauri.cucuto.packs.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,16 +17,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Create
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -31,51 +34,84 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.db.PackSource
+import app.mauri.cucuto.navigation.parentViewModel
 import app.mauri.cucuto.packs.LibraryPack
+import app.mauri.cucuto.packs.PacksViewModel
+import app.mauri.cucuto.ui.components.PushedScreen
 
-/** Everything about one installed pack: all its characters, where it came from, who uses it, and Remove. */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+/**
+ * Everything about one installed pack (#27, ADR 0055): all its characters, where it came from, who uses it, "Duplicate
+ * and edit" and Remove. A screen on the Packs tab, on the Packs screen's view model ([parentViewModel]). Remove asks on
+ * Packs, as before; when the pack is gone (removed, or missing after process death) the screen leaves ([onPackMissing]).
+ */
 @Composable
-fun PackDetailSheet(
-    pack: LibraryPack,
-    player: ClipPlayer,
+fun PackDetailScreen(
+    packId: String,
+    onBack: () -> Unit,
+    onPackMissing: () -> Unit,
+    onDuplicate: (packId: String) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: PacksViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val packs = state.packs
+    val pack = packs?.firstOrNull { it.id == packId }
+    val gone = packs != null && pack == null
+    val currentOnGone by rememberUpdatedState(onPackMissing)
+    LaunchedEffect(gone) { if (gone) currentOnGone() }
+    PackDetailContent(
+        pack = pack,
+        onBack = onBack,
+        onRemove = {
+            if (pack != null) {
+                viewModel.requestRemove(pack)
+                onBack()
+            }
+        },
+        onDuplicate = { onDuplicate(packId) },
+        modifier = modifier,
+    )
+}
+
+/** Stateless pack detail; [pack] is null while the library loads. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun PackDetailContent(
+    pack: LibraryPack?,
+    onBack: () -> Unit,
     onRemove: () -> Unit,
-    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     onDuplicate: (() -> Unit)? = null,
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        modifier = modifier,
-        sheetState =
-            rememberBottomSheetState(
-                initialValue = SheetValue.Hidden,
-                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-            ),
-    ) {
+    val player = rememberClipPlayer()
+    PushedScreen(title = pack?.name.orEmpty(), onBack = onBack, modifier = modifier) { padding ->
+        if (pack == null) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                LoadingIndicator(Modifier.size(56.dp))
+            }
+            return@PushedScreen
+        }
         Column(
             modifier =
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
+                    .consumeWindowInsets(padding)
                     .verticalScroll(rememberScrollState())
+                    .padding(padding)
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp),
+                    .padding(top = 8.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 PackCover(pack, Modifier.size(72.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(
-                        pack.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.semantics { heading() },
-                    )
                     pack.author?.let {
                         Text(
                             stringResource(R.string.packs_by_author, it),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
