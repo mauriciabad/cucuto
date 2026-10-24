@@ -39,16 +39,18 @@ class AutoHaptics(
     /** The envelope of the clip in [file], or null when it is silent. Throws [IOException] if it cannot be decoded. */
     suspend fun analyze(file: File): Haptic.Custom? = withContext(dispatcher) { analyzeBlocking(file) }
 
-    private fun analyzeBlocking(file: File): Haptic.Custom? {
-        val pcm = decoder.decode(file, AutoHapticAnalyzer.MAX_DURATION_MS)
-        return AutoHapticAnalyzer.analyze(pcm.samples, pcm.sampleRate, options)
-    }
+    private fun analyzeBlocking(file: File): Haptic.Custom? =
+        analyzePcm(decoder.decode(file, AutoHapticAnalyzer.MAX_DURATION_MS))
+
+    private fun analyzePcm(pcm: MonoPcm): Haptic.Custom? =
+        AutoHapticAnalyzer.analyze(pcm.samples, pcm.sampleRate, options)
 
     /**
      * Analyses [clipPaths] (paths from `pack.json`, relative to [packDir]) and writes the result to [packDir]
      * ([AutoHapticFile.write]), in the order of [clipPaths]. Clips that cannot be decoded or analysed are left out, so
      * a later run can retry them. Only the first [AutoHapticAnalyzer.MAX_DURATION_MS] of each clip is decoded, however
-     * long it is. Up to [parallelism] clips are decoded at once; the result is the same as one at a time (#267).
+     * long it is. Up to [parallelism] clips are decoded at once, each worker with one [PcmDecoder.session] for all its
+     * clips (ADR 0077); the result is the same as one at a time (#267).
      *
      * @param progress Called from the calling coroutine with the number of clips done so far and the total: 0 first,
      *   then once each time a clip is done, up to the total.
@@ -67,21 +69,29 @@ class AutoHaptics(
                 val finished = Channel<Unit>(Channel.UNLIMITED)
                 repeat(minOf(parallelism, paths.size)) {
                     launch {
-                        while (true) {
-                            val i = next.getAndIncrement()
-                            if (i >= paths.size) break
-                            ensureActive()
-                            results[i] =
-                                try {
-                                    ClipResult(analyzeBlocking(File(packDir, paths[i])))
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (_: Exception) {
-                                    // Skipped (IOException from the decoder, or an analyser bug): auto keeps
-                                    // WhatsApp's vibration.
-                                    null
-                                }
-                            finished.send(Unit)
+                        // One decoder per worker, kept between its clips (ADR 0077); closed even on cancellation.
+                        decoder.session().use { session ->
+                            while (true) {
+                                val i = next.getAndIncrement()
+                                if (i >= paths.size) break
+                                ensureActive()
+                                results[i] =
+                                    try {
+                                        val pcm =
+                                            session.decode(
+                                                File(packDir, paths[i]),
+                                                AutoHapticAnalyzer.MAX_DURATION_MS,
+                                            )
+                                        ClipResult(analyzePcm(pcm))
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (_: Exception) {
+                                        // Skipped (IOException from the decoder, or an analyser bug): auto keeps
+                                        // WhatsApp's vibration.
+                                        null
+                                    }
+                                finished.send(Unit)
+                            }
                         }
                     }
                 }

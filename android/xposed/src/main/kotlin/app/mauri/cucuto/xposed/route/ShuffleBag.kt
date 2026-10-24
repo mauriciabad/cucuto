@@ -74,6 +74,14 @@ class ShuffleBag(
         return clip
     }
 
+    /**
+     * Records that clip [index] just played outside [next] (a special clip, ADR 0059), so the next draw does not
+     * repeat it. Allocation-free.
+     */
+    fun played(index: Int) {
+        if (index in copies.indices) last = index
+    }
+
     private fun eligibleCount(): Int {
         var n = 0
         for (i in 0 until count) if (bag[i] != last) n++
@@ -156,6 +164,13 @@ class ShuffleBags(
 
         /** The rare clip played last (index in [voice]), so it never plays twice in a row; -1 when none. */
         var lastRare: Int = -1
+
+        /**
+         * The clip played last (index in the voice), whichever way it was picked, tracked while the voice has moments:
+         * no special clip but a greeting follows itself, and the bag does not repeat a special clip it also holds (a
+         * voice whose ordinary clips are all switched off). -1 when none.
+         */
+        var lastClip: Int = -1
     }
 
     private val entries =
@@ -211,17 +226,21 @@ class ShuffleBags(
             probe.packageName = packageName
             probe.key = key
             var existing = entries[probe]
-            if (voice.hasMoments) {
+            val moments = voice.hasMoments
+            if (moments) {
                 val entry = existing ?: entry(packageName, key, seed)
                 existing = entry
                 val special = special(entry, voice, table, nowMs)
-                if (special >= 0) return special
+                if (special >= 0) {
+                    entry.lastClip = special
+                    return special
+                }
             }
             val count = playable(voice, table, nowMs)
             if (existing != null) {
                 val bag = existing.bag
                 if (bag != null && existing.voice === voice && sameIndices(existing.indices, count)) {
-                    return existing.indices[bag.next()]
+                    return draw(existing, bag, moments)
                 }
             }
             // A new speaker, a republished table or another set of playable clips.
@@ -232,8 +251,31 @@ class ShuffleBags(
             val bag = bag(entry, uris, weights)
             entry.voice = voice
             entry.indices = indices
-            indices[bag.next()]
+            draw(entry, bag, moments)
         }
+
+    /**
+     * Draws from [entry]'s [bag] and returns the clip index in the voice. With [moments], a special clip that just
+     * played and is also in the bag (a voice of only special clips) counts as the bag's last, so it does not repeat.
+     */
+    private fun draw(
+        entry: Entry,
+        bag: ShuffleBag,
+        moments: Boolean,
+    ): Int {
+        val indices = entry.indices
+        if (!moments) return indices[bag.next()]
+        val last = entry.lastClip
+        if (last >= 0) {
+            for (position in indices.indices) {
+                if (indices[position] == last) {
+                    bag.played(position)
+                    break
+                }
+            }
+        }
+        return indices[bag.next()].also { entry.lastClip = it }
+    }
 
     /**
      * Updates [entry]'s rhythm with a message at [nowMs] and returns the special clip it plays, or -1 for a draw from
@@ -261,7 +303,9 @@ class ShuffleBags(
         for (i in clips.indices) {
             val clip = clips[i]
             val moment = clip.moment
-            if (!moment.isMoment) continue
+            // A burst clip the bag just played (a voice of only special clips) waits for the next burst. A greeting
+            // may follow itself: a chat's only message on two days.
+            if (!moment.isMoment || (i == entry.lastClip && !moment.firstOfDay)) continue
             if (moment.firstOfDay && !firstOfDay) continue
             if (moment.burst != 0 && moment.burst != run) continue
             if (!table.isPlayable(clip, nowMs)) continue
@@ -281,7 +325,7 @@ class ShuffleBags(
         for (i in clips.indices) {
             val clip = clips[i]
             val moment = clip.moment
-            if (moment.isMoment || moment.oneIn == 0 || i == entry.lastRare) continue
+            if (moment.isMoment || moment.oneIn == 0 || i == entry.lastRare || i == entry.lastClip) continue
             if (!table.isPlayable(clip, nowMs)) continue
             if (entry.random.nextInt(moment.oneIn) == 0) {
                 entry.lastRare = i

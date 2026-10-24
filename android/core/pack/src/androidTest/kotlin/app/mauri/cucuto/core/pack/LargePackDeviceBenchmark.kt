@@ -2,16 +2,23 @@ package app.mauri.cucuto.core.pack
 
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import app.mauri.cucuto.core.haptics.HapticCapabilities
+import app.mauri.cucuto.core.haptics.auto.AutoHaptics
+import app.mauri.cucuto.core.haptics.auto.ClipPcmDecoder
+import app.mauri.cucuto.core.haptics.auto.PcmDecoder
 import app.mauri.cucuto.core.pack.media.AudioProbe
 import app.mauri.cucuto.core.pack.media.MediaVerifier
 import app.mauri.cucuto.core.pack.media.PlatformAudioProbe
 import app.mauri.cucuto.core.pack.media.PlatformImageProbe
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -20,17 +27,22 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 /**
- * How long [PackImporter.prepare] takes with the platform decoders, built from fixture media. Not a pass or fail
- * check: run it by hand and read the `LargePackBenchmark` log lines (total and time per import step).
+ * How long [PackImporter.prepare] and [PackImporter.install] take with the platform decoders, built from fixture
+ * media. Installing runs auto haptics ([AutoHaptics] as the [PackAnalyzer], as the app does), which decodes the first
+ * 2 s of every clip. Not a pass or fail check: run it by hand and read the `LargePackBenchmark` log lines (total and
+ * time per import step; `Analyzing` is auto haptics).
  *
  * - [preparesALargePack]: shaped like the pack in #241, 98 characters with a clip, two ringtones and a sprite each.
  *   Each clip is a 6 s Opus file decoded whole; each ringtone the same file, whose start and end are decoded as for a
  *   long ringtone.
  * - [preparesAPackWithManyClips]: shaped like the pack in #279, 268 characters with 1,541 short clips in all (five
  *   0.5 s clips for every 6 s one, 1.4 s on average) and an SVG sprite each.
+ * - [preparesALocalPack]: for local measuring only, the pack archive named by the instrumentation argument
+ *   `packArchive` (a file in this test app's files dir, pushed by hand; never part of the repository). Skipped
+ *   without it.
  *
- * Both run "before" (a new decoder for every file, one packet at a time, as up to v0.1.7) once, then "after" (one
- * decoder per worker, batches; ADR 0077).
+ * Each runs "before" (a new decoder for every file, one packet at a time, as up to v0.1.7) once, then "after" (one
+ * decoder per worker, batches; ADR 0077, #279 for the checks and #315 for auto haptics).
  */
 @RunWith(AndroidJUnit4::class)
 class LargePackDeviceBenchmark {
@@ -42,50 +54,85 @@ class LargePackDeviceBenchmark {
     }
 
     @Test
-    fun preparesALargePack() {
-        val archive = buildLargeArchive()
-        measure(archive, before, "large before")
-        repeat(RUNS) { run -> measure(archive, PlatformAudioProbe(), "large after, run $run") }
-    }
+    fun preparesALargePack() = compare(buildLargeArchive(), "large")
 
     @Test
-    fun preparesAPackWithManyClips() {
-        val archive = buildManyClipsArchive()
-        measure(archive, before, "many clips before")
-        repeat(RUNS) { run -> measure(archive, PlatformAudioProbe(), "many clips after, run $run") }
+    fun preparesAPackWithManyClips() = compare(buildManyClipsArchive(), "many clips")
+
+    @Test
+    fun preparesALocalPack() {
+        val name = InstrumentationRegistry.getArguments().getString("packArchive")
+        assumeTrue("No packArchive argument", name != null)
+        val archive = File(DeviceFixtures.targetContext.filesDir, name!!)
+        assumeTrue("No $archive", archive.isFile)
+        compare(archive, "local")
     }
 
-    /** Up to v0.1.7: no sessions (the default session probes with a new decoder every time), one packet at a time. */
-    private val before =
-        AudioProbe {
-            file,
-            format,
-            full,
-            ->
-            PlatformAudioProbe(batches = false).probe(file, format, full)
-        }
+    private fun compare(
+        archive: File,
+        label: String,
+    ) {
+        measure(archive, Mode.BEFORE, "$label before")
+        repeat(RUNS) { run -> measure(archive, Mode.AFTER, "$label after, run $run") }
+    }
+
+    private enum class Mode(
+        val audio: () -> AudioProbe,
+        val haptics: () -> PcmDecoder,
+    ) {
+        /** Up to v0.1.7: no sessions (the default ones decode with a new decoder every time), one packet at a time. */
+        BEFORE(
+            audio = {
+                val probe = PlatformAudioProbe(batches = false)
+                AudioProbe { file, format, full -> probe.probe(file, format, full) }
+            },
+            haptics = {
+                val decoder = ClipPcmDecoder(batches = false)
+                PcmDecoder { file, maxDurationMs -> decoder.decode(file, maxDurationMs) }
+            },
+        ),
+
+        /** One decoder per worker, batches (ADR 0077). */
+        AFTER(audio = { PlatformAudioProbe() }, haptics = { ClipPcmDecoder() }),
+    }
 
     private fun measure(
         archive: File,
-        audio: AudioProbe,
+        mode: Mode,
         label: String,
     ) {
         val root = File(dir, label.replace(Regex("[^a-z0-9]+"), "-"))
+        val haptics =
+            AutoHaptics(HapticCapabilities(), Dispatchers.IO, mode.haptics(), PackImporter.DEFAULT_DECODE_PARALLELISM)
         val importer =
             PackImporter(
                 store = PackStore(File(root, "packs")),
                 workDir = File(root, "work"),
-                verifier = MediaVerifier(audio, PlatformImageProbe()),
+                verifier = MediaVerifier(mode.audio(), PlatformImageProbe()),
                 ioDispatcher = Dispatchers.IO,
+                analyzer =
+                    PackAnalyzer { packDir, manifest, progress ->
+                        val clips = manifest.characters.flatMap { c -> c.clips.map { it.file } }.distinct()
+                        haptics.analyzePack(packDir, clips, progress)
+                    },
             )
+        val (prepared, prepare) = timed { importer.prepare(ImportSource.of(archive)) }
+        assertTrue(prepared.toString(), prepared is ImportResult.Ready)
+        val (installed, install) = timed { importer.install((prepared as ImportResult.Ready).import) }
+        assertTrue(installed.toString(), installed is ImportResult.Installed)
+        Log.i(TAG, "$label: prepare $prepare; install $install")
+        root.deleteRecursively()
+    }
+
+    /** Collects [flow] and returns its result with the total time and the time per import step, in ms. */
+    private fun timed(flow: () -> Flow<ImportEvent>): Pair<ImportResult, String> {
         val phases = linkedMapOf<String, Long>()
         val start = System.nanoTime()
         var last = start
         var lastName = "Start"
         val events =
             runBlocking {
-                importer
-                    .prepare(ImportSource.of(archive))
+                flow()
                     .onEach { e ->
                         val name = (e as? ImportEvent.Progress)?.progress?.javaClass?.simpleName ?: "Finished"
                         if (name != lastName) {
@@ -97,11 +144,7 @@ class LargePackDeviceBenchmark {
                     }.toList()
             }
         val total = (System.nanoTime() - start) / 1_000_000
-        val result = (events.last() as ImportEvent.Finished).result
-        Log.i(TAG, "$label: $total ms, phases $phases")
-        assertTrue(result.toString(), result is ImportResult.Ready)
-        runBlocking { importer.discard((result as ImportResult.Ready).import) }
-        root.deleteRecursively()
+        return (events.last() as ImportEvent.Finished).result to "$total ms, phases $phases"
     }
 
     private fun buildLargeArchive(): File {

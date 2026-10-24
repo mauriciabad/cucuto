@@ -19,8 +19,13 @@ dependencies {
     api("app.mauri.cucuto:pack-spec")
     // JPEG XL test-decoding at import (JxlImageProbe), with the same decoder the app displays sprites with.
     implementation(projects.core.jxl)
+    // Audio test-decoding at import (PlatformAudioProbe), with the decoding loop auto haptics uses too (ADR 0077).
+    implementation(projects.core.codec)
     implementation(libs.kotlinx.coroutines.core)
 
+    // The benchmarks also time the install step, auto haptics (#315, ADR 0077).
+    testImplementation(projects.core.haptics)
+    androidTestImplementation(projects.core.haptics)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.kotlinx.coroutines.test)
