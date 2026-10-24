@@ -1,8 +1,10 @@
 package app.mauri.cucuto.packspec.authoring
 
 import app.mauri.cucuto.packspec.BundledPack
+import app.mauri.cucuto.packspec.Character
 import app.mauri.cucuto.packspec.CharacterPreview
 import app.mauri.cucuto.packspec.Download
+import app.mauri.cucuto.packspec.Haptic
 import app.mauri.cucuto.packspec.Limits
 import app.mauri.cucuto.packspec.PackContent
 import app.mauri.cucuto.packspec.PackEntry
@@ -73,15 +75,17 @@ object RepositoryIndexer {
             val cover = m.cover?.let { copy(PackPaths.join(pack.root, it), "$prefix/cover.${ext(it)}") }
             val characters =
                 m.characters.map { c ->
+                    val first = c.clips.firstOrNull()
                     CharacterPreview(
                         id = c.id,
                         name = c.name,
                         sprite = copy(PackPaths.join(pack.root, c.sprite), "$prefix/${c.id}.${ext(c.sprite)}"),
                         sample =
-                            c.clips.firstOrNull()?.let {
+                            first?.let {
                                 copy(PackPaths.join(pack.root, it.file), "$prefix/${c.id}-sample.${ext(it.file)}")
                             },
                         seedColor = c.seedColor,
+                        haptic = first?.let { previewHaptic(c) },
                     )
                 }
             return cover to characters
@@ -176,6 +180,12 @@ object RepositoryIndexer {
             packs = latest(entries),
         )
 
+    /**
+     * The haptic a character's sample plays with (`x-haptic`, ADR 0069): the pack's own, or `auto` when the pack leaves
+     * it out (its default). Apps compute auto envelopes from the sample, so the index carries none.
+     */
+    fun previewHaptic(character: Character): Haptic = character.haptic ?: Haptic(AUTO_MODE)
+
     /** `repository.json` as written by every tool: pretty-printed UTF-8, newline at the end. */
     fun json(index: RepositoryIndex): String = SpecJson.encodeToString(RepositoryIndex.serializer(), index) + "\n"
 
@@ -189,6 +199,7 @@ object RepositoryIndexer {
     }
 
     const val INDEX_FILE = "repository.json"
+    private const val AUTO_MODE = "auto"
     const val PACKS_FOLDER = "packs"
     const val PREVIEWS_FOLDER = "previews"
 }

@@ -33,7 +33,7 @@ object SpecSchemas {
         when (kind) {
             DocumentKind.PACK -> loader.fromDefinition(text("pack.schema.json"))
             DocumentKind.BUNDLE -> loader.fromDefinition(text("bundle.schema.json"))
-            DocumentKind.REPOSITORY -> loader.fromDefinition(text("repository.schema.json"))
+            DocumentKind.REPOSITORY -> loader.register(text("pack.schema.json")).fromDefinition(text("repository.schema.json"))
             DocumentKind.BACKUP -> loader.register(text("pack.schema.json")).fromDefinition(text("backup.schema.json"))
             DocumentKind.BACKUP_ENVELOPE -> loader.register(text("pack.schema.json")).register(text("backup.schema.json"))
                 .fromDefinition(

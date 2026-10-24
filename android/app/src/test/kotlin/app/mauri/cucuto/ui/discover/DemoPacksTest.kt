@@ -77,6 +77,7 @@ class DemoPacksTest {
                 catalog = catalog,
                 links = IncomingRepoLinks(),
                 demoRequests = requests,
+                sampleHaptics = SampleHaptics.None,
             ).also { it.ioDispatcher = dispatchers.io }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         return vm

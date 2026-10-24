@@ -550,7 +550,8 @@ it; see [the repository schema](../spec/repository.schema.json).
       "license": "CC0-1.0",
       "cover": "previews/app.mauri.demo.chiptune-critters/cover.svg",
       "characters": [
-        { "id": "frog", "name": "Bleep the frog", "sprite": "previews/app.mauri.demo.chiptune-critters/frog.svg", "sample": "previews/app.mauri.demo.chiptune-critters/frog-sample.ogg", "seedColor": "#4CAF50" }
+        { "id": "frog", "name": "Bleep the frog", "sprite": "previews/app.mauri.demo.chiptune-critters/frog.svg", "sample": "previews/app.mauri.demo.chiptune-critters/frog-sample.ogg", "seedColor": "#4CAF50",
+          "x-haptic": { "mode": "custom", "events": [{ "at": 0, "preset": "CLICK", "scale": 0.9 }, { "at": 200, "preset": "CLICK", "scale": 0.7 }] } }
       ],
       "sizeUnpacked": 180533,
       "download": { "url": "packs/app.mauri.demo.chiptune-critters-1.0.0.soundpack.zip", "size": 171458, "sha256": "8d63…" }
@@ -578,6 +579,14 @@ Rules:
   Redirects are capped, and credentials are never sent to a different host than the repository's.
 - **Previews** are small files (covers, sprites and one short sample clip per character) so browsing stays fast. They
   follow the same media rules as pack files.
+- **Haptic previews.** A character preview may carry `x-haptic`, the character's [`haptic`](#haptics) object from
+  `pack.json` as is, so apps can play the vibration with the sample. `packer index` writes it for every character with
+  a sample: the pattern for `custom`, `{ "mode": "none" }`, and `{ "mode": "auto" }` when the pack uses auto (explicit
+  or by default). For `auto`, apps compute the envelope from the sample clip (the character's first clip) as they would
+  at install, so the index carries no envelopes. Absent means unknown, not auto: apps play the sample without
+  vibration. The `x-` name is deliberate. Apps released before it validate indexes strictly and accept only `x-` keys
+  beyond the known fields, so they keep reading indexes that have it. The schema checks its shape; the [timeline rules](#haptics)
+  are checked when the pack is imported ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 
 ## Backups
 

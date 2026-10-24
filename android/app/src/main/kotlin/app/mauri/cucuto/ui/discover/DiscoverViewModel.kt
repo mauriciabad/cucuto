@@ -62,6 +62,8 @@ class DiscoverViewModel
         private val catalog: PackCatalog,
         private val links: IncomingRepoLinks,
         private val demoRequests: DemoPacksRequests,
+        /** The vibration of sample previews (ADR 0069), for the screen's character badges. */
+        val sampleHaptics: SampleHaptics,
     ) : ViewModel() {
         /** Blocking cache calls (removing a repository's index copy). Replaced in tests. */
         internal var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
