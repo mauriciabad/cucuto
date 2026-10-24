@@ -50,10 +50,10 @@ Not done:
 
 - **Multiple frames per input buffer** (`FEATURE_MultipleFrames`, Android 15) would cut the round trips by up to 50x,
   and the emulator's software audio decoders support it. It needs MediaCodec's asynchronous mode and new output
-  callbacks, though, and could not be tested on a real device here. Left for a follow-up.
+  callbacks, though, and could not be tested on a real device here. Left for a follow-up (#268).
 - **Decoding less** (only the container length, or shorter windows) would weaken the check the brief asks for.
 - **Auto haptics** (ADR 0020) runs at install and decodes the first 2 s of every clip, one at a time. Running it in
-  parallel would speed up installing in the same way; it is a separate change in `:core:haptics`.
+  parallel would speed up installing in the same way; it is a separate change in `:core:haptics` (#267).
 
 ## Consequences
 
