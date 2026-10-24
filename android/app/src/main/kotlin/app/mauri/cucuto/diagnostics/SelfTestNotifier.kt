@@ -16,7 +16,8 @@ import javax.inject.Singleton
 
 /**
  * Posts the Diagnostics test notification on channel [Targets.SELF_TEST_CHANNEL]. With the module active, the hook
- * swaps its sound for the provider's self-test chirp and its vibration for a click-tick, then reports the decision
+ * swaps its sound for the self-test chirp (the mirrored copy, ADR 0018, or the provider's) and its vibration for a
+ * click-tick, then reports the decision
  * back: an end-to-end check of hook, clip provider, haptics and event delivery without a WhatsApp message.
  * Without the module, the phone plays the default notification sound.
  *
