@@ -603,8 +603,16 @@ authority: readers detect the type from the contents.
   SHA-256) and asks for the files of local-only packs.
 - `contacts`: every known contact with all the messenger keys seen for it (`package` + `conversationKey`), phone
   numbers in E.164, the linked Android contact lookup key, group policy, the message assignment (pack ID, character
-  ID, disabled clip paths, haptic override) and the ringtone assignment (pack ID, character ID, variant rule).
+  ID, disabled clip paths, haptic override) and the phone ringtone (pack ID, character ID, variant rule).
   Contact IDs are unique within a backup (`DUPLICATE_ID`).
+  - `ringtone.followsVoice: true` means the ringtone follows the message character. Its pack and character IDs still
+    name the voice's character at backup time, for readers that ignore the flag.
+  - `ringtone.undo` is device-local: the Android contact's own ringtone before Cucuto (`originalRingtone`, absent for
+    the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
+    contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later
+    then gives the contact its own ringtone back. Every other phone ignores it.
+  - On restore, Android contacts are matched again by phone number, then by lookup key, then by exact name. A contact
+    with no match on the new phone keeps its ringtone choice and waits for the user to link it.
 
 Restore is idempotent: running it twice gives the same result, and it never overwrites assignments made on the new
 phone without asking.

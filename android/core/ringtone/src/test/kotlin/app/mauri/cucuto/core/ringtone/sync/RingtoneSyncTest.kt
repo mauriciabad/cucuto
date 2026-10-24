@@ -310,6 +310,33 @@ class RingtoneSyncTest {
             assertEquals(exports.uriOf("solo"), contacts.people["ada"])
         }
 
+    @Test
+    fun anUndoRecordAdoptedFromABackupGivesTheContactItsOwnRingtoneBackLater() =
+        runTest {
+            // The same phone after a reinstall: Cucuto's old file is on the contact but no longer Cucuto's own
+            // MediaStore entry, and the restore adopted the backup's undo record (RingtoneRelinker, ADR 0057).
+            contacts.people["ada"] = "content://media/external/audio/media/1042"
+            store.writes["ada"] =
+                ContactRingtoneWriteEntity(
+                    lookupKey = "ada",
+                    contactId = 1,
+                    originalRingtone = "content://original",
+                    writtenUri = "content://media/external/audio/media/1042",
+                    variant = null,
+                    writtenAt = 1,
+                )
+            store.rows = listOf(row())
+            val sync = sync()
+            val result = sync.sync(SyncReason.Changed)
+            assertTrue("not mistaken for the user's change", result.problems.isEmpty())
+            assertEquals(exports.uriOf("day"), contacts.people["ada"])
+            assertEquals("content://original", store.writes.getValue("ada").originalRingtone)
+
+            store.rows = emptyList()
+            sync.sync(SyncReason.Changed)
+            assertEquals("content://original", contacts.people["ada"])
+        }
+
     private class FakeStore : PhoneRingtoneStore {
         var rows: List<PhoneRingtoneRow> = emptyList()
         val writes = LinkedHashMap<String, ContactRingtoneWriteEntity>()

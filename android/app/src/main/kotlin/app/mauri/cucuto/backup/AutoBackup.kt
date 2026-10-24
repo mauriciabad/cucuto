@@ -12,6 +12,7 @@ import app.mauri.cucuto.core.data.db.AssignmentDao
 import app.mauri.cucuto.core.data.db.ContactDao
 import app.mauri.cucuto.core.data.db.InstalledPackDao
 import app.mauri.cucuto.core.data.db.PackRepositoryDao
+import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.di.ApplicationScope
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.settings.AutoBackupSettings
@@ -81,8 +82,8 @@ interface AutoBackupControl {
 /**
  * Automatic backups to the folder the user picked (docs/project-brief.md, "Backup and restore"; ADR 0028).
  *
- * - Written [DEBOUNCE_MS] after the last change to contacts, voices, repositories, packs or settings, and once after
- *   each app start (catching changes made just before the process died).
+ * - Written [DEBOUNCE_MS] after the last change to contacts, voices, phone ringtones, repositories, packs or
+ *   settings, and once after each app start (catching changes made just before the process died).
  * - One file per day, `cucuto-backup-YYYY-MM-DD.zip`; a later backup on the same day replaces it. The newest
  *   [BackupFileNames.AUTOMATIC_KEEP] backup files stay, other files in the folder are never touched.
  * - Or, with [AutoBackupTargetKind.FILE], one document the user picked (ADR 0040): every backup replaces its content.
@@ -103,6 +104,7 @@ class AutoBackup
         private val assignments: AssignmentDao,
         private val packs: InstalledPackDao,
         private val repositories: PackRepositoryDao,
+        private val phoneRingtones: PhoneRingtoneDao,
         private val routing: RoutingSettings,
         private val clock: WallClock,
         @param:ApplicationScope private val scope: CoroutineScope,
@@ -122,7 +124,10 @@ class AutoBackup
                     contacts.observeAll(),
                     assignments.observeAll(),
                     packs.observeAll(),
-                    combine(repositories.observeAll(), routing.enabled) { a, b -> a to b },
+                    // Phone ringtones are in backups too (ADR 0057); the undo record is not watched.
+                    combine(repositories.observeAll(), routing.enabled, phoneRingtones.observeAll()) { a, b, c ->
+                        Triple(a, b, c)
+                    },
                 ) { config, _, _, _, _ -> config }
                     .debounce(DEBOUNCE_MS)
                     .collect { (folder, _) -> if (folder != null) backUp() }

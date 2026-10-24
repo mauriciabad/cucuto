@@ -591,7 +591,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [x] Spike first: confirm Telecom's ringer hook point and scope for random-per-call, and find out how WhatsApp plays its call ringtone (static phase: [M9 report](m9-report.md), ADR 0023; device run pending).
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
 - [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
-- [ ] Album-cover ringtone picker with preview and variant chips; contact linking by phone number.
+- [x] Album-cover ringtone picker with preview and variant chips; contact linking by phone number ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md)).
 - [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215: static phase in the [WhatsApp ringtone spike](whatsapp-ringtone-spike.md), ADR 0052; device run #228), compatible with WaEnhancer X. Without the scope, the guided per-chat ringtone.
 - [ ] The owner's K.K. Slider pack assigned to several contacts, with day and night variants switching correctly.
 

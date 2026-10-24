@@ -38,6 +38,42 @@
     <string name="ringtone_whatsapp_hint">WhatsApp calls ring on their own. To hear it there too, open the chat in WhatsApp, then Notifications, then Call ringtone, and pick “%1$s”.</string>
     <string name="ringtone_whatsapp_hint_generic">WhatsApp calls ring on their own. To hear it there too, open the chat in WhatsApp, then Notifications, then Call ringtone, and pick it from the Cucuto ringtones.</string>
 
+    <!-- Contact detail: what rings, opens the ringtone picker (#53) -->
+    <string name="ringtone_choose">choose the ringtone</string>
+    <string name="ringtone_choose_other">Tap above to pick a ringtone from another character.</string>
+    <string name="ringtone_summary_none">No ringtone yet</string>
+    <string name="ringtone_summary_pick">Tap to choose a character with a ringtone</string>
+    <string name="ringtone_summary_not_used">Not used for calls</string>
+    <string name="ringtone_summary_fixed">One version: %1$s</string>
+    <string name="ringtone_summary_single">One ringtone</string>
+    <string name="ringtone_summary_mixed">Different from the messages\' character</string>
+
+    <!-- Ringtone picker (#53) -->
+    <string name="ringtone_picker_title">Ringtone</string>
+    <string name="ringtone_picker_subtitle">When %1$s calls</string>
+    <string name="ringtone_picker_hint">Tap a cover to hear it, then choose how its versions ring.</string>
+    <string name="ringtone_picker_follows_voice">Same character as the messages</string>
+    <string name="ringtone_picker_mixed">Messages stay with %1$s</string>
+    <string name="ringtone_picker_calls_only">Only for calls: this chat has no message voice</string>
+    <string name="ringtone_picker_assigned">Rings when %1$s calls</string>
+    <string name="ringtone_picker_versions">Versions</string>
+    <string name="ringtone_picker_rule">Which version rings</string>
+    <string name="ringtone_picker_characters">Characters with ringtones</string>
+    <string name="ringtone_picker_voice_badge">Their voice</string>
+    <plurals name="ringtone_picker_versions_count">
+        <item quantity="one">%1$d version</item>
+        <item quantity="other">%1$d versions</item>
+    </plurals>
+    <string name="ringtone_picker_play">Play %1$s</string>
+    <string name="ringtone_picker_stop">Stop %1$s</string>
+    <string name="ringtone_picker_preview_label">hear and choose</string>
+    <string name="ringtone_picker_current">Already chosen</string>
+    <string name="ringtone_picker_pick_first">Pick a character</string>
+    <string name="ringtone_picker_no_contact">Give this chat a voice first, then choose its ringtone here.</string>
+    <string name="ringtone_picker_empty_title">No ringtones yet</string>
+    <string name="ringtone_picker_empty_body">None of your packs has ringtones. Packs can carry songs and ringtones next to their message clips.</string>
+    <string name="ringtone_picker_failed">Couldn\'t save the ringtone. Try again.</string>
+
     <!-- Permission explanations -->
     <string name="ringtone_contacts_title">Let Cucuto set ringtones?</string>
     <string name="ringtone_contacts_body">Android plays a contact\'s own ringtone when they phone you. To use your characters there, Cucuto needs the contacts permission:\n\n• It reads contacts only to find the person behind a chat.\n• It changes only the ringtone of contacts you link, and gives them their old one back when you stop.\n• Your contacts never leave your phone.\n\nCucuto is open source: you (or your AI assistant) can read exactly what it does at github.com/mauriciabad/cucuto.</string>

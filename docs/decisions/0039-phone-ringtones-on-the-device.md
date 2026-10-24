@@ -88,7 +88,8 @@ how every change can be undone.
      and that the code is open source at github.com/mauriciabad/cucuto (the owner, #145).
    - `READ_PHONE_STATE` is asked only when the user picks "Random per call".
    - Denial leaves everything as it was and offers Android's app settings.
-8. **UI** (the full picker is #53):
+8. **UI** (the full picker is #53; it landed in [ADR 0057](0057-ringtone-picker-and-ringtone-backups.md), which moved
+   the rule chips from the card into it):
    - A "Phone ringtone" card on contact detail (1:1 chats only). It offers: turn the feature on, link the Android
      contact (suggested by the WhatsApp phone JID's number, else by exact name, or picked with the system contact
      picker), the rule chips that make sense for the character's variant tags, version chips for "One version", the
@@ -97,7 +98,7 @@ how every change can be undone.
    - A switch in Settings.
 9. **Not in this change:**
    - `vibration_uri` per-contact call vibration waits for #143 V2 (whether `system_server` can read our file).
-   - Backup and restore of phone ringtones (#198): the restorer already counts them as pending.
+   - Backup and restore of phone ringtones (#198): the restorer already counts them as pending (done in ADR 0057).
 
 ## Consequences
 
