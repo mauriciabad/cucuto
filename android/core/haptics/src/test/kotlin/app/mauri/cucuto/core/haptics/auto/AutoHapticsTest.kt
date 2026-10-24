@@ -18,6 +18,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.io.IOException
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.PI
 import kotlin.math.sin
@@ -174,6 +175,79 @@ class AutoHapticsTest {
                 // Expected.
             }
             assertFalse(File(dir, AutoHapticFile.RELATIVE_PATH).exists())
+        }
+
+    /** [FakeDecoder] behind sessions that count how they are used, like the platform decoder kept per worker. */
+    private class SessionDecoder(
+        private val inner: FakeDecoder = FakeDecoder(waitMs = 2),
+    ) : PcmDecoder {
+        val opened = AtomicInteger()
+        val closed = AtomicInteger()
+        val decodedOutsideSessions = AtomicInteger()
+        val concurrentUse = AtomicInteger()
+
+        override fun decode(
+            file: File,
+            maxDurationMs: Int,
+        ): MonoPcm {
+            decodedOutsideSessions.incrementAndGet()
+            return inner.decode(file, maxDurationMs)
+        }
+
+        override fun session(): PcmDecoder.Session {
+            opened.incrementAndGet()
+            return object : PcmDecoder.Session {
+                private val busy = AtomicBoolean()
+
+                override fun decode(
+                    file: File,
+                    maxDurationMs: Int,
+                ): MonoPcm {
+                    if (!busy.compareAndSet(false, true)) concurrentUse.incrementAndGet()
+                    try {
+                        return inner.decode(file, maxDurationMs)
+                    } finally {
+                        busy.set(false)
+                    }
+                }
+
+                override fun close() {
+                    closed.incrementAndGet()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `each worker keeps one session for all its clips and closes it`() =
+        runBlocking {
+            val decoder = SessionDecoder()
+            val sessions = haptics(decoder, parallelism = 4).analyzePack(packDir(), clips)
+            val plain = haptics(FakeDecoder(), parallelism = 1).analyzePack(packDir(), clips)
+
+            assertEquals(plain, sessions)
+            assertTrue("${decoder.opened} sessions", decoder.opened.get() in 1..4)
+            assertEquals(decoder.opened.get(), decoder.closed.get())
+            assertEquals(0, decoder.decodedOutsideSessions.get())
+            assertEquals(0, decoder.concurrentUse.get())
+        }
+
+    @Test
+    fun `sessions are closed when the analysis is cancelled`() =
+        runBlocking {
+            val decoder = SessionDecoder(FakeDecoder(waitMs = 10))
+            val many = (0 until 200).map { "voice$it.ogg" }
+            val job = async(Dispatchers.Default) { haptics(decoder, 4).analyzePack(packDir(), many) }
+            delay(50)
+            job.cancel()
+            try {
+                job.await()
+                fail("Expected a cancellation")
+            } catch (_: CancellationException) {
+                // Expected.
+            }
+            assertTrue(decoder.opened.get() > 0)
+            assertEquals(decoder.opened.get(), decoder.closed.get())
         }
 
     @Test(expected = IllegalArgumentException::class)

@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-10-24
 - Issues: #279, #268
+- Amended: 2026-10-24 (#315, auto haptics at install use the same decoding loop)
 
 ## Context
 
@@ -81,6 +82,47 @@ all 1,541 clips of the owner's pack decoded with batches, and the first 160 gave
   closes it, that "after" beats "before", and a generous 30 s bound. On a laptop: 5.2 s before, 1.8 s after.
 - Up to 8 decoders, each with its own callback thread, stay allocated (stopped) while the import checks run, then are
   released. That is the same bound as ADR 0061.
-- Auto haptics at install (ADR 0020, `ClipPcmDecoder` in `:core:haptics`) still decodes the first 2 s of each clip
-  one packet at a time, with a new decoder per clip. The same two changes would speed up the "Installing" step;
-  that is a follow-up (#315).
+- Auto haptics at install used the old loop until #315; see the amendment below.
+
+## Amendment: auto haptics at install (#315)
+
+Installing a pack runs auto haptics ([ADR 0020](0020-auto-haptics-at-import.md)): `ClipPcmDecoder` decodes the first
+2 s of every clip, 8 clips at once. It still created a decoder per clip and sent one packet at a time, so for the
+owner's pack the "Installing" step took about as long as the old import checks.
+
+**One decoding loop.** The batched and synchronous loops, the decoder kept per session and the callback thread moved
+from `PlatformAudioProbe` to `PlatformAudioDecoder` in a new module, `:core:codec`, with no dependencies. `:core:pack`
+and `:core:haptics` both use it; neither depends on the other. A `PcmSink` receives each decoded access unit:
+`PlatformAudioProbe` counts frames, `ClipPcmDecoder` converts them to mono floats. Batched output buffers hold several
+access units, and the sink gets each one at its own offset. A `DecodeWindow` says where to stop (and, for ringtones,
+where to seek), so auto haptics stops feeding packets after 2 s as before.
+
+**One decoder per worker.** `PcmDecoder.session()` mirrors `AudioProbe.session()`: each of `AutoHaptics.analyzePack`'s
+workers opens one session, decodes all its clips with it and closes it when it ends, even on failure or cancellation.
+A clip whose decoding fails releases the decoder, and the next clip gets a new one. `AutoHaptics.analyze` (one clip,
+for previews) decodes with a decoder of its own, as before.
+
+**The same haptics.** `BatchedClipDecodeTest` (androidTest in `:core:haptics`) decodes every audio file of the valid
+spec fixtures and of the demo packs (Ogg Opus, Opus, MP3, AAC, FLAC and WAV, including files longer than 2 s) both ways:
+a new decoder per clip with one packet at a time, and one reused session with batches, in order and then in reverse.
+It requires the same samples, bit for bit, and the same envelopes. It passed on the API 37 emulator, where the Opus
+decoder takes batches. With its local-only `clipsDir` argument it also passed on all 1,546 audio files of the owner's
+Pokémon pack. A dump made with the code before this change and with the code after it (samples checksum and envelope
+per clip, same files) was identical.
+
+Measured with `LargePackDeviceBenchmark`, which now also times `install` with `AutoHaptics` as the `PackAnalyzer`
+(`Analyzing` is auto haptics). Its `preparesALocalPack` test takes a pack archive pushed by hand (`packArchive`
+argument) for local measuring; the owner's pack was used that way and never committed. API 37 emulator (4 cores), host
+lightly loaded, "after" over two runs:
+
+| Pack | Auto haptics before | Auto haptics after | Whole `prepare` before → after |
+| --- | --- | --- | --- |
+| Owner's Pokémon pack (1,541 clips) | 40.3 s | 14.1–14.6 s (2.8x) | 49.3 s → 22.2–22.4 s |
+| Many clips (1,541 fixture clips) | 29.3 s | 12.9–13.5 s (2.2x) | 45.3 s → 16.3 s |
+| Large (#241: 98 clips of 6 s) | 3.8 s | 0.84–0.91 s (4.4x) | 37.1 s → 4.6–4.7 s |
+
+What is left per clip is most likely opening the file and configuring, starting and stopping the decoder, as for the
+import checks. `ManyClipsBenchmarkTest` (JVM, runs in CI) has a second test, `installs a pack with many clips
+quickly`, which installs the synthetic pack with `AutoHaptics` and the same modelled decoder waits. It checks that every
+worker uses one session and closes it, that "after" beats "before", and the same 30 s bound. On a laptop: 3.3 s
+before, 0.56 s after.

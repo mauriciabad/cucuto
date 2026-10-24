@@ -498,6 +498,7 @@ Gradle modules (under `android/`):
 - `:core:backup` — backup export, encryption, scheduled backups and restore.
 - `:core:haptics` — pack haptic schema to `VibrationEffect`, auto-haptic generator, capability checks.
 - `:core:audio` — decoding, loudness envelope analysis, preview playback, and recording, trimming, clip cutting and normalization for the pack creator.
+- `:core:codec` — the platform audio decoding loop shared by the import checks and auto haptics: batched input, one decoder per worker (ADR 0077).
 
 Outside `android/`:
 

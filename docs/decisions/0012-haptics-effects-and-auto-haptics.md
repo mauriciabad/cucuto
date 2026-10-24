@@ -65,7 +65,8 @@ it returns null when nothing is playable, and the caller keeps the original vibr
 **Auto haptics ("haptics follow the voice").** At import, for each clip:
 
 - `ClipPcmDecoder` decodes the first 2 s to mono float PCM with `MediaExtractor` and `MediaCodec`, the same stack
-  the importer verifies clips with.
+  the importer verifies clips with. *Amended by [ADR 0077](0077-batched-test-decodes.md) (#315):* it also uses the
+  importer's decoding loop (`:core:codec`): packets in batches, and one decoder per worker for all its clips.
 - `AutoHapticAnalyzer` (pure) measures the RMS and zero-crossing rate of each 20 ms frame. **Intensity** is loudness
   in dB relative to the loudest frame, mapped linearly from −40 dB (0) to 0 dB (1); below −60 dBFS is silence.
   Basic envelope intensity is perceptual and so is the dB scale. **Sharpness** uses the zero-crossing rate as a
