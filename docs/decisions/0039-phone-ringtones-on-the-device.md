@@ -3,7 +3,8 @@
 - Status: accepted (defaults; the owner may override them in #196); the "follow the voice" data is amended by
   [ADR 0063](0063-independent-voice-and-ringtone.md); the rule modes gain "your own rules" in
   [ADR 0074](0074-ringtone-rules-screen.md) (#288); the `choice` column (Android default, Leave as is) and the
-  `cucuto:default` undo marker come from [ADR 0073](0073-sound-flow-message-then-ringtone.md)
+  `cucuto:default` undo marker come from [ADR 0073](0073-sound-flow-message-then-ringtone.md); undo without a link,
+  renamed ring files and "Change" are amended for #369 (end of this ADR)
 - Date: 2026-10-24
 - Issue: #52 (picker UI: #53; device run: #143)
 
@@ -119,3 +120,29 @@ how every change can be undone.
   The codec path has an instrumented test (`PlatformRingRendererTest`) and device steps in `docs/device-testing.md`
   §7.
 - Telecom loops whole files, so the wrap after 90 s or more goes back to the intro (ADR 0033).
+
+## Amendment (#369, 2026-10-24): undo without a link, renamed ring files, "Change" keeps the link
+
+Found on the owner's phone with v0.2.1: "Android default" and "Leave as is" seemed to do nothing.
+
+- **Undo from the record alone.** The sync gives an Android contact its own ringtone back from its undo record
+  whenever no linked chat wants that contact any more: the phone ringtone was removed or set to "Leave as is", or the
+  chat was unlinked or linked elsewhere. It never needs the chat's link for that (decision 4). The safety rule stays:
+  only when the contact still has what Cucuto wrote (or one of its ring files). Then the record is deleted.
+- **Ring files MediaStore renamed.** After a data clear (a restore onto a wiped phone), Cucuto's earlier ring files
+  stay in `Ringtones/cucuto/` with no owner, so Cucuto can't see or delete them. Publishing the same name again makes
+  MediaStore add " (1)", " (2)", …, and the sync used to miss its own files under those names and render every file
+  again on every sync, minutes each. Choices made meanwhile waited behind it. The sync now strips that suffix when it
+  matches a file to its `<character>-<variant>-<hash>` name (decision 2). Orphaned files stay in the folder: without
+  a media permission Cucuto can't remove them, and asking for one is not worth it (#67).
+- **Android default first.** It never renders, so the sync writes it before any character row, and a slow render
+  never holds it back.
+- **"Change" keeps the link.** The "Change" button under the "Phone calls" row cleared the link at once, leaving the
+  chat "Not linked yet" when the user backed out of picking another contact; Cucuto's file stayed on the old one until
+  the next sync. It now opens Android's contact picker and keeps the current link until the user picks someone
+  (decision 8). Nothing in the UI unlinks any more.
+- **One-time repair** (`LinkRepair`): on the first sync with the contacts permission, a 1:1 chat with no link gets the
+  Android contact its undo record names back, when exactly one record names the chat, no other chat links that
+  contact, and the contact still has what Cucuto wrote. A setting marks it done.
+- Tests: `RingtoneSyncTest` (Android default, a character and "Leave as is", each with and without a link; Android
+  default before rendering; renamed files reused) and `LinkRepairTest`.

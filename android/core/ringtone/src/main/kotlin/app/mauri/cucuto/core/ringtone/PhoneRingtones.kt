@@ -22,8 +22,10 @@ import app.mauri.cucuto.core.data.settings.PhoneRingtoneSettings
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContacts
 import app.mauri.cucuto.core.ringtone.render.RingFileRenderer
+import app.mauri.cucuto.core.ringtone.restore.ChatLink
 import app.mauri.cucuto.core.ringtone.restore.ContactLinks
 import app.mauri.cucuto.core.ringtone.restore.ContactRelinker
+import app.mauri.cucuto.core.ringtone.restore.LinkRepair
 import app.mauri.cucuto.core.ringtone.restore.RelinkOutcome
 import app.mauri.cucuto.core.ringtone.restore.RestoredLink
 import app.mauri.cucuto.core.ringtone.store.CharacterRingtones
@@ -323,6 +325,7 @@ class PhoneRingtones
                 if (!settings.isEnabled()) return
                 state.update { it.copy(running = true) }
                 try {
+                    withContext(Dispatchers.IO) { repairLinksOnce() }
                     val result = withContext(Dispatchers.IO) { sync.sync(reason) }
                     state.value = PhoneRingtoneSyncState(running = false, problems = result.problems)
                     scheduler.schedule(
@@ -344,6 +347,24 @@ class PhoneRingtones
                     state.update { it.copy(running = false) }
                 }
             }
+        }
+
+        /**
+         * Re-links chats that lost their Android link while an undo record still names their contact ([LinkRepair],
+         * #369). Once per install, and only with the contacts permission (the next sync retries without it).
+         */
+        private suspend fun repairLinksOnce() {
+            if (settings.linkRepairDone() || !androidContacts.canRead()) return
+            val chats =
+                contactRepository.observeContacts().first().map {
+                    ChatLink(it.contact.id, it.contact.androidLookupKey, it.contact.isGroup)
+                }
+            val repaired =
+                LinkRepair.repair(chats, store.writes(), androidContacts) { contactId, android ->
+                    contactRepository.linkAndroidContact(contactId, android.lookupKey, android.displayName)
+                }
+            if (repaired.isNotEmpty()) Log.i(TAG, "Gave ${repaired.size} chats their Android link back")
+            settings.setLinkRepairDone()
         }
 
         /** [contactId]'s phone ringtone for the contact detail screen. */
@@ -412,7 +433,10 @@ class PhoneRingtones
             }
         }
 
-        /** Unlinks [contactId]; the sync gives the Android contact its own ringtone back. */
+        /**
+         * Unlinks [contactId]; the sync gives the Android contact its own ringtone back. No screen offers it any more:
+         * "Change" picks another contact and keeps the link until then (#369).
+         */
         suspend fun unlink(contactId: Long) {
             contactRepository.linkAndroidContact(contactId, null, null)
         }

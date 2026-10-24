@@ -243,6 +243,12 @@ fun PhoneCallsRow(
     val viewModel = phoneRingtoneViewModel(chat)
     val state by viewModel.state.collectAsStateWithLifecycle()
     val feedback = LocalFeedback.current
+    // "Change" picks another Android contact and keeps the current link until one is picked (#369): clearing it at
+    // once left the chat "Not linked yet" when the user backed out.
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickContact()) { uri ->
+            uri?.let { viewModel.linkPicked(it.toString()) }
+        }
     // A preview never plays on behind another app or a locked screen.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopPreview() }
     PhoneCallsRowContent(
@@ -263,7 +269,8 @@ fun PhoneCallsRow(
         modifier = modifier,
         onChangeContact = {
             feedback.fire(Feedback.Tap)
-            viewModel.unlink()
+            viewModel.stopPreview()
+            runCatching { picker.launch(null) }
         },
     )
 }

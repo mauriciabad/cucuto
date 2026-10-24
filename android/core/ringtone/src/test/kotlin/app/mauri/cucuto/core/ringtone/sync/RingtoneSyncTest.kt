@@ -235,7 +235,7 @@ class RingtoneSyncTest {
 
     private fun defaultRow(
         contactId: Long = 1,
-        lookupKey: String = "ada",
+        lookupKey: String? = "ada",
     ) = PhoneRingtoneRow(
         contactId,
         lookupKey,
@@ -270,6 +270,92 @@ class RingtoneSyncTest {
             sync.sync(SyncReason.Changed)
             assertEquals("content://original", contacts.people["ada"])
             assertTrue(store.writes.isEmpty())
+        }
+
+    /**
+     * The owner's case (#369): Cucuto's file is on a contact with no ringtone of its own, then the chat loses its link
+     * and the user picks [then] (null: "Leave as is", which is no sync row). The record alone gives the contact back.
+     */
+    private suspend fun unlinkedChatGetsItsContactBack(then: PhoneRingtoneRow?) {
+        contacts.people["ada"] = null
+        store.rows = listOf(row(contactId = 3))
+        val sync = sync()
+        sync.sync(SyncReason.Changed)
+        assertEquals(exports.uriOf("day"), contacts.people["ada"])
+
+        store.rows = listOfNotNull(then)
+        val result = sync.sync(SyncReason.Changed)
+        assertNull("the contact had no ringtone of its own", contacts.people["ada"])
+        assertTrue(store.writes.isEmpty())
+        if (then != null) assertEquals(RingtoneProblem.NotLinked, result.problems[3])
+    }
+
+    @Test
+    fun androidDefaultWithoutALinkGivesTheRecordedContactItsRingtoneBack() =
+        runTest { unlinkedChatGetsItsContactBack(defaultRow(contactId = 3, lookupKey = null)) }
+
+    @Test
+    fun aCharacterWithoutALinkGivesTheRecordedContactItsRingtoneBack() =
+        runTest { unlinkedChatGetsItsContactBack(row(contactId = 3, lookupKey = null, characterId = "solo")) }
+
+    @Test
+    fun leaveAsIsWithoutALinkGivesTheRecordedContactItsRingtoneBack() = runTest { unlinkedChatGetsItsContactBack(null) }
+
+    @Test
+    fun androidDefaultWithALinkClearsCucutosFileOnAContactWithoutItsOwn() =
+        runTest {
+            contacts.people["ada"] = null
+            store.rows = listOf(row())
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+            store.rows = listOf(defaultRow())
+            assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+            assertNull(contacts.people["ada"])
+            assertNull(store.writes.getValue("ada").originalRingtone)
+        }
+
+    @Test
+    fun leaveAsIsWithALinkGivesBackTheContactsOwnRingtone() =
+        runTest {
+            contacts.people["ada"] = "content://original"
+            store.rows = listOf(row())
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+            store.rows = emptyList()
+            sync.sync(SyncReason.Changed)
+            assertEquals("content://original", contacts.people["ada"])
+            assertTrue(store.writes.isEmpty())
+        }
+
+    @Test
+    fun androidDefaultIsWrittenBeforeAnyRingFileRenders() =
+        runTest {
+            contacts.people["ada"] = null
+            contacts.people["bo"] = "content://original"
+            store.rows = listOf(row(), defaultRow(contactId = 2, lookupKey = "bo"))
+            var clearedFirst = false
+            renderer.onRender = { if (renderer.calls == 1) clearedFirst = contacts.people["bo"] == null }
+            sync().sync(SyncReason.Changed)
+            assertTrue(clearedFirst)
+        }
+
+    @Test
+    fun ringFilesMediaStoreRenamedAreReusedNotRenderedAgain() =
+        runTest {
+            // Cucuto's earlier files outlived its ownership (a data clear), so MediaStore named the new ones "… (1)".
+            contacts.people["ada"] = null
+            store.rows = listOf(row())
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+            val renamed =
+                exports.files.mapValues { (_, p) -> p.copy(displayName = p.displayName.replace(".ogg", " (1).ogg")) }
+            exports.files.clear()
+            exports.files.putAll(renamed)
+            val renders = renderer.calls
+
+            assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+            assertEquals(renders, renderer.calls)
+            assertEquals(2, exports.files.size)
         }
 
     @Test
@@ -525,6 +611,7 @@ class RingtoneSyncTest {
     private class FakeRenderer : RingFileRenderer {
         var calls = 0
         var failOn: String? = null
+        var onRender: () -> Unit = {}
 
         override fun render(
             source: File,
@@ -533,6 +620,7 @@ class RingtoneSyncTest {
             workDir: File,
         ): RenderedRing {
             calls++
+            onRender()
             if (source.name == failOn) throw RenderException("boom")
             val out = File.createTempFile("ring", ".ogg", workDir)
             return RenderedRing(out, "audio/ogg", "ogg", RingFiles.plan(loop, fadeInMs, 6_000), copied = false)
