@@ -29,7 +29,8 @@ Disturb, vibration, looping and stopping. If anything is unclear, WhatsApp's own
 
 ## 3. Recommended approach
 
-1. Cucuto's module gets an **optional** second target, `com.whatsapp`, next to `system` (ADR 0051).
+1. Cucuto's module gets **optional** targets, `com.whatsapp` and `com.whatsapp.w4b` (WhatsApp Business, owner
+   #229), next to `system` (ADR 0051).
 2. While WhatsApp ringtones are off (the default), the WhatsApp side installs **no hook at all**.
 3. While they're on, it hooks only `RingtoneManager.getRingtone(Context, Uri)`. When WhatsApp asks for a ringtone,
    the hook reads WhatsApp's own incoming-call notification (section 4). If that's a 1:1 call from a known contact
@@ -80,7 +81,8 @@ is simpler, and it doesn't make the hook more intrusive.
 ## 6. Opt-in scope
 
 **How the scope is declared** (LSPosed/Vector and libxposed service, API 102). The module keeps
-`staticScope=true` and lists both targets in `scope.list`: `system` and `com.whatsapp`. With `staticScope=true`,
+`staticScope=true` and lists every target in `scope.list`: `system`, `com.whatsapp` and `com.whatsapp.w4b`
+(owner, #229). With `staticScope=true`,
 the list is exhaustive: LSPosed refuses any other app, and a runtime `requestScope()` can only ask for a listed
 entry. Listed entries are only *recommended*. They are never ticked on their own: the user ticks WhatsApp in
 LSPosed, approves a `requestScope()` prompt, or taps "Use recommended" (see the risk table above). The app asks for
@@ -114,10 +116,14 @@ WaEnhancer X is open source. Its hooks don't touch the ringtone, notification or
 only a framework method there. Coexistence still has to be checked on the device (#228, step 6) before the feature
 ships (ADR 0051 point 6).
 
-## 8. Defaults (owner can override in #229)
+## 8. Defaults (settled by the owner in #229)
 
 - 1:1 calls only. Group calls keep WhatsApp's tones.
-- `com.whatsapp` only. Business can be added later with its own device check.
+- ~~`com.whatsapp` only. Business can be added later with its own device check.~~ Owner update 2026-10-24 (#229):
+  "I expect WhatsApp Business  to also be fully compatible, unless there's a clear difficulty or downside."
+  **WhatsApp Business is included**: the same hook in `com.whatsapp.w4b`, its own opt-in scope entry, its callers
+  matched only against Business contacts (ADR 0031). The device run (#228) checks it next to WhatsApp. Nothing
+  found so far is a clear difficulty (ADR 0052).
 - The caller is matched by display name, with the collision rule from section 5.
 
 ## 9. The spike module
@@ -133,6 +139,9 @@ not built in CI:
 
 This needs the owner present and their go-ahead to enable the spike in LSPosed. It also needs a **second phone** to
 place WhatsApp calls to a test contact ("Cucuto Test"). It can share a session with the M9 run (#143).
+
+**WhatsApp Business too** (owner, #229). Before the run, add `com.whatsapp.w4b` to the spike's `scope.list` and
+package checks. Then repeat steps 1 to 6 with a Business account on the test phone, called from the second phone.
 
 1. **Install.** Install the spike. LSPosed shows WhatsApp as recommended but not ticked. Then request the scope at
    runtime (`--es scope request`), approve the prompt, and force stop WhatsApp.

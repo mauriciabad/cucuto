@@ -1,6 +1,7 @@
 # 0060. Explainer video: an automated draft from the app's real screens
 
-- Status: accepted
+- Status: accepted, **to be reworked**: the owner's answer on #194 rules out the app's real screens (see
+  [Owner update](#owner-update-2026-10-24-194-no-real-screens)); rework in #271
 - Date: 2026-10-24
 - Issues: #195 (this work), #42 and ADR 0042 (brief and the website's slot), #194 (voice and device footage), #202 and
   ADR 0032 (the Roborazzi screenshot harness this builds on)
@@ -74,3 +75,30 @@ so nothing goes in `web/static/video/` (ADR 0042: only final cuts).
 - The final video still needs the voice-over and shots 1 and 9 from the device; when they exist, the script takes the
   voice files, and device footage can replace the two stand-in scenes (same folder layout).
 - No push-ins: the camera is static, within the brief's "5 % at most".
+
+## Owner update 2026-10-24 (#194): no real screens
+
+> Dont use the real app ui not phone recordings, you can make a simplified version for the video.
+
+> just a note, the point of not using real screenshots is to make the video evergreen, so if i update the ui the
+> video doesnt get outdated.
+
+This contradicts the core of the decision above: shots 3–8 render the app's real screens (`CucutoShellLayout`, the
+screenshot tests' stateless screens), and a renamed string breaks the render. The owner also wants an AI voice
+(no human), English only, and the project files kept so features can be added later (a nice-to-have).
+
+**What stays:** the two steps (frames on the JVM, assembly with ffmpeg), `SceneRecorder` and its frame-stepped
+clock, the cue and vibration files, the stage, the mix, the encodes and the manual workflow.
+
+**What changes (#271, not built yet):**
+
+- The phone shows **illustrated scenes drawn for the video**. They don't depend on the app's screens, view models
+  or strings, only on brand tokens and the demo pack art. An app UI change never changes or breaks the video.
+  `ExplainerPhoneTest` stops driving `CucutoShellLayout`.
+- Shots 1 and 9 stay drawn and become final, not stand-ins. No device footage is ever needed.
+- An **English AI voice-over** is generated from the brief's script by an open text-to-speech model, with the model,
+  voice and settings recorded so it can be regenerated. `--voice-over-en` takes its output.
+- **English only:** `-Pexplainer.languages` and the `explainer.es.*` outputs go away. Both caption files stay.
+- The scenes, timeline, voice text and cues are the editable project files, all in the repository.
+
+Until #271 lands, the current draft is a timing reference only, and the website keeps "coming soon".

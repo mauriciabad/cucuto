@@ -1,6 +1,7 @@
 # 0057. The ringtone picker, and phone ringtones in backups
 
-- Status: accepted (defaults the owner may override: #242)
+- Status: accepted (defaults the owner may override: #242); previews amended by the owner (#242 item 3, see
+  [Owner update](#owner-update-2026-10-24-242-previews-play-like-the-call))
 - Date: 2026-10-24
 - Issues: #53 (ringtone picker UI), #198 (back up and restore phone ringtones)
 
@@ -48,8 +49,9 @@ Below it, a grid of album covers, grouped by pack: every installed character tha
 - With animations removed (`LocalReducedMotion`), the record still comes out but does not spin.
 
 **Previews** (`RingtonePreview`) use `MediaPlayer` with ringtone audio attributes, like Android's ringtone picker, so
-they follow the ring volume and the ringer mode. They play the pack's file as it is, stop after 30 s at most (a song
-can last 6 minutes), and stop when the screen stops. The "now" version uses 07:00 to 19:00 for day; the sync uses the
+they follow the ring volume and the ringer mode. ~~They play the pack's file as it is, stop after 30 s at most (a song
+can last 6 minutes), and stop when the screen stops.~~ Replaced by the owner update below: previews play like the
+call, with no time limit, and can be paused. The "now" version uses 07:00 to 19:00 for day; the sync uses the
 chosen place (ADR 0037).
 
 **Mixing.** Picking the voice's character stores no character of its own (`packId` null), so the ringtone keeps
@@ -136,5 +138,23 @@ The feature switch itself is not in backups: turning it on needs the permission 
   - the undo record travels in backups;
   - picking the voice's character means "follow the voice";
   - a ringtone set on the new phone is kept unless the contact's voice conflict is overwritten;
-  - previews stop after 30 s;
+  - ~~previews stop after 30 s~~ (changed by the owner, below);
   - an unmatched contact is unlinked rather than left with a stale link.
+
+## Owner update 2026-10-24 (#242): previews play like the call
+
+> 3. preview should use the same logic as the actuall ringtone when they call, so the stopping should be the same as
+> that (wich i doubt is cut at 30s). we may need a way to pause.
+
+- **A ringtone preview plays what a call plays.** That is the ring file Telecom would get ([ADR 0033](0033-ring-files-and-auto-cut-clips.md)):
+  from 0 ms, the intro, the loop section repeated, the outro, or a play-once version padded with silence. It loops
+  the whole file the way Telecom does, with the same ringtone audio attributes, so the ring volume and ringer mode
+  still apply.
+- **No time limit.** A call rings until it is answered or declined, so a preview plays until the user pauses or
+  stops it, starts another preview, or leaves the screen (`onStop`). It also stops when audio focus is lost.
+- **Play/pause.** The playing version or cover shows pause. Resuming continues from the same position. A separate
+  stop goes back to the start. A progress indicator shows the position in the ring file. The record stops spinning
+  while paused.
+- Notification clip previews don't change: they stay short.
+- Built in #246 (with the other ringtone preview changes the owner asked for: from the beginning, and on the Packs
+  character sheet and contact detail too).

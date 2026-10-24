@@ -17,7 +17,7 @@ Build **Cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each co
 - **It should feel like a game.** Every interaction gets sound, motion and haptics, built on the latest Material 3 Expressive guidelines.
 - **Common formats, JPEG XL preferred.** Packs accept the usual image and audio formats. JPEG XL (`.jxl`) is the recommended image format and gets first-class support where it costs little, to help it spread.
 
-Non-goals: Play Store release, support for Android 16 or older, dependence on other apps (Tasker, MacroDroid, BuzzKill), any backend, accounts or analytics, and bundling copyrighted media in the public repo.
+Non-goals: ~~Play Store release~~ (owner update 2026-10-24, #211: "i thought we would publish it there too"; Google Play is now an extra channel next to GitHub Releases, from v1 on, with no guarantee of approval, see [distribution.md](distribution.md#google-play) and [ADR 0046](decisions/0046-distribution.md); F-Droid after v1), support for Android 16 or older, dependence on other apps (Tasker, MacroDroid, BuzzKill), any backend, accounts or analytics, and bundling copyrighted media in the public repo.
 
 ## Constraints and owner decisions
 
@@ -195,13 +195,13 @@ Where ringtones apply:
 | --- | --- | --- |
 | Phone calls, fixed or rule-based variant | Android's per-contact ringtone (`ContactsContract.Contacts.CUSTOM_RINGTONE`) | Native; Telecom plays it and the Contacts app shows it. Needs `READ_CONTACTS` and `WRITE_CONTACTS`. Ringtone files are copied into the shared `Ringtones/cucuto/` folder through MediaStore so the system can play them. For rule-based variants the app rewrites the contact's ringtone at each boundary (time-of-day change, new season) with an inexact alarm, which needs no exact-alarm permission ([ADR 0039](decisions/0039-phone-ringtones-on-the-device.md)). |
 | Phone calls, random per call | The app re-rolls the contact's ringtone after each call (no hook) | M9 spike (#50, [ADR 0023](decisions/0023-call-ringtones-native-first.md)): Telecom runs inside `system_server` (scope `system` covers it), but no hook is needed: the app rewrites `CUSTOM_RINGTONE` when a call ends, so the next call rings with a new variant. A per-contact call vibration rides on the ringtone URI's `vibration_uri` parameter (Android 17, enabled on Pixel). Telecom hooks (`Call.getRingtone()`, `Ringer.vibrateIfNeeded`) are prepared in `spikes/m9/` as a fallback only. |
-| WhatsApp calls | Guided per-chat ringtone by default; automatic with an optional WhatsApp scope | M9 spike (#50): WhatsApp's calls are self-managed (Telecom does not ring) and its call channel has no sound, so WhatsApp rings inside its own process. By default the app exports the ringtone to `Ringtones/cucuto/` and guides the user to WhatsApp's per-chat call ringtone (one file, no variants). Owner update 2026-10-24 (#145): automatic WhatsApp call ringtones matter, so this feature alone may hook WhatsApp through an optional, opt-in scope the user enables in LSPosed after a plain explanation ([ADR 0051](decisions/0051-optional-whatsapp-scope.md)); the least intrusive hook and the scope UX are spike #215. |
+| WhatsApp calls | Guided per-chat ringtone by default; automatic with an optional WhatsApp scope | M9 spike (#50): WhatsApp's calls are self-managed (Telecom does not ring) and its call channel has no sound, so WhatsApp rings inside its own process. By default the app exports the ringtone to `Ringtones/cucuto/` and guides the user to WhatsApp's per-chat call ringtone (one file, no variants). Owner update 2026-10-24 (#145): automatic WhatsApp call ringtones matter, so this feature alone may hook WhatsApp through an optional, opt-in scope the user enables in LSPosed after a plain explanation ([ADR 0051](decisions/0051-optional-whatsapp-scope.md)); the least intrusive hook and the scope UX are spike #215. Owner update 2026-10-24 (#229): WhatsApp Business gets the same automatic call ringtones, as a second optional scope entry (`com.whatsapp.w4b`), unless the device run (#228) finds a clear difficulty ([ADR 0052](decisions/0052-whatsapp-call-ringtones.md), #273). |
 
 Contacts: each app contact links to an Android contact for phone ringtones. Match WhatsApp senders to Android contacts by phone number, and let the user confirm or pick manually.
 
 Audio for ringtones: any supported format, 5 s to 6 min, looping by default with optional seamless loop points (`loop.startMs`, `loop.endMs`), an optional fade-in, and loudness normalized for ringtone volume. The creator and the packer can cut a 2 to 3 s notification clip from a song (for example its hook) automatically.
 
-In the UI: the ringtone picker is a grid or carousel of album covers; tapping one plays it with a spinning-record animation, variant chips switch versions, and the contact detail shows both the message sound and the ringtone.
+In the UI: the ringtone picker is a grid or carousel of album covers; tapping one plays it with a spinning-record animation, variant chips switch versions, and the contact detail shows both the message sound and the ringtone. Owner update 2026-10-24 (#242): a ringtone preview plays exactly what a call would (the same ring file, from the beginning, looping like the call), with no time limit, and can be paused ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md), built in #246).
 
 **The owner's K.K. Slider pack (private).** The source is the [K.K. Slider Complete Songs Collection](https://downloads.khinsider.com/game-soundtracks/album/animal-crossing-k.k.-slider-complete-songs-collection) on KHInsider: 193 files, 98 songs plus 95 "(Radio)" versions, 502 MB as MP3 or 981 MB as FLAC. One character per song, with "live" and "radio" as variants, plus an auto-cut clip for messages. Album covers come from a fan wiki. Transcoding to Opus roughly halves the size. Like the Pokémon pack, it stays in the owner's private Google Drive.
 
@@ -297,7 +297,7 @@ Tech and deployment:
 Images and media:
 
 - JPEG XL preferred, never required. Serve images with a `<picture>` element: a `.jxl` source first, then AVIF or PNG fallbacks generated at build time. Chrome 155 and later decode JPEG XL by default (since October 2026), Safari since version 17; Firefox still needs a preference ([JPEG XL in Chrome](https://developer.chrome.com/blog/jpeg-xl-in-chrome)).
-- The explainer video is produced by a separate subagent from the brief in [`explainer-video.md`](explainer-video.md). The site expects `web/static/video/explainer.webm` and `.mp4`, a poster (served as JPEG XL with fallbacks, ADR 0042) and WebVTT captions. Lazy-loaded, never autoplays with sound.
+- The explainer video is produced by a separate subagent from the brief in [`explainer-video.md`](explainer-video.md). Owner update 2026-10-24 (#194): no humans, an AI voice, English only, and no real app UI or phone recordings: a simplified, illustrated version of the UI, so the video stays evergreen when the app changes; its project files are kept so new features can be added later (pipeline rework: #271). The site expects `web/static/video/explainer.webm` and `.mp4`, a poster (served as JPEG XL with fallbacks, ADR 0042) and WebVTT captions. Lazy-loaded, never autoplays with sound.
 - Screenshots come from the app running the demo packs, captured by a script so they can be regenerated on every release.
 
 Design: same visual language as the app (Material 3 Expressive color, shape and spring motion), light and dark themes, responsive, accessible, Lighthouse scores of 95 or more.
@@ -559,7 +559,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M5 — Pack repositories and bundles
 
 - [ ] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
-- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges.
+- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews need haptic data in `repository.json`; the owner wants them done eventually (#175, item 7): #272.
 - [ ] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
 - [ ] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
 - [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.
@@ -578,6 +578,8 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] Backup and restore: manual export, automatic backups to a chosen folder, optional encryption, and a tested restore on a wiped phone.
 - [ ] CI green, including the media allowlist guard.
 - [ ] Signed release APK on GitHub Releases, linked from the website.
+- [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
+- [ ] After v1: F-Droid, reproducible and signed with Cucuto's key (#275).
 - [ ] The owner imports the private packs from Google Drive on a clean install and everything works end to end.
 
 ### M8 — Pack creator (v1.1; can move earlier)
@@ -594,7 +596,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
 - [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
 - [x] Album-cover ringtone picker with preview and variant chips; contact linking by phone number ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md)).
-- [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215: static phase in the [WhatsApp ringtone spike](whatsapp-ringtone-spike.md), ADR 0052; device run #228), compatible with WaEnhancer X. Without the scope, the guided per-chat ringtone.
+- [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215: static phase in the [WhatsApp ringtone spike](whatsapp-ringtone-spike.md), ADR 0052; device run #228; build #273), compatible with WaEnhancer X, for WhatsApp and WhatsApp Business (owner update 2026-10-24, #229). Without the scope, the guided per-chat ringtone.
 - [ ] The owner's K.K. Slider pack assigned to several contacts, with day and night variants switching correctly.
 
 Later ideas, out of scope for v1: other messengers (Telegram, Signal, SMS), a home-screen widget, MEGA links as a pack source, community pack submissions to the official repository.
@@ -617,6 +619,7 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 | Google Drive and MEGA links are unreliable hosts | Failed downloads | Recommend static hosts for public repositories; use the Drive API (not public links) for Drive folders; treat MEGA as a later, SDK-based source. |
 | Losing the phone | All assignments gone | Automatic backups to a user-chosen folder (for example Google Drive), tested restore. |
 | Copyrighted media leaks into the public repo | Takedown risk | `.gitignore`, CI media allowlist, demo-pack-only screenshots and video. |
+| Google Play rejects or removes Cucuto (root and LSPosed, the optional WhatsApp hook read as interfering with other apps, the WhatsApp trademark) | Play listing lost; account strikes | Play is an extra channel only; GitHub Releases and Obtainium stay the main one. No "WhatsApp" in the name, icon or developer name; review notes explain the hook; rejections are answered, never resubmitted unchanged ([distribution.md](distribution.md#google-play), #276). |
 | Very rapid bursts of messages | Clips cut each other off | The system already plays one notification sound at a time; cooldown softens bursts. Optional per-contact minimum gap in settings. |
 
 Open questions for the owner (answer before M1 unless noted):
