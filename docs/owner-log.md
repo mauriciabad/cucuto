@@ -585,3 +585,55 @@ phone, so choices waited behind it. Fixed in #369; ADR 0039 and 0073 amended.)
 
 (After #376 added Signal and Molly. #377 sweeps the website, the docs, the brand texts and the app strings that still
 read as WhatsApp-only.)
+
+## 2026-10-24/25: testing on the phone, Signal, v1.0.0
+
+> Android default and "Leave as is" doesnt work. Moreover you can do these kinds of tests, dont make me waste time, you have adb access to my phone
+
+> I used maurici abad isern contact
+
+(Two bugs: #369, a lost link and slow syncs after the restore, and #372, an explicit pick ignored after a change in Contacts. The lead reproduced both over adb and verified the fixes on v0.2.4 itself.)
+
+> I muted a chat and the notification didnt sound and unmuted and played, so this works. it resolves an issue i think
+
+> "Add a chat from contacts" worked. the first message was not with the custom sound, but the seccond yes
+
+> Import speed is correct
+
+> "group message plays the sender's voice" i dont want to test this, i'm lazy. unles it is very important
+
+> tell me what you need me to do now
+
+> I already did this to test the bakcup "Clean install with your private packs from Drive:" and it worked
+
+(Each one was ticked on #329.)
+
+> I need to do more things, you were not considering have the full picture. for example f-droid needs something?
+
+(The lead listed every owner action. The F-Droid recipe was prepared in #371.)
+
+> about  "depends on a non-free app" (NonFreeDep), whatsapp is free... are you sure that is needed, check further
+
+(F-Droid means libre, not free of charge; its anti-feature docs give WhatsApp as the example.)
+
+> If i add support for Signal do we still need the nonfreedep?
+
+> Okay lunch an agent that investigates signal support and implements it if feasable. if i set a voice to a contact it is for both whatsapp and signal at the same time.
+
+(Signal and Molly shipped in #376/#378, ADR 0081. The F-Droid recipe no longer declares NonFreeDep.)
+
+> just use my phone you have permissions if you need
+
+> What is TalkBack?
+
+> I don't care
+
+(The TalkBack walkthrough was dropped. The automated accessibility checks stay.)
+
+> noone will text me now in signal, lets assume it works. if it doesnt i will ask another agent to fix it in the future. so we can close it for now
+
+> what are the other open issues? they cannot be closed before we publish the v1?
+
+> I'll deffer the 273 decision for after v1. i'm doing 188 in paralel, it is fine if it is after v1
+
+(#329 and #374 were closed and **v1.0.0** was released and installed on the phone. #273 stays open for a decision after v1, and the owner is setting up #188.)

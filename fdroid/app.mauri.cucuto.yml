@@ -15,9 +15,9 @@ Repo: https://github.com/mauriciabad/cucuto.git
 Binaries: https://github.com/mauriciabad/cucuto/releases/download/v%v/cucuto-%v.apk
 
 Builds:
-  - versionName: 0.2.2
-    versionCode: 2002
-    commit: a799694a49ca76c574d6e99b79399e46b840629c
+  - versionName: 1.0.0
+    versionCode: 1000000
+    commit: c524af552ae9e8ca18510207f279451f3fc9f968
     subdir: android/app
     sudo:
       - apt-get update
@@ -47,5 +47,5 @@ AllowedAPKSigningKeys: 6ded92bf5c2939abaad6958b7c998ffb1be692a8ef22b02cfc9beb689
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v\d+\.\d+\.\d+$
-CurrentVersion: 0.2.2
-CurrentVersionCode: 2002
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1000000
