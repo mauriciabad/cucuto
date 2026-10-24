@@ -2,9 +2,14 @@ package app.mauri.cucuto.packer
 
 import app.mauri.cucuto.packspec.DocumentKind
 import app.mauri.cucuto.packspec.DocumentValidator
+import app.mauri.cucuto.packspec.FileFormat
+import app.mauri.cucuto.packspec.FileInput
 import app.mauri.cucuto.packspec.JvmPackIo
+import app.mauri.cucuto.packspec.Limits
 import app.mauri.cucuto.packspec.PackContent
+import app.mauri.cucuto.packspec.PackValidator
 import app.mauri.cucuto.packspec.SpecJson
+import app.mauri.cucuto.packspec.media.AudioProbe
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.testing.test
 import kotlinx.serialization.json.JsonArray
@@ -15,18 +20,22 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import java.util.zip.ZipFile
+import kotlin.io.path.copyTo
+import kotlin.io.path.createDirectories
 import kotlin.io.path.readBytes
 import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 class PackerTest {
     private val repo = Path.of(System.getProperty("cucuto.repoRoot"))
     private val demoPacks = listOf("chiptune-critters", "kitchen-orchestra").map { repo.resolve("packs/$it") }
 
-    private fun packer(vararg args: String) = Packer().subcommands(Build(), Validate(), Bundle(), Index()).test(args.toList())
+    private fun packer(vararg args: String) = Packer().subcommands(Build(), Validate(), Bundle(), Index(), Ring(), Cut()).test(args.toList())
 
     @Test
     fun `demo packs build, validate and are reproducible`(@TempDir tmp: Path) {
@@ -119,6 +128,83 @@ class PackerTest {
         val plain = tmp.resolve("plain.zip")
         assertEquals(0, packer("build", demoPacks[0].toString(), "-o", plain.toString()).statusCode)
         assertEquals(0, packer("validate", plain.toString()).statusCode)
+    }
+
+    private val hasFfmpeg = MediaTools.hasTool("ffmpeg") && MediaTools.hasTool("ffprobe")
+
+    private fun durationMs(file: Path): Long = FileInput(file).use { AudioProbe.durationMs(FileFormat.OGG, it)!! }
+
+    private fun assertNear(expected: Long, actual: Long, tolerance: Long = Limits.DURATION_TOLERANCE_MS) =
+        assertTrue(kotlin.math.abs(expected - actual) <= tolerance, "expected $expected ms, got $actual ms")
+
+    @Test
+    fun `ring renders the intro once and repeats the loop to 90 s`(@TempDir tmp: Path) {
+        assumeTrue(hasFfmpeg, "needs ffmpeg")
+        // Kettle reel: 14 s, loop 4000..12000 ms, so 4 s + 11 x 8 s (spec/fixtures/ring-files.json).
+        val out = tmp.resolve("kettle.ogg")
+        val result = packer("ring", demoPacks[1].toString(), "-c", "kettle", "-v", "1", "-o", out.toString())
+        assertEquals(0, result.statusCode, result.output)
+        assertTrue("loop 4000..12000 ms x11" in result.output, result.output)
+        assertNear(92_000, durationMs(out))
+
+        // Every ringtone of a pack into a folder.
+        val all = packer("ring", demoPacks[0].toString(), "-o", tmp.resolve("rings").toString())
+        assertEquals(0, all.statusCode, all.output)
+        for (n in 1..2) assertNear(96_000, durationMs(tmp.resolve("rings/app.mauri.demo.chiptune-critters-frog-$n.ogg")))
+
+        // One file name for several ringtones is refused.
+        assertEquals(2, packer("ring", demoPacks[0].toString(), "-o", tmp.resolve("x.ogg").toString()).statusCode)
+    }
+
+    @Test
+    fun `cut finds the hook of a song`(@TempDir tmp: Path) {
+        assumeTrue(hasFfmpeg, "needs ffmpeg")
+        val song = demoPacks[1].resolve("kettle/ringtones/kettle-reel.ogg")
+        val out = tmp.resolve("hook.ogg")
+        val result = packer("cut", song.toString(), "-o", out.toString(), "--from-ms", "4000", "--to-ms", "12000")
+        assertEquals(0, result.statusCode, result.output)
+        // Within the searched loop section (ffmpeg versions may decode a few levels differently, so no exact start).
+        val (start, end) = Regex("""(\d+)\.\.(\d+) ms""").find(result.output)!!.destructured.toList().map { it.toLong() }
+        assertTrue(start >= 4000 && end <= 12000 && end - start == Limits.CUT_CLIP_DEFAULT_MS, result.output)
+        assertNear(Limits.CUT_CLIP_DEFAULT_MS, durationMs(out))
+        val fixed = packer("cut", song.toString(), "-o", out.toString(), "--start-ms", "500", "--length-ms", "2000")
+        assertEquals(0, fixed.statusCode, fixed.output)
+        assertNear(2_000, durationMs(out))
+        assertEquals(2, packer("cut", song.toString(), "-o", tmp.resolve("hook.mp3").toString()).statusCode)
+    }
+
+    @Test
+    fun `pack yaml cut entries become clips`(@TempDir tmp: Path) {
+        assumeTrue(hasFfmpeg, "needs ffmpeg")
+        val src = tmp.resolve("src").createDirectories()
+        demoPacks[1].resolve("kettle/ringtones/kettle-reel.ogg").copyTo(src.resolve("song.ogg"))
+        demoPacks[1].resolve("kettle/sprite.svg").copyTo(src.resolve("sprite.svg"))
+        src.resolve("pack.yaml").writeText(
+            """
+            id: io.example.song
+            name: Song
+            version: 1.0.0
+            author: Tests
+            license: CC0-1.0
+            characters:
+              - name: Song
+                sprite: sprite.svg
+                clips:
+                  - cut: song.ogg
+                  - cut: song.ogg
+                    startMs: 1000
+                    lengthMs: 3000
+                    label: Opening
+                ringtones: song.ogg
+            """.trimIndent(),
+        )
+        val loaded = PackSources.load(src)
+        val clips = loaded.manifest["characters"]!!.jsonArray[0].jsonObject["clips"]!!.jsonArray.map { it.jsonObject }
+        assertEquals(listOf("characters/song/clips/song-hook.ogg", "characters/song/clips/song-hook-2.ogg"), clips.map { it["file"]!!.jsonPrimitive.content })
+        assertEquals(listOf("Song (hook)", "Opening"), clips.map { it["label"]!!.jsonPrimitive.content })
+        assertEquals("1000", clips[1]["x-cut"]!!.jsonObject["startMs"]!!.jsonPrimitive.content)
+        val report = PackValidator().validate(loaded.pack).report
+        assertTrue(report.issues.isEmpty(), report.issues.toString())
     }
 
     @Test
