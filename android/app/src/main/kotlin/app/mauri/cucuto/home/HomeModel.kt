@@ -40,6 +40,7 @@ data class PackFilterOption(
  *   [HomeRules.RECENT_WINDOW_MS], newest first. Hidden while searching or filtering.
  * @property chats The chat list after search and pack filter.
  * @property unassigned Every chat without a voice, newest first (the "Assign a voice" sheet).
+ * @property voiced Every chat with a voice (installed or not), newest first, ignoring search and filter.
  * @property totalChats Chats before search and filter (tells "no chats yet" from "no matches").
  */
 @Immutable
@@ -48,6 +49,7 @@ data class HomeState(
     val recent: List<ChatRow> = emptyList(),
     val chats: List<ChatRow> = emptyList(),
     val unassigned: List<ChatRow> = emptyList(),
+    val voiced: List<ChatRow> = emptyList(),
     val packs: List<PackFilterOption> = emptyList(),
     val packFilter: String? = null,
     val query: String = "",
@@ -104,6 +106,7 @@ fun buildHomeState(
         recent = recent,
         chats = visible,
         unassigned = unassigned,
+        voiced = rows.filter { it.chat.voice != null },
         packs = packs.map { PackFilterOption(it.packId, it.name) },
         packFilter = filter,
         query = query,

@@ -468,7 +468,7 @@ private fun SetupSection(onNavigate: (CucutoDestination) -> Unit) {
         SettingsLinkRow(
             title = stringResource(R.string.settings_setup_status),
             supporting = stringResource(R.string.settings_setup_status_body),
-            onClick = { onNavigate(CucutoDestination.Status) },
+            onClick = { onNavigate(CucutoDestination.Setup) },
         )
         SettingsLinkRow(
             title = stringResource(R.string.settings_setup_guide),
@@ -534,9 +534,9 @@ internal fun openLink(
 private fun DeveloperSection(onNavigate: (CucutoDestination) -> Unit) {
     SettingsSection(R.string.settings_section_developer) {
         SettingsLinkRow(
-            title = stringResource(R.string.settings_gallery),
-            supporting = stringResource(R.string.settings_gallery_body),
-            onClick = { onNavigate(CucutoDestination.Gallery) },
+            title = stringResource(R.string.settings_developer),
+            supporting = stringResource(R.string.settings_developer_body),
+            onClick = { onNavigate(CucutoDestination.Developer) },
         )
         SettingsInfoRow(
             title = stringResource(R.string.settings_build),

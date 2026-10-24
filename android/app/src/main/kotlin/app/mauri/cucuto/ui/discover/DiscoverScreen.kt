@@ -257,7 +257,7 @@ internal fun DiscoverContent(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.screen_discover)) },
+                title = { Text(stringResource(R.string.tab_discover)) },
                 subtitle = { Text(stringResource(R.string.discover_subtitle)) },
                 navigationIcon = {
                     if (onBack != null) {

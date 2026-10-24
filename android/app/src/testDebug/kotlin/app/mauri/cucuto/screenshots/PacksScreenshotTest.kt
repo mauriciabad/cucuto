@@ -1,5 +1,6 @@
 package app.mauri.cucuto.screenshots
 
+import app.mauri.cucuto.navigation.TopLevelTab
 import app.mauri.cucuto.packs.PacksUiState
 import app.mauri.cucuto.packs.ui.PacksContent
 import org.junit.Test
@@ -11,13 +12,15 @@ class PacksScreenshotTest(
     @Test
     fun packs() =
         screenshot("packs", web = "packs", store = 4) {
-            PacksContent(
-                state = PacksUiState(packs = DemoContent.packs.map { it.libraryPack() }),
-                onBack = {},
-                onDiscover = {},
-                onImport = {},
-                onRemove = {},
-                onConsumeMessage = {},
-            )
+            InShell(TopLevelTab.Packs) {
+                PacksContent(
+                    state = PacksUiState(packs = DemoContent.packs.map { it.libraryPack() }),
+                    onDiscover = {},
+                    onAssignVoices = {},
+                    onImport = {},
+                    onRemove = {},
+                    onConsumeMessage = {},
+                )
+            }
         }
 }

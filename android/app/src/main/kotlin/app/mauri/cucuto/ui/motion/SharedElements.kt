@@ -51,3 +51,24 @@ fun SharedElement(
         }
     Box(modifier.then(sharing), propagateMinConstraints = true) { content() }
 }
+
+/**
+ * Like [SharedElement], but for two different pieces of content that morph into each other (Home's setup banner into
+ * the Setup screen's card): the bounds animate and the contents cross-fade.
+ */
+@Composable
+fun SharedBounds(
+    key: Any?,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val shared = LocalSharedTransitionScope.current
+    val animated = LocalEntryAnimatedScope.current
+    val sharing =
+        if (key != null && shared != null && animated != null) {
+            with(shared) { Modifier.sharedBounds(rememberSharedContentState(key), animatedVisibilityScope = animated) }
+        } else {
+            Modifier
+        }
+    Box(modifier.then(sharing), propagateMinConstraints = true) { content() }
+}

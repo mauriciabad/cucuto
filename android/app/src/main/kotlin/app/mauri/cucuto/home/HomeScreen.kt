@@ -1,6 +1,7 @@
 package app.mauri.cucuto.home
 
 import android.text.format.DateUtils
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -24,9 +25,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -77,13 +79,17 @@ import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
+import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.navigation.CucutoDestination
+import app.mauri.cucuto.packs.ui.PackPickerTypes
 import app.mauri.cucuto.ui.chat.chatSupportingText
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
+import app.mauri.cucuto.ui.status.SetupCardSection
 import app.mauri.cucuto.ui.theme.CucutoTheme
 
 /** Key of a chat's avatar in shared-element transitions (home list or strip → picker header). */
@@ -92,36 +98,51 @@ data class ChatAvatarKey(
 )
 
 /**
- * Home (brief, screen 2): every chat with its character's sprite as avatar, the "recent senders" strip of people who
- * messaged and have no voice yet, search, a pack filter and a FAB to assign. Tapping a chat with a voice opens its
- * contact detail ([onOpenDetail], #26); a chat without one goes straight to the character picker ([onOpenChat]).
+ * Home (brief, screen 2), the start tab: every chat with its character's sprite as avatar, the "recent senders" strip
+ * of people who messaged and have no voice yet, search, a pack filter and a FAB to assign. Above them sit the setup
+ * card (until setup is green once) and the first-run journey ([homeJourney]): import the demo packs, give the first
+ * recent sender a voice, celebrate. Tapping a chat with a voice opens its contact detail (#26); a chat without one
+ * goes straight to the character picker.
  */
 @Composable
 fun HomeScreen(
-    onOpenChat: (ChatKey) -> Unit,
-    onOpenPacks: () -> Unit,
-    onBack: () -> Unit,
+    onNavigate: (CucutoDestination) -> Unit,
     modifier: Modifier = Modifier,
-    onOpenDetail: (ChatKey) -> Unit = onOpenChat,
-    onOpenDiscover: () -> Unit = onOpenPacks,
     viewModel: HomeViewModel = hiltViewModel(),
+    journeyViewModel: HomeJourneyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val firstVoiceCelebrated by journeyViewModel.firstVoiceCelebrated.collectAsStateWithLifecycle()
+    val celebrating by journeyViewModel.celebrating.collectAsStateWithLifecycle()
+    val journey = homeJourney(state, firstVoiceCelebrated, celebrating)
+    LaunchedEffect(journey) {
+        if (journey is JourneyStep.FirstVoice) journeyViewModel.celebrateFirstVoice(journey.chat.key)
+    }
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val demoPicker =
+        rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
+            if (uri != null) journeyViewModel.importDemoPacks(ImportSource.of(resolver, uri))
+        }
     HomeContent(
         state = state,
         onQueryChange = viewModel::setQuery,
         onTogglePack = viewModel::togglePackFilter,
         onDismissRecent = viewModel::dismissRecent,
-        onOpenChat = onOpenChat,
-        onOpenDetail = onOpenDetail,
-        onOpenPacks = onOpenPacks,
-        onBack = onBack,
+        onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat)) },
+        onOpenPacks = { onNavigate(CucutoDestination.Packs) },
         modifier = modifier,
-        // Discover installs the demo bundle from the default repository, through the usual review (#179).
+        onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
+        journey = journey,
+        // Discover installs the demo bundle from the default repository, through the usual review (#179, #214).
         onGetDemoPacks = {
             viewModel.requestDemoPacks()
-            onOpenDiscover()
+            onNavigate(CucutoDestination.Discover)
         },
+        // Offline fallback: a demo packs file the user already has in Downloads.
+        onImportDemoPacks = { demoPicker.launch(PackPickerTypes) },
+        onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
+        onDismissCelebration = journeyViewModel::dismissCelebration,
+        setupCard = { SetupCardSection(onNavigate = onNavigate) },
     )
 }
 
@@ -135,10 +156,14 @@ fun HomeContent(
     onDismissRecent: (ChatKey) -> Unit,
     onOpenChat: (ChatKey) -> Unit,
     onOpenPacks: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenDetail: (ChatKey) -> Unit = onOpenChat,
-    onGetDemoPacks: () -> Unit = onOpenPacks,
+    journey: JourneyStep = JourneyStep.None,
+    onGetDemoPacks: () -> Unit = {},
+    onImportDemoPacks: () -> Unit = {},
+    onPreviewCharacters: () -> Unit = {},
+    onDismissCelebration: () -> Unit = {},
+    setupCard: @Composable () -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf(state.query) }
     val latestOnQueryChange by rememberUpdatedState(onQueryChange)
@@ -158,9 +183,9 @@ fun HomeContent(
 
     Scaffold(
         modifier = modifier,
-        topBar = { HomeSearchBar(query, onQueryChange = { query = it }, onBack = onBack) },
+        topBar = { HomeSearchBar(query, onQueryChange = { query = it }) },
         floatingActionButton = {
-            if (state.totalChats > 0) {
+            if (state.totalChats > 0 && state.hasPacks) {
                 ExtendedFloatingActionButton(
                     onClick = {
                         feedback.fire(Feedback.Tap)
@@ -191,11 +216,22 @@ fun HomeContent(
                     bottom = innerPadding.calculateBottomPadding() + FAB_CLEARANCE,
                 ),
         ) {
+            item(key = "setup", contentType = "setup") { setupCard() }
             if (state.packs.size > 1) {
                 item(key = "filters") { PackFilters(state, onTogglePack) }
             }
-            if (!state.hasPacks) {
-                item(key = "no-packs") { NoPacksCard(onGetDemoPacks, onOpenPacks) }
+            if (journey != JourneyStep.None && !state.filtering) {
+                item(key = "journey", contentType = "journey") {
+                    JourneyCard(
+                        step = journey,
+                        onGetDemoPacks = onGetDemoPacks,
+                        onImportDemoPacks = onImportDemoPacks,
+                        onOpenChat = open,
+                        onPreviewCharacters = onPreviewCharacters,
+                        onDismissCelebration = onDismissCelebration,
+                        modifier = Modifier.animateItem(),
+                    )
+                }
             }
             if (state.showRecent) {
                 item(key = "recent") { RecentSenders(state.recent, onOpen = open, onDismiss = onDismissRecent) }
@@ -213,7 +249,8 @@ fun HomeContent(
                 }
 
                 state.totalChats == 0 -> {
-                    item(key = "empty") { EmptyChats() }
+                    // The journey card already says what to do while there are no chats.
+                    if (journey == JourneyStep.None) item(key = "empty") { EmptyChats() }
                 }
 
                 else -> {
@@ -248,7 +285,6 @@ fun HomeContent(
 private fun HomeSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    onBack: () -> Unit,
 ) {
     val focus = LocalFocusManager.current
     Box(
@@ -269,14 +305,7 @@ private fun HomeSearchBar(
                 expanded = false,
                 onExpandedChange = {},
                 placeholder = { Text(stringResource(R.string.home_search_hint)) },
-                leadingIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(R.string.navigate_back),
-                        )
-                    }
-                },
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { onQueryChange("") }) {
@@ -312,30 +341,6 @@ private fun PackFilters(
                 },
                 label = { Text(pack.name) },
             )
-        }
-    }
-}
-
-@Composable
-private fun NoPacksCard(
-    onGetDemoPacks: () -> Unit,
-    onOpenPacks: () -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.home_no_packs_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.home_no_packs_body), style = MaterialTheme.typography.bodyMedium)
-            // Wraps when the labels are long (Spanish), instead of squeezing "Open Packs".
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                itemVerticalAlignment = Alignment.CenterVertically,
-            ) {
-                Button(onClick = onGetDemoPacks) { Text(stringResource(R.string.home_get_demo_packs)) }
-                TextButton(onClick = onOpenPacks) { Text(stringResource(R.string.home_open_packs)) }
-            }
         }
     }
 }
@@ -567,7 +572,6 @@ private fun HomePreview() {
             onDismissRecent = {},
             onOpenChat = {},
             onOpenPacks = {},
-            onBack = {},
         )
     }
 }
@@ -578,12 +582,12 @@ private fun HomeEmptyPreview() {
     CucutoTheme(dynamicColor = false) {
         HomeContent(
             state = HomeState(loading = false),
+            journey = JourneyStep.ImportPacks,
             onQueryChange = {},
             onTogglePack = {},
             onDismissRecent = {},
             onOpenChat = {},
             onOpenPacks = {},
-            onBack = {},
         )
     }
 }

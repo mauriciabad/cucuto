@@ -225,8 +225,8 @@
 
     <!-- Developer (debug builds only) -->
     <string name="settings_section_developer">Developer</string>
-    <string name="settings_gallery">Design gallery</string>
-    <string name="settings_gallery_body">Theme, shapes, motion and every feedback event.</string>
+    <string name="settings_developer">Developer</string>
+    <string name="settings_developer_body">Design gallery, Diagnostics with the test voice, and a first-run reset.</string>
     <string name="settings_build">Build</string>
     <string name="settings_build_value">%1$s, %2$s</string>
 
