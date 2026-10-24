@@ -472,25 +472,28 @@ class PackImporter(
                     }
                 }
             progress(ImportProgress.Decoding(0, jobs.size))
-            // Platform decoders spend most of their time waiting for the codec process, one packet at a time, so
-            // several files at once go almost proportionally faster (ADR 0061). Issues keep the order of the jobs.
+            // Platform decoders spend most of their time waiting for the codec process, so several files at once go
+            // almost proportionally faster (ADR 0061). Issues keep the order of the jobs.
             val results = arrayOfNulls<List<Issue>>(jobs.size)
             coroutineScope {
                 val next = AtomicInteger()
                 val finished = Channel<Unit>(Channel.UNLIMITED)
                 repeat(minOf(decodeParallelism, jobs.size)) {
                     launch {
-                        while (true) {
-                            val i = next.getAndIncrement()
-                            if (i >= jobs.size) break
-                            ensureActive()
-                            val job = jobs[i]
-                            val format = FileFormat.of(job.archivePath)
-                            results[i] =
-                                format?.let {
-                                    verifier.verify(job.file, job.archivePath, it, job.references, job.manifestFile)
-                                } ?: emptyList()
-                            finished.send(Unit)
+                        // One session per worker: it keeps its decoder from file to file (ADR 0077).
+                        verifier.session().use { session ->
+                            while (true) {
+                                val i = next.getAndIncrement()
+                                if (i >= jobs.size) break
+                                ensureActive()
+                                val job = jobs[i]
+                                val format = FileFormat.of(job.archivePath)
+                                results[i] =
+                                    format?.let {
+                                        session.verify(job.file, job.archivePath, it, job.references, job.manifestFile)
+                                    } ?: emptyList()
+                                finished.send(Unit)
+                            }
                         }
                     }
                 }

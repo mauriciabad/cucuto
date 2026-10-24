@@ -1,8 +1,10 @@
 package app.mauri.cucuto.core.pack
 
+import app.mauri.cucuto.core.pack.media.AudioProbe
 import app.mauri.cucuto.core.pack.media.AudioProbeResult
 import app.mauri.cucuto.core.pack.media.ImageProbeResult
 import app.mauri.cucuto.packspec.ErrorCode
+import app.mauri.cucuto.packspec.FileFormat
 import app.mauri.cucuto.packspec.RingFiles
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -18,6 +20,8 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class PackImporterTest {
     @get:Rule
@@ -333,6 +337,87 @@ class PackImporterTest {
             val noJxlDecoder = importer(image = { _, _ -> ImageProbeResult.NotChecked("no decoder") })
             val ok = noJxlDecoder.prepare(ImportSource.of(fixtureArchive("valid/minimal-pack", archives))).result()
             noJxlDecoder.discard((ok as ImportResult.Ready).import)
+        }
+
+    @Test
+    fun `each decoding worker probes with one session of its own and closes it`() =
+        runTest {
+            val opened = AtomicInteger()
+            val closed = AtomicInteger()
+            val probed = AtomicInteger()
+            val overlaps = AtomicInteger()
+            val audio =
+                object : AudioProbe {
+                    override fun probe(
+                        file: File,
+                        format: FileFormat,
+                        full: Boolean,
+                    ) = throw AssertionError("The importer probes through sessions")
+
+                    override fun session(): AudioProbe.Session {
+                        opened.incrementAndGet()
+                        val busy = AtomicBoolean()
+                        return object : AudioProbe.Session {
+                            override fun probe(
+                                file: File,
+                                format: FileFormat,
+                                full: Boolean,
+                            ): AudioProbeResult {
+                                if (!busy.compareAndSet(false, true)) overlaps.incrementAndGet()
+                                probed.incrementAndGet()
+                                Thread.sleep(5)
+                                return headerAudioProbe.probe(file, format, full).also { busy.set(false) }
+                            }
+
+                            override fun close() {
+                                closed.incrementAndGet()
+                            }
+                        }
+                    }
+                }
+            val importer = testImporter(root, audio = audio)
+            val prepared = importer.ready(fixtureArchive("valid/full-pack", archives))
+            importer.discard(prepared)
+            assertTrue("${probed.get()} files probed", probed.get() > 1)
+            assertTrue("${opened.get()} sessions", opened.get() in 1..PackImporter.DEFAULT_DECODE_PARALLELISM)
+            assertEquals(opened.get(), closed.get())
+            assertEquals("A session was used by two files at once", 0, overlaps.get())
+
+            // Closed too when decoding fails.
+            opened.set(0)
+            closed.set(0)
+            val failing =
+                testImporter(
+                    tmp.newFolder("failing"),
+                    audio =
+                        object : AudioProbe {
+                            override fun probe(
+                                file: File,
+                                format: FileFormat,
+                                full: Boolean,
+                            ) = AudioProbeResult.Undecodable("no decoder")
+
+                            override fun session(): AudioProbe.Session {
+                                opened.incrementAndGet()
+                                return object : AudioProbe.Session {
+                                    override fun probe(
+                                        file: File,
+                                        format: FileFormat,
+                                        full: Boolean,
+                                    ): AudioProbeResult = throw IllegalStateException("decoder crashed")
+
+                                    override fun close() {
+                                        closed.incrementAndGet()
+                                        throw IllegalStateException("release failed")
+                                    }
+                                }
+                            }
+                        },
+                )
+            val result = failing.prepare(ImportSource.of(fixtureArchive("valid/full-pack", archives))).result()
+            assertTrue((result as ImportResult.Invalid).report.errorCodes().all { it == "MEDIA_UNDECODABLE" })
+            assertTrue(opened.get() > 0)
+            assertEquals(opened.get(), closed.get())
         }
 
     @Test
