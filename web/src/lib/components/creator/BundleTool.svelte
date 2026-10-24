@@ -33,6 +33,8 @@
 	let version = $state(FIRST_VERSION);
 	let license = $state('');
 	let description = $state('');
+	let homepage = $state('');
+	let tagsText = $state('');
 	let cover = $state.raw<EncodedImage | null>(null);
 	let customId = $state<string | null>(null);
 	let suffix = $state('');
@@ -55,6 +57,7 @@
 
 	const suggestedId = $derived(spec ? spec.authoring.suggestPackId(author, name, suffix) : '');
 	const id = $derived(customId ?? suggestedId);
+	const tags = $derived(spec ? spec.authoring.parseTags(tagsText) : []);
 	const fingerprint = $derived(
 		JSON.stringify([
 			id,
@@ -63,11 +66,16 @@
 			author,
 			license,
 			description,
+			homepage,
+			tags,
 			cover?.bytes.length,
 			packs.map((p) => p.uid)
 		])
 	);
 	const stale = $derived(outcome !== null && builtFrom !== fingerprint);
+	const homepageInvalid = $derived(
+		homepage.trim() !== '' && spec !== null && !spec.authoring.isHomepage(homepage)
+	);
 
 	async function addFiles(event: Event & { currentTarget: HTMLInputElement }) {
 		const files = [...(event.currentTarget.files ?? [])];
@@ -106,7 +114,7 @@
 			await new Promise((resolve) => setTimeout(resolve, 0));
 			outcome = buildBundle(
 				spec,
-				{ id, name, version, author, license, description },
+				{ id, name, version, author, license, description, homepage, tags },
 				packs,
 				cover
 			);
@@ -239,6 +247,36 @@
 				<label class="field">
 					<span class="label-large">{t.details.description}</span>
 					<textarea rows="3" maxlength="2000" bind:value={description}></textarea>
+				</label>
+				<label class="field">
+					<span class="label-large">{t.details.homepage}</span>
+					<input
+						type="url"
+						maxlength="2000"
+						placeholder="https://"
+						autocomplete="url"
+						bind:value={homepage}
+						aria-invalid={homepageInvalid}
+						aria-describedby="homepage-hint"
+					/>
+					<span id="homepage-hint" class="body-small on-surface-variant"
+						>{homepageInvalid ? t.details.homepageInvalid : t.details.homepageHint}</span
+					>
+				</label>
+				<label class="field">
+					<span class="label-large">{t.details.tags}</span>
+					<input
+						type="text"
+						maxlength="800"
+						autocomplete="off"
+						bind:value={tagsText}
+						aria-describedby="tags-hint"
+					/>
+					<span id="tags-hint" class="body-small on-surface-variant"
+						>{tags.length > 0
+							? fill(t.details.tagsResult, { tags: tags.join(', ') })
+							: t.details.tagsHint}</span
+					>
 				</label>
 				<CoverPicker bind:cover size={spec.authoring.targets.spriteSize} {name} />
 			</div>

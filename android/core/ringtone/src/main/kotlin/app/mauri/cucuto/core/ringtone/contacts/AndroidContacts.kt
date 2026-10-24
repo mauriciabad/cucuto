@@ -14,6 +14,8 @@ import android.provider.ContactsContract.PhoneLookup
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,7 +33,7 @@ data class AndroidContactRingtone(
     val ringtone: String?,
 )
 
-/** The few things Cucuto does with Android contacts (ADR 0039). */
+/** The few things Cucuto does with Android contacts (ADR 0039). The suspend functions are main-safe. */
 interface AndroidContacts {
     /** Whether Cucuto may read and change contacts (`READ_CONTACTS` and `WRITE_CONTACTS`). */
     fun canReadAndWrite(): Boolean
@@ -79,15 +81,17 @@ class ResolverAndroidContacts
             if (!granted(Manifest.permission.READ_CONTACTS)) return null
             val uri = Uri.withAppendedPath(Contacts.CONTENT_LOOKUP_URI, Uri.encode(lookupKey))
             val projection = arrayOf(Contacts.LOOKUP_KEY, Contacts.DISPLAY_NAME, Contacts.CUSTOM_RINGTONE)
-            return runCatching {
-                resolver.query(uri, projection, null, null, null)?.use { c ->
-                    if (!c.moveToFirst()) {
-                        null
-                    } else {
-                        AndroidContactRingtone(c.getString(0) ?: lookupKey, c.getString(1), c.getString(2))
+            return io {
+                runCatching {
+                    resolver.query(uri, projection, null, null, null)?.use { c ->
+                        if (!c.moveToFirst()) {
+                            null
+                        } else {
+                            AndroidContactRingtone(c.getString(0) ?: lookupKey, c.getString(1), c.getString(2))
+                        }
                     }
-                }
-            }.getOrNull()
+                }.getOrNull()
+            }
         }
 
         override suspend fun setRingtone(
@@ -95,37 +99,45 @@ class ResolverAndroidContacts
             uri: String?,
         ): Boolean {
             if (!canReadAndWrite()) return false
-            val id = contactId(lookupKey) ?: return false
-            val values = ContentValues().apply { put(Contacts.CUSTOM_RINGTONE, uri) }
-            return runCatching {
-                resolver.update(ContentUris.withAppendedId(Contacts.CONTENT_URI, id), values, null, null) > 0
-            }.getOrDefault(false)
+            return io {
+                val id = contactId(lookupKey) ?: return@io false
+                val values = ContentValues().apply { put(Contacts.CUSTOM_RINGTONE, uri) }
+                runCatching {
+                    resolver.update(ContentUris.withAppendedId(Contacts.CONTENT_URI, id), values, null, null) > 0
+                }.getOrDefault(false)
+            }
         }
 
         override suspend fun byPhoneNumber(number: String): List<AndroidContact> {
             if (!granted(Manifest.permission.READ_CONTACTS) || number.isBlank()) return emptyList()
             val uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-            return contacts(uri, arrayOf(PhoneLookup.LOOKUP_KEY, PhoneLookup.DISPLAY_NAME), null, null)
+            return io { contacts(uri, arrayOf(PhoneLookup.LOOKUP_KEY, PhoneLookup.DISPLAY_NAME), null, null) }
         }
 
         override suspend fun byName(name: String): List<AndroidContact> {
             if (!granted(Manifest.permission.READ_CONTACTS) || name.isBlank()) return emptyList()
-            return contacts(
-                Contacts.CONTENT_URI,
-                arrayOf(Contacts.LOOKUP_KEY, Contacts.DISPLAY_NAME),
-                "${Contacts.DISPLAY_NAME} = ? COLLATE NOCASE",
-                arrayOf(name.trim()),
-            )
+            return io {
+                contacts(
+                    Contacts.CONTENT_URI,
+                    arrayOf(Contacts.LOOKUP_KEY, Contacts.DISPLAY_NAME),
+                    "${Contacts.DISPLAY_NAME} = ? COLLATE NOCASE",
+                    arrayOf(name.trim()),
+                )
+            }
         }
 
         override suspend fun resolve(contactUri: String): AndroidContact? {
             val uri = Uri.parse(contactUri)
             if (uri.authority != ContactsContract.AUTHORITY) return null
-            return contacts(uri, arrayOf(Contacts.LOOKUP_KEY, Contacts.DISPLAY_NAME), null, null).firstOrNull()
+            return io { contacts(uri, arrayOf(Contacts.LOOKUP_KEY, Contacts.DISPLAY_NAME), null, null).firstOrNull() }
         }
 
         override suspend fun phoneNumbers(lookupKey: String): List<String> {
             if (!granted(Manifest.permission.READ_CONTACTS)) return emptyList()
+            return io { phoneNumbersOf(lookupKey) }
+        }
+
+        private fun phoneNumbersOf(lookupKey: String): List<String> {
             val id = contactId(lookupKey) ?: return emptyList()
             val country =
                 context
@@ -185,6 +197,13 @@ class ResolverAndroidContacts
 
         private fun granted(permission: String): Boolean =
             context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+
+        /**
+         * Every `ContactsContract` call is a blocking IPC to the contacts provider (tens of milliseconds, seconds on a
+         * busy phone), and screens call these functions from the main thread: they hop to IO, so callers never need
+         * to (#330).
+         */
+        private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
         private companion object {
             val E164 = Regex("^\\+[1-9][0-9]{4,14}$")

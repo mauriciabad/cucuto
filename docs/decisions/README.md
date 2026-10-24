@@ -84,3 +84,4 @@ handed out to work that never merged or is still in a PR (0049 is in #225, 0059 
 | [0072](0072-picker-folding-and-surprise-me.md) | Folded pack sections and "Surprise me" in the character pickers | accepted; defaults open in #297 |
 | [0073](0073-sound-flow-message-then-ringtone.md) | The sound flow: the message sound, then the ringtone, with "Android default" and "Leave as is" | accepted; owner update #298, defaults open in #282 |
 | [0074](0074-ringtone-rules-screen.md) | Ringtone rules: the pack's rules in plain words, and your own rules per contact | accepted; defaults open in #303 |
+| [0079](0079-security-review-hardening.md) | Security review before the Play release: content: intake only, byte-checked clip mirror, bounded table counts | accepted; default open in #341 |

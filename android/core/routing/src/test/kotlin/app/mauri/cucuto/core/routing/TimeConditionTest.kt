@@ -66,6 +66,16 @@ class TimeConditionTest {
         }
     }
 
+    @Test
+    fun rejectsASpanWiderThanALong() {
+        // until - from wraps to a negative length; accepted, state() would index before its buckets.
+        try {
+            TimeCondition(Long.MIN_VALUE + 1, Long.MAX_VALUE, false, LongArray(0))
+            fail("Accepted a span that overflows")
+        } catch (_: IllegalArgumentException) {
+        }
+    }
+
     private fun conditionalTable(): RoutingTable {
         val night =
             TimeCondition(from, from + 3 * day, true, longArrayOf(from + 7 * 3_600_000L, from + 19 * 3_600_000L))

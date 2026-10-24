@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.telephony.PhoneNumberUtils
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +65,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.ChatKey
@@ -80,8 +82,9 @@ import app.mauri.cucuto.ui.theme.CucutoTheme
 import java.util.Locale
 
 /**
- * "Add a chat from contacts" (ADR 0065): the explainer, then Android's prompt for `READ_CONTACTS` (only if missing),
- * then the WhatsApp entries of Android's contacts to pick from. [onDone] gets the chats saved.
+ * "Add a chat from contacts" (ADR 0065): with `READ_CONTACTS` granted, the WhatsApp entries of Android's contacts to
+ * pick from. Without it, the explainer first, then Android's prompt, or Android's settings once Android no longer
+ * shows its prompt (#337). [onDone] gets the chats saved.
  */
 @Composable
 fun AddFromContactsScreen(
@@ -92,28 +95,46 @@ fun AddFromContactsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val activity = LocalActivity.current
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) viewModel.load() else viewModel.denied()
+            if (granted) {
+                viewModel.load()
+            } else {
+                // After a refusal, Android shows no rationale only when it won't show its prompt again.
+                val blocked =
+                    activity?.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS) == false
+                viewModel.denied(blocked)
+            }
         }
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refresh()
+        onPauseOrDispose {}
+    }
     val done by rememberUpdatedState(onDone)
     LaunchedEffect(state.done) { state.done?.let { done(it) } }
+    val openSettings = {
+        runCatching {
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", context.packageName, null),
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+        Unit
+    }
     AddFromContactsContent(
         state = state,
         onBack = onBack,
         onContinue = {
-            if (viewModel.needsPermission()) permission.launch(Manifest.permission.READ_CONTACTS) else viewModel.load()
-        },
-        onOpenSettings = {
-            runCatching {
-                context.startActivity(
-                    Intent(
-                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.fromParts("package", context.packageName, null),
-                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                )
+            when {
+                !viewModel.needsPermission() -> viewModel.load()
+                state.blocked -> openSettings()
+                else -> permission.launch(Manifest.permission.READ_CONTACTS)
             }
         },
+        onOpenSettings = openSettings,
         onQueryChange = viewModel::setQuery,
         onToggle = viewModel::toggle,
         onSave = viewModel::save,
@@ -165,7 +186,13 @@ fun AddFromContactsContent(
                                 onContinue()
                             },
                             shapes = ButtonDefaults.shapes(),
-                        ) { Text(stringResource(R.string.contacts_continue)) }
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (state.blocked) R.string.contacts_open_settings else R.string.contacts_continue,
+                                ),
+                            )
+                        }
                     }
                 }
 
@@ -194,7 +221,7 @@ fun AddFromContactsContent(
     ) { padding ->
         when (state.step) {
             AddStep.Explainer -> {
-                Explainer(Modifier.padding(padding))
+                Explainer(state.blocked, Modifier.padding(padding))
             }
 
             AddStep.Loading -> {
@@ -202,7 +229,7 @@ fun AddFromContactsContent(
             }
 
             AddStep.Denied -> {
-                Denied(onOpenSettings, onContinue, onBack, Modifier.padding(padding))
+                Denied(onOpenSettings, onContinue.takeUnless { state.blocked }, onBack, Modifier.padding(padding))
             }
 
             AddStep.List -> {
@@ -219,7 +246,10 @@ fun AddFromContactsContent(
 }
 
 @Composable
-private fun Explainer(modifier: Modifier = Modifier) {
+private fun Explainer(
+    blocked: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val uriHandler = LocalUriHandler.current
     val source = stringResource(R.string.settings_source_url)
     Column(
@@ -232,6 +262,26 @@ private fun Explainer(modifier: Modifier = Modifier) {
                 ).padding(horizontal = 24.dp, vertical = 8.dp),
     ) {
         Text(stringResource(R.string.contacts_explainer_lead), style = MaterialTheme.typography.bodyLarge)
+        if (blocked) {
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(16.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.contacts_blocked_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(stringResource(R.string.contacts_blocked_body), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
         ExplainerPart(R.string.contacts_explainer_reads_title, R.string.contacts_explainer_reads_body)
         ExplainerPart(R.string.contacts_explainer_never_title, R.string.contacts_explainer_never_body)
         ExplainerPart(R.string.contacts_explainer_saves_title, R.string.contacts_explainer_saves_body)
@@ -273,7 +323,7 @@ private fun Loading(modifier: Modifier = Modifier) {
 @Composable
 private fun Denied(
     onOpenSettings: () -> Unit,
-    onTryAgain: () -> Unit,
+    onTryAgain: (() -> Unit)?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -285,8 +335,11 @@ private fun Denied(
         Button(onClick = onOpenSettings, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.contacts_open_settings))
         }
-        TextButton(onClick = onTryAgain, shapes = ButtonDefaults.shapes()) {
-            Text(stringResource(R.string.contacts_try_again))
+        // Android won't show its prompt again once it is blocked: only its settings can grant the permission.
+        if (onTryAgain != null) {
+            TextButton(onClick = onTryAgain, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.contacts_try_again))
+            }
         }
         TextButton(onClick = onBack, shapes = ButtonDefaults.shapes()) { Text(stringResource(R.string.contacts_back)) }
     }
@@ -399,7 +452,11 @@ private fun ContactList(
                 )
             }
         }
-        items(state.rows, key = { "${it.entry.packageName}/${it.entry.lookupKey}" }) { row ->
+        items(
+            state.rows,
+            key = { "${it.entry.packageName}/${it.entry.lookupKey}" },
+            contentType = { "contact" },
+        ) { row ->
             ContactItem(
                 row = row,
                 onToggle = {

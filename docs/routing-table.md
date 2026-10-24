@@ -194,7 +194,9 @@ after 120 more.
 - So are special clips: a reader from before them skips the `D` line and the `m` field, and draws rare and moment
   clips like ordinary ones until the module is updated by a reboot. Tables without special clips are byte-for-byte
   what they were.
-- The header counts must match the records, so a truncated table is rejected rather than half-applied.
+- The header counts must match the records, so a truncated table is rejected rather than half-applied. A count
+  (in the header or a `V` line's clip count) above the characters left in the table is rejected before anything
+  is allocated for it (ADR 0079).
 
 ## Performance
 

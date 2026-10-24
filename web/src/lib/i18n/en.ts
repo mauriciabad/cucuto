@@ -678,7 +678,7 @@ export const en = {
 			update:
 				'Saves as an update: the same pack ID, version {version}. The app replaces the installed pack and keeps every contact’s voice.',
 			copy: 'Save as a new pack instead, with its own ID and version 1.0.0, to install it next to the original',
-			kept: 'Kept from the original as they are, though this page does not edit them yet. Ringtones: {ringtones}. Animated pictures: {animations}.',
+			kept: 'Animated pictures are kept from the original as they are, though this page does not edit them yet: {animations}.',
 			undecodable:
 				'Clips this browser cannot play: {n}. They stay in the pack as they are, without preview or editing.'
 		},
@@ -717,14 +717,15 @@ export const en = {
 		characters: {
 			title: 'Characters',
 			intro:
-				'Each character is a picture and one or more clips. The app picks one of a character’s clips at random for every message.',
+				'Each character is a picture with clips for messages, ringtones for calls, or both. The app picks one of a character’s clips at random for every message.',
 			add: 'Add a character',
 			empty: 'No characters yet.',
 			heading: 'Character {n}',
 			name: 'Name',
 			remove: 'Remove character',
 			color: 'Color',
-			colorHint: 'Suggested from the picture. The app themes this character with it.'
+			colorHint: 'Suggested from the picture. The app themes this character with it.',
+			description: 'Description (optional)'
 		},
 		picture: {
 			choose: 'Choose a picture',
@@ -763,6 +764,123 @@ export const en = {
 			decodeFailed: '{name} could not be opened: this browser cannot play it.',
 			tooLong: '{name} is longer than 6 minutes, the longest audio the creator opens.',
 			recordingLabel: 'Recording {n}'
+		},
+		conditions: {
+			clipTitle: 'When it plays',
+			ringtoneTitle: 'When it rings',
+			intro: 'Leave everything as it is for a clip that can play on any message.',
+			ringtoneIntro:
+				'The app rings the most specific version whose condition holds, and the first version when none does.',
+			moment: 'Which message',
+			momentAny: 'Any message, in the rotation',
+			momentFirst: 'The chat’s first message of the day (days start at 4:00)',
+			momentBurst: 'A message in a row, each within a minute of the one before',
+			burst: 'Message number',
+			rare: 'Rare clip: left out of the rotation, it plays now and then',
+			oneIn: 'About one message in',
+			time: 'Time of day',
+			timeAny: 'Any time',
+			timeDay: 'By day',
+			timeNight: 'At night',
+			timeHours: 'Between hours',
+			dayHint:
+				'Day runs from sunrise to sunset for the place set in the app (7:00 to 19:00 until one is set).',
+			from: 'From',
+			to: 'To',
+			hoursHint: 'Includes “from”, excludes “to”, and may cross midnight (22:00 to 06:00).',
+			seasons: 'Seasons',
+			seasonsHint: 'None chosen: all year. Flipped south of the equator.',
+			weekdays: 'Days of the week',
+			weekdaysHint: 'None chosen: every day.',
+			dates: 'Dates',
+			datesHint:
+				'Days of the year, every year, as month-day (12-25). Add an end day for a range; ranges may cross the new year.',
+			dateFrom: 'Day',
+			dateTo: 'Until (optional)',
+			date: 'Date {n}',
+			addDate: 'Add a date',
+			removeDate: 'Remove date {n}',
+			save: 'Save',
+			cancel: 'Cancel',
+			problems: {
+				TIME_INVALID: 'Write the hours as HH:MM, for example 22:00.',
+				TIME_RANGE_EMPTY: 'The hours start and end at the same time. Pick another end.',
+				DATE_INVALID:
+					'Date {n} is not a day of the year. Write it as month-day, for example 12-25.',
+				TOO_MANY_DATES: 'A condition can have up to 50 dates.',
+				BURST_OUT_OF_RANGE: 'The message number goes from 2 to 50.',
+				ONE_IN_OUT_OF_RANGE: 'A rare clip plays on about one message in 2 to 10,000.',
+				RINGTONE_DURATION_OUT_OF_RANGE: 'Ringtones last from 5 seconds to 6 minutes.',
+				LOOP_INVALID:
+					'The loop must last at least 1 second and end before the song does. Move its start or end.',
+				FADE_IN_OUT_OF_RANGE: 'The fade-in lasts from 0 to 10 seconds.',
+				WEIGHT_OUT_OF_RANGE: 'How often goes from 0.1 to 100.'
+			} as Record<string, string>
+		},
+		summary: {
+			day: 'By day',
+			night: 'At night',
+			hours: '{from} to {to}',
+			firstOfDay: 'First message of the day',
+			burst: 'Message {n} in a row',
+			rare: 'Rare: about 1 in {n}',
+			dateRange: '{from} to {to}',
+			always: 'Always',
+			seasons: {
+				spring: 'Spring',
+				summer: 'Summer',
+				autumn: 'Autumn',
+				winter: 'Winter'
+			} as Record<string, string>
+		},
+		ringtones: {
+			title: 'Ringtones',
+			intro:
+				'Songs for calls, for contacts who pick this character as their ringtone. Several versions of a song can ring at different times, such as day and night. A character can have only ringtones.',
+			add: 'Add a ringtone',
+			hint: 'Audio files of 5 seconds to 6 minutes, kept in their own format.',
+			play: 'Play',
+			stopPlaying: 'Stop',
+			label: 'Label',
+			edit: 'Edit',
+			addVersion: 'Add a version',
+			remove: 'Remove',
+			versionLabel: '{label} (version {n})',
+			untitled: 'Ringtone {n}',
+			tooShort: '{name} lasts {s} s. Ringtones need at least 5 seconds.',
+			tooLong: '{name} is longer than 6 minutes, the longest ringtone.',
+			unsupported:
+				'{name} is not a format packs accept. Use Ogg, Opus, MP3, M4A, AAC, FLAC or WAV.',
+			decodeFailed: '{name} could not be opened: this browser cannot play it.',
+			noPreview: 'This browser cannot play this file; it stays in the pack as it is.'
+		},
+		ringtoneEditor: {
+			title: 'Edit ringtone',
+			source: '{name}, {s} s',
+			label: 'Label',
+			loop: 'Looping',
+			loopWhole: 'Loop the whole song',
+			loopOnce: 'Play once, then silence',
+			loopSection: 'Play an intro once, then loop a section',
+			loopStart: 'Loop starts',
+			loopEnd: 'Loop ends',
+			playLoop: 'Play the loop',
+			fadeIn: 'Fade in',
+			fadeInValue: '{s} s',
+			weight: 'How often for “random per call”',
+			weightHint:
+				'Compared with the other versions, when a contact picks a random version for every call (1 is normal).',
+			save: 'Save',
+			cancel: 'Cancel'
+		},
+		more: {
+			title: 'More details (optional)',
+			homepage: 'Homepage',
+			homepageHint: 'A web page about the pack, starting with https://.',
+			homepageInvalid: 'Write a full address that starts with https://.',
+			tags: 'Tags',
+			tagsHint: 'Words separated by commas, for example: animals, 8-bit.',
+			tagsResult: 'Saved as: {tags}'
 		},
 		clipEditor: {
 			title: 'Edit clip',
@@ -872,7 +990,7 @@ export const en = {
 				TOO_MANY_CHARACTERS: 'A pack can have up to 500 characters.',
 				CHARACTER_NAME_MISSING: 'Name character {n}.',
 				SPRITE_MISSING: 'Choose a picture for {name}.',
-				NO_CLIPS: 'Add at least one clip to {name}.',
+				NO_CLIPS: 'Add a clip or a ringtone to {name}.',
 				TOO_MANY_CLIPS: '{name} has more than 200 clips.',
 				UNSUPPORTED_FILE: '{name} has a file the pack format does not accept.'
 			} as Record<string, string>
@@ -915,7 +1033,13 @@ export const en = {
 			versionHint: 'Raise it for every update you share, for example 1.0.1.',
 			license: 'License (optional)',
 			licenseHint: 'Each pack keeps its own license.',
-			description: 'Description (optional)'
+			description: 'Description (optional)',
+			homepage: 'Homepage (optional)',
+			homepageHint: 'A web page about the bundle, starting with https://.',
+			homepageInvalid: 'Write a full address that starts with https://.',
+			tags: 'Tags (optional)',
+			tagsHint: 'Words separated by commas, for example: animals, 8-bit.',
+			tagsResult: 'Saved as: {tags}'
 		},
 		build: {
 			title: 'Check and download',

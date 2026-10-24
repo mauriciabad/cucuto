@@ -1,4 +1,11 @@
-<!-- One character of the pack being created: picture, name, color and clips. -->
+<!-- One character of the pack being created: picture, name, color, clips and their conditions, ringtones. -->
+<script lang="ts" module>
+	// Decoded ringtones by file ID, for previews (not saved: a 6-minute song is 69 MB of floats). A plain cache that
+	// nothing renders from, so it needs no reactivity.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
+	const decodedRingtones = new Map<string, Float32Array | null>();
+</script>
+
 <script lang="ts">
 	import { page } from '$app/state';
 	import Icon from '#lib/components/Icon.svelte';
@@ -21,9 +28,19 @@
 		type Crop,
 		type Picture
 	} from '#lib/creator/image.js';
-	import { uid, type CharacterState, type ClipState, type SavedClip } from '#lib/creator/pack.js';
+	import {
+		uid,
+		type CharacterState,
+		type ClipState,
+		type KeptFile,
+		type RingtoneState,
+		type SavedClip
+	} from '#lib/creator/pack.js';
+	import { conditionSummary } from '#lib/creator/conditions.js';
 	import type { Authoring } from '#lib/pack-spec/index.js';
 	import ClipDialog from './ClipDialog.svelte';
+	import ConditionDialog from './ConditionDialog.svelte';
+	import RingtoneDialog from './RingtoneDialog.svelte';
 	import HapticEditor from './HapticEditor.svelte';
 	import CropDialog from './CropDialog.svelte';
 	import { cookiePolygon } from './cookie.js';
@@ -66,6 +83,18 @@
 	let level = $state(0);
 	let recordings = 0;
 	let playingClip = $state<string | null>(null);
+
+	// Conditions and ringtones.
+	const summaryText = $derived(messages(locale).create.summary);
+	const tr = $derived(messages(locale).create.ringtones);
+	let conditionClip = $state<ClipState | null>(null);
+	let editingRingtone = $state<{ ringtone: RingtoneState; samples: Float32Array | null } | null>(
+		null
+	);
+	let playingRingtone = $state<string | null>(null);
+	/** The audio formats a pack accepts (docs/pack-format.md#audio). */
+	const RINGTONE_EXTENSIONS = ['ogg', 'opus', 'oga', 'mp3', 'm4a', 'aac', 'flac', 'wav'];
+	const TOLERANCE_MS = 50;
 
 	async function pickPicture(event: Event & { currentTarget: HTMLInputElement }) {
 		const file = event.currentTarget.files?.[0];
@@ -218,6 +247,113 @@
 	function removeClip(clip: ClipState) {
 		character.clips = character.clips.filter((c) => c.uid !== clip.uid);
 	}
+
+	const ringtoneKey = (r: RingtoneState, i: number) => r.uid ?? `${r.file.id}-${i}`;
+
+	function ringtoneName(r: RingtoneState, i: number): string {
+		const label = typeof r.entry.label === 'string' ? r.entry.label.trim() : '';
+		return label || fill(tr.untitled, { n: i + 1 });
+	}
+
+	/** The decoded song of `file` (cached), or null when this browser cannot play it. */
+	async function ringtoneSamples(file: KeptFile): Promise<Float32Array | null> {
+		if (decodedRingtones.has(file.id)) return decodedRingtones.get(file.id) ?? null;
+		const samples = await decodeToMono(file.bytes.slice().buffer).catch(() => null);
+		decodedRingtones.set(file.id, samples);
+		return samples;
+	}
+
+	async function addRingtones(event: Event & { currentTarget: HTMLInputElement }) {
+		const files = [...(event.currentTarget.files ?? [])];
+		event.currentTarget.value = '';
+		problem = '';
+		busy = true;
+		try {
+			for (const file of files) {
+				const extension = file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase();
+				if (!file.name.includes('.') || !RINGTONE_EXTENSIONS.includes(extension)) {
+					problem = fill(tr.unsupported, { name: file.name });
+					continue;
+				}
+				const bytes = new Uint8Array(await file.arrayBuffer());
+				let samples: Float32Array;
+				try {
+					samples = await decodeToMono(bytes.slice().buffer);
+				} catch {
+					problem = fill(tr.decodeFailed, { name: file.name });
+					continue;
+				}
+				const length = durationMs(samples);
+				if (length < targets.ringtoneMinMs - TOLERANCE_MS) {
+					problem = fill(tr.tooShort, { name: file.name, s: seconds(length) });
+					continue;
+				}
+				if (length > targets.ringtoneMaxMs + TOLERANCE_MS) {
+					problem = fill(tr.tooLong, { name: file.name });
+					continue;
+				}
+				const kept: KeptFile = {
+					id: uid('file'),
+					bytes,
+					extension,
+					durationMs: Math.round(length),
+					name: file.name
+				};
+				decodedRingtones.set(kept.id, samples);
+				character.ringtones.push({
+					uid: uid('ring'),
+					file: kept,
+					entry: { file: file.name, label: stem(file.name) }
+				});
+			}
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function togglePlayRingtone(r: RingtoneState, key: string) {
+		if (playingRingtone === key) {
+			stop();
+			playingRingtone = null;
+			return;
+		}
+		playingRingtone = key;
+		const samples = await ringtoneSamples(r.file);
+		if (!samples) {
+			problem = tr.noPreview;
+			playingRingtone = null;
+			return;
+		}
+		if (playingRingtone !== key) return;
+		await play(samples);
+		if (playingRingtone === key) playingRingtone = null;
+	}
+
+	async function editRingtone(r: RingtoneState) {
+		editingRingtone = { ringtone: r, samples: await ringtoneSamples(r.file) };
+	}
+
+	async function addVersion(r: RingtoneState, i: number) {
+		const label = fill(tr.versionLabel, {
+			label: ringtoneName(r, i),
+			n: character.ringtones.filter((other) => other.file.id === r.file.id).length + 1
+		});
+		const version: RingtoneState = {
+			uid: uid('ring'),
+			file: r.file,
+			entry: { file: r.entry.file, label }
+		};
+		character.ringtones.splice(i + 1, 0, version);
+		await editRingtone(character.ringtones[i + 1]);
+	}
+
+	function removeRingtone(i: number) {
+		character.ringtones.splice(i, 1);
+	}
+
+	function setRingtoneLabel(r: RingtoneState, label: string) {
+		r.entry = { ...r.entry, label };
+	}
 </script>
 
 <article class="character card" aria-labelledby={id('heading')}>
@@ -283,6 +419,15 @@
 				</div>
 				<p id={id('color-hint')} class="body-small on-surface-variant">{t.characters.colorHint}</p>
 			</div>
+			<label class="field">
+				<span class="label-large">{t.characters.description}</span>
+				<textarea
+					rows="2"
+					maxlength="2000"
+					value={character.description ?? ''}
+					oninput={(event) => (character.description = event.currentTarget.value || null)}
+				></textarea>
+			</label>
 		</div>
 	</div>
 
@@ -291,6 +436,7 @@
 		{#if character.clips.length > 0}
 			<ol>
 				{#each character.clips as clip, i (clip.uid)}
+					{@const summary = conditionSummary(clip.when, clip.oneIn, summaryText, locale)}
 					<li>
 						<div class="clip-main">
 							<button
@@ -325,6 +471,15 @@
 									title={t.clips.weightHint}
 								/>
 							</label>
+							<button
+								type="button"
+								class="icon-button"
+								class:active={clip.when !== null || (clip.oneIn ?? null) !== null}
+								aria-label="{t.conditions.clipTitle}: {clip.label}"
+								onclick={() => (conditionClip = clip)}
+							>
+								<Icon name="schedule" />
+							</button>
 							{#if clip.source ?? clip.samples}
 								{@const source = (clip.source ?? clip.samples) as Float32Array}
 								<button
@@ -346,6 +501,9 @@
 								<Icon name="delete" />
 							</button>
 						</div>
+						{#if summary}
+							<p class="condition body-small"><Icon name="schedule" />{summary}</p>
+						{/if}
 						{#if clip.durationMs > targets.clipHintMs}
 							<p class="hint body-small"><Icon name="info" />{t.clips.longHint}</p>
 						{/if}
@@ -392,6 +550,98 @@
 		{/if}
 	</div>
 
+	<div class="ringtones">
+		<h4 id={id('ringtones')} class="title-medium">{tr.title}</h4>
+		<p class="body-small on-surface-variant">{tr.intro}</p>
+		{#if character.ringtones.length > 0}
+			<ol aria-labelledby={id('ringtones')}>
+				{#each character.ringtones as ringtone, i (ringtoneKey(ringtone, i))}
+					{@const key = ringtoneKey(ringtone, i)}
+					{@const name = ringtoneName(ringtone, i)}
+					{@const summary = conditionSummary(
+						ringtone.entry.when as Record<string, unknown> | null | undefined,
+						null,
+						summaryText,
+						locale
+					)}
+					<li>
+						<div class="clip-main">
+							<button
+								type="button"
+								class="icon-button tonal"
+								aria-label="{playingRingtone === key ? tr.stopPlaying : tr.play}: {name}"
+								onclick={() => togglePlayRingtone(ringtone, key)}
+							>
+								<Icon name={playingRingtone === key ? 'stop' : 'play-arrow'} />
+							</button>
+							<label class="clip-label">
+								<span class="visually-hidden">{tr.label} {i + 1}</span>
+								<input
+									type="text"
+									maxlength="80"
+									autocomplete="off"
+									value={typeof ringtone.entry.label === 'string' ? ringtone.entry.label : ''}
+									oninput={(event) => setRingtoneLabel(ringtone, event.currentTarget.value)}
+								/>
+							</label>
+							{#if ringtone.file.durationMs}
+								<span class="body-medium duration">
+									{fill(t.clips.seconds, { s: seconds(ringtone.file.durationMs) })}
+									<span class="format label-small">{ringtone.file.extension}</span>
+								</span>
+							{/if}
+						</div>
+						<div class="clip-tools">
+							<button
+								type="button"
+								class="icon-button"
+								aria-label="{tr.edit}: {name}"
+								onclick={() => editRingtone(ringtone)}
+							>
+								<Icon name="edit" />
+							</button>
+							<button
+								type="button"
+								class="icon-button"
+								aria-label="{tr.addVersion}: {name}"
+								onclick={() => addVersion(ringtone, i)}
+							>
+								<Icon name="library-add" />
+							</button>
+							<button
+								type="button"
+								class="icon-button"
+								aria-label="{tr.remove}: {name}"
+								onclick={() => removeRingtone(i)}
+							>
+								<Icon name="delete" />
+							</button>
+						</div>
+						<p class="condition body-small">
+							<Icon name="schedule" />{summary || summaryText.always}
+						</p>
+					</li>
+				{/each}
+			</ol>
+		{/if}
+		<div class="clip-actions">
+			<label class="button tonal small file" aria-disabled={busy}>
+				<Icon name="ring-volume" />
+				{tr.add}
+				<input
+					class="visually-hidden"
+					type="file"
+					accept=".ogg,.opus,.oga,.mp3,.m4a,.aac,.flac,.wav,audio/*"
+					multiple
+					disabled={busy}
+					aria-describedby={id('ringtone-hint')}
+					onchange={addRingtones}
+				/>
+			</label>
+			<span id={id('ringtone-hint')} class="body-small on-surface-variant">{tr.hint}</span>
+		</div>
+	</div>
+
 	<HapticEditor bind:character {authoring} name={displayName} />
 
 	<div aria-live="polite">
@@ -401,6 +651,40 @@
 
 {#if picture}
 	<CropDialog {picture} onuse={usePicture} oncancel={() => (picture = null)} />
+{/if}
+
+{#if conditionClip}
+	{@const clip = conditionClip}
+	<ConditionDialog
+		{authoring}
+		name={clip.label}
+		when={clip.when}
+		oneIn={clip.oneIn ?? null}
+		onsave={(result) => {
+			clip.when = result.when;
+			clip.oneIn = result.oneIn;
+			conditionClip = null;
+		}}
+		oncancel={() => (conditionClip = null)}
+	/>
+{/if}
+
+{#if editingRingtone}
+	{@const editing = editingRingtone}
+	{@const index = character.ringtones.indexOf(editing.ringtone)}
+	<RingtoneDialog
+		{authoring}
+		entry={$state.snapshot(editing.ringtone.entry) as Record<string, unknown>}
+		name={ringtoneName(editing.ringtone, Math.max(0, index))}
+		durationMs={editing.ringtone.file.durationMs ??
+			(editing.samples ? durationMs(editing.samples) : null)}
+		samples={editing.samples}
+		onsave={(entry) => {
+			editing.ringtone.entry = entry;
+			editingRingtone = null;
+		}}
+		oncancel={() => (editingRingtone = null)}
+	/>
 {/if}
 
 {#if pending.length > 0}
@@ -494,13 +778,15 @@
 		cursor: pointer;
 	}
 
-	.clips {
+	.clips,
+	.ringtones {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 	}
 
-	.clips ol {
+	.clips ol,
+	.ringtones ol {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
@@ -509,7 +795,8 @@
 		list-style: none;
 	}
 
-	.clips li {
+	.clips li,
+	.ringtones li {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -583,7 +870,25 @@
 	.clip-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		align-items: center;
+		gap: 0.5rem 0.75rem;
+	}
+
+	.condition {
+		display: flex;
+		flex-basis: 100%;
+		align-items: center;
+		gap: 0.375rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.condition :global(.icon) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.icon-button.active {
+		color: var(--md-sys-color-primary);
 	}
 
 	.button.recording {

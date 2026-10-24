@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.routing.RoutingTable
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import java.util.Arrays
 
 /**
  * Decides which URI the routing table gives each clip (ADR 0018).
@@ -49,9 +50,11 @@ object ProviderClips : ClipMirror {
  * JVM. Blocking: call it on an IO thread. Never throws; a clip it cannot mirror gets null, so the caller keeps the
  * provider URI for it.
  *
- * Copies are written to a temporary file and renamed, so SystemUI never reads half a clip. A copy is current when it
- * has the source's size and is not older than it; each current copy is checked once per process, so rebuilding the
- * routing table does not stat every clip again.
+ * Copies are written to a temporary file and renamed, so SystemUI never reads half a clip. A copy is current only
+ * when it holds exactly the source's bytes: shared storage is writable by apps with all-files access, and a planted
+ * or edited file of the same size and a newer date must not stay in place for SystemUI to play (ADR 0079). Each copy
+ * is compared once per process (clips are tens of KB), so rebuilding the routing table does not read every clip
+ * again.
  *
  * [mirror] and [retain] are serialised, and [retain] also keeps everything [mirror] handed out since the previous
  * [retain]: a table that is still being built (or not yet published) never loses a copy it already points at.
@@ -97,9 +100,7 @@ class ClipMirrorStore(
                 val size = source.length()
                 val stamp = "${target.path}\u0000$size\u0000${source.lastModified()}"
                 if (stamp !in checked) {
-                    if (!target.isFile || target.length() != size || target.lastModified() < source.lastModified()) {
-                        copy(source, target)
-                    }
+                    if (!sameBytes(source, target, size)) copy(source, target)
                     checked += stamp
                 }
                 issued += uri
@@ -141,6 +142,27 @@ class ClipMirrorStore(
         }
     }
 
+    /** Whether [target] is a regular file with exactly the [size] bytes of [source]. */
+    private fun sameBytes(
+        source: File,
+        target: File,
+        size: Long,
+    ): Boolean {
+        if (Files.isSymbolicLink(target.toPath()) || !target.isFile || target.length() != size) return false
+        source.inputStream().use { a ->
+            target.inputStream().use { b ->
+                val bufferA = ByteArray(COMPARE_BUFFER_BYTES)
+                val bufferB = ByteArray(COMPARE_BUFFER_BYTES)
+                while (true) {
+                    val n = a.readNBytes(bufferA, 0, bufferA.size)
+                    if (b.readNBytes(bufferB, 0, n) != n) return false
+                    if (!Arrays.equals(bufferA, 0, n, bufferB, 0, n)) return false
+                    if (n < bufferA.size) return b.read() < 0
+                }
+            }
+        }
+    }
+
     private fun copy(
         source: File,
         target: File,
@@ -161,6 +183,8 @@ class ClipMirrorStore(
         val SELF_TEST: List<String> = listOf("selftest", "chirp.wav")
 
         private const val NO_MEDIA = ".nomedia"
+
+        private const val COMPARE_BUFFER_BYTES = 16 * 1024
 
         /** Pack IDs, versions and pack paths (pack format): no separators, no `.`/`..`, nothing to escape. */
         private val SEGMENT = Regex("^[A-Za-z0-9_][A-Za-z0-9._+-]*$")
