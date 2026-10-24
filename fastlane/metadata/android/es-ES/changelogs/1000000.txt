@@ -1,0 +1,5 @@
+Cucuto 1.0
+• Signal y Molly: la voz de un contacto ahora suena también con sus mensajes de Signal, no solo de WhatsApp.
+• Corregido: «Predeterminado de Android» y «Dejar como está» devuelven el tono propio del contacto, y el tono que eliges siempre se aplica.
+• Los contactos que añades desde la agenda mantienen su vínculo para las llamadas.
+Más: https://github.com/mauriciabad/cucuto/releases/tag/v1.0.0

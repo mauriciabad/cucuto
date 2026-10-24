@@ -7,6 +7,14 @@ What changed in each Cucuto release, newest first. Downloads and checksums are o
 Each section is written from the commits since the previous release by `tools/release/release-notes.main.kts`, then
 edited by hand where the commit titles are too technical (see [docs/releasing.md](docs/releasing.md)).
 
+## [1.0.0]
+
+The first stable version.
+
+- **Signal and Molly.** A contact's voice now plays for their Signal (and Molly) messages too, with one voice per person across WhatsApp and Signal (#374, ADR 0081). Signal calls keep Signal's own ringtone.
+- **Phone ringtones fixed.** "Android default" and "Leave as is" restore the contact's own ringtone, a ringtone you pick always applies even after a change in Contacts, and the screens say truthfully what rings (#369, #372).
+- **Linking.** Chats added from contacts keep their Android contact for phone calls; "Change" no longer unlinks at once.
+
 ## [0.1.2] - 2026-10-24
 
 Pack import works again. If you installed 0.1.1, update and import your packs.
