@@ -13,8 +13,9 @@ import org.gradle.kotlin.dsl.dependencies
  * docs/baseline-profile.md). A `com.android.test` module with the official Baseline Profile Gradle plugin and
  * Macrobenchmark, pointed at `:app`; the app applies the plugin's consumer side ([configureBaselineProfileConsumer]).
  *
- * Generating needs a device: `./gradlew :app:generateBaselineProfile` with a rooted phone, or one on API 33+, on adb.
- * There is no Gradle managed device: the generator needs an Android 17 (API 37) image, and CI does not run it.
+ * Generating needs a device: `./gradlew :app:generateBaselineProfile` with an Android 17 emulator prepared like a
+ * user's app (onboarding done, packs, chats), picked with `ANDROID_SERIAL`. There is no Gradle managed device: it
+ * would boot empty, so the journeys would only see onboarding. CI does not run the generator.
  */
 class AndroidBaselineProfileConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -34,7 +35,7 @@ class AndroidBaselineProfileConventionPlugin : Plugin<Project> {
             }
 
             extensions.configure<BaselineProfileProducerExtension> {
-                // The owner's phone over adb (rooted, Android 17).
+                // A prepared Android 17 emulator over adb (docs/baseline-profile.md).
                 useConnectedDevices = true
             }
 

@@ -34,8 +34,8 @@ runner).
 - **CI compiles the generator but doesn't run it.** The `android-assemble` job now lists its tasks
   (`assembleDebug assembleRelease assembleDebugAndroidTest :baselineprofile:assembleNonMinifiedRelease`) instead of
   `assemble`. Plain `assemble` would also build the plugin's `benchmarkRelease` (a second R8 run) for nothing.
-- **The lead generates it on the phone** (`./gradlew :app:generateBaselineProfile`, steps in
-  `docs/baseline-profile.md`) and commits the profile in its own PR.
+- **The lead generates it on a device** (`./gradlew :app:generateBaselineProfile`, steps in
+  `docs/baseline-profile.md`) and commits the profile in its own PR. See the addendum: it is an emulator.
 
 ## Consequences
 
@@ -47,3 +47,13 @@ runner).
 - A committed profile changes the release APK's bytes, as any code change does. Reproducibility compares two builds
   of one commit, so it is unaffected.
 - Measuring the gain (startup and frame timing at 120 Hz) needs the device and stays in #226.
+
+## Addendum (2026-10-24): generated on an emulator
+
+The owner's phone runs the release-signed app, so the generator's debug-signed APK can't go there (see above). The
+first profile was generated on an Android 17 emulator instead (the API 37 Google APIs image, arm64), prepared like a
+user's app: onboarding skipped, the demo packs imported, and made-up chats added to its database as root.
+`ANDROID_SERIAL` keeps a plugged-in phone out of the run. There is still no Gradle-managed device: it would boot
+empty, and the journeys would profile onboarding instead of Home, the picker and Packs. `StartupBenchmarks` (cold
+start, `CompilationMode.None()` against the profile alone) now lives in `:baselineprofile`. Steps in
+`docs/baseline-profile.md`.

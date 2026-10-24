@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 
 /**
  * Records which classes and methods the main journeys run, so release builds ship them precompiled (#226):
- * `./gradlew :app:generateBaselineProfile` with the phone on adb writes
+ * `./gradlew :app:generateBaselineProfile` with a prepared emulator on adb writes
  * `app/src/main/generated/baselineProfiles/baseline-prof.txt` (and `startup-prof.txt`). See docs/baseline-profile.md.
  */
 @RunWith(AndroidJUnit4::class)
