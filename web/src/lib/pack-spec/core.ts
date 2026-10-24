@@ -56,6 +56,104 @@ export interface PackSpec {
 	/** An unpacked pack or bundle: relative '/'-separated paths and their contents (a folder, the pack creator). */
 	validateFiles(files: Iterable<readonly [string, Uint8Array]>): PackSpecResult;
 	validateDocument(kind: DocumentKind, bytes: Uint8Array): PackSpecResult;
+	/** The pack creators' shared conventions (authoring/ in shared/pack-spec, the same Kotlin as the app's creator). */
+	authoring: Authoring;
+}
+
+/** A file the creator holds: `key` is opaque to Kotlin (the website uses its own IDs), `extension` has no dot. */
+export interface DraftFileRef {
+	key: string;
+	extension: string;
+}
+
+/** A pack being made, as `PackDraft` in shared/pack-spec. Blank optional texts are left out of the manifest. */
+export interface PackDraftInput {
+	/** Null to derive `local.<author>.<name>-<idSuffix>`. */
+	id: string | null;
+	idSuffix: string;
+	name: string;
+	version?: string;
+	author: string;
+	license: string;
+	description?: string | null;
+	cover?: DraftFileRef | null;
+	characters: {
+		/** Null to derive a unique slug from the name. */
+		id: string | null;
+		name: string;
+		sprite: DraftFileRef | null;
+		seedColor: string | null;
+		clips: { file: DraftFileRef; label: string | null; weight?: number | null }[];
+	}[];
+}
+
+/** What a draft still needs (`DraftProblem.Kind`); `character` is the index of the character concerned. */
+export interface DraftProblem {
+	kind:
+		| 'PACK_NAME_MISSING'
+		| 'AUTHOR_MISSING'
+		| 'LICENSE_MISSING'
+		| 'NO_CHARACTERS'
+		| 'TOO_MANY_CHARACTERS'
+		| 'CHARACTER_NAME_MISSING'
+		| 'SPRITE_MISSING'
+		| 'NO_CLIPS'
+		| 'TOO_MANY_CLIPS'
+		| 'UNSUPPORTED_FILE';
+	character: number | null;
+}
+
+/** A laid-out pack: `pack.json` and the archive path of every draft file, in archive order. */
+export interface Assembly {
+	problems: DraftProblem[];
+	manifestJson: string | null;
+	packId: string | null;
+	fileName: string | null;
+	files: { path: string; key: string }[];
+}
+
+/** A clip after the shared pipeline: mono floats at 48 kHz. `loudnessLufs` is null for silence. */
+export interface ProcessedClip {
+	samples: Float32Array;
+	sampleRate: number;
+	gainDb: number;
+	loudnessLufs: number | null;
+	silent: boolean;
+	durationMs: number;
+}
+
+/** The creators' targets (Authoring.Audio, Authoring.Image and Limits in shared/pack-spec). */
+export interface AuthoringTargets {
+	sampleRate: number;
+	channels: number;
+	clipBitrate: number;
+	spriteSize: number;
+	clipMinMs: number;
+	clipMaxMs: number;
+	/** Clips longer than this get a gentle hint, never an error (ADR 0019). */
+	clipHintMs: number;
+	maxSourceMs: number;
+	hookLengthMs: number;
+}
+
+export interface Authoring {
+	targets: AuthoringTargets;
+	licensePresets: string[];
+	/** The license a new pack starts with, as in the app: `Personal use only` (free text, a warning). */
+	personalUseLicense: string;
+	assemble(draft: PackDraftInput): Assembly;
+	packFileName(name: string, id: string): string;
+	suggestPackId(author: string, name: string, suffix: string): string;
+	randomIdSuffix(): string;
+	/** Cut `[startMs, endMs)` of 48 kHz mono `samples`, trim silence, normalize, fade. `samples` is not changed. */
+	processClip(
+		samples: Float32Array,
+		startMs: number,
+		endMs: number,
+		options: { trimSilence: boolean; normalize: boolean }
+	): ProcessedClip;
+	/** The hook of a song for a clip of `lengthMs` (the shared auto-cut heuristic): `[startMs, endMs]`. */
+	findHook(samples: Float32Array, sampleRate: number, lengthMs: number): [number, number];
 }
 
 type Nullable<T> = T | null | undefined;
@@ -84,6 +182,34 @@ export interface PackSpecModule {
 	validateArchive(bytes: Int8Array): RawResult;
 	validateFiles(paths: string[], contents: Int8Array[]): RawResult;
 	validateDocument(kind: string, bytes: Int8Array): RawResult;
+	assemblePack(draft: string): {
+		readonly problems: string[];
+		readonly manifestJson: Nullable<string>;
+		readonly packId: Nullable<string>;
+		readonly fileName: Nullable<string>;
+		readonly files: { readonly path: string; readonly key: string }[];
+	};
+	packFileName(name: string, id: string): string;
+	suggestPackId(author: string, name: string, suffix: string): string;
+	randomIdSuffix(): string;
+	licensePresets(): string[];
+	personalUseLicense(): string;
+	processClip(
+		samples: Float32Array,
+		startMs: number,
+		endMs: number,
+		trimSilence: boolean,
+		normalize: boolean
+	): {
+		readonly samples: Float32Array;
+		readonly sampleRate: number;
+		readonly gainDb: number;
+		readonly loudnessLufs: number;
+		readonly silent: boolean;
+		readonly durationMs: number;
+	};
+	findHook(samples: Float32Array, sampleRate: number, lengthMs: number): number[];
+	authoringTargets(): AuthoringTargets;
 }
 
 // Kotlin's ByteArray is an Int8Array: a view over the same memory, no copy.
@@ -127,6 +253,60 @@ export function packSpec(module: PackSpecModule): PackSpec {
 			}
 			return plain(module.validateFiles(paths, contents));
 		},
-		validateDocument: (kind, bytes) => plain(module.validateDocument(kind, int8(bytes)))
+		validateDocument: (kind, bytes) => plain(module.validateDocument(kind, int8(bytes))),
+		authoring: authoring(module)
+	};
+}
+
+function authoring(module: PackSpecModule): Authoring {
+	const t = module.authoringTargets();
+	return {
+		targets: {
+			sampleRate: t.sampleRate,
+			channels: t.channels,
+			clipBitrate: t.clipBitrate,
+			spriteSize: t.spriteSize,
+			clipMinMs: t.clipMinMs,
+			clipMaxMs: t.clipMaxMs,
+			clipHintMs: t.clipHintMs,
+			maxSourceMs: t.maxSourceMs,
+			hookLengthMs: t.hookLengthMs
+		},
+		licensePresets: [...module.licensePresets()],
+		personalUseLicense: module.personalUseLicense(),
+		assemble(draft) {
+			const r = module.assemblePack(JSON.stringify(draft));
+			return {
+				problems: r.problems.map((code) => {
+					const [kind, index] = code.split(':');
+					return {
+						kind: kind as DraftProblem['kind'],
+						character: index === undefined ? null : Number(index)
+					};
+				}),
+				manifestJson: r.manifestJson ?? null,
+				packId: r.packId ?? null,
+				fileName: r.fileName ?? null,
+				files: r.files.map((f) => ({ path: f.path, key: f.key }))
+			};
+		},
+		packFileName: (name, id) => module.packFileName(name, id),
+		suggestPackId: (author, name, suffix) => module.suggestPackId(author, name, suffix),
+		randomIdSuffix: () => module.randomIdSuffix(),
+		processClip(samples, startMs, endMs, { trimSilence, normalize }) {
+			const r = module.processClip(samples, startMs, endMs, trimSilence, normalize);
+			return {
+				samples: r.samples,
+				sampleRate: r.sampleRate,
+				gainDb: r.gainDb,
+				loudnessLufs: Number.isNaN(r.loudnessLufs) ? null : r.loudnessLufs,
+				silent: r.silent,
+				durationMs: r.durationMs
+			};
+		},
+		findHook(samples, sampleRate, lengthMs) {
+			const [start, end] = module.findHook(samples, sampleRate, lengthMs);
+			return [start, end];
+		}
 	};
 }

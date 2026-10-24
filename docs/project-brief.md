@@ -382,8 +382,8 @@ In the app:
 In the website (PWA):
 
 - A **Create** page, installable as a PWA and usable offline (service worker, web app manifest). Where the browser supports file handling, the installed PWA opens pack files directly (`file_handlers` for `application/zip` / `.zip`; owner update 2026-10-23).
-- Audio is decoded and trimmed with the Web Audio API and recorded with MediaRecorder. Encode with WebCodecs where the browser supports the codec, otherwise fall back to a WebAssembly encoder.
-- Images are cropped on a canvas; JPEG XL encoding is optional through a WebAssembly encoder.
+- Audio is decoded and trimmed with the Web Audio API and recorded with MediaRecorder. Encode with WebCodecs where the browser supports the codec, otherwise fall back to WAV (a WebAssembly encoder would need `'wasm-unsafe-eval'` in the site's CSP; [ADR 0038](decisions/0038-web-pack-creator.md)). Layout, file names and clip processing are the shared Kotlin of both creators (`authoring` in `shared/pack-spec`).
+- Images are cropped on a canvas and written as JPEG XL where the browser can encode it, otherwise WebP, PNG or JPEG (ADR 0038).
 - Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews.
 - Haptic patterns are edited visually. Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
 
@@ -577,7 +577,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 
 - [ ] In-app creator: pack details, characters, sprite crop, import or record clips, waveform trim, normalize, haptics, validate, export or install.
 - [ ] Duplicate-and-edit for installed packs.
-- [ ] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser.
+- [x] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser (#48, [ADR 0038](decisions/0038-web-pack-creator.md); covers, bundles and custom haptics follow).
 - [ ] "Host your own repository" helper that outputs a folder with `repository.json` and previews.
 - [ ] Golden test packs run through `shared/pack-spec` on the JVM (packer), on Android and in the browser build used by the website, all green in CI (#116).
 
