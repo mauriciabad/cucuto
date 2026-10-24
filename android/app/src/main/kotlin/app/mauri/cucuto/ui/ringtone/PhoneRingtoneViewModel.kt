@@ -99,6 +99,27 @@ data class PhoneRingtoneUiState(
     /** The set-up card has something to set up: a character that rings, or Android default (to clear one). */
     val needsSetUp: Boolean get() = isDefault || (hasRingtone && !isUnchanged)
 
+    /**
+     * A problem the set-up card shows. Not linked is the card's link prompt, no ringtones means nothing to set up, and
+     * a render failure is none while an earlier ring file still rings.
+     */
+    val shownProblem: RingtoneProblem?
+        get() =
+            problem?.takeUnless {
+                it == RingtoneProblem.NotLinked || it == RingtoneProblem.NoRingtones ||
+                    (it == RingtoneProblem.RenderFailed && ringingWith != null)
+            }
+
+    /**
+     * The set-up card asks for something (#348): turn phone ringtones on, link the Android contact, use the ringtone,
+     * allow the phone permission, or fix a problem. Otherwise what rings is only the "Phone calls" row's.
+     */
+    val needsAction: Boolean
+        get() = needsSetUp && (!enabled || !linked || !using || needsPhonePermission || shownProblem != null)
+
+    /** The linked contact and the WhatsApp hint sit under the "Phone calls" row (#348). */
+    val showsLink: Boolean get() = !loading && contactId != null && needsSetUp && enabled && linked
+
     /** The preview is ringing (not paused). */
     val previewing: Boolean get() = preview != null && !preview.paused
 
