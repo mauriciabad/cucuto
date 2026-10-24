@@ -1,0 +1,139 @@
+package app.mauri.cucuto.ui.discover
+
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.repo.RepoError
+import app.mauri.cucuto.core.repo.RepositorySnapshot
+import app.mauri.cucuto.packspec.RepositoryIndex
+import app.mauri.cucuto.packspec.SpecJson
+import app.mauri.cucuto.ui.theme.CucutoTheme
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+
+/** Discover's states on Robolectric: cards and badges, errors, offline copies and empty states. */
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = "w411dp-h891dp")
+class DiscoverContentTest {
+    @get:Rule
+    val compose = createComposeRule()
+
+    private val repo =
+        SavedRepository(
+            1,
+            "https://packs.example.com/repository.json",
+            "Friends' packs",
+            false,
+            true,
+            RepositoryAuthType.NONE,
+        )
+    private val installed = mutableListOf<String>()
+    private val retried = mutableListOf<Long>()
+    private val signIns = mutableListOf<Long>()
+
+    private fun snapshot(vararg entries: String) =
+        RepositorySnapshot(
+            indexUrl = repo.url.toHttpUrl(),
+            baseUrl = repo.url.toHttpUrl(),
+            index = SpecJson.decodeFromString(RepositoryIndex.serializer(), indexJson("Friends' packs", *entries)),
+            warnings = emptyList(),
+            etag = null,
+        )
+
+    private fun state(
+        load: RepoLoad,
+        installedPacks: List<InstalledRef> = emptyList(),
+        query: String = "",
+    ) = DiscoverUiState(
+        sections = sections(listOf(repo), mapOf(repo.id to load), installedPacks, query, null),
+        repositories = listOf(repo),
+        query = query,
+    )
+
+    private fun show(state: DiscoverUiState) {
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) {
+                DiscoverContent(
+                    state = state,
+                    previews = { _, _ -> null },
+                    actions =
+                        DiscoverActions(
+                            onInstall = { installed += it.id },
+                            onRetry = { retried += it.id },
+                            onSignIn = { signIns += it.id },
+                        ),
+                    onOpenRepositories = {},
+                )
+            }
+        }
+    }
+
+    @Test
+    fun cardsShowTheHostCharactersAndWhatInstallingDoes() {
+        val load =
+            RepoLoad(
+                snapshot =
+                    snapshot(
+                        packEntry("app.example.cats", "Cats", version = "1.1.0", character = "Tabby"),
+                        packEntry("app.example.dogs", "Dogs"),
+                    ),
+            )
+        show(state(load, listOf(InstalledRef("app.example.cats", "1.0.0", null, null))))
+
+        compose.onNodeWithText("packs.example.com").assertIsDisplayed()
+        compose.onNodeWithText("Tabby").assertIsDisplayed()
+        compose.onNodeWithText("Update available").assertIsDisplayed()
+        compose.onNodeWithText("Update").performClick()
+        compose.onNodeWithText("Install").performScrollTo().performClick()
+        assertEquals(listOf("app.example.cats", "app.example.dogs"), installed)
+    }
+
+    @Test
+    fun aFailedRepositorySaysWhyAndOffersARetryOrASignIn() {
+        show(state(RepoLoad(error = RepoError.Unauthorized(401))))
+        compose.onNodeWithText("This repository needs a sign-in, or the saved one no longer works.").assertIsDisplayed()
+        compose.onNodeWithText("Sign in").performClick()
+        compose.onNodeWithText("Try again").performClick()
+        assertEquals(listOf(1L), signIns)
+        assertEquals(listOf(1L), retried)
+    }
+
+    @Test
+    fun offlineTheLastCopyStaysWithANote() {
+        show(
+            state(RepoLoad(snapshot = snapshot(packEntry("app.example.cats", "Cats")), error = RepoError.Network("x"))),
+        )
+        compose.onNodeWithText("Showing the last copy").assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                "Can't reach the server. Check your internet connection and try again.",
+            ).assertIsDisplayed()
+        compose.onNodeWithText("Cats").assertIsDisplayed()
+    }
+
+    @Test
+    fun emptyStates() {
+        show(state(RepoLoad(snapshot = snapshot())))
+        compose.onNodeWithText("This repository has no packs yet.").assertIsDisplayed()
+    }
+
+    @Test
+    fun noMatchesOffersToClearTheSearch() {
+        show(state(RepoLoad(snapshot = snapshot(packEntry("app.example.cats", "Cats"))), query = "zebra"))
+        compose.onNodeWithText("No packs match your search.").assertIsDisplayed()
+    }
+
+    @Test
+    fun noRepositoriesTurnedOn() {
+        show(DiscoverUiState(sections = emptyList(), repositories = listOf(repo.copy(enabled = false))))
+        compose.onNodeWithText("No repositories turned on").assertIsDisplayed()
+    }
+}

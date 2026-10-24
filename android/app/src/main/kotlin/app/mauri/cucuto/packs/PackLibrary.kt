@@ -4,7 +4,6 @@ import android.content.Context
 import app.mauri.cucuto.core.data.db.AssignmentEntity
 import app.mauri.cucuto.core.data.db.ContactWithKeys
 import app.mauri.cucuto.core.data.db.InstalledPackEntity
-import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
@@ -74,14 +73,24 @@ class PackLibrary
             }.mapLatest { (rows, assigned, people) -> rows.map { libraryPack(it, assigned, people) } }
                 .flowOn(Dispatchers.IO)
 
-        override fun prepare(source: ImportSource): Flow<ImportStep> =
+        override fun prepare(source: ImportSource): Flow<ImportStep> = prepareFrom(source, origin = null)
+
+        override fun prepare(
+            source: ImportSource,
+            origin: PackOrigin,
+        ): Flow<ImportStep> = prepareFrom(source, origin)
+
+        private fun prepareFrom(
+            source: ImportSource,
+            origin: PackOrigin?,
+        ): Flow<ImportStep> =
             flow {
                 leftoversDeleted.await()
                 emitAll(importer.prepare(source))
             }.map { event ->
                 when (event) {
                     is ImportEvent.Progress -> ImportStep.Working(event.progress)
-                    is ImportEvent.Finished -> stepFor(event.result, source)
+                    is ImportEvent.Finished -> stepFor(event.result, source, origin)
                 }
             }
 
@@ -90,10 +99,11 @@ class PackLibrary
             selection: PackSelection,
         ): Flow<ImportStep> {
             val import = review.handle as PreparedImport
-            return install(import, selection).map { event ->
+            val origin = review.origin ?: PackOrigin.Local(import.displayName)
+            return install(import, selection, origin).map { event ->
                 when (event) {
                     is ImportEvent.Progress -> ImportStep.Working(event.progress)
-                    is ImportEvent.Finished -> stepFor(event.result, source = null)
+                    is ImportEvent.Finished -> stepFor(event.result, source = null, origin = null)
                 }
             }
         }
@@ -125,7 +135,7 @@ class PackLibrary
         fun install(
             import: PreparedImport,
             selection: PackSelection = PackSelection.default(import),
-            origin: Origin = Origin.Local(import.displayName),
+            origin: PackOrigin = PackOrigin.Local(import.displayName),
         ): Flow<ImportEvent> =
             importer.install(import, selection).onEach { event ->
                 val result = (event as? ImportEvent.Finished)?.result
@@ -137,10 +147,11 @@ class PackLibrary
         private suspend fun stepFor(
             result: ImportResult,
             source: ImportSource?,
+            origin: PackOrigin?,
         ): ImportStep =
             when (result) {
                 is ImportResult.Ready -> {
-                    ImportStep.Ready(review(result.import))
+                    ImportStep.Ready(review(result.import, origin))
                 }
 
                 is ImportResult.Invalid -> {
@@ -158,7 +169,10 @@ class PackLibrary
                 }
             }
 
-        private suspend fun review(import: PreparedImport): ImportReview {
+        private suspend fun review(
+            import: PreparedImport,
+            origin: PackOrigin?,
+        ): ImportReview {
             val packs =
                 import.packs.map { candidate ->
                     val folder = import.stagedFolder(candidate)
@@ -181,6 +195,7 @@ class PackLibrary
                 packs = packs,
                 warnings = import.report.warnings.filter { it.code !in versionNotes },
                 handle = import,
+                origin = origin,
             )
         }
 
@@ -252,7 +267,7 @@ class PackLibrary
         private suspend fun record(
             import: PreparedImport,
             result: ImportResult.Installed,
-            origin: Origin,
+            origin: PackOrigin,
         ) {
             val now = System.currentTimeMillis()
             for (pack in result.packs) {
@@ -269,38 +284,15 @@ class PackLibrary
                         sha256 = import.archiveSha256,
                         sizeBytes = import.archiveSizeBytes,
                         source = origin.source,
-                        repositoryUrl = (origin as? Origin.Repository)?.url,
-                        downloadUrl = (origin as? Origin.Url)?.url,
-                        fileName = (origin as? Origin.Local)?.fileName,
+                        repositoryUrl = (origin as? PackOrigin.Repository)?.url,
+                        downloadUrl = (origin as? PackOrigin.Url)?.url,
+                        fileName = (origin as? PackOrigin.Local)?.fileName,
                         bundleId = import.bundle?.id,
                         bundleName = import.bundle?.name,
                         bundleVersion = import.bundle?.version,
                         installedAt = now,
                     ),
                 )
-            }
-        }
-
-        /** Where an imported file came from. */
-        sealed interface Origin {
-            val source: PackSource
-
-            data class Local(
-                val fileName: String?,
-            ) : Origin {
-                override val source = PackSource.LOCAL
-            }
-
-            data class Url(
-                val url: String,
-            ) : Origin {
-                override val source = PackSource.URL
-            }
-
-            data class Repository(
-                val url: String,
-            ) : Origin {
-                override val source = PackSource.REPOSITORY
             }
         }
 

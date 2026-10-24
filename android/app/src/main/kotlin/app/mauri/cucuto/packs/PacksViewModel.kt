@@ -2,13 +2,11 @@ package app.mauri.cucuto.packs
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.mauri.cucuto.core.pack.FailureReason
 import app.mauri.cucuto.core.pack.ImportProgress
 import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.core.pack.PackSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,10 +32,21 @@ data class PacksUiState(
 sealed interface ImportUi {
     data object Idle : ImportUi
 
-    /** Reading, checking and unpacking the file. [progress] is null until the first step reports. */
+    /**
+     * Downloading ([download], repositories only), then reading, checking and unpacking the file. [progress] is null
+     * until the importer's first step reports.
+     */
     data class Working(
         val progress: ImportProgress?,
+        val download: Download? = null,
     ) : ImportUi
+
+    /** A download in progress: [bytes] of [total] (null when unknown) of the pack called [name]. */
+    data class Download(
+        val name: String,
+        val bytes: Long,
+        val total: Long?,
+    )
 
     /**
      * The file is valid: the user picks packs (bundles) and confirms. [selection] has the chosen packs; choosing a
@@ -92,15 +101,14 @@ class PacksViewModel
         private val catalog: PackCatalog,
         private val incoming: IncomingImports,
     ) : ViewModel() {
-        private val importState = MutableStateFlow<ImportUi>(ImportUi.Idle)
+        private val imports = ImportController(catalog, viewModelScope)
         private val removal = MutableStateFlow<RemovalUi?>(null)
         private val message = MutableStateFlow<PacksMessage?>(null)
-        private var importJob: Job? = null
 
         val state: StateFlow<PacksUiState> =
             combine(
                 catalog.installed.map<List<LibraryPack>, List<LibraryPack>?> { it }.onStart { emit(null) },
-                importState,
+                imports.state,
                 removal,
                 message,
             ) { packs, import, removal, message -> PacksUiState(packs, import, removal, message) }
@@ -114,117 +122,19 @@ class PacksViewModel
         }
 
         /** Starts importing [source] (the file picker, "Open with" or the share sheet), replacing any open import. */
-        fun importFrom(source: ImportSource) {
-            val current = importState.value
-            if (current is ImportUi.Review && current.installing) return
-            importJob?.cancel()
-            if (current is ImportUi.Review) catalog.discard(current.review)
-            importState.value = ImportUi.Working(progress = null)
-            importJob =
-                viewModelScope.launch {
-                    try {
-                        catalog.prepare(source).collect { step ->
-                            importState.value =
-                                when (step) {
-                                    is ImportStep.Working -> ImportUi.Working(step.progress)
-                                    is ImportStep.Ready -> ImportUi.Review(step.review, defaultSelection(step.review))
-                                    is ImportStep.Invalid -> ImportUi.Problem(problemFor(step.report, step.detected))
-                                    is ImportStep.Failed -> ImportUi.Problem(problemFor(step.reason, step.message))
-                                    is ImportStep.Installed -> ImportUi.Idle
-                                }
-                        }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        importState.value = ImportUi.Problem(unexpected(e))
-                    }
-                }
-        }
+        fun importFrom(source: ImportSource) = imports.start { catalog.prepare(source) }
 
         /** Selects or deselects one pack of a bundle. Selecting a pack that replaces an installed copy confirms it. */
         fun setSelected(
             packId: String,
             selected: Boolean,
-        ) {
-            importState.update { state ->
-                if (state !is ImportUi.Review || state.installing) return@update state
-                val selection =
-                    state.selection.with(packId, selected).let {
-                        if (selected) it.confirm(packId) else it.copy(confirmed = it.confirmed - packId)
-                    }
-                state.copy(selection = selection)
-            }
-        }
+        ) = imports.setSelected(packId, selected)
 
         /** Installs the chosen packs. For a single pack, the install button itself is the confirmation. */
-        fun install() {
-            val state = importState.value as? ImportUi.Review ?: return
-            if (!state.canInstall) return
-            val selection =
-                if (state.review.isBundle) {
-                    state.selection
-                } else {
-                    state.review.packs
-                        .map { it.id }
-                        .toSet()
-                        .let { PackSelection(it, it) }
-                }
-            importState.value = state.copy(installing = true)
-            importJob =
-                viewModelScope.launch {
-                    try {
-                        catalog.install(state.review, selection).collect { step ->
-                            when (step) {
-                                is ImportStep.Working -> {
-                                    importState.update {
-                                        (it as? ImportUi.Review)?.copy(progress = step.progress) ?: it
-                                    }
-                                }
-
-                                is ImportStep.Installed -> {
-                                    importState.value = ImportUi.Idle
-                                    message.value = installedMessage(state.review, step)
-                                }
-
-                                is ImportStep.Failed -> {
-                                    importState.value = ImportUi.Problem(problemFor(step.reason, step.message))
-                                }
-
-                                is ImportStep.Invalid -> {
-                                    importState.value = ImportUi.Problem(problemFor(step.report, step.detected))
-                                }
-
-                                is ImportStep.Ready -> {
-                                    // install() never asks for another review.
-                                }
-                            }
-                        }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        importState.value = ImportUi.Problem(unexpected(e))
-                    }
-                }
-        }
+        fun install() = imports.install { message.value = it }
 
         /** Closes the import: stops reading, drops a prepared import or dismisses a problem. Never stops an install. */
-        fun closeImport() {
-            when (val state = importState.value) {
-                is ImportUi.Review -> {
-                    if (state.installing) return
-                    catalog.discard(state.review)
-                }
-
-                is ImportUi.Working -> {
-                    importJob?.cancel()
-                }
-
-                ImportUi.Idle, is ImportUi.Problem -> {
-                    // Nothing is running.
-                }
-            }
-            importState.value = ImportUi.Idle
-        }
+        fun closeImport() = imports.close()
 
         /** Asks for confirmation before removing [pack]. */
         fun requestRemove(pack: LibraryPack) {
@@ -264,39 +174,12 @@ class PacksViewModel
             message.value = null
         }
 
-        override fun onCleared() {
-            (importState.value as? ImportUi.Review)?.takeUnless { it.installing }?.let { catalog.discard(it.review) }
-        }
-
-        private fun installedMessage(
-            review: ImportReview,
-            step: ImportStep.Installed,
-        ): PacksMessage.Installed {
-            val installed = step.packs.map { it.id }.toSet()
-            val packs = review.packs.filter { it.id in installed }
-            return PacksMessage.Installed(
-                names = packs.map { it.name },
-                characters = packs.sumOf { it.characters.size },
-                skipped = step.skipped.size,
-            )
-        }
-
-        private fun unexpected(e: Exception) = problemFor(FailureReason.UNEXPECTED, e.toString())
+        override fun onCleared() = imports.clear()
 
         companion object {
             private const val STOP_TIMEOUT_MS = 5_000L
 
-            /**
-             * Every pack is selected (docs/pack-format.md#bundle), except bundle packs that would replace the same or
-             * a newer installed version: the user selects those on purpose, which is the confirmation. A single pack
-             * is always selected; its install button says what it does and confirms it.
-             */
-            fun defaultSelection(review: ImportReview): PackSelection =
-                PackSelection(
-                    review.packs
-                        .filter { !review.isBundle || !it.candidate.action.needsConfirmation }
-                        .map { it.id }
-                        .toSet(),
-                )
+            /** See [ImportController.defaultSelection]. */
+            fun defaultSelection(review: ImportReview): PackSelection = ImportController.defaultSelection(review)
         }
     }

@@ -1,6 +1,7 @@
 package app.mauri.cucuto.packs.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Arrangement
@@ -82,7 +83,7 @@ fun ImportSheet(
     import: ImportUi,
     onSelect: (packId: String, selected: Boolean) -> Unit,
     onInstall: () -> Unit,
-    onPickAnother: () -> Unit,
+    onPickAnother: (() -> Unit)?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -109,7 +110,7 @@ fun ImportSheet(
         ) {
             when (import) {
                 ImportUi.Idle -> Unit
-                is ImportUi.Working -> WorkingContent(import.progress, onCancel = onClose)
+                is ImportUi.Working -> WorkingContent(import.progress, import.download, onCancel = onClose)
                 is ImportUi.Review -> ReviewContent(import, onSelect, onInstall, onClose)
                 is ImportUi.Problem -> ProblemContent(import.problem, onPickAnother, onClose)
             }
@@ -120,6 +121,7 @@ fun ImportSheet(
 @Composable
 private fun WorkingContent(
     progress: ImportProgress?,
+    download: ImportUi.Download?,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -130,12 +132,45 @@ private fun WorkingContent(
     ) {
         LoadingIndicator(Modifier.size(64.dp))
         Text(
-            stringResource(stepText(progress)),
+            text =
+                if (download != null) {
+                    stringResource(R.string.import_step_downloading, download.name)
+                } else {
+                    stringResource(stepText(progress))
+                },
             style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
-        ProgressBar(progress)
+        if (download != null) DownloadBar(download) else ProgressBar(progress)
         TextButton(onClick = onCancel) { Text(stringResource(R.string.import_cancel)) }
+    }
+}
+
+/** The download's progress, eased between the client's progress reports, with "1.2 MB of 4.8 MB" below. */
+@Composable
+private fun DownloadBar(
+    download: ImportUi.Download,
+    modifier: Modifier = Modifier,
+) {
+    val total = download.total?.takeIf { it > 0 }
+    Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (total != null) {
+            val fraction by animateFloatAsState(
+                targetValue = (download.bytes.toFloat() / total).coerceIn(0f, 1f),
+                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                label = "download",
+            )
+            LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+            Text(
+                stringResource(R.string.import_download_size, sizeText(download.bytes), sizeText(total)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        } else {
+            LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
     }
 }
 
@@ -330,7 +365,7 @@ private fun RevealedCharacters(
 @Composable
 private fun ProblemContent(
     problem: ImportProblem,
-    onPickAnother: () -> Unit,
+    onPickAnother: (() -> Unit)?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -379,7 +414,9 @@ private fun ProblemContent(
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-            TextButton(onClick = onPickAnother) { Text(stringResource(R.string.import_pick_another)) }
+            if (onPickAnother != null) {
+                TextButton(onClick = onPickAnother) { Text(stringResource(R.string.import_pick_another)) }
+            }
             Button(onClick = onClose, shapes = ButtonDefaults.shapes()) { Text(stringResource(R.string.import_ok)) }
         }
     }
