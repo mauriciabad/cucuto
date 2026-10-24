@@ -54,6 +54,10 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey? = null,
     ) : CucutoDestination
 
+    /** Day and night: the place sunrise and sunset are computed for (#118, ADR 0037). */
+    @Serializable
+    data object DayNight : CucutoDestination
+
     /** Settings and diagnostics. */
     @Serializable
     data object Settings : CucutoDestination

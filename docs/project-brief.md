@@ -184,7 +184,8 @@ Packs can carry call ringtones too, so a contact gets one look and sound across 
 **Model.**
 
 - A character can carry a `ringtones` array next to its `clips`. A character can be a song (Bubblegum K.K. with its album cover), not only a creature.
-- **Variants** are ringtone entries of the same song: day and night versions, seasons, sped-up, underwater, "action", live versus radio. Each entry has free `tags` and an optional `when` condition (`time`: day, night or an hour range; `season`; `weekday`). Day and night follow local sunrise and sunset, from the phone's coarse location or a place or hours the user sets (owner update 2026-10-23, #75; #118).
+- **Variants** are ringtone entries of the same song: day and night versions, seasons, sped-up, underwater, "action", live versus radio. Each entry has free `tags` and an optional `when` condition (`time`: day, night or an hour range; `season`; `weekday`). Day and night follow local sunrise and sunset, computed on the phone for a place the user sets (a city, coordinates, or one approximate location fix they ask for; 07:00 to 19:00 until they set one), never tracked (owner update 2026-10-23, #75; #118, [ADR 0037](decisions/0037-day-and-night-clips.md)).
+- **Clips can carry the same `when`** (#118): a night-only or day-only clip joins the random pool only while its condition holds, so a character can hop by day and croak at night. The app compiles each condition into instants for the routing table; the module only compares the clock against them.
 - Per contact, the user picks the variant rule: one fixed variant, random per call, by time of day, by season, or follow the pack's `when` conditions.
 - **Linking:** assigning a character assigns both its notification clips and its ringtones. Users can also mix: messages from Pikachu, ringtone from K.K. Slider.
 
@@ -294,7 +295,7 @@ Tech and deployment:
 Images and media:
 
 - JPEG XL preferred, never required. Serve images with a `<picture>` element: a `.jxl` source first, then AVIF or PNG fallbacks generated at build time. Chrome 155 and later decode JPEG XL by default (since October 2026), Safari since version 17; Firefox still needs a preference ([JPEG XL in Chrome](https://developer.chrome.com/blog/jpeg-xl-in-chrome)).
-- The explainer video is produced by a separate subagent. The site expects `web/static/video/explainer.webm` and `.mp4`, a `poster.jxl` and WebVTT captions. Lazy-loaded, never autoplays with sound.
+- The explainer video is produced by a separate subagent from the brief in [`explainer-video.md`](explainer-video.md). The site expects `web/static/video/explainer.webm` and `.mp4`, a poster (served as JPEG XL with fallbacks, ADR 0042) and WebVTT captions. Lazy-loaded, never autoplays with sound.
 - Screenshots come from the app running the demo packs, captured by a script so they can be regenerated on every release.
 
 Design: same visual language as the app (Material 3 Expressive color, shape and spring motion), light and dark themes, responsive, accessible, Lighthouse scores of 95 or more.
@@ -486,6 +487,7 @@ Gradle modules (under `android/`):
 - `:core:pack` — pack and bundle models, JSON Schema validation, safe unzip, importer.
 - `:core:repo` — repository sources (HTTPS index first, Google Drive later), credentials, download and verification.
 - `:core:data` — Room database, repositories, the routing table that the module reads.
+- `:core:conditions` — `when` conditions (day and night from sunrise and sunset, hour ranges, seasons, weekdays) compiled into instants; shared by clips and ringtone variants.
 - `:core:ringtone` — MediaStore export, per-contact ringtones, variant rules and boundary alarms.
 - `:core:backup` — backup export, encryption, scheduled backups and restore.
 - `:core:haptics` — pack haptic schema to `VibrationEffect`, auto-haptic generator, capability checks.

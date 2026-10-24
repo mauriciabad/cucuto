@@ -9,8 +9,11 @@ const CACHE = `cucuto-${version}`;
 
 // Fonts are split per script; only Latin is worth precaching, the rest load (and get cached) on demand.
 const skipImmutable = (path: string) => path.endsWith('.woff2') && !/-latin(-ext)?-/.test(path);
-// The social card is for crawlers, CNAME and robots.txt are for the host.
-const skipAsset = (path: string) => /^(og-image\.png|CNAME|robots\.txt)$/.test(path);
+// The social card is for crawlers, CNAME and robots.txt are for the host. The explainer video (#42) is large and
+// streamed with range requests, so its files are never precached (nor cached by the fetch handler below).
+const skipAsset = (path: string) =>
+	/^(og-image\.png|CNAME|robots\.txt)$/.test(path) || path.startsWith('video/');
+const VIDEO = resolve('/video/');
 
 const SHELL = [
 	...immutable.filter((file) => !skipImmutable(file.path)).map((file) => resolve(file.path)),
@@ -36,6 +39,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
 	const url = new URL(event.request.url);
 	if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+	if (url.pathname.startsWith(VIDEO)) return;
 
 	async function respond() {
 		const cache = await caches.open(CACHE);

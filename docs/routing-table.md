@@ -14,7 +14,9 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
 | Keys | `table` (string, the encoded table), `generation` (long) | same |
 
 - The app republishes whenever contacts, keys, assignments, installed packs or the global switch change
-  (`RoutingPublisher`). A table equal to the published one is not written again.
+  (`RoutingPublisher`). A table equal to the published one is not written again. Tables with conditional clips
+  also change when the day and night place changes and once a day while the app runs (their span moves forward);
+  there is no background job, since the published span covers 400 days.
 - The service only exists while the module is enabled in LSPosed and the framework supports Remote Preferences
   (`PROP_CAP_REMOTE`). Until then nothing is written; the database stays the source of truth and the table is
   published as soon as the service connects.
@@ -52,6 +54,11 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
   `content://app.mauri.cucuto.clips/<packId>/<characterId>/<file>`. `file` is the clip's path from `pack.json`.
   Pack IDs, versions, character IDs and pack paths are URI-safe by construction. The module passes the URI through
   unchanged.
+- **Clip condition** (ADR 0037): when a clip with a pack `when` (day or night only, an hour range, seasons,
+  weekdays) may play, compiled by the app (`:core:conditions`) into plain instants: the condition holds from
+  `fromMs` (start of yesterday) to `untilMs` (400 days later), starts `activeAtFrom` and flips at each toggle. Day
+  and night use sunrise and sunset at the place set on the Day and night screen (07:00 to 19:00 without one). Each
+  distinct condition is stored once. Outside its span a condition is unknown and ignored.
 - **Self-test clip**: the mirrored Diagnostics chirp (`…/clips/selftest/chirp.wav`), or absent, in which case the
   module plays the provider's `content://app.mauri.cucuto.clips/selftest/chirp.wav`.
 
@@ -61,6 +68,10 @@ Lookup (`RoutingTable.resolve(package, conversationKey, senderKey)`):
 2. Look up the conversation key (the notification's shortcut ID). Unknown: change nothing.
 3. If that route is a per-sender group and the sender's key has a voice, play the sender's voice.
 4. Otherwise play the conversation's voice, or change nothing if it has none.
+5. Draw from the voice's clips that may play now (`RoutingTable.isPlayable`): clips without a condition, and clips
+   whose condition is active or unknown. If none may play, draw from all of them. The clock is read only for voices
+   with conditional clips; each check is a per-day bucket lookup plus a scan of that day's few toggles, with no
+   allocation.
 
 A group with the default policy (one voice per group) never uses its members' voices. The sender key is the
 `Person` key of the alerting record's newest MessagingStyle message, read only for groups; every lookup stays within
@@ -74,11 +85,12 @@ UTF-8 text, one record per line (`\n`), fields separated by tabs. Strings escape
 thousandths.
 
 ```text
-cucuto-routing	1	<generation>	<enabled 0|1>	<package count>	<voice count>	<route count>	<clip haptic count>
+cucuto-routing	1	<generation>	<enabled 0|1>	<package count>	<voice count>	<route count>	<clip haptic count>	[<condition count>]
 S	<self-test clip URI>                                    optional, at most once
 P	<package>
 H	<clip haptic>
-V	<packId>	<characterId>	<haptic>	<uriBase>	<clip count>	{<uriSuffix>	<milliWeight>	<clipHaptic or ->}	[h<ref>,<ref>…]
+W	<fromMs>	<untilMs>	<active at from 0|1>	<toggle deltas in seconds, comma-separated, or ->
+V	<packId>	<characterId>	<haptic>	<uriBase>	<clip count>	{<uriSuffix>	<milliWeight>	<clipHaptic or ->}	[h<ref>,<ref>…]	[w<ref>,<ref>…]
 R	<package index>	<key>	<voice index or ->	<seed>	<flags>	<contactId>
 ```
 
@@ -89,9 +101,15 @@ R	<package index>	<key>	<voice index or ->	<seed>	<flags>	<contactId>
 - `P` lines list packages; routes refer to them by index (order of appearance).
 - `H` lines are the clip haptic dictionary: every distinct clip envelope once, referred to by index (order of
   appearance). They come before the `V` lines that use them.
+- `W` lines are the clip condition dictionary (ADR 0037), referred to by index (order of appearance), before the `V`
+  lines. Toggle instants are whole seconds; each delta is from the previous toggle (the first from `fromMs`). The
+  header's ninth count says how many there are and is written only when there are some, so tables without
+  conditional clips are byte-for-byte what they were. About 2 toggles a day over 400 days take about 5 KB per
+  condition.
 - `V` lines list voices; routes refer to them by index. Each clip URI is `uriBase + uriSuffix`; the writer uses the
   longest common folder of the voice's clips as `uriBase`. When any clip has an envelope, a trailing field `h`
-  lists one dictionary index (or `-`) per clip, and the writer leaves the inline clip haptic fields as `-`.
+  lists one dictionary index (or `-`) per clip, and the writer leaves the inline clip haptic fields as `-`. When any
+  clip has a condition, a trailing field `w` lists one condition index (or `-`) per clip.
 - `R` lines list routes. Flags: bit 0 group, bit 1 per-sender group. Other bits are reserved and preserved.
 - Haptics: `k` keep, `o` off, `a` auto, or `c` followed by `;`-separated events:
   `p<at>,<C|T|L>,<scale>` for a preset (`CLICK`, `TICK`, `LOW_TICK`), or
@@ -131,6 +149,8 @@ after 120 more.
 - The clip haptic dictionary is such an additive change: a reader from before it skips the `H` lines, the `h` field
   and the extra header count, and reads the table correctly without clip envelopes (`auto` keeps WhatsApp's
   vibration until the module is updated by a reboot).
+- Clip conditions are additive too: a reader from before them skips the `W` lines, the `w` field and the ninth
+  header count, and plays every clip of the voice whatever the time until the module is updated by a reboot.
 - The header counts must match the records, so a truncated table is rejected rather than half-applied.
 
 ## Performance

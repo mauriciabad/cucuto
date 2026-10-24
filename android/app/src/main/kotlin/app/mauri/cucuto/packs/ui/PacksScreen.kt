@@ -144,9 +144,10 @@ fun PacksScreen(
     }
 }
 
+/** Stateless Packs screen, for previews and the screenshot tests. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PacksContent(
+internal fun PacksContent(
     state: PacksUiState,
     onBack: () -> Unit,
     onDiscover: () -> Unit,

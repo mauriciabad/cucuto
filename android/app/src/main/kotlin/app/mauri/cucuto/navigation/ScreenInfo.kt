@@ -33,6 +33,7 @@ fun CucutoDestination.screenInfo(): ScreenInfo? =
         CucutoDestination.Diagnostics,
         CucutoDestination.Gallery,
         is CucutoDestination.Creator,
+        CucutoDestination.DayNight,
         -> {
             null
         }

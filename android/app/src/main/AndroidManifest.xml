@@ -13,6 +13,11 @@
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!--
+        Day and night clips (ADR 0037): one approximate location fix, only when the user taps "Use my location once"
+        on the Day and night screen. Never fine location, never background location, never location updates.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!--
         The pack creator's Record button (#47). Asked at runtime only when the person taps Record, never upfront
         (brief: minimum intrusion). Audio stays in memory until they keep a clip; nothing records in the background.
     -->

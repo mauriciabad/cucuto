@@ -58,6 +58,16 @@ export const es: Messages = {
 		videoSoonTitle: 'El vídeo explicativo está en camino',
 		videoSoonText:
 			'Un recorrido corto: llega un mensaje, el móvil reproduce el personaje de quien lo envía y sabes quién es sin mirar.',
+		video: {
+			soonBadge: 'Próximamente',
+			posterAlt:
+				'Ilustración: un móvil muestra el selector de personajes de Cucuto, donde se asigna la rana Bleep entre una lluvia de confeti. Al lado, el reloj de cuco canta y tres chats tienen cada uno su personaje.',
+			label: 'Vídeo explicativo de Cucuto',
+			play: 'Reproducir el vídeo',
+			unsupported:
+				'Tu navegador no puede reproducir este vídeo. La transcripción de abajo recoge todo lo que dice.',
+			transcript: 'Leer la transcripción'
+		},
 		howTitle: 'Cómo funciona',
 		steps: iconItems([
 			{
@@ -113,16 +123,32 @@ export const es: Messages = {
 		]),
 		screenshotsTitle: 'Un vistazo por dentro',
 		screenshotsLead:
-			'Las capturas de la app con los packs de demostración gratuitos llegarán con la primera versión.',
-		screenshotSoon: 'Captura muy pronto',
+			'La app con los dos packs de demostración gratuitos y chats inventados, en tu tema claro u oscuro.',
 		screenshots: [
-			{ title: 'Estado', text: 'Una tarjeta que se pone verde cuando todo está listo.' },
-			{ title: 'Chats', text: 'Quienes te han escrito hace poco, esperando una voz.' },
 			{
-				title: 'Personajes',
-				text: 'Toca un personaje para oírlo y vuelve a tocarlo para asignarlo.'
+				image: 'onboarding',
+				title: 'Configuración',
+				text: 'Una configuración guiada y breve comprueba el módulo y su ámbito por ti.',
+				alt: 'La pantalla de bienvenida de Cucuto: el reloj de cuco con la puerta abierta y lo que hace la app.'
 			},
-			{ title: 'Packs', text: 'Explora repositorios, escucha los clips y descarga packs.' }
+			{
+				image: 'home',
+				title: 'Chats',
+				text: 'Quienes te han escrito hace poco, esperando una voz.',
+				alt: 'La pantalla de inicio: quienes te han escrito sin voz y los chats con sus personajes.'
+			},
+			{
+				image: 'picker',
+				title: 'Personajes',
+				text: 'Toca un personaje para oírlo y vuelve a tocarlo para asignarlo.',
+				alt: 'El selector de personajes de un chat, con los personajes de los packs de demostración por pack.'
+			},
+			{
+				image: 'packs',
+				title: 'Packs',
+				text: 'Tus packs y sus personajes. Toca uno para oírlo.',
+				alt: 'La pantalla Packs con los packs de demostración Chiptune critters y Kitchen orchestra.'
+			}
 		],
 		requirementsTitle: 'Requisitos',
 		requirementsLead:
