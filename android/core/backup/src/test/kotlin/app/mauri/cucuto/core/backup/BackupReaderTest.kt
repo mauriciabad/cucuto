@@ -76,7 +76,7 @@ class BackupReaderTest {
         val text = File(fixturesDir, "valid/backup.json").readText()
         val document = BackupJson.decodeFromString(BackupDocument.serializer(), text)
         assertEquals("app.mauri.cucuto", document.app.id)
-        assertEquals(6, document.contacts.size)
+        assertEquals(8, document.contacts.size)
         val ada = document.contacts.first()
         assertEquals("frog", ada.message!!.characterId)
         assertEquals(listOf("characters/frog/clips/croak.ogg"), ada.message!!.disabledClips)
@@ -95,7 +95,10 @@ class BackupReaderTest {
         val eva = document.contacts[4].ringtone!!.rule
         assertEquals(BackupRingtoneMode.CUSTOM, eva.mode)
         assertEquals(2, eva.rules!!.size)
-        assertEquals(BackupGroupPolicy.PER_SENDER, document.contacts[5].groupPolicy)
+        assertEquals(BackupRingtoneChoice.ANDROID_DEFAULT, document.contacts[5].ringtoneChoice)
+        assertNull(document.contacts[5].ringtone)
+        assertEquals(BackupRingtoneChoice.UNCHANGED, document.contacts[6].ringtoneChoice)
+        assertEquals(BackupGroupPolicy.PER_SENDER, document.contacts[7].groupPolicy)
         assertEquals(listOf("com.example.private.songs.day"), document.packs[1].packIds)
         assertEquals(BackupAuthType.BASIC, document.repositories[1].auth.type)
 

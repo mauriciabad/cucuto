@@ -1,6 +1,7 @@
 package app.mauri.cucuto.home
 
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.chats.ChatRingtone
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.testing.TestData
 import app.mauri.cucuto.testing.TestData.ADA
@@ -11,6 +12,7 @@ import app.mauri.cucuto.testing.TestData.KITCHEN
 import app.mauri.cucuto.testing.TestData.NOW
 import app.mauri.cucuto.testing.TestData.chat
 import app.mauri.cucuto.testing.TestData.packs
+import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -112,5 +114,68 @@ class HomeModelTest {
     @Test
     fun searchableStripsAccentsAndCase() {
         assertEquals("aeiou n", "ÁÉÍÓÚ Ñ".searchable())
+    }
+
+    @Test
+    fun rowsShowWhatRingsForCalls() {
+        val song = TestData.character("kk", "K.K. Slider", packId = KITCHEN, clips = 0).copy(ringtoneCount = 2)
+        val singer = TestData.character("bird", "Tweet the bird").copy(ringtoneCount = 1)
+        val withSongs =
+            packs +
+                app.mauri.cucuto.core.data.voices.VoicePack(
+                    "app.mauri.songs",
+                    "Songs",
+                    listOf(song.copy(packId = "app.mauri.songs")),
+                )
+        val kk = ChatVoice("app.mauri.songs", "kk")
+        val input =
+            listOf(
+                chat(
+                    ADA,
+                    "Ada",
+                    voice = ChatVoice(CRITTERS, "frog"),
+                ).copy(ringtone = ChatRingtone.Character(kk, false)),
+                chat(BEA, "Bea", voice = ChatVoice(CRITTERS, "frog")).copy(ringtone = ChatRingtone.AndroidDefault),
+                chat(CLUB, "Book club", voice = ChatVoice(CRITTERS, "frog")),
+            )
+        val rows = buildHomeState(input, withSongs, "", null, NOW).chats.associateBy { it.key }
+        assertEquals("K.K. Slider", (rows.getValue(ADA).ringtone as RingtoneDisplay.Character).character.name)
+        assertEquals(RingtoneDisplay.AndroidDefault, rows.getValue(BEA).ringtone)
+        assertNull("groups have no phone ringtone", rows.getValue(CLUB).ringtone)
+
+        // Nothing stored: the message character rings, only when it has ringtones.
+        val follows = listOf(chat(ADA, "Ada", voice = ChatVoice(CRITTERS, "frog")))
+        assertNull(buildHomeState(follows, withSongs, "", null, NOW).chats.single().ringtone)
+        val singing =
+            withSongs.map { p ->
+                p.copy(
+                    characters =
+                        p.characters.map {
+                            if (it.id ==
+                                "frog"
+                            ) {
+                                singer.copy(id = "frog")
+                            } else {
+                                it
+                            }
+                        },
+                )
+            }
+        assertEquals(
+            "Tweet the bird",
+            (
+                buildHomeState(
+                    follows,
+                    singing,
+                    "",
+                    null,
+                    NOW,
+                ).chats.single().ringtone as RingtoneDisplay.Character
+            ).character.name,
+        )
+
+        val leave =
+            listOf(chat(ADA, "Ada", voice = ChatVoice(CRITTERS, "frog")).copy(ringtone = ChatRingtone.Unchanged))
+        assertNull(buildHomeState(leave, singing, "", null, NOW).chats.single().ringtone)
     }
 }

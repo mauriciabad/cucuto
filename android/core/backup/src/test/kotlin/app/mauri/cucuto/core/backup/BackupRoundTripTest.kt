@@ -351,6 +351,7 @@ class BackupRoundTripTest {
                     AssignmentRepository(newPhone, newPhone.assignmentDao(), clock),
                     SeenSenderRepository(newPhone.seenSenderDao()),
                     PhoneRingtoneFollow(newPhone.phoneRingtoneDao(), { false }, clock),
+                    newPhone.phoneRingtoneDao(),
                 ).observeChats().first()
             val chat = chats.single()
             assertTrue("still waiting for its first message", chat.awaitingLink)

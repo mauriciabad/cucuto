@@ -2,7 +2,8 @@
 
 - Status: accepted (defaults; the owner may override them in #196); the "follow the voice" data is amended by
   [ADR 0063](0063-independent-voice-and-ringtone.md); the rule modes gain "your own rules" in
-  [ADR 0074](0074-ringtone-rules-screen.md) (#288)
+  [ADR 0074](0074-ringtone-rules-screen.md) (#288); the `choice` column (Android default, Leave as is) and the
+  `cucuto:default` undo marker come from [ADR 0073](0073-sound-flow-message-then-ringtone.md)
 - Date: 2026-10-24
 - Issue: #52 (picker UI: #53; device run: #143)
 

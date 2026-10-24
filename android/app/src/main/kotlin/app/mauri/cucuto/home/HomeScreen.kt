@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -80,6 +81,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.chats.ChatRingtone
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.chats.LinkCandidate
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
@@ -95,6 +97,8 @@ import app.mauri.cucuto.ui.contacts.PersonAddIcon
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
+import app.mauri.cucuto.ui.ringtone.RingtoneBadge
+import app.mauri.cucuto.ui.ringtone.ringtoneDescription
 import app.mauri.cucuto.ui.settings.restore.rememberBackupPicker
 import app.mauri.cucuto.ui.status.SetupCardSection
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -136,7 +140,8 @@ fun HomeScreen(
         onQueryChange = viewModel::setQuery,
         onTogglePack = viewModel::togglePackFilter,
         onDismissRecent = viewModel::dismissRecent,
-        onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat)) },
+        // Assigning from Home: the message sound, then the ringtone as an optional step 2 (ADR 0073).
+        onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat, ringtoneNext = true)) },
         onOpenPacks = { onNavigate(CucutoDestination.Packs) },
         modifier = modifier,
         onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
@@ -544,8 +549,23 @@ internal fun ChatListItem(
             )
         },
         leadingContent = {
-            SharedElement(if (shared) ChatAvatarKey(row.key) else null) {
-                VoiceAvatar(character = row.character, name = row.chat.displayName, contentDescription = null)
+            // The ringtone's cover tucked against the avatar, like contact detail's header (ADR 0073), so the text
+            // keeps its width. TalkBack reads it with the row.
+            Box {
+                SharedElement(if (shared) ChatAvatarKey(row.key) else null) {
+                    VoiceAvatar(character = row.character, name = row.chat.displayName, contentDescription = null)
+                }
+                row.ringtone?.let { ringtone ->
+                    val description = ringtoneDescription(ringtone)
+                    RingtoneBadge(
+                        ringtone,
+                        RINGTONE_BADGE_SIZE,
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 6.dp, y = 4.dp)
+                            .semantics { contentDescription = description },
+                    )
+                }
             }
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
@@ -630,6 +650,7 @@ internal fun Chat.name(): String =
         ?: stringResource(if (isGroup) R.string.chat_unnamed_group else R.string.chat_unnamed)
 
 private val FAB_CLEARANCE = 96.dp
+private val RINGTONE_BADGE_SIZE = 24.dp
 private val RECENT_ITEM_WIDTH = 88.dp
 
 @Preview(showBackground = true)
@@ -679,6 +700,21 @@ internal fun previewHomeState(now: Long = PREVIEW_NOW): HomeState {
     val pack =
         app.mauri.cucuto.core.data.voices
             .VoicePack("app.mauri.demo.critters", "Chiptune critters", listOf(frog))
+    val song =
+        VoiceCharacter(
+            packId = "app.mauri.demo.songs",
+            id = "bubblegum",
+            name = "Bubblegum K.K.",
+            sprite = null,
+            spriteAnimated = null,
+            seedColor = null,
+            clips = emptyList(),
+            haptic = Haptic.Keep,
+            ringtoneCount = 2,
+        )
+    val songs =
+        app.mauri.cucuto.core.data.voices
+            .VoicePack(song.packId, "Songs", listOf(song))
     val chats =
         listOf(
             Chat(ChatKey(WA, "100000000000001@lid"), null, "Ada", false, null, now - 60_000, 2),
@@ -691,9 +727,10 @@ internal fun previewHomeState(now: Long = PREVIEW_NOW): HomeState {
                 ChatVoice(frog.packId, frog.id),
                 now - 86_400_000,
                 9,
+                ringtone = ChatRingtone.Character(song.voice, followsVoice = false),
             ),
         )
-    return buildHomeState(chats, listOf(pack), query = "", packFilter = null, now = now)
+    return buildHomeState(chats, listOf(pack, songs), query = "", packFilter = null, now = now)
 }
 
 /**

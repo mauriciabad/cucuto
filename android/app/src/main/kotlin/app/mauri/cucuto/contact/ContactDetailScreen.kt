@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -94,6 +95,8 @@ import app.mauri.cucuto.ui.haptics.HapticOverrideSection
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.ringtone.PhoneCallsRow
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSection
+import app.mauri.cucuto.ui.ringtone.RingtoneBadge
+import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import app.mauri.cucuto.ui.ringtone.SoundRow
 import app.mauri.cucuto.ui.ringtone.SoundRowIcon
 import app.mauri.cucuto.ui.theme.CharacterTheme
@@ -115,6 +118,7 @@ fun ContactDetailScreen(
     onEditPattern: () -> Unit,
     modifier: Modifier = Modifier,
     onChooseRingtone: () -> Unit = {},
+    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<ContactDetailViewModel, ContactDetailViewModel.Factory>(
@@ -135,7 +139,7 @@ fun ContactDetailScreen(
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
         hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
-        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone) },
+        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone, onOpenRules = onOpenRules) },
         phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone, Modifier.padding(top = 16.dp)) },
         onUnassign = viewModel::unassign,
         onSimulate = {
@@ -326,15 +330,25 @@ private fun Header(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            SharedElement(ChatAvatarKey(state.chatKey)) {
-                VoiceAvatar(
-                    character = state.character,
-                    name = state.chat?.displayName,
-                    contentDescription = null,
-                    size = AVATAR_SIZE,
-                    speaking = state.speaking,
-                    onBitmap = onBitmap,
-                )
+            // The message character, with the ringtone's cover tucked against it (ADR 0073).
+            Box {
+                SharedElement(ChatAvatarKey(state.chatKey)) {
+                    VoiceAvatar(
+                        character = state.character,
+                        name = state.chat?.displayName,
+                        contentDescription = null,
+                        size = AVATAR_SIZE,
+                        speaking = state.speaking,
+                        onBitmap = onBitmap,
+                    )
+                }
+                state.ringtone?.let {
+                    RingtoneBadge(
+                        it,
+                        RINGTONE_BADGE_SIZE,
+                        Modifier.align(Alignment.BottomEnd).offset(x = 12.dp, y = 4.dp),
+                    )
+                }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 val character = state.character
@@ -368,6 +382,25 @@ private fun Header(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+                when (val ringtone = state.ringtone) {
+                    is RingtoneDisplay.Character -> {
+                        Text(
+                            stringResource(R.string.contact_rings_with, ringtone.character.name),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    RingtoneDisplay.AndroidDefault -> {
+                        Text(
+                            stringResource(R.string.contact_rings_default),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    null -> {}
                 }
             }
         }
@@ -777,6 +810,7 @@ private fun SectionHeader(
 }
 
 private val AVATAR_SIZE = 96.dp
+private val RINGTONE_BADGE_SIZE = 44.dp
 
 @Preview(showBackground = true)
 @Composable
@@ -828,5 +862,19 @@ internal fun previewContactDetailState(): ContactDetailState {
                 DecisionRow(1, 0L, DecisionOutcome.SWAPPED, "Croak", simulated = false, perSender = false),
             ),
         path = SimulatePath.InApp(InAppReason.RebootNeeded),
+        ringtone =
+            RingtoneDisplay.Character(
+                VoiceCharacter(
+                    packId = "app.mauri.demo.songs",
+                    id = "bubblegum",
+                    name = "Bubblegum K.K.",
+                    sprite = null,
+                    spriteAnimated = null,
+                    seedColor = 0xFFE91E63.toInt(),
+                    clips = emptyList(),
+                    haptic = Haptic.Keep,
+                    ringtoneCount = 2,
+                ),
+            ),
     )
 }

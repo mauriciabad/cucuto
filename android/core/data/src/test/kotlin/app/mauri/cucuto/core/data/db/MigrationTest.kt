@@ -162,6 +162,36 @@ class MigrationTest {
         }
 
     @Test
+    fun version6KeepsEveryRingtoneACharacter() =
+        runTest {
+            file.delete()
+            helper.createDatabase(5).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO contacts (id, displayName, isGroup, groupPolicy, shuffleSeed, createdAt, updatedAt) " +
+                        "VALUES (1, 'Ada', 0, 'GROUP', 7, 1, 1)",
+                )
+                connection.execSQL(
+                    "INSERT INTO phone_ringtones (contactId, packId, characterId, mode, variant, updatedAt, " +
+                        "followsVoice, rules) VALUES (1, 'com.example.songs', 'bubblegum', 'PACK', NULL, 1, 0, NULL)",
+                )
+            }
+            helper.runMigrationsAndValidate(6, listOf(CucutoMigrations.MIGRATION_5_6)).close()
+            val db =
+                Room
+                    .databaseBuilder(ApplicationProvider.getApplicationContext(), CucutoDatabase::class.java, file.path)
+                    .setDriver(AndroidSQLiteDriver())
+                    .addMigrations(*CucutoMigrations.ALL)
+                    .build()
+            try {
+                val row = db.phoneRingtoneDao().get(1)!!
+                assertEquals(RingtoneChoice.CHARACTER, row.choice)
+                assertEquals("bubblegum", row.characterId)
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun dataWrittenAtVersion1SurvivesOpeningWithRoom() =
         runTest {
             file.delete()
