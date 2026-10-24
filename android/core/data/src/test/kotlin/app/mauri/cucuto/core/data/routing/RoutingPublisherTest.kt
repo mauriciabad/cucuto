@@ -153,8 +153,9 @@ class RoutingPublisherTest {
         }
 
     @Test
-    fun leavesClipHapticsOutRatherThanNotPublishing() =
+    fun putsATableTooLargeForRemotePreferencesInTheFileOnly() =
         runTest {
+            // About 280 Ki characters: over the Binder limit of Remote Preferences, far under the remote file's.
             catalog.characters = owlWithEnvelopes(1500)
             val (publisher, _) = publisher()
             packs.recordInstalled(installedPack())
@@ -164,11 +165,73 @@ class RoutingPublisherTest {
             publisher.start()
 
             val state = publisher.state.filterIsInstance<PublishState.Published>().first()
+            assertFalse(state.clipHapticsLeftOut)
+            assertTrue(state.tooLargeForPreferences)
+            assertTrue(state.encodedChars > RoutingContract.MAX_PREFERENCES_CHARS)
+            // The remote file, the app's copy and the nudge carry the full table...
+            val full = RoutingCodec.decode(sink.writes.value.single())
+            assertEquals(state.generation, full.generation)
+            assertTrue(
+                full.voices
+                    .single()
+                    .clips
+                    .all { it.haptic != null },
+            )
+            assertEquals(sink.writes.value.single(), publishedTable.encoded)
+            assertEquals(listOf(state.generation), sink.nudges)
+            // ...and Remote Preferences the same table without clip envelopes, one generation older, so that every
+            // module (which installs only newer generations) replaces it with the full one.
+            val preferences = sink.preferencesTable!!
+            assertTrue(preferences.length <= RoutingContract.MAX_PREFERENCES_CHARS)
+            val reduced = RoutingCodec.decode(preferences)
+            assertEquals(state.generation - 1, reduced.generation)
+            assertEquals(
+                full.voices
+                    .single()
+                    .clips
+                    .map { it.uri },
+                reduced.voices
+                    .single()
+                    .clips
+                    .map { it.uri },
+            )
+            assertTrue(
+                reduced.voices
+                    .single()
+                    .clips
+                    .all { it.haptic == null },
+            )
+            assertEquals(state.generation, sink.preferencesGeneration)
+            assertEquals(full, mirror.retained.last())
+
+            // Nothing changed: the table is not written again, although Remote Preferences hold the reduced copy.
+            sink.disconnect()
+            clock.advance()
+            sink.connect()
+            testScheduler.advanceUntilIdle()
+            assertEquals(1, sink.writes.value.size)
+            assertEquals(1, sink.nudges.size)
+        }
+
+    @Test
+    fun leavesClipHapticsOutRatherThanNotPublishing() =
+        runTest {
+            // Over the remote file's limit with the envelopes, about 150 Ki characters without them.
+            catalog.characters = owlWithEnvelopes(6000)
+            val (publisher, _) = publisher()
+            packs.recordInstalled(installedPack())
+            val ada = contacts.findOrCreate("com.whatsapp", "34600000001@s.whatsapp.net", "Ada", isGroup = false)
+            assignments.assign(ada, CRITTERS, "owl")
+            sink.connect()
+            publisher.start()
+
+            val state = publisher.state.filterIsInstance<PublishState.Published>().first()
             assertTrue(state.clipHapticsLeftOut)
-            assertTrue(state.encodedChars <= RoutingContract.MAX_ENCODED_CHARS)
+            assertFalse(state.tooLargeForPreferences)
+            assertTrue(state.encodedChars <= RoutingContract.MAX_PREFERENCES_CHARS)
             val table = RoutingCodec.decode(sink.writes.value.single())
             assertEquals(
-                1500,
+                6000,
                 table.voices
                     .single()
                     .clips.size,
@@ -179,6 +242,7 @@ class RoutingPublisherTest {
                     .clips
                     .all { it.haptic == null },
             )
+            assertEquals(sink.writes.value.single(), sink.preferencesTable)
 
             // Nothing changed: the same reduced table is not written again.
             sink.disconnect()
@@ -186,6 +250,54 @@ class RoutingPublisherTest {
             sink.connect()
             testScheduler.advanceUntilIdle()
             assertEquals(1, sink.writes.value.size)
+        }
+
+    @Test
+    fun keepsRemotePreferencesWhenEvenTheReducedCopyIsTooLarge() =
+        runTest {
+            val (publisher, _) = publisher()
+            packs.recordInstalled(installedPack())
+            val ada = contacts.findOrCreate("com.whatsapp", "34600000001@s.whatsapp.net", "Ada", isGroup = false)
+            assignments.assign(ada, CRITTERS, "frog")
+            sink.connect()
+            publisher.start()
+            val small = published(publisher) { it.routes == 1 }
+            val before = sink.preferencesTable
+
+            // 15,000 clips without envelopes: over 256 Ki characters with nothing left to drop.
+            catalog.characters =
+                mapOf(
+                    CRITTERS to
+                        mapOf(
+                            "frog" to
+                                CatalogCharacter(
+                                    clips =
+                                        (0 until 15_000).map {
+                                            CatalogClip(
+                                                "characters/frog/clips/r-$it.ogg",
+                                                1000,
+                                            )
+                                        },
+                                    haptic = Haptic.Keep,
+                                ),
+                        ),
+                )
+            catalog.revisions.value++
+            val large = published(publisher) { it.generation > small.generation }
+            assertTrue(large.tooLargeForPreferences)
+            assertFalse(large.clipHapticsLeftOut)
+            assertEquals(
+                15_000,
+                RoutingCodec
+                    .decode(sink.writes.value.last())
+                    .voices
+                    .single()
+                    .clips.size,
+            )
+            // Remote Preferences keep the older table rather than none: the module still installs the file's.
+            assertEquals(before, sink.preferencesTable)
+            assertEquals(large.generation, sink.preferencesGeneration)
+            assertEquals(large.generation, sink.nudges.last())
         }
 
     @Test
@@ -344,9 +456,12 @@ class RoutingPublisherTest {
             assertNull(sink.read())
         }
 
-    /** Remote Preferences stand-in. */
+    /** Stand-in for Remote Preferences ([preferencesTable], [preferencesGeneration]) and the remote file ([writes]). */
     private class FakeSink : RoutingSink {
+        // Every table written to the remote file, which always gets the full one.
         val writes = MutableStateFlow<List<String>>(emptyList())
+        var preferencesTable: String? = null
+        var preferencesGeneration: Long? = null
         var started = false
         var failWrites = false
         override val connection = MutableStateFlow<SinkConnection>(SinkConnection.Disconnected)
@@ -365,14 +480,24 @@ class RoutingPublisherTest {
             started = true
         }
 
-        override suspend fun read(): String? = writes.value.lastOrNull()
+        override suspend fun read(): String? = preferencesTable
+
+        override suspend fun publishedGeneration(): Long? = preferencesGeneration
 
         override suspend fun write(
             encoded: String,
             generation: Long,
+            forPreferences: String?,
         ) {
             if (failWrites) error("boom")
             assertEquals(generation, RoutingCodec.decode(encoded).generation)
+            if (forPreferences != null) {
+                // Binder: Remote Preferences never get more than this.
+                assertTrue(forPreferences.length <= RoutingContract.MAX_PREFERENCES_CHARS)
+                assertTrue(RoutingCodec.decode(forPreferences).generation <= generation)
+                preferencesTable = forPreferences
+            }
+            preferencesGeneration = generation
             writes.value += encoded
         }
 
