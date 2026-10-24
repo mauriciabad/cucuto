@@ -4,6 +4,7 @@ import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.Until
 
 /**
@@ -64,13 +65,27 @@ private fun MacrobenchmarkScope.openTab(label: String) {
 
 /** Flings the screen's main scrolling list down and back up. */
 private fun MacrobenchmarkScope.scrollMainList() {
-    val list = device.wait(Until.findObject(By.scrollable(true)), TIMEOUT_MS) ?: return
-    // Keep the gesture away from the system's back and home gesture areas.
-    list.setGestureMarginPercentage(GESTURE_MARGIN)
-    list.fling(Direction.DOWN)
-    device.waitForIdle()
-    list.fling(Direction.UP)
-    device.waitForIdle()
+    fling(Direction.DOWN)
+    fling(Direction.UP)
+}
+
+/**
+ * Flings the main scrolling list once. The list is looked up for every gesture, and again when it went stale: a tab
+ * switch that is still settling, or a recomposition, replaces the node.
+ */
+private fun MacrobenchmarkScope.fling(direction: Direction) {
+    repeat(FLING_ATTEMPTS) {
+        val list = device.wait(Until.findObject(By.scrollable(true)), TIMEOUT_MS) ?: return
+        try {
+            // Keep the gesture away from the system's back and home gesture areas.
+            list.setGestureMarginPercentage(GESTURE_MARGIN)
+            list.fling(direction)
+            device.waitForIdle()
+            return
+        } catch (_: StaleObjectException) {
+            device.waitForIdle()
+        }
+    }
 }
 
 /** The app's string [name] in the phone's current language. */
@@ -87,3 +102,5 @@ private fun MacrobenchmarkScope.appString(name: String): String {
 }
 
 private const val GESTURE_MARGIN = 0.2f
+
+private const val FLING_ATTEMPTS = 3
