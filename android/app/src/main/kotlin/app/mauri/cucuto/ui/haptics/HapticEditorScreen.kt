@@ -1,6 +1,7 @@
 package app.mauri.cucuto.ui.haptics
 
 import android.content.ClipData
+import android.os.SystemClock
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -32,7 +33,6 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,7 +50,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -73,13 +72,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -92,6 +95,8 @@ import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
+import app.mauri.cucuto.ui.components.ChoiceButtonGroup
+import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -263,6 +268,7 @@ fun HapticEditorContent(
     modifier: Modifier = Modifier,
 ) {
     val snackbar = remember { SnackbarHostState() }
+    val largeFont = isLargeFont()
     val failedMessage = stringResource(R.string.haptic_editor_failed)
     LaunchedEffect(state.failed) {
         if (state.failed) {
@@ -285,16 +291,22 @@ fun HapticEditorContent(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.haptic_editor_title)) },
+                title = {
+                    Text(
+                        stringResource(R.string.haptic_editor_title),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = actions.onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.navigate_back))
                     }
                 },
                 actions = {
-                    TextButton(onClick = actions.onUndo, enabled = state.draft.canUndo && state.recording == null) {
-                        Text(stringResource(R.string.haptic_editor_undo))
-                    }
+                    // With large fonts Undo moves above the timeline, so the title keeps some room.
+                    if (!largeFont) UndoButton(state, actions)
                     if (state.chat != null) {
                         Button(
                             onClick = actions.onSave,
@@ -328,6 +340,7 @@ fun HapticEditorContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            if (largeFont) UndoButton(state, actions)
             TimelineCard(state, actions)
             if (state.recording == null) {
                 ToolRow(state.tool, actions.onTool)
@@ -338,6 +351,16 @@ fun HapticEditorContent(
             if (state.recording == null) AiSection(state, actions)
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun UndoButton(
+    state: HapticEditorState,
+    actions: HapticEditorActions,
+) {
+    TextButton(onClick = actions.onUndo, enabled = state.draft.canUndo && state.recording == null) {
+        Text(stringResource(R.string.haptic_editor_undo))
     }
 }
 
@@ -364,6 +387,7 @@ private fun TimelineCard(
         playhead.animateTo(state.playbackMs.toFloat(), tween(state.playbackMs, easing = LinearEasing))
         playing = false
     }
+    val addLabel = stringResource(R.string.haptic_editor_add_action, stringResource(state.tool.label))
     val summary =
         if (events.isEmpty()) {
             stringResource(R.string.haptic_editor_timeline_empty)
@@ -393,7 +417,20 @@ private fun TimelineCard(
                     Modifier
                         .fillMaxWidth()
                         .height(TIMELINE_HEIGHT)
-                        .semantics { contentDescription = summary },
+                        .semantics {
+                            contentDescription = summary
+                            // Drawing on the timeline needs touch; screen readers add events with this action and
+                            // edit them in the panel below (move, strength, delete).
+                            if (state.recording == null) {
+                                customActions =
+                                    listOf(
+                                        CustomAccessibilityAction(addLabel) {
+                                            actions.onTapTimeline(nextEventMs(duration, events.isEmpty()), 0)
+                                            true
+                                        },
+                                    )
+                            }
+                        },
             )
             if (events.isEmpty() && state.recording == null) {
                 Text(
@@ -419,22 +456,12 @@ private fun ToolRow(
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.semantics { heading() },
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            val tools = HapticTool.entries
-            tools.forEachIndexed { index, entry ->
-                ToggleButton(
-                    checked = entry == tool,
-                    onCheckedChange = { onTool(entry) },
-                    shapes = connectedShapes(index, tools.size),
-                    modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
-                ) {
-                    Text(stringResource(entry.label), maxLines = 1)
-                }
-            }
-        }
+        ChoiceButtonGroup(
+            options = HapticTool.entries,
+            selected = tool,
+            onSelect = onTool,
+            label = { stringResource(it.label) },
+        )
     }
 }
 
@@ -515,21 +542,13 @@ private fun PresetControls(
     event: HapticEvent.Preset,
     actions: HapticEditorActions,
 ) {
-    val presets = HapticPreset.entries
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            presets.forEachIndexed { i, preset ->
-                ToggleButton(
-                    checked = event.preset == preset,
-                    onCheckedChange = { actions.onPreset(index, preset) },
-                    shapes = connectedShapes(i, presets.size),
-                    modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
-                ) { Text(stringResource(preset.label), maxLines = 1) }
-            }
-        }
+        ChoiceButtonGroup(
+            options = HapticPreset.entries,
+            selected = event.preset,
+            onSelect = { actions.onPreset(index, it) },
+            label = { stringResource(it.label) },
+        )
         LabeledSlider(
             label = stringResource(R.string.haptic_editor_strength),
             milli = event.milliScale,
@@ -581,7 +600,8 @@ private fun LabeledSlider(
 ) {
     val percent = stringResource(R.string.haptic_editor_percent, (milli / 10f).roundToInt())
     Column {
-        Row {
+        // The slider below says the label and the percentage; the row is for eyes only (no double announcement).
+        Row(Modifier.clearAndSetSemantics {}) {
             Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             Text(percent, style = MaterialTheme.typography.labelLarge)
         }
@@ -627,8 +647,13 @@ private fun RhythmPad(
     val haptics = LocalHapticFeedback.current
     val press by rememberUpdatedState(actions.onPress)
     val release by rememberUpdatedState(actions.onRelease)
-    val scale by animateFloatAsState(if (recording.pressed) PRESSED_SCALE else 1f, label = "pad scale")
+    val scale by animateFloatAsState(
+        targetValue = if (recording.pressed) PRESSED_SCALE else 1f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "pad scale",
+    )
     val padLabel = stringResource(R.string.haptic_editor_rhythm_pad)
+    val tapLabel = stringResource(R.string.haptic_editor_rhythm_tap_action)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LinearWavyProgressIndicator(
             progress = { recording.elapsedMs / HapticTimeline.MAX_MS.toFloat() },
@@ -660,6 +685,13 @@ private fun RhythmPad(
                     ).semantics {
                         contentDescription = padLabel
                         role = Role.Button
+                        // Screen readers double-tap instead of touching: each double tap is one short beat.
+                        onClick(label = tapLabel) {
+                            val now = SystemClock.uptimeMillis()
+                            if (press(now)) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            release(now + ACCESSIBLE_TAP_MS)
+                            true
+                        }
                     }.pointerInput(Unit) {
                         awaitEachGesture {
                             val down = awaitFirstDown()
@@ -858,16 +890,6 @@ private fun describe(problem: PatternProblem): String =
         }
     }
 
-@Composable
-private fun connectedShapes(
-    index: Int,
-    count: Int,
-) = when (index) {
-    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-    count - 1 -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-}
-
 private val HapticTool.label: Int
     get() =
         when (this) {
@@ -898,6 +920,14 @@ private fun describe(event: HapticEvent): String =
         }
     }
 
+/** Where the screen-reader "add" action puts a new event: at the start, or a beat after the pattern ends. */
+internal fun nextEventMs(
+    durationMs: Int,
+    empty: Boolean,
+): Int = if (empty) 0 else minOf(durationMs + ACCESSIBLE_GAP_MS, HapticTimeline.MAX_MS - ACCESSIBLE_GAP_MS)
+
+private const val ACCESSIBLE_GAP_MS = 150
+
 /** Milliseconds as seconds with one decimal, for labels ("1.2"). */
 private fun seconds(ms: Int): String = "%.1f".format(ms / 1000f)
 
@@ -905,6 +935,9 @@ private val TIMELINE_HEIGHT = 200.dp
 private val PAD_HEIGHT = 160.dp
 private const val PRESSED_SCALE = 0.96f
 private const val NUDGE_MS = 10
+
+/** How long a screen reader's double tap holds the rhythm pad: a short beat. */
+private const val ACCESSIBLE_TAP_MS = 60L
 
 @Preview(showBackground = true, heightDp = 1100)
 @Composable

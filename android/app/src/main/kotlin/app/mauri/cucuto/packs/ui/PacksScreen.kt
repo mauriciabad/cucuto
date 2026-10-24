@@ -6,6 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -61,6 +63,10 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -76,9 +82,11 @@ import app.mauri.cucuto.packs.PacksUiState
 import app.mauri.cucuto.packs.PacksViewModel
 import app.mauri.cucuto.ui.components.CucutoTopBar
 import app.mauri.cucuto.ui.components.ParticleBurst
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.motion.animateItemUnlessReduced
 import coil3.compose.AsyncImage
 
 /** Free demo packs on the website, until Discover (#36) lists repositories in the app. */
@@ -217,9 +225,11 @@ internal fun PacksContent(
         },
         floatingActionButton = {
             if (!packs.isNullOrEmpty()) {
+                val importLabel = stringResource(R.string.packs_import)
                 ExtendedFloatingActionButton(
-                    text = { Text(stringResource(R.string.packs_import)) },
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                    text = { Text(importLabel) },
+                    // Material hides the text from TalkBack: the icon carries the label, expanded or not.
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = importLabel) },
                     onClick = onImport,
                     expanded = expandedFab,
                 )
@@ -244,7 +254,8 @@ internal fun PacksContent(
                     packs == null -> {
                         item(key = "loading") {
                             Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                                LoadingIndicator(Modifier.size(56.dp))
+                                val loading = stringResource(R.string.a11y_loading)
+                                LoadingIndicator(Modifier.size(56.dp).semantics { contentDescription = loading })
                             }
                         }
                     }
@@ -261,7 +272,7 @@ internal fun PacksContent(
                                 pack = pack,
                                 player = player,
                                 onOpen = { detailId = pack.id },
-                                modifier = Modifier.animateItem(),
+                                modifier = animateItemUnlessReduced(),
                             )
                         }
                         item(key = "more") { FindMorePacks(onDiscover = onDiscover, onWebsite = openWebsite) }
@@ -318,14 +329,14 @@ private fun PackCard(
                     Text(
                         pack.name,
                         style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
+                        maxLines = adaptiveMaxLines(2),
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = packSubtitle(pack),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        maxLines = adaptiveMaxLines(2),
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -374,6 +385,8 @@ fun PackCover(
                 Text(
                     text = pack.name.take(1).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
+                    // Decorative: the pack's name is right next to it.
+                    modifier = Modifier.clearAndSetSemantics {},
                 )
             }
         }
@@ -406,6 +419,7 @@ private fun EmptyPacks(
             stringResource(R.string.packs_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
         )
         Text(
             stringResource(R.string.packs_empty_body),
@@ -427,6 +441,7 @@ private fun EmptyPacks(
 }
 
 /** The slot for Discover (#36) and the website until repositories are browsable in the app. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FindMorePacks(
     onDiscover: () -> Unit,
@@ -439,13 +454,21 @@ private fun FindMorePacks(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.packs_more_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.packs_more_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
             Text(
                 stringResource(R.string.packs_more_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Wraps with large fonts and longer translations instead of pushing the second button off the card.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 OutlinedButton(onClick = onDiscover, shapes = ButtonDefaults.shapes()) {
                     Text(stringResource(R.string.packs_discover))
                 }

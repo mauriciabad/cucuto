@@ -32,6 +32,7 @@ import androidx.graphics.shapes.Morph
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.theme.CucutoShapes
 import app.mauri.cucuto.ui.theme.CucutoTheme
+import app.mauri.cucuto.ui.theme.LocalReducedMotion
 import app.mauri.cucuto.ui.theme.MorphShape
 
 /**
@@ -58,12 +59,14 @@ fun CookieAvatar(
     val progress = remember { Animatable(0f) }
     val scale = remember { Animatable(1f) }
     val active = pressed || speaking
+    // "Remove animations" keeps the shape change (it says "speaking") and drops the squash (brand/motion.md).
+    val reduced = LocalReducedMotion.current
 
     LaunchedEffect(active) {
         progress.animateTo(if (active) 1f else 0f, motion.fastSpatialSpec())
     }
-    LaunchedEffect(active) {
-        scale.animateTo(if (active) PRESSED_SCALE else 1f, motion.fastSpatialSpec())
+    LaunchedEffect(active, reduced) {
+        scale.animateTo(if (active && !reduced) PRESSED_SCALE else 1f, motion.fastSpatialSpec())
     }
     LaunchedEffect(beat) {
         if (beat == null) return@LaunchedEffect

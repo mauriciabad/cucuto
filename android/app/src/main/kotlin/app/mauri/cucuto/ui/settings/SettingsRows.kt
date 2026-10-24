@@ -117,6 +117,7 @@ internal fun SettingsInfoRow(
         headlineContent = { Text(title) },
         supportingContent = { Text(value) },
         colors = rowColors,
-        modifier = modifier,
+        // Title and value are one stop for TalkBack ("Version, 0.1.0 (1)").
+        modifier = modifier.semantics(mergeDescendants = true) {},
     )
 }

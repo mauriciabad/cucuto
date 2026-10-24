@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.db.DecisionOutcome
@@ -60,7 +61,11 @@ class ContactDetailContentTest {
         compose
             .onNodeWithText("In-app preview: the module runs older code until the next reboot.", substring = true)
             .assertIsDisplayed()
-        compose.onNodeWithContentDescription("Play what this chat's next message will do").performClick()
+        compose
+            .onNodeWithContentDescription(
+                "Play what this chat's next message will do",
+                substring = true,
+            ).performClick()
         compose.onNodeWithText("Change character").performClick()
 
         assertEquals(1, simulations)
@@ -86,7 +91,7 @@ class ContactDetailContentTest {
         show(previewContactDetailState())
 
         compose.onNodeWithContentDescription("Play ribbit").performClick()
-        compose.onNode(isToggleable() and hasContentDescription("croak")).performClick()
+        compose.onNode(isToggleable() and hasText("croak")).performScrollTo().performClick()
 
         assertEquals(listOf("ribbit"), played)
         assertEquals(listOf("croak" to false), toggles)
@@ -97,7 +102,7 @@ class ContactDetailContentTest {
         val state = previewContactDetailState()
         show(state.copy(clips = clipRows(state.character, listOf("characters/frog/clips/croak.ogg"))))
 
-        compose.onNode(isToggleable() and hasContentDescription("ribbit")).assertIsNotEnabled()
+        compose.onNode(isToggleable() and hasText("ribbit")).assertIsNotEnabled()
     }
 
     @Test
@@ -136,6 +141,10 @@ class ContactDetailContentTest {
         compose.onNodeWithText("No voice yet: WhatsApp's tone plays.").assertIsDisplayed()
         compose.onNodeWithText("Choose a character").assertIsDisplayed()
         compose.onNodeWithText("Choose a character to simulate a message.").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Play what this chat's next message will do").assertIsNotEnabled()
+        compose
+            .onNodeWithContentDescription(
+                "Play what this chat's next message will do",
+                substring = true,
+            ).assertIsNotEnabled()
     }
 }

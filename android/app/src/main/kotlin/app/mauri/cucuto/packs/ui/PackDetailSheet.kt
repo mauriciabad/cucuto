@@ -28,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.db.PackSource
@@ -65,7 +67,11 @@ fun PackDetailSheet(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 PackCover(pack, Modifier.size(72.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(pack.name, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        pack.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.semantics { heading() },
+                    )
                     pack.author?.let {
                         Text(
                             stringResource(R.string.packs_by_author, it),
@@ -80,6 +86,7 @@ fun PackDetailSheet(
             Text(
                 pluralStringResource(R.plurals.packs_characters, pack.characters.size, pack.characters.size),
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
             )
             if (pack.filesMissing) {
                 Text(
@@ -147,7 +154,12 @@ private fun Fact(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    // Label and value are read together ("Version, 1.2.0").
+    Row(
+        modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+        },
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Text(
             label,
             modifier = Modifier.weight(0.4f),

@@ -71,6 +71,7 @@ import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.ParticleBurst
 import app.mauri.cucuto.ui.components.VoiceAvatar
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
@@ -165,7 +166,7 @@ fun PickerContent(
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 MediumFlexibleTopAppBar(
-                    title = { Text(stringResource(R.string.picker_title)) },
+                    title = { Text(stringResource(R.string.picker_title), Modifier.semantics { heading() }) },
                     subtitle = {
                         Text(
                             text =
@@ -281,7 +282,7 @@ private fun PickerHeader(
                     Text(
                         name,
                         style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
+                        maxLines = adaptiveMaxLines(1),
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
@@ -415,7 +416,11 @@ private fun EmptyPicker(onOpenPacks: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(24.dp),
     ) {
         CuckooDoor(beat = null, modifier = Modifier.size(140.dp))
-        Text(stringResource(R.string.picker_empty_title), style = MaterialTheme.typography.titleLarge)
+        Text(
+            stringResource(R.string.picker_empty_title),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.semantics { heading() },
+        )
         Text(
             text = stringResource(R.string.picker_empty_body),
             style = MaterialTheme.typography.bodyLarge,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -46,6 +47,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -157,14 +159,28 @@ internal fun ClipEditorPage(
             ListItem(
                 headlineContent = { Text(stringResource(R.string.creator_clip_trim)) },
                 supportingContent = { Text(stringResource(R.string.creator_clip_trim_hint)) },
-                trailingContent = { Switch(checked = editor.trimSilence, onCheckedChange = onTrimSilence) },
+                // The whole row toggles: one TalkBack stop that reads the label, the hint and the state.
+                trailingContent = { Switch(checked = editor.trimSilence, onCheckedChange = null) },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier =
+                    Modifier.toggleable(
+                        value = editor.trimSilence,
+                        role = Role.Switch,
+                        onValueChange = onTrimSilence,
+                    ),
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.creator_clip_normalize)) },
                 supportingContent = { Text(stringResource(R.string.creator_clip_normalize_hint)) },
-                trailingContent = { Switch(checked = editor.normalize, onCheckedChange = onNormalize) },
+                // The whole row toggles: one TalkBack stop that reads the label, the hint and the state.
+                trailingContent = { Switch(checked = editor.normalize, onCheckedChange = null) },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier =
+                    Modifier.toggleable(
+                        value = editor.normalize,
+                        role = Role.Switch,
+                        onValueChange = onNormalize,
+                    ),
             )
             OutlinedTextField(
                 value = editor.label,

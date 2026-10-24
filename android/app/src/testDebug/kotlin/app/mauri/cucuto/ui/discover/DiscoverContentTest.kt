@@ -2,6 +2,7 @@ package app.mauri.cucuto.ui.discover
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -89,7 +90,7 @@ class DiscoverContentTest {
         show(state(load, listOf(InstalledRef("app.example.cats", "1.0.0", null, null))))
 
         compose.onNodeWithText("packs.example.com").assertIsDisplayed()
-        compose.onNodeWithText("Tabby").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Tabby").assertIsDisplayed()
         compose.onNodeWithText("Update available").assertIsDisplayed()
         compose.onNodeWithText("Update").performClick()
         compose.onNodeWithText("Install").performScrollTo().performClick()

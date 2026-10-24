@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import app.mauri.cucuto.core.data.di.ApplicationScope
 import app.mauri.cucuto.core.data.settings.UiFeedbackSettings
 import app.mauri.cucuto.core.data.settings.UiSoundLevel
+import app.mauri.cucuto.ui.motion.ProvideReducedMotionScheme
 import app.mauri.cucuto.ui.theme.LocalReducedMotion
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -127,6 +128,8 @@ fun ProvideFeedback(
     CompositionLocalProvider(
         LocalFeedback provides controller,
         LocalReducedMotion provides (LocalReducedMotion.current || removeAnimations),
-        content = content,
-    )
+    ) {
+        // Cucuto's own "Remove animations" snaps Material and Cucuto motion too, like the system setting does.
+        ProvideReducedMotionScheme(content)
+    }
 }

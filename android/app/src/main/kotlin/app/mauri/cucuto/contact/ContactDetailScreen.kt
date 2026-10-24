@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
@@ -30,6 +31,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -58,6 +60,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -81,6 +85,7 @@ import app.mauri.cucuto.home.ChatAvatarKey
 import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
 import app.mauri.cucuto.ui.components.VoiceAvatar
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.haptics.HapticOverrideSection
@@ -180,7 +185,14 @@ fun ContactDetailContent(
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 MediumFlexibleTopAppBar(
-                    title = { Text(state.chatName(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    title = {
+                        Text(
+                            state.chatName(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.semantics { heading() },
+                        )
+                    },
                     subtitle = { Text(stringResource(state.kindLabel())) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -364,7 +376,10 @@ private fun SimulateCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            val label = stringResource(R.string.contact_simulate_label)
+            val text = stringResource(R.string.contact_simulate)
+            // The visible text first (voice access users say it), then what it does; read once, not twice.
+            val label =
+                stringResource(R.string.a11y_label_and_hint, text, stringResource(R.string.contact_simulate_label))
             // No UI haptic or sound on this button: the only vibration felt is the chat's own.
             Button(
                 onClick = onSimulate,
@@ -372,7 +387,7 @@ private fun SimulateCard(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).semantics { contentDescription = label },
             ) {
                 Icon(Icons.Rounded.Notifications, contentDescription = null)
-                Text(stringResource(R.string.contact_simulate), Modifier.padding(start = 8.dp))
+                Text(text, Modifier.padding(start = 8.dp).clearAndSetSemantics {})
             }
             Text(
                 text = pathText(state),
@@ -501,35 +516,40 @@ private fun LazyListScope.clipSection(
     }
     items(state.clips, key = { "clip/${it.path}" }) { clip ->
         val lastOn = stringResource(R.string.contact_clip_last)
+        val playing = state.playingClip == clip.path
+        val playingLabel = stringResource(R.string.a11y_playing)
         ListItem(
-            headlineContent = { Text(clip.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            headlineContent = { Text(clip.name, maxLines = adaptiveMaxLines(1), overflow = TextOverflow.Ellipsis) },
+            // "Playing" in words, not only the button's color.
+            supportingContent = if (playing) ({ Text(playingLabel) }) else null,
             leadingContent = {
-                IconButton(onClick = { onPlay(clip) }) {
-                    Icon(
-                        Icons.Rounded.PlayArrow,
-                        contentDescription = stringResource(R.string.contact_clip_play, clip.name),
-                        tint =
-                            if (state.playingClip == clip.path) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    )
+                val playLabel = stringResource(R.string.contact_clip_play, clip.name)
+                val playModifier = Modifier.semantics { if (playing) stateDescription = playingLabel }
+                if (playing) {
+                    FilledTonalIconButton(onClick = { onPlay(clip) }, modifier = playModifier) {
+                        Icon(Icons.Rounded.PlayArrow, contentDescription = playLabel)
+                    }
+                } else {
+                    IconButton(onClick = { onPlay(clip) }, modifier = playModifier) {
+                        Icon(
+                            Icons.Rounded.PlayArrow,
+                            contentDescription = playLabel,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             },
-            trailingContent = {
-                Switch(
-                    checked = clip.enabled,
-                    onCheckedChange = { onToggle(clip, it) },
-                    enabled = clip.canToggle,
-                    modifier =
-                        Modifier.semantics {
-                            contentDescription = clip.name
-                            if (!clip.canToggle) stateDescription = lastOn
-                        },
-                )
-            },
+            trailingContent = { Switch(checked = clip.enabled, onCheckedChange = null, enabled = clip.canToggle) },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            // The whole row toggles the clip, so TalkBack reads its name with the switch (the play button stays apart).
+            modifier =
+                Modifier
+                    .toggleable(
+                        value = clip.enabled,
+                        enabled = clip.canToggle,
+                        role = Role.Switch,
+                        onValueChange = { onToggle(clip, it) },
+                    ).semantics { if (!clip.canToggle) stateDescription = lastOn },
         )
     }
 }
@@ -614,6 +634,7 @@ private fun DecisionItem(row: DecisionRow) {
         overlineContent = { Text(overline) },
         headlineContent = { Text(headline) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.semantics(mergeDescendants = true) {},
     )
 }
 

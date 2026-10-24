@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.RenderVectorGroup
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
 import app.mauri.cucuto.packs.LibraryCharacter
 import app.mauri.cucuto.ui.components.CookieAvatar
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import coil3.compose.AsyncImage
 
@@ -68,8 +70,10 @@ fun CharacterBadge(
             text = character.name,
             style = MaterialTheme.typography.labelMedium,
             textAlign = TextAlign.Center,
-            maxLines = 2,
+            maxLines = adaptiveMaxLines(2),
             overflow = TextOverflow.Ellipsis,
+            // The avatar above already says the name to TalkBack.
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }
