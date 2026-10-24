@@ -8,7 +8,9 @@ import app.mauri.cucuto.core.data.db.ContactKeyKind
 import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.PackRepositoryEntity
+import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import app.mauri.cucuto.core.repo.credentials.CredentialStore
@@ -51,6 +53,36 @@ enum class VoiceOutcome {
     CONFLICT,
 }
 
+/** What happened to a backup contact's phone ringtone. */
+enum class RingtoneOutcome {
+    /** Applied: the contact had no phone ringtone on this phone, or the user chose to overwrite it. */
+    APPLIED,
+
+    /** This phone already has exactly the backup's phone ringtone. */
+    UNCHANGED,
+
+    /** This phone has a different phone ringtone set; kept. */
+    KEPT,
+}
+
+/**
+ * A backup contact's phone ringtone after the restore (ADR 0057). The database now holds the choice; the app still
+ * has to find the Android contact on this phone, seed the undo record and render the ring files, which needs the
+ * contacts permission (`PhoneRingtones.afterRestore`).
+ *
+ * @property displayName The contact's name in the backup.
+ * @property androidContact The Android contact on the phone that wrote the backup (its lookup key and name).
+ * @property undo The device-local undo record from the backup, if any.
+ */
+data class RingtoneRestoreOutcome(
+    val backupId: String,
+    val contactId: Long,
+    val outcome: RingtoneOutcome,
+    val displayName: String?,
+    val androidContact: BackupAndroidContact?,
+    val undo: BackupRingtoneUndo?,
+)
+
 data class ContactRestoreOutcome(
     val backupId: String,
     val contactId: Long,
@@ -86,9 +118,15 @@ data class RestoreReport(
     /** Credentials that were in the backup but could not be used (invalid, or a plain backup). */
     val credentialsSkipped: List<String>,
     val settings: SettingsRestoreResult,
-    /** Ringtone assignments in the backup; restored once call ringtones land (M9). */
-    val ringtonesPending: Int,
+    /** Every phone ringtone in the backup, in backup order. */
+    val ringtones: List<RingtoneRestoreOutcome> = emptyList(),
 ) {
+    /** Phone ringtones written to this phone's database. */
+    val ringtonesApplied: Int get() = ringtones.count { it.outcome == RingtoneOutcome.APPLIED }
+
+    /** Phone ringtones set differently on this phone, kept. */
+    val ringtonesKept: Int get() = ringtones.count { it.outcome == RingtoneOutcome.KEPT }
+
     val created: Int get() = contacts.count { it.match == ContactMatch.CREATED }
     val matched: Int get() = contacts.count { it.match != ContactMatch.CREATED }
     val applied: Int get() = contacts.count { it.voice == VoiceOutcome.APPLIED }
@@ -108,6 +146,8 @@ data class RestoreReport(
  * - Repositories are added when their URL is unknown; existing ones keep this phone's settings. Credentials come only
  *   from encrypted backups and never replace stored ones.
  * - Settings in the backup are applied; unknown keys are ignored.
+ * - Phone ringtones follow the voice's rule ([restoreRingtone]); finding their Android contacts on this phone and
+ *   writing them is the app's next step ([RestoreReport.ringtones]).
  */
 class BackupRestorer(
     private val db: CucutoDatabase,
@@ -123,12 +163,14 @@ class BackupRestorer(
     ): RestoreReport {
         val outcomes = mutableListOf<ContactRestoreOutcome>()
         val conflicts = mutableListOf<AssignmentConflict>()
+        val ringtones = mutableListOf<RingtoneRestoreOutcome>()
         val repositoriesAdded = mutableListOf<String>()
         db.withWriteTransaction {
             for (contact in backup.contacts) {
                 val (outcome, conflict) = restoreContact(contact, options)
                 outcomes += outcome
                 conflict?.let(conflicts::add)
+                restoreRingtone(contact, outcome, options)?.let(ringtones::add)
             }
             for (repository in backup.repositories) {
                 if (restoreRepository(repository)) repositoriesAdded += repository.url
@@ -156,7 +198,56 @@ class BackupRestorer(
             credentialsRestored = restored,
             credentialsSkipped = skipped,
             settings = settings.restore(backup.settings),
-            ringtonesPending = backup.contacts.count { it.ringtone != null },
+            ringtones = ringtones,
+        )
+    }
+
+    /**
+     * The phone ringtone, with the voice's rule: applied when this phone has none for the contact (or the user chose
+     * to overwrite the contact), left alone when equal, kept otherwise. One that follows the voice keeps following
+     * whatever voice the contact ends up with.
+     */
+    private suspend fun restoreRingtone(
+        backup: BackupContact,
+        contact: ContactRestoreOutcome,
+        options: RestoreOptions,
+    ): RingtoneRestoreOutcome? {
+        val ringtone = backup.ringtone ?: return null
+        val dao = db.phoneRingtoneDao()
+        val current = dao.get(contact.contactId)
+        val follows = ringtone.followsVoice == true
+        val mode = ringtone.rule.mode.toEntity()
+        val wanted =
+            PhoneRingtoneEntity(
+                contactId = contact.contactId,
+                packId = if (follows) null else ringtone.packId,
+                characterId = if (follows) null else ringtone.characterId,
+                mode = mode,
+                variant = if (mode == RingtoneMode.FIXED) ringtone.rule.variant else null,
+                updatedAt = clock.now(),
+            )
+        val outcome =
+            when {
+                current != null && current.copy(updatedAt = 0) == wanted.copy(updatedAt = 0) -> {
+                    RingtoneOutcome.UNCHANGED
+                }
+
+                current != null && contact.match != ContactMatch.CREATED && backup.id !in options.overwrite -> {
+                    RingtoneOutcome.KEPT
+                }
+
+                else -> {
+                    dao.upsert(wanted)
+                    RingtoneOutcome.APPLIED
+                }
+            }
+        return RingtoneRestoreOutcome(
+            backupId = backup.id,
+            contactId = contact.contactId,
+            outcome = outcome,
+            displayName = backup.displayName,
+            androidContact = backup.androidContact,
+            undo = ringtone.undo,
         )
     }
 
@@ -359,6 +450,15 @@ class BackupRestorer(
             }
         } catch (e: IllegalArgumentException) {
             null // A username with ':' or a token with spaces: the user enters them again.
+        }
+
+    private fun BackupRingtoneMode.toEntity(): RingtoneMode =
+        when (this) {
+            BackupRingtoneMode.FIXED -> RingtoneMode.FIXED
+            BackupRingtoneMode.RANDOM -> RingtoneMode.RANDOM
+            BackupRingtoneMode.TIME -> RingtoneMode.TIME
+            BackupRingtoneMode.SEASON -> RingtoneMode.SEASON
+            BackupRingtoneMode.PACK -> RingtoneMode.PACK
         }
 
     private fun BackupGroupPolicy?.toEntity(): GroupPolicy =

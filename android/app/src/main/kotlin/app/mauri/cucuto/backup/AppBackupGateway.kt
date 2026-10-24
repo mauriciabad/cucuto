@@ -20,6 +20,7 @@ import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.backup.PackRestoreItem
 import app.mauri.cucuto.core.backup.RestoreOptions
 import app.mauri.cucuto.core.backup.RestoreReport
+import app.mauri.cucuto.core.backup.RingtoneOutcome
 import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.InstalledPackDao
 import app.mauri.cucuto.core.data.di.WallClock
@@ -38,6 +39,9 @@ import app.mauri.cucuto.core.repo.RepoResult
 import app.mauri.cucuto.core.repo.RepositoryAccess
 import app.mauri.cucuto.core.repo.RepositoryClient
 import app.mauri.cucuto.core.repo.credentials.CredentialStore
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.PhoneRingtones
+import app.mauri.cucuto.core.ringtone.restore.RestoredRingtone
 import app.mauri.cucuto.packs.ImportStep
 import app.mauri.cucuto.packs.PackLibrary
 import app.mauri.cucuto.packs.PackOrigin
@@ -77,6 +81,7 @@ class AppBackupGateway
         routing: RoutingSettings,
         private val library: PackLibrary,
         private val clock: WallClock,
+        private val phoneRingtones: PhoneRingtones,
         // The app's repository client and Keystore-encrypted credential store (ADR 0011, RepositoryModule), created
         // only when a backup or restore needs them.
         credentialStore: Lazy<CredentialStore>,
@@ -169,6 +174,28 @@ class AppBackupGateway
             withContext(Dispatchers.IO) {
                 restorer.restore(session.document, session.encrypted, RestoreOptions(overwrite))
             }
+
+        override suspend fun restorePhoneRingtones(reports: List<RestoreReport>): PhoneRingtoneRestore {
+            // The last run wins for a contact (the overwrite run after the conflicts); kept ones are this phone's own.
+            val restored =
+                reports
+                    .flatMap { it.ringtones }
+                    .filter { it.outcome != RingtoneOutcome.KEPT }
+                    .associateBy { it.contactId }
+                    .values
+                    .map {
+                        RestoredRingtone(
+                            contactId = it.contactId,
+                            displayName = it.displayName,
+                            androidName = it.androidContact?.displayName,
+                            originalRingtone = it.undo?.originalRingtone,
+                            writtenUri = it.undo?.writtenUri,
+                        )
+                    }
+            return phoneRingtones.afterRestore(restored)
+        }
+
+        override suspend fun enablePhoneRingtones(): PhoneRingtoneRestore? = phoneRingtones.enableAndRestore()
 
         override fun restorePack(
             session: RestoreSession,

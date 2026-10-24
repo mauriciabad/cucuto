@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -29,7 +30,18 @@ class PhoneRingtoneSettings
             dataStore.edit { it[ENABLED] = enabled }
         }
 
+        /**
+         * Phone ringtones a backup restore brought back whose Android contacts are still to be found on this phone
+         * (ADR 0057): kept until the contacts permission is granted. Opaque JSON owned by `:core:ringtone`.
+         */
+        suspend fun pendingRestore(): String? = dataStore.data.first()[PENDING_RESTORE]
+
+        suspend fun setPendingRestore(json: String?) {
+            dataStore.edit { if (json == null) it.remove(PENDING_RESTORE) else it[PENDING_RESTORE] = json }
+        }
+
         private companion object {
             val ENABLED = booleanPreferencesKey("phone_ringtones_enabled")
+            val PENDING_RESTORE = stringPreferencesKey("phone_ringtones_pending_restore")
         }
     }

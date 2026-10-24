@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.pack.InstallAction
 import app.mauri.cucuto.core.pack.PackCandidate
 import app.mauri.cucuto.core.pack.PackSelection
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
 import app.mauri.cucuto.home.AssignVoiceContent
 import app.mauri.cucuto.home.previewHomeState
 import app.mauri.cucuto.packs.AssignedContact
@@ -26,6 +27,9 @@ import app.mauri.cucuto.ui.discover.RepositoriesScreen
 import app.mauri.cucuto.ui.discover.RepositoryForm
 import app.mauri.cucuto.ui.discover.RepositoryFormScreen
 import app.mauri.cucuto.ui.discover.SavedRepository
+import app.mauri.cucuto.ui.ringtone.RingtonePickerActions
+import app.mauri.cucuto.ui.ringtone.RingtonePickerContent
+import app.mauri.cucuto.ui.ringtone.previewRingtonePickerState
 import app.mauri.cucuto.ui.settings.BackupExportContent
 import app.mauri.cucuto.ui.settings.LicensesScreen
 import app.mauri.cucuto.ui.settings.restore.RestoreActions
@@ -50,6 +54,13 @@ internal object A11yPushedScreens {
             "repositories" to { RepositoriesScreen() },
             "creator-finish" to { CreatorFinishScreen() },
             "assign-voice" to { AssignVoiceContent(state = previewHomeState(), onBack = {}, onPick = {}) },
+            "ringtone-picker" to {
+                RingtonePickerContent(
+                    state = previewRingtonePickerState(),
+                    beat = null,
+                    actions = RingtonePickerActions(),
+                )
+            },
         )
 
     private val characters =
@@ -107,7 +118,14 @@ internal object A11yPushedScreens {
                             repositoriesAdded = 1,
                             credentialsRestored = 0,
                             packsMissing = 1,
-                            ringtonesPending = 0,
+                            phoneRingtones =
+                                PhoneRingtoneRestore(
+                                    restored = 3,
+                                    linked = 2,
+                                    missing = listOf("Grandpa"),
+                                    waitingForPermission = true,
+                                    enabled = false,
+                                ),
                         ),
                     reusableSource = "content://backup",
                 ),

@@ -29,8 +29,7 @@ class PhoneRingtoneContentTest {
             onLink = { events += "link:${it.lookupKey}" },
             onPickContact = { events += "pick" },
             onUse = { events += "use" },
-            onMode = { events += "mode:$it" },
-            onVariant = { events += "variant:$it" },
+            onChoose = { events += "choose" },
             onStop = { events += "stop" },
             onTakeOver = { events += "takeover" },
         )
@@ -65,7 +64,7 @@ class PhoneRingtoneContentTest {
     }
 
     @Test
-    fun linkedShowsRulesStatusAndTheWhatsAppHint() {
+    fun linkedShowsWhatRingsTheStatusAndTheWhatsAppHint() {
         show(
             base.copy(
                 linked = true,
@@ -79,12 +78,28 @@ class PhoneRingtoneContentTest {
             ),
         )
         compose.onNodeWithText("Android contact: Ada").assertIsDisplayed()
+        compose.onNodeWithText("One version: Radio").assertIsDisplayed()
         compose.onNodeWithText("Rings with Radio").assertIsDisplayed()
         compose.onNodeWithText("“K.K. Slider · Radio”", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Random per call").performClick()
-        compose.onNodeWithText("Live").performClick()
+        // The rules and versions live in the ringtone picker now (#53): the summary opens it.
+        compose.onNodeWithText("K.K. Slider").performClick()
         compose.onNodeWithText("Stop using for calls").performClick()
-        assertEquals(listOf("mode:RANDOM", "variant:live.ogg", "stop"), events)
+        assertEquals(listOf("choose", "stop"), events)
+    }
+
+    @Test
+    fun aMixedRingtoneSaysSoAndTheRuleIsShown() {
+        show(
+            base.copy(
+                linked = true,
+                using = true,
+                mixed = true,
+                modes = listOf(RingtoneMode.PACK, RingtoneMode.TIME),
+                mode = RingtoneMode.TIME,
+            ),
+        )
+        compose.onNodeWithText("Day and night").assertIsDisplayed()
+        compose.onNodeWithText("Different from the messages' character").assertIsDisplayed()
     }
 
     @Test
@@ -96,9 +111,18 @@ class PhoneRingtoneContentTest {
     }
 
     @Test
-    fun aCharacterWithoutRingtonesSaysSo() {
+    fun aCharacterWithoutRingtonesSaysSoAndOffersAnotherOne() {
         show(base.copy(variants = emptyList()))
         compose.onNodeWithText("K.K. Slider has no ringtone.").assertIsDisplayed()
+        compose.onNodeWithText("Tap above to pick a ringtone from another character.").assertIsDisplayed()
+        compose.onNodeWithText("K.K. Slider has no ringtone.").performClick()
+        assertEquals(listOf("choose"), events)
+    }
+
+    @Test
+    fun aChatWithoutContactAsksForAVoiceFirst() {
+        show(base.copy(contactId = null, hasCharacter = false, characterName = null, variants = emptyList()))
+        compose.onNodeWithText("Give this chat a voice first: its character brings the ringtone.").assertIsDisplayed()
     }
 
     @Test

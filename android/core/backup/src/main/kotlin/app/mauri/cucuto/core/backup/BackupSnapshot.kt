@@ -3,12 +3,15 @@ package app.mauri.cucuto.core.backup
 import app.mauri.cucuto.core.data.db.AssignmentEntity
 import app.mauri.cucuto.core.data.db.ContactKeyEntity
 import app.mauri.cucuto.core.data.db.ContactKeyKind
+import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
 import app.mauri.cucuto.core.data.db.ContactWithKeys
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.data.db.PackRepositoryEntity
 import app.mauri.cucuto.core.data.db.PackSource
+import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.packspec.SemVer
 import kotlinx.serialization.json.JsonElement
 
@@ -24,6 +27,8 @@ internal object BackupSnapshot {
     private const val MAX_LOOKUP_KEY = 1024
     private const val MAX_FILE_NAME = 255
     private const val MAX_PACK_NAME = 80
+    private const val MAX_URI = 2048
+    private const val MAX_PATH = 255
     private val packagePattern = Regex("^[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+$")
     private val sha256Pattern = Regex("^[0-9a-f]{64}$")
     private val httpsPattern = Regex("^https://[^\\s/?#]+\\S*$")
@@ -31,6 +36,8 @@ internal object BackupSnapshot {
     fun contact(
         row: ContactWithKeys,
         assignment: AssignmentEntity?,
+        ringtone: PhoneRingtoneEntity? = null,
+        ringtoneWrite: ContactRingtoneWriteEntity? = null,
     ): BackupContact {
         val c = row.contact
         val keys =
@@ -59,6 +66,57 @@ internal object BackupSnapshot {
                 },
             groupPolicy = if (c.isGroup) groupPolicy(c.groupPolicy) else null,
             message = assignment?.let(::message),
+            ringtone = ringtone?.let { ringtone(it, assignment, ringtoneWrite) },
+        )
+    }
+
+    /**
+     * A phone ringtone (ADR 0057). One that follows the voice is written with the voice's character and
+     * `followsVoice`; one with neither its own character nor a voice has nothing to ring and is left out. The undo
+     * record goes along only while Cucuto's file is on the contact ([ContactRingtoneWriteEntity.writtenUri], not
+     * changed by the user since).
+     */
+    fun ringtone(
+        row: PhoneRingtoneEntity,
+        assignment: AssignmentEntity?,
+        write: ContactRingtoneWriteEntity?,
+    ): BackupRingtoneAssignment? {
+        val follows = row.packId == null || row.characterId == null
+        val packId = (if (follows) assignment?.packId else row.packId) ?: return null
+        val characterId = (if (follows) assignment?.characterId else row.characterId) ?: return null
+        val mode =
+            when (row.mode) {
+                RingtoneMode.FIXED -> BackupRingtoneMode.FIXED
+                RingtoneMode.RANDOM -> BackupRingtoneMode.RANDOM
+                RingtoneMode.TIME -> BackupRingtoneMode.TIME
+                RingtoneMode.SEASON -> BackupRingtoneMode.SEASON
+                RingtoneMode.PACK -> BackupRingtoneMode.PACK
+            }
+        // A fixed rule needs its variant (schema): without one the first variant rang, which "pack" also gives when
+        // the pack has no conditions; keep it fixed only when the variant is known.
+        val variant = row.variant?.takeIf { mode == BackupRingtoneMode.FIXED && it.length <= MAX_PATH }
+        val undo =
+            write
+                ?.takeIf { !it.userChanged }
+                ?.writtenUri
+                ?.takeIf { it.length <= MAX_URI }
+                ?.let { written ->
+                    BackupRingtoneUndo(
+                        originalRingtone = write.originalRingtone?.takeIf { it.isNotEmpty() && it.length <= MAX_URI },
+                        writtenUri = written,
+                    )
+                }
+        return BackupRingtoneAssignment(
+            packId = packId,
+            characterId = characterId,
+            followsVoice = if (follows) true else null,
+            rule =
+                if (mode == BackupRingtoneMode.FIXED && variant == null) {
+                    BackupRingtoneRule(BackupRingtoneMode.PACK)
+                } else {
+                    BackupRingtoneRule(mode, variant)
+                },
+            undo = undo,
         )
     }
 
