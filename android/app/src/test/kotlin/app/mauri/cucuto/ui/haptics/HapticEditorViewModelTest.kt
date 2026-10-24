@@ -206,6 +206,72 @@ class HapticEditorViewModelTest {
         }
 
     @Test
+    fun aPastedPatternReplacesTheTimelineAndUndoBringsItBack() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.add(HapticTool.Click, 0)
+            val before = vm.state.value.draft.events
+            val pasted =
+                listOf(HapticEvent.Preset(0, HapticPreset.TICK, 600), HapticEvent.Preset(300, HapticPreset.CLICK))
+
+            vm.paste("Here you go:\n```json\n${HapticAiText.patternJson(pasted)}\n```")
+            assertEquals(PasteOutcome.Loaded(adjusted = false), vm.state.value.paste)
+            assertEquals(pasted, vm.state.value.draft.events)
+            assertTrue(vm.state.value.canSave)
+            vm.dismissPaste()
+            assertNull(vm.state.value.paste)
+
+            vm.undo()
+            assertEquals(before, vm.state.value.draft.events)
+        }
+
+    @Test
+    fun aPasteTheEditorHasToSpaceOutSaysSo() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            // Valid in the pack format, but the editor keeps 50 ms after each preset.
+            vm.paste("""[{"at":0,"preset":"CLICK"},{"at":20,"preset":"TICK"}]""")
+            assertEquals(PasteOutcome.Loaded(adjusted = true), vm.state.value.paste)
+            assertEquals(
+                listOf(0, 50),
+                vm.state.value.draft.events
+                    .map { it.atMs },
+            )
+        }
+
+    @Test
+    fun aBrokenOrEmptyPasteKeepsTheTimeline() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.add(HapticTool.Click, 0)
+            val before = vm.state.value.draft.events
+            vm.paste("""{"mode":"none"}""")
+            assertEquals(PasteOutcome.Rejected(PatternProblem.NotCustom("none")), vm.state.value.paste)
+            vm.paste(null)
+            assertEquals(PasteOutcome.EmptyClipboard, vm.state.value.paste)
+            assertEquals(before, vm.state.value.draft.events)
+        }
+
+    @Test
+    fun copyForAiDescribesTheCharacterAndThePattern() =
+        runTest(dispatcher) {
+            val text = viewModel(BEA).aiText()
+            assertTrue(text.contains("Character: Hoot the owl."))
+            assertTrue(text.contains(HapticAiText.patternJson(packPattern.events)))
+        }
+
+    @Test
+    fun useAutoStoresTheAutoVibration() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            assertTrue(vm.state.value.canUseAuto)
+            vm.useAuto()
+            assertTrue(vm.state.value.saved)
+            assertEquals(HapticOverride.Auto, overrides.overrideOf(ADA))
+            assertFalse(viewModel(chat = null).state.value.canUseAuto)
+        }
+
+    @Test
     fun theScratchPadOnlyPreviews() =
         runTest(dispatcher) {
             val vm = viewModel(chat = null)

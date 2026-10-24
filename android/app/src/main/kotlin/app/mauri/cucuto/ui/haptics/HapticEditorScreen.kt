@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.haptics
 
+import android.content.ClipData
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -57,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -65,6 +67,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -90,6 +95,7 @@ import app.mauri.cucuto.core.routing.HapticPreset
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.theme.CucutoTheme
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
@@ -111,6 +117,10 @@ fun HapticEditorScreen(
     val feedback = LocalFeedback.current
     val done by rememberUpdatedState(onDone)
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val clipLabel = stringResource(R.string.haptic_ai_clip_label)
 
     LaunchedEffect(state.saved) {
         if (state.saved) {
@@ -168,6 +178,27 @@ fun HapticEditorScreen(
                 onStopRecording = { viewModel.stopRecording() },
                 onPreview = viewModel::preview,
                 onDismissError = viewModel::dismissError,
+                onCopyForAi = {
+                    scope.launch {
+                        // Android shows its own "copied" confirmation (API 33+), so the editor adds none.
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, viewModel.aiText())))
+                    }
+                },
+                onPastePattern = {
+                    scope.launch {
+                        val text =
+                            clipboard
+                                .getClipEntry()
+                                ?.clipData
+                                ?.takeIf { it.itemCount > 0 }
+                                ?.getItemAt(0)
+                                ?.coerceToText(context)
+                                ?.toString()
+                        viewModel.paste(text)
+                    }
+                },
+                onUseAuto = viewModel::useAuto,
+                onDismissPaste = viewModel::dismissPaste,
             ),
         modifier = modifier,
     )
@@ -217,6 +248,10 @@ data class HapticEditorActions(
     val onStopRecording: () -> Unit = {},
     val onPreview: (withClip: Boolean) -> Unit = {},
     val onDismissError: () -> Unit = {},
+    val onCopyForAi: () -> Unit = {},
+    val onPastePattern: () -> Unit = {},
+    val onUseAuto: () -> Unit = {},
+    val onDismissPaste: () -> Unit = {},
 )
 
 /** Stateless haptic editor, for previews and UI tests. */
@@ -235,6 +270,16 @@ fun HapticEditorContent(
             actions.onDismissError()
         }
     }
+    val pastedMessage = stringResource(R.string.haptic_ai_pasted)
+    val adjustedMessage = stringResource(R.string.haptic_ai_pasted_adjusted)
+    val snackbarScope = rememberCoroutineScope()
+    LaunchedEffect(state.paste) {
+        val loaded = state.paste as? PasteOutcome.Loaded ?: return@LaunchedEffect
+        // Shown outside this effect: dismissing the outcome changes its key and would cancel the snackbar.
+        snackbarScope.launch { snackbar.showSnackbar(if (loaded.adjusted) adjustedMessage else pastedMessage) }
+        actions.onDismissPaste()
+    }
+    PasteProblemDialog(state.paste, actions.onDismissPaste)
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbar) },
@@ -290,6 +335,7 @@ fun HapticEditorContent(
             }
             RhythmSection(state.recording, actions)
             PreviewRow(state, actions)
+            if (state.recording == null) AiSection(state, actions)
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -667,6 +713,150 @@ private fun PreviewRow(
         }
     }
 }
+
+/** "Ask an AI" (#217): the honest tip, Copy for AI, Paste pattern and a way back to Auto. */
+@Composable
+private fun AiSection(
+    state: HapticEditorState,
+    actions: HapticEditorActions,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.haptic_ai_title),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            stringResource(R.string.haptic_ai_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilledTonalButton(onClick = actions.onCopyForAi) { Text(stringResource(R.string.haptic_ai_copy)) }
+            OutlinedButton(onClick = actions.onPastePattern) { Text(stringResource(R.string.haptic_ai_paste)) }
+            if (state.canUseAuto) {
+                TextButton(onClick = actions.onUseAuto) { Text(stringResource(R.string.haptic_ai_use_auto)) }
+            }
+        }
+    }
+}
+
+/** Why a pasted pattern was refused, in plain words, with a hint to hand the message back to the AI. */
+@Composable
+private fun PasteProblemDialog(
+    paste: PasteOutcome?,
+    onDismiss: () -> Unit,
+) {
+    val problem =
+        when (paste) {
+            is PasteOutcome.Rejected -> describe(paste.problem)
+            PasteOutcome.EmptyClipboard -> stringResource(R.string.haptic_ai_problem_empty_clipboard)
+            else -> return
+        }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.haptic_ai_problem_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(problem)
+                if (paste is PasteOutcome.Rejected) Text(stringResource(R.string.haptic_ai_problem_hint))
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.haptic_ai_problem_ok)) } },
+    )
+}
+
+@Composable
+private fun describe(spot: PatternSpot): String =
+    when {
+        spot.event == null -> stringResource(R.string.haptic_ai_spot_pattern)
+        spot.point == null -> stringResource(R.string.haptic_ai_spot_event, spot.event)
+        else -> stringResource(R.string.haptic_ai_spot_point, spot.event, spot.point)
+    }
+
+@Composable
+private fun describe(problem: PatternProblem): String =
+    when (problem) {
+        PatternProblem.NotJson -> {
+            stringResource(R.string.haptic_ai_problem_not_json)
+        }
+
+        is PatternProblem.NotCustom -> {
+            stringResource(R.string.haptic_ai_problem_not_custom, problem.mode)
+        }
+
+        PatternProblem.NoEvents -> {
+            stringResource(R.string.haptic_ai_problem_no_events)
+        }
+
+        PatternProblem.TooManyEvents -> {
+            stringResource(R.string.haptic_ai_problem_too_many_events, HapticTimeline.MAX_EVENTS)
+        }
+
+        is PatternProblem.NotAnEvent -> {
+            stringResource(R.string.haptic_ai_problem_not_an_event, problem.event)
+        }
+
+        is PatternProblem.MissingField -> {
+            stringResource(R.string.haptic_ai_problem_missing_field, describe(problem.spot), problem.field)
+        }
+
+        is PatternProblem.UnknownField -> {
+            stringResource(R.string.haptic_ai_problem_unknown_field, describe(problem.spot), problem.field)
+        }
+
+        is PatternProblem.NotWholeNumber -> {
+            stringResource(
+                R.string.haptic_ai_problem_not_whole,
+                describe(problem.spot),
+                problem.field,
+                problem.value,
+            )
+        }
+
+        is PatternProblem.OutOfRange -> {
+            stringResource(
+                R.string.haptic_ai_problem_out_of_range,
+                describe(problem.spot),
+                problem.field,
+                problem.min,
+                problem.max,
+                problem.value,
+            )
+        }
+
+        is PatternProblem.UnknownPreset -> {
+            stringResource(R.string.haptic_ai_problem_unknown_preset, problem.event, problem.name)
+        }
+
+        is PatternProblem.PointCount -> {
+            stringResource(
+                R.string.haptic_ai_problem_point_count,
+                problem.event,
+                HapticTimeline.MAX_POINTS,
+                problem.count,
+            )
+        }
+
+        is PatternProblem.NotClosed -> {
+            stringResource(R.string.haptic_ai_problem_not_closed, problem.event)
+        }
+
+        is PatternProblem.Unsorted -> {
+            stringResource(R.string.haptic_ai_problem_unsorted, problem.event)
+        }
+
+        is PatternProblem.Overlap -> {
+            stringResource(R.string.haptic_ai_problem_overlap, problem.event, problem.atMs, problem.busyUntilMs)
+        }
+
+        is PatternProblem.TooLong -> {
+            stringResource(R.string.haptic_ai_problem_too_long, problem.ms, HapticTimeline.MAX_MS)
+        }
+    }
 
 @Composable
 private fun connectedShapes(
