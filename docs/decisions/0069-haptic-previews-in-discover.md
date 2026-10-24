@@ -1,6 +1,7 @@
 # 0069. Haptic previews in Discover: the pack's haptic in the index, auto envelopes on the phone
 
-- Status: accepted (defaults open to the owner in #284)
+- Status: accepted; amended 2026-10-24 (#301, owner on #284, item 6: "at least show a visual preview of the haptic
+  (also on the app would be nice)")
 - Date: 2026-10-24
 - Issue: #272 (amends [ADR 0029](0029-discover-screen.md); owner on #175, item 7: "it has to be done eventually, make
   sure this is not forgotten")
@@ -67,7 +68,25 @@ prepared listener), so both begin together.
 - Tapping another character, or leaving Discover, stops both the clip and the vibration.
 
 **Website.** Browsers can't play rich haptics (the Vibration API is on and off only, and missing on iOS), so the packs
-page keeps sound-only previews. Its index types list `x-haptic` as optional, and nothing reads it.
+page doesn't vibrate. It draws the vibration instead (owner update 2026-10-24 (#301), see below).
+
+**Drawn previews (owner update 2026-10-24, #301).** The owner, on #284 item 6: "at least show a visual preview of the
+haptic (also on the app would be nice)". Default 6 was "the website keeps sound-only previews"; it changes to this:
+
+- **Every character preview shows its vibration** from `x-haptic`, on the website's Packs page (the default
+  repository) and on Discover's character badges in the app, under the character's name.
+- `custom`: a small drawing of the timeline, scaled to the pattern's own length, with the haptic editor's marks
+  ([ADR 0030](0030-haptic-editor-and-per-contact-override.md)): presets as bars as tall as their strength, envelopes
+  as their filled intensity curve. The app reuses the editor's drawing code (`HapticTimelineView.kt`, a compact
+  `HapticPatternThumbnail` without grid or labels); the website reuses its creator's (`timelinePaths`). Screen readers
+  hear "Vibration: own pattern, N s".
+- `auto`: no stored pattern, so a "Follows the voice" mark (a wave icon and the words), not a drawing. Computing the
+  envelope on the website would mean downloading and decoding every sample on page load, and the app only analyses a
+  sample once it is tapped (above); a drawing that appears after a tap would move the layout. The mark is honest and
+  free.
+- `none`: "No vibration".
+- No `x-haptic`: nothing, as for playback (absent means unknown).
+- The drawing doesn't depend on the "App vibration" switch: it shows what the pack does, not what the preview plays.
 
 ## Consequences
 
@@ -80,3 +99,6 @@ page keeps sound-only previews. Its index types list `x-haptic` as optional, and
 - Anything new in a repository index faces the same constraint: it must be an `x-` key (or wait for a format version
   that relaxes the schema), or apps released today reject the index.
 - How previews feel can only be judged on a device (`needs-device`).
+- Drawn previews (#301) cost nothing extra: the drawing comes from the same `x-haptic`. Indexes without it show no
+  drawing, on the website as in the app. Installed packs (the Packs tab, the pickers) don't show vibrations yet; a
+  character's vibration is drawn where it is previewed before downloading, and in the haptic editor.

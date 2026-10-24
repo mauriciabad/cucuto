@@ -144,6 +144,8 @@ fun packEntry(
     character: String = "Bleep",
     size: Long = packBytes.size.toLong(),
     sha: String = sha256(packBytes),
+    /** The character's `x-haptic` as JSON, or null for none. */
+    haptic: String? = null,
 ): String =
     """
     {
@@ -151,7 +153,9 @@ fun packEntry(
       "license": "CC0-1.0", "tags": [${tags.joinToString { "\"$it\"" }}],
       "cover": "previews/$id/cover.png",
       "characters": [
-        { "id": "c1", "name": "$character", "sprite": "previews/$id/c1.png", "sample": "previews/$id/c1.ogg" }
+        { "id": "c1", "name": "$character", "sprite": "previews/$id/c1.png", "sample": "previews/$id/c1.ogg"${haptic?.let {
+        ", \"x-haptic\": $it"
+    } ?: ""} }
       ],
       "download": { "url": "packs/$id-$version.soundpack.zip", "size": $size, "sha256": "$sha" }
     }

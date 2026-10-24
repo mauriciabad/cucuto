@@ -1,5 +1,6 @@
 // Shape of a pack repository index (`repository.json`), as described in docs/project-brief.md ("Pack repositories").
 // The JSON Schema in spec/repository.schema.json is the contract; these types mirror it for the website gallery.
+import type { HapticJson } from '#lib/pack-spec/core.js';
 
 export interface RepositoryIndex {
 	formatVersion: 1;
@@ -19,10 +20,10 @@ export interface CharacterPreview {
 	sample?: string;
 	seedColor?: string;
 	/**
-	 * The character's haptic from pack.json, for the app's haptic previews (ADR 0069). Browsers can't play rich
-	 * haptics, so the website keeps sound-only previews and never reads it.
+	 * The character's haptic from pack.json (ADR 0069). The app plays it with the sample; browsers can't play rich
+	 * haptics, so the Packs page draws it instead (HapticPreview, #301). Absent means unknown: nothing is drawn.
 	 */
-	'x-haptic'?: { mode: 'auto' | 'custom' | 'none'; events?: unknown[] };
+	'x-haptic'?: HapticJson;
 }
 
 export interface BundledPack {
