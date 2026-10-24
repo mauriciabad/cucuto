@@ -108,4 +108,6 @@ What changes in the decision above:
 - **Defaults that stand** (the owner didn't change them): muted autoplay with captions when in view, never with
   reduced motion or Data Saver (item 3); the `?picture` poster (item 5). Item 4 (WhatsApp test accounts) is moot:
   nothing is filmed.
-- The draft pipeline (ADR 0060) renders the real screens, so it is reworked in #271.
+- The draft pipeline (ADR 0060) renders the real screens, so it is reworked in #271. Done:
+  [ADR 0070](0070-illustrated-explainer-video-project.md) (illustrated scenes in `android/video`, a Kokoro AI voice,
+  English only). The site keeps "coming soon" until the owner has watched the cut and says to publish it.

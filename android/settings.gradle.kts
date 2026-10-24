@@ -55,3 +55,5 @@ include(":core:audio")
 include(":core:jxl")
 include(":core:drive")
 include(":core:creator")
+// The explainer video as source: illustrated scenes rendered on the JVM (#271, ADR 0070, video/README.md).
+include(":video")

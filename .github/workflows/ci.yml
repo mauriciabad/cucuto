@@ -58,6 +58,9 @@ jobs:
               - "brand/tokens/**"
               - "brand/app-icon/android-res/**"
               - "brand/sounds/**"
+              # The explainer video's scenes draw the logo; its timeline test checks the committed captions (ADR 0070).
+              - "brand/logo/**"
+              - "web/static/video/**"
               # The routing integration suite installs the demo packs' clips (ADR 0047).
               - "packs/**"
               - ".github/workflows/ci.yml"
