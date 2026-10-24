@@ -72,6 +72,9 @@ Requirements:
 cd android
 ./gradlew build
 ./gradlew spotlessApply            # fix formatting
+./gradlew :app:verifyRoborazziDebug   # screenshot tests against their golden images (CI runs this)
+./gradlew :app:recordRoborazziDebug   # re-record them after an intended UI change (ADR 0032)
+./gradlew :app:exportWebScreenshots   # also refresh the website's screenshots
 
 # Website and PWA pack creator
 cd web

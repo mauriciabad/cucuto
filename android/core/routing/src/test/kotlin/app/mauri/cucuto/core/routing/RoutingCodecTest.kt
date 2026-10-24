@@ -103,7 +103,7 @@ class RoutingCodecTest {
                 .replaceFirst("\nP\t", "\nX\tsomething a newer writer added\nP\t")
                 .replace(Regex("(?m)^(R\t.*)$"), "$1\tfuture-field")
                 .replace(Regex("(?m)^(V\t.*)$"), "$1\tfuture-field")
-                .replaceFirst("\t4\t7\t1\n", "\t4\t7\t1\tfuture-field\n")
+                .replaceFirst("\t4\t7\t1\n", "\t4\t7\t1\t0\tfuture-field\n")
         assertEquals(sample, RoutingCodec.decode(extended))
     }
 

@@ -10,11 +10,12 @@ public class RoutingFormatException(
  * Compact, versioned text encoding of a [RoutingTable]. Specified in `docs/routing-table.md`; summary:
  *
  * ```
- * cucuto-routing⇥1⇥<generation>⇥<enabled 0|1>⇥<packages>⇥<voices>⇥<routes>⇥<clip haptics>
+ * cucuto-routing⇥1⇥<generation>⇥<enabled 0|1>⇥<packages>⇥<voices>⇥<routes>⇥<clip haptics>[⇥<conditions>]
  * S⇥<self-test clip URI>                                        optional, at most once
  * P⇥<package>                                                   one per package, referenced by index
  * H⇥<clip haptic>                                               one per distinct clip envelope, referenced by index
- * V⇥<packId>⇥<characterId>⇥<haptic>⇥<uriBase>⇥<clips>{⇥<uriSuffix>⇥<milliWeight>⇥<clipHaptic|->}[⇥h<index|->,…]
+ * W⇥<fromMs>⇥<untilMs>⇥<active at from 0|1>⇥<toggle deltas in s, comma-separated, or ->   one per clip condition
+ * V⇥<packId>⇥<characterId>⇥<haptic>⇥<uriBase>⇥<clips>{⇥<uriSuffix>⇥<milliWeight>⇥<clipHaptic|->}[⇥h<i|->,…][⇥w<i|->,…]
  * R⇥<package index>⇥<key>⇥<voice index|->⇥<seed>⇥<flags>⇥<contactId>
  * ```
  *
@@ -28,6 +29,11 @@ public class RoutingFormatException(
  * WhatsApp's vibration). `H` lines use the full syntax or, for envelopes on [HapticGrid], a compact one:
  * `z<at>,<initial sharpness level or empty>,<3 base-64 digits per point: intensity, sharpness, duration steps>`.
  *
+ * Clip conditions ([TimeCondition], ADR 0037) work the same way: `W` lines list them, a trailing `w` field on a
+ * voice refers to them per clip, and the header's ninth count (written only when there are conditions) says how
+ * many. Toggle instants are whole seconds, written as deltas from the previous one (the first from `fromMs`). A
+ * reader from before them skips both, and plays every clip of the voice whatever the time.
+ *
  * Readers reject a higher format version and skip line types they do not know, so additive changes can stay in
  * version 1. Parsing is a single pass with no regular expressions, reflection or dependencies, so it runs cheaply
  * inside `system_server` whenever the app republishes (never on the notification path).
@@ -38,6 +44,8 @@ public object RoutingCodec {
 
     private const val NONE = "-"
     private const val CLIP_HAPTICS = 'h'
+    private const val CLIP_CONDITIONS = 'w'
+    private const val MILLIS_PER_SECOND = 1000L
     private const val COMPACT = 'z'
 
     /** Base-64 digits of the compact clip haptic form: none of them is a separator or needs escaping. */
@@ -68,7 +76,8 @@ public object RoutingCodec {
             .append(table.routes.size)
             .tab()
             .append(clipHaptics.size)
-            .append('\n')
+        if (table.conditions.isNotEmpty()) out.tab().append(table.conditions.size)
+        out.append('\n')
 
         table.selfTestClip?.let { uri ->
             out
@@ -91,6 +100,8 @@ public object RoutingCodec {
             if (HapticGrid.isOnGrid(haptic)) writeCompact(out, haptic) else writeHaptic(out, haptic)
             out.append('\n')
         }
+
+        for (condition in table.conditions) writeCondition(out, condition)
 
         for (voice in table.voices) {
             val base = commonBase(voice.clips)
@@ -122,6 +133,13 @@ public object RoutingCodec {
                     if (i > 0) out.append(',')
                     val haptic = clip.haptic
                     if (haptic == null) out.append(NONE) else out.append(clipHaptics.getValue(haptic))
+                }
+            }
+            if (voice.isConditional) {
+                out.tab().append(CLIP_CONDITIONS)
+                voice.clips.forEachIndexed { i, clip ->
+                    if (i > 0) out.append(',')
+                    if (clip.condition == Clip.ALWAYS) out.append(NONE) else out.append(clip.condition)
                 }
             }
             out.append('\n')
@@ -211,6 +229,33 @@ public object RoutingCodec {
             length = j
         }
         return first.substring(0, first.lastIndexOf('/', length - 1) + 1)
+    }
+
+    /** `W⇥<from>⇥<until>⇥<0|1>⇥<deltas|->`: toggles as whole-second deltas, each from the previous instant. */
+    private fun writeCondition(
+        out: StringBuilder,
+        condition: TimeCondition,
+    ) {
+        out
+            .append('W')
+            .tab()
+            .append(condition.fromMs)
+            .tab()
+            .append(condition.untilMs)
+            .tab()
+            .append(if (condition.activeAtFrom) '1' else '0')
+            .tab()
+        if (condition.toggleCount == 0) out.append(NONE)
+        var previous = condition.fromMs
+        for (i in 0 until condition.toggleCount) {
+            val toggle = condition.toggle(i)
+            val delta = toggle - previous
+            require(delta % MILLIS_PER_SECOND == 0L) { "Condition toggles must be whole seconds apart" }
+            if (i > 0) out.append(',')
+            out.append(delta / MILLIS_PER_SECOND)
+            previous = toggle
+        }
+        out.append('\n')
     }
 
     private fun writeHaptic(
@@ -402,6 +447,7 @@ public object RoutingCodec {
         val voices: Int,
         val routes: Int,
         val clipHaptics: Int,
+        val conditions: Int,
     )
 
     /** Single-pass cursor over the encoded text. */
@@ -426,7 +472,9 @@ public object RoutingCodec {
                     voices = count(),
                     routes = count(),
                     // Added with the clip haptic dictionary; tables written before it have no H lines.
-                    clipHaptics = if (pos < s.length && s[pos] != '\n') count() else 0,
+                    clipHaptics = optionalCount(),
+                    // Added with clip conditions (ADR 0037); written only when there are some.
+                    conditions = optionalCount(),
                 )
             endLine()
             return header
@@ -439,6 +487,7 @@ public object RoutingCodec {
             val routes = ArrayList<Route>(header.routes)
             var selfTestClip: String? = null
             val clipHaptics = ArrayList<Haptic.Custom>(header.clipHaptics)
+            val conditions = ArrayList<TimeCondition>(header.conditions)
             while (pos < s.length) {
                 when (s[pos]) {
                     'S' -> {
@@ -459,9 +508,15 @@ public object RoutingCodec {
                         endLine()
                     }
 
+                    'W' -> {
+                        type()
+                        conditions += condition()
+                        endLine()
+                    }
+
                     'V' -> {
                         type()
-                        voices += voice(clipHaptics)
+                        voices += voice(clipHaptics, conditions.size)
                         endLine()
                     }
 
@@ -479,18 +534,39 @@ public object RoutingCodec {
             if (packages.size != header.packages ||
                 voices.size != header.voices ||
                 routes.size != header.routes ||
-                clipHaptics.size != header.clipHaptics
+                clipHaptics.size != header.clipHaptics ||
+                conditions.size != header.conditions
             ) {
                 throw RoutingFormatException(
                     "Counts differ from the header: " +
-                        "${packages.size}/${voices.size}/${routes.size}/${clipHaptics.size}, expected " +
-                        "${header.packages}/${header.voices}/${header.routes}/${header.clipHaptics}",
+                        "${packages.size}/${voices.size}/${routes.size}/${clipHaptics.size}/${conditions.size}, " +
+                        "expected ${header.packages}/${header.voices}/${header.routes}/${header.clipHaptics}/" +
+                        "${header.conditions}",
                 )
             }
-            return RoutingTable(header.generation, header.enabled, voices, routes, selfTestClip)
+            return RoutingTable(header.generation, header.enabled, voices, routes, selfTestClip, conditions)
         }
 
-        private fun voice(dictionary: List<Haptic.Custom>): Voice {
+        private fun condition(): TimeCondition {
+            val from = long()
+            val until = long()
+            val active = int() != 0
+            val raw = field()
+            if (raw == NONE) return TimeCondition(from, until, active, LongArray(0))
+            val deltas = raw.split(',')
+            val toggles = LongArray(deltas.size)
+            var previous = from
+            deltas.forEachIndexed { i, delta ->
+                previous += delta.toLong() * MILLIS_PER_SECOND
+                toggles[i] = previous
+            }
+            return TimeCondition(from, until, active, toggles)
+        }
+
+        private fun voice(
+            dictionary: List<Haptic.Custom>,
+            conditionCount: Int,
+        ): Voice {
             val packId = string()
             val characterId = string()
             val haptic = parseHaptic(field())
@@ -511,9 +587,13 @@ public object RoutingCodec {
                     }
                 clips += Clip(uri, weight, clipHaptic)
             }
-            // Trailing fields: the clip haptic references, and anything a newer writer added (skipped).
+            // Trailing fields: clip haptic and condition references, and anything a newer writer added (skipped).
             while (pos < s.length && s[pos] != '\n') {
                 val extra = field()
+                if (extra.isNotEmpty() && extra[0] == CLIP_CONDITIONS) {
+                    readConditionRefs(extra, clips, conditionCount)
+                    continue
+                }
                 if (extra.isEmpty() || extra[0] != CLIP_HAPTICS) continue
                 val refs = extra.substring(1).split(',')
                 if (refs.size != count) throw RoutingFormatException("Expected $count clip haptics, found ${refs.size}")
@@ -526,6 +606,24 @@ public object RoutingCodec {
                 }
             }
             return Voice(packId, characterId, clips, haptic)
+        }
+
+        private fun readConditionRefs(
+            field: String,
+            clips: MutableList<Clip>,
+            conditionCount: Int,
+        ) {
+            val refs = field.substring(1).split(',')
+            if (refs.size != clips.size) {
+                throw RoutingFormatException("Expected ${clips.size} clip conditions, found ${refs.size}")
+            }
+            refs.forEachIndexed { i, ref ->
+                if (ref != NONE) {
+                    val index = ref.toInt()
+                    if (index !in 0 until conditionCount) throw RoutingFormatException("Unknown clip condition $index")
+                    clips[i] = clips[i].copy(condition = index)
+                }
+            }
         }
 
         private fun route(
@@ -580,6 +678,9 @@ public object RoutingCodec {
         private fun long(): Long = field().toLong()
 
         private fun count(): Int = int().also { if (it < 0) throw RoutingFormatException("Negative count") }
+
+        /** A header count added after the first version of the format: 0 when the line ends before it. */
+        private fun optionalCount(): Int = if (pos < s.length && s[pos] != '\n') count() else 0
 
         /** Moves past the end of the line. Extra trailing fields (added by a newer writer) are ignored. */
         private fun endLine() = skipLine()

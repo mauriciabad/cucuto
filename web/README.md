@@ -33,8 +33,15 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   `{placeholder}` links (`src/lib/i18n/links.ts`); render them with `<Html>`. Link to pages with
   `pageHref('/install/', locale)`. `hooks.server.ts` sets `<html lang>`; `Seo` adds `hreflang` alternates. The pack
   format spec stays English-only.
-- **Screenshot and video slots.** The home page has placeholders for the scripted screenshots (#41) and the
-  explainer video (#42); replace them there.
+- **Screenshots (#41).** The home page shows the app's own screenshots from `src/lib/assets/images/screenshots/`
+  (`<name>-light.png` and `-dark.png`, Spanish ones in `es/` once the app is translated). They are rendered from the
+  demo packs by the app's screenshot tests: refresh them with `cd android && ./gradlew :app:exportWebScreenshots`
+  (ADR 0032).
+- **Explainer video (#42, ADR 0042).** `ExplainerVideo.svelte` on Home. The build looks for
+  `static/video/explainer.{webm,mp4}` (and the optional Spanish cut `explainer.es.*`) and shows the poster with "coming
+  soon" until they exist; then it plays muted when scrolled into view (never with reduced motion or Data Saver), or
+  with sound from the play button, with the `explainer.{en,es}.vtt` captions and a transcript built from them. The
+  service worker never caches `/video/`. What to film and deliver: `docs/explainer-video.md`.
 - **Brand.** Tokens, logos, icons, the OG image and the door-open animation are copies of files in `brand/`. Rebuild
   the brand, then run `bun run sync:brand` and commit the result. `colors.css` and `typography.css` are not formatted by
   Prettier so the copies stay identical.
