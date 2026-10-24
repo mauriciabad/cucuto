@@ -42,7 +42,9 @@ class DemoPacksTest {
     private lateinit var store: FakeDiscoverStore
     private val catalog = FakeCatalog()
     private val requests = DemoPacksRequests()
-    private val client = testClient()
+    private val dispatchers = DiscoverTestDispatchers()
+    private val http = testHttpClient()
+    private val client = testClient(http, dispatchers.io)
     private lateinit var indexCache: FileIndexCache
 
     private val defaultPath = "/repo/index.json"
@@ -50,7 +52,7 @@ class DemoPacksTest {
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(dispatchers.main)
         server = repositoryServer()
         server.dispatcher = routes
         store = FakeDiscoverStore(server.at(defaultPath).toString())
@@ -60,6 +62,7 @@ class DemoPacksTest {
     @After
     fun tearDown() {
         server.close()
+        http.shutDown()
         Dispatchers.resetMain()
     }
 
@@ -69,12 +72,12 @@ class DemoPacksTest {
                 store = store,
                 client = client,
                 indexCache = indexCache,
-                previews = PreviewStore(client, tmp.newFolder()),
+                previews = PreviewStore(client, tmp.newFolder(), dispatchers.io),
                 downloader = PackDownloader(client, catalog, tmp.newFolder()),
                 catalog = catalog,
                 links = IncomingRepoLinks(),
                 demoRequests = requests,
-            )
+            ).also { it.ioDispatcher = dispatchers.io }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         return vm
     }
@@ -216,8 +219,8 @@ class DemoPacksTest {
             )
 
             vm.clearFilters()
-            // Awaited: the index fetch resumed on OkHttp's thread, so the state can lag a moment behind under load.
-            val cleared = vm.awaitState { it.demo == null && it.focus == null }
+            // Read right away: every dispatcher runs on the test scheduler, so the state is never behind (#261).
+            val cleared = vm.state.value
             assertNull(cleared.demo)
             assertNull(cleared.focus)
             assertEquals(
