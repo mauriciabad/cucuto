@@ -104,8 +104,8 @@ class LargeFontScreenshotTest(
     @Test fun discoverHaptics() = largeFont("discover-haptics")
 
     private fun largeFont(screen: String) =
-        // The onboarding's wavy progress bar never stops moving.
-        screenshot(screen, fontScale = LARGEST_FONT_SCALE, animated = screen.startsWith("onboarding-")) {
+        // The onboarding's wavy progress bar and the restore checklist's download bar never stop moving.
+        screenshot(screen, fontScale = LARGEST_FONT_SCALE, animated = screen.startsWith("onboarding-") || screen == "restore-packs") {
             A11yScreens.content(screen)()
         }
 
