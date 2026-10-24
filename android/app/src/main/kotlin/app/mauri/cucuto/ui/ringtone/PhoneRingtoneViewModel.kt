@@ -113,8 +113,9 @@ data class PhoneRingtoneUiState(
 /**
  * The phone ringtone of one chat (#52, ADR 0039): what rings (the "Phone calls" row of contact detail, with a preview
  * from the start of the song, #246), link its Android contact, or take a ringtone back after it was changed in
- * Contacts. "Leave as is" and "Android default" are chosen in the ringtone picker (ADR 0073). The character, version and rule are chosen in the ringtone picker (#53), independently of the messages'
- * character (ADR 0063). Everything goes through [PhoneRingtones], whose sync writes Android contacts.
+ * Contacts. The character, version and rule, or "Android default" and "Leave as is" (ADR 0073), are chosen in the
+ * ringtone picker (#53), independently of the messages' character (ADR 0063). Everything goes through
+ * [PhoneRingtones], whose sync writes Android contacts.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = PhoneRingtoneViewModel.Factory::class)
