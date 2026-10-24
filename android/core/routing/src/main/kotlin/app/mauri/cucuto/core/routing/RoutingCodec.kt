@@ -15,7 +15,8 @@ public class RoutingFormatException(
  * P⇥<package>                                                   one per package, referenced by index
  * H⇥<clip haptic>                                               one per distinct clip envelope, referenced by index
  * W⇥<fromMs>⇥<untilMs>⇥<active at from 0|1>⇥<toggle deltas in s, comma-separated, or ->   one per clip condition
- * V⇥<packId>⇥<characterId>⇥<haptic>⇥<uriBase>⇥<clips>{⇥<uriSuffix>⇥<milliWeight>⇥<clipHaptic|->}[⇥h<i|->,…][⇥w<i|->,…]
+ * D⇥<shift s>⇥<transition s>:<shift s>,… or -                  optional, at most once: where local days start
+ * V⇥<packId>⇥<characterId>⇥<haptic>⇥<uriBase>⇥<clips>{⇥<uriSuffix>⇥<milliWeight>⇥<clipHaptic|->}[⇥h<i|->,…][⇥w<i|->,…][⇥m<i>:<moment>,…]
  * R⇥<package index>⇥<key>⇥<voice index|->⇥<seed>⇥<flags>⇥<contactId>
  * ```
  *
@@ -34,6 +35,11 @@ public class RoutingFormatException(
  * many. Toggle instants are whole seconds, written as deltas from the previous one (the first from `fromMs`). A
  * reader from before them skips both, and plays every clip of the voice whatever the time.
  *
+ * Special clips ([Moment], ADR 0059) are listed sparsely in a trailing `m` field: `<clip index>:<moment>` pairs, where
+ * a moment is `f` (first of the day), `b<n>` (the nth message of a burst) and `r<n>` (one in n), in that order. The
+ * optional `D` line says where local days start ([LocalDays]). A reader from before them skips both and draws special
+ * clips like any other.
+ *
  * Readers reject a higher format version and skip line types they do not know, so additive changes can stay in
  * version 1. Parsing is a single pass with no regular expressions, reflection or dependencies, so it runs cheaply
  * inside `system_server` whenever the app republishes (never on the notification path).
@@ -45,6 +51,10 @@ public object RoutingCodec {
     private const val NONE = "-"
     private const val CLIP_HAPTICS = 'h'
     private const val CLIP_CONDITIONS = 'w'
+    private const val CLIP_MOMENTS = 'm'
+    private const val FIRST_OF_DAY = 'f'
+    private const val BURST = 'b'
+    private const val ONE_IN = 'r'
     private const val MILLIS_PER_SECOND = 1000L
     private const val COMPACT = 'z'
 
@@ -102,6 +112,7 @@ public object RoutingCodec {
         }
 
         for (condition in table.conditions) writeCondition(out, condition)
+        table.days?.let { writeDays(out, it) }
 
         for (voice in table.voices) {
             val base = commonBase(voice.clips)
@@ -140,6 +151,20 @@ public object RoutingCodec {
                 voice.clips.forEachIndexed { i, clip ->
                     if (i > 0) out.append(',')
                     if (clip.condition == Clip.ALWAYS) out.append(NONE) else out.append(clip.condition)
+                }
+            }
+            if (voice.hasMoments) {
+                out.tab().append(CLIP_MOMENTS)
+                var first = true
+                voice.clips.forEachIndexed { i, clip ->
+                    val moment = clip.moment
+                    if (!moment.isSpecial) return@forEachIndexed
+                    if (!first) out.append(',')
+                    first = false
+                    out.append(i).append(':')
+                    if (moment.firstOfDay) out.append(FIRST_OF_DAY)
+                    if (moment.burst != 0) out.append(BURST).append(moment.burst)
+                    if (moment.oneIn != 0) out.append(ONE_IN).append(moment.oneIn)
                 }
             }
             out.append('\n')
@@ -254,6 +279,26 @@ public object RoutingCodec {
             if (i > 0) out.append(',')
             out.append(delta / MILLIS_PER_SECOND)
             previous = toggle
+        }
+        out.append('\n')
+    }
+
+    /** `D⇥<shift>⇥<at>:<shift>,…|-`: seconds, transitions as epoch seconds. */
+    private fun writeDays(
+        out: StringBuilder,
+        days: LocalDays,
+    ) {
+        out
+            .append('D')
+            .tab()
+            .append(days.shiftAtStart)
+            .tab()
+        if (days.transitionCount == 0) out.append(NONE)
+        for (i in 0 until days.transitionCount) {
+            val at = days.transition(i)
+            require(at % MILLIS_PER_SECOND == 0L) { "Day transitions must be whole seconds" }
+            if (i > 0) out.append(',')
+            out.append(at / MILLIS_PER_SECOND).append(':').append(days.shift(i))
         }
         out.append('\n')
     }
@@ -488,6 +533,7 @@ public object RoutingCodec {
             var selfTestClip: String? = null
             val clipHaptics = ArrayList<Haptic.Custom>(header.clipHaptics)
             val conditions = ArrayList<TimeCondition>(header.conditions)
+            var days: LocalDays? = null
             while (pos < s.length) {
                 when (s[pos]) {
                     'S' -> {
@@ -511,6 +557,12 @@ public object RoutingCodec {
                     'W' -> {
                         type()
                         conditions += condition()
+                        endLine()
+                    }
+
+                    'D' -> {
+                        type()
+                        days = days()
                         endLine()
                     }
 
@@ -544,7 +596,7 @@ public object RoutingCodec {
                         "${header.conditions}",
                 )
             }
-            return RoutingTable(header.generation, header.enabled, voices, routes, selfTestClip, conditions)
+            return RoutingTable(header.generation, header.enabled, voices, routes, selfTestClip, conditions, days)
         }
 
         private fun condition(): TimeCondition {
@@ -561,6 +613,23 @@ public object RoutingCodec {
                 toggles[i] = previous
             }
             return TimeCondition(from, until, active, toggles)
+        }
+
+        private fun days(): LocalDays {
+            val start = int()
+            val raw = field()
+            if (raw == NONE) return LocalDays(start)
+            val parts = raw.split(',')
+            if (parts.size > LocalDays.MAX_TRANSITIONS) throw RoutingFormatException("Too many day transitions")
+            val transitions = LongArray(parts.size)
+            val shifts = IntArray(parts.size)
+            parts.forEachIndexed { i, part ->
+                val colon = part.indexOf(':')
+                if (colon <= 0) throw RoutingFormatException("Bad day transition '$part'")
+                transitions[i] = part.substring(0, colon).toLong() * MILLIS_PER_SECOND
+                shifts[i] = part.substring(colon + 1).toInt()
+            }
+            return LocalDays(start, transitions, shifts)
         }
 
         private fun voice(
@@ -594,6 +663,10 @@ public object RoutingCodec {
                     readConditionRefs(extra, clips, conditionCount)
                     continue
                 }
+                if (extra.isNotEmpty() && extra[0] == CLIP_MOMENTS) {
+                    readMoments(extra, clips)
+                    continue
+                }
                 if (extra.isEmpty() || extra[0] != CLIP_HAPTICS) continue
                 val refs = extra.substring(1).split(',')
                 if (refs.size != count) throw RoutingFormatException("Expected $count clip haptics, found ${refs.size}")
@@ -624,6 +697,55 @@ public object RoutingCodec {
                     clips[i] = clips[i].copy(condition = index)
                 }
             }
+        }
+
+        /** `m<index>:<moment>,…`: only the special clips, in increasing index order. */
+        private fun readMoments(
+            field: String,
+            clips: MutableList<Clip>,
+        ) {
+            if (field.length == 1) return
+            var previous = -1
+            for (pair in field.substring(1).split(',')) {
+                val colon = pair.indexOf(':')
+                if (colon <= 0) throw RoutingFormatException("Bad clip moment '$pair'")
+                val index = pair.substring(0, colon).toInt()
+                if (index <= previous ||
+                    index >= clips.size
+                ) {
+                    throw RoutingFormatException("Bad clip moment index $index")
+                }
+                previous = index
+                clips[index] = clips[index].copy(moment = parseMoment(pair, colon + 1))
+            }
+        }
+
+        private fun parseMoment(
+            raw: String,
+            start: Int,
+        ): Moment {
+            var i = start
+            var firstOfDay = false
+            var burst = 0
+            var oneIn = 0
+            while (i < raw.length) {
+                val kind = raw[i++]
+                if (kind == FIRST_OF_DAY) {
+                    firstOfDay = true
+                    continue
+                }
+                val digits = i
+                while (i < raw.length && raw[i].isDigit()) i++
+                val value = raw.substring(digits, i).toInt()
+                when (kind) {
+                    BURST -> burst = value
+                    ONE_IN -> oneIn = value
+                    else -> throw RoutingFormatException("Unknown clip moment '$kind' in '$raw'")
+                }
+            }
+            val moment = Moment(firstOfDay, burst, oneIn)
+            if (!moment.isSpecial) throw RoutingFormatException("Empty clip moment in '$raw'")
+            return moment
         }
 
         private fun route(

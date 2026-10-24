@@ -245,6 +245,10 @@
     <string name="contact_clips_hint">Messages rotate through the clips that are on, never the same one twice in a row.</string>
     <string name="contact_clip_play">Play %1$s</string>
     <string name="contact_clip_last">At least one clip stays on</string>
+    <!-- Special clips (#120): why a clip plays outside the rotation. -->
+    <string name="contact_clip_rare">Rare: about 1 in %1$d messages</string>
+    <string name="contact_clip_first_of_day">First message of the day</string>
+    <string name="contact_clip_burst">Message %1$d in a row</string>
 
     <string name="contact_haptic_header">Vibration</string>
     <string name="contact_haptic_character">The character\'s vibration</string>
@@ -562,7 +566,7 @@
     <string name="error_bundle_pack_missing">A pack the bundle lists is missing.</string>
     <string name="error_bundle_layout_invalid">The bundle\'s folders are arranged wrongly.</string>
     <string name="error_haptic_invalid">A vibration pattern in the pack is broken.</string>
-    <string name="error_when_invalid">A time, season or weekday rule on a clip or ringtone is broken.</string>
+    <string name="error_when_invalid">A time, date, season or weekday rule on a clip or ringtone is broken.</string>
     <string name="error_loop_points_invalid">A ringtone\'s loop points are wrong.</string>
     <string name="error_license_not_spdx">The license isn\'t a standard license name, so it\'s shown as written.</string>
     <string name="error_unreferenced_file">Some files aren\'t used by any character and were left out.</string>

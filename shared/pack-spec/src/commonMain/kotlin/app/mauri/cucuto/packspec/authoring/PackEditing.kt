@@ -6,10 +6,10 @@ import kotlin.random.Random
 /**
  * Opening an existing pack in a creator: its manifest as a [PackDraft] that [PackAssembler] writes back with nothing
  * the format allows lost. The pass-through rules are those of the app's "Duplicate and edit" (#225, ADR 0049): the
- * characters' IDs, names, descriptions, tags, sprites and animated sprites, colors, clips with their labels, weights
- * and conditions, ringtone variants with all their settings, and haptics; the pack's cover, homepage and tags. Unknown
- * `x-` keys are not kept. Draft file keys are the manifest's paths (relative to the pack's root), so a creator reads
- * each file from the archive by its key.
+ * characters' IDs, names, descriptions, tags, sprites and animated sprites, colors, clips with their labels, weights,
+ * conditions and rarity (`oneIn`), ringtone variants with all their settings, and haptics; the pack's cover, homepage
+ * and tags. Unknown `x-` keys are not kept. Draft file keys are the manifest's paths (relative to the pack's root), so
+ * a creator reads each file from the archive by its key.
  */
 object PackEditing {
     /**
@@ -39,7 +39,7 @@ object PackEditing {
                         name = c.name,
                         sprite = file(c.sprite),
                         seedColor = c.seedColor,
-                        clips = c.clips.map { ClipDraft(file(it.file), it.label, it.weight, it.`when`) },
+                        clips = c.clips.map { ClipDraft(file(it.file), it.label, it.weight, it.`when`, it.oneIn) },
                         haptic = c.haptic?.takeIf { it.mode != "auto" },
                         description = c.description,
                         tags = c.tags,
