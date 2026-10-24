@@ -8,14 +8,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -133,7 +126,7 @@ fun SetupCardSection(
             }
 
             SetupCardMode.Attention -> {
-                AttentionBanner(
+                SetupAttentionBanner(
                     onOpen = { onNavigate(CucutoDestination.Setup) },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
@@ -165,37 +158,6 @@ private fun SetupCardFooter(
         }
         TextButton(onClick = { onNavigate(CucutoDestination.Setup) }, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.home_setup_details))
-        }
-    }
-}
-
-@Composable
-private fun AttentionBanner(
-    onOpen: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    SharedBounds(SetupCardKey, modifier) {
-        Card(
-            onClick = onOpen,
-            shape = MaterialTheme.shapes.extraLarge,
-            colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(16.dp),
-            ) {
-                Icon(Icons.Rounded.Warning, contentDescription = null)
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.home_attention_title), style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.home_attention_body), style = MaterialTheme.typography.bodyMedium)
-                }
-            }
         }
     }
 }

@@ -1,0 +1,156 @@
+{
+  "formatVersion": 1,
+  "id": "app.mauri.demo.kitchen-orchestra",
+  "name": "Kitchen orchestra",
+  "version": "1.1.0",
+  "author": "Cucuto contributors",
+  "license": "CC0-1.0",
+  "homepage": "https://cucuto.mauri.app",
+  "description": "The kitchen is warming up. A pot that bongs, a glass that tings, a whisk that shakes and a kettle that whistles. When it calls, the kettle boils over into a jig.",
+  "cover": "cover.svg",
+  "tags": [
+    "percussion",
+    "objects",
+    "demo"
+  ],
+  "characters": [
+    {
+      "id": "pot",
+      "name": "Bong the pot",
+      "sprite": "characters/pot/sprite.svg",
+      "seedColor": "#78909C",
+      "clips": [
+        {
+          "file": "characters/pot/clips/bong.ogg",
+          "label": "Bong"
+        },
+        {
+          "file": "characters/pot/clips/clang.ogg",
+          "label": "Clang"
+        }
+      ],
+      "haptic": {
+        "mode": "custom",
+        "events": [
+          {
+            "at": 0,
+            "initialSharpness": 0.1,
+            "envelope": [
+              {
+                "intensity": 1.0,
+                "sharpness": 0.1,
+                "ms": 40
+              },
+              {
+                "intensity": 0.0,
+                "sharpness": 0.1,
+                "ms": 400
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "glass",
+      "name": "Ting the glass",
+      "sprite": "characters/glass/sprite.svg",
+      "seedColor": "#26C6DA",
+      "clips": [
+        {
+          "file": "characters/glass/clips/clink.ogg",
+          "label": "Clink"
+        },
+        {
+          "file": "characters/glass/clips/ting.ogg",
+          "label": "Ting"
+        }
+      ],
+      "haptic": {
+        "mode": "custom",
+        "events": [
+          {
+            "at": 0,
+            "preset": "TICK",
+            "scale": 1.0
+          },
+          {
+            "at": 150,
+            "preset": "TICK",
+            "scale": 0.7
+          }
+        ]
+      }
+    },
+    {
+      "id": "whisk",
+      "name": "Swish the whisk",
+      "sprite": "characters/whisk/sprite.svg",
+      "seedColor": "#FFB74D",
+      "clips": [
+        {
+          "file": "characters/whisk/clips/shake.ogg",
+          "label": "Shake"
+        },
+        {
+          "file": "characters/whisk/clips/swish.ogg",
+          "label": "Swish"
+        }
+      ],
+      "haptic": {
+        "mode": "auto"
+      }
+    },
+    {
+      "id": "kettle",
+      "name": "Tootle the kettle",
+      "sprite": "characters/kettle/sprite.svg",
+      "seedColor": "#E57373",
+      "clips": [
+        {
+          "file": "characters/kettle/clips/whistle.ogg",
+          "label": "Whistle"
+        },
+        {
+          "file": "characters/kettle/clips/bubble.ogg",
+          "label": "Bubbling"
+        },
+        {
+          "file": "characters/kettle/clips/reel-hook.ogg",
+          "label": "Kettle reel (hook)"
+        }
+      ],
+      "ringtones": [
+        {
+          "file": "characters/kettle/ringtones/kettle-reel.ogg",
+          "label": "Kettle reel",
+          "loop": {
+            "startMs": 4000,
+            "endMs": 12000
+          },
+          "fadeInMs": 500
+        }
+      ],
+      "haptic": {
+        "mode": "custom",
+        "events": [
+          {
+            "at": 0,
+            "preset": "LOW_TICK",
+            "scale": 0.6
+          },
+          {
+            "at": 120,
+            "preset": "LOW_TICK",
+            "scale": 0.6
+          },
+          {
+            "at": 240,
+            "preset": "LOW_TICK",
+            "scale": 0.6
+          }
+        ]
+      }
+    }
+  ]
+}

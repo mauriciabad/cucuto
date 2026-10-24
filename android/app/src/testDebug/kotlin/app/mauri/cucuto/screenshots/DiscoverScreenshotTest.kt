@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.repo.DEFAULT_REPOSITORY_URL
 import app.mauri.cucuto.core.repo.ExpectedFile
 import app.mauri.cucuto.core.repo.ResolvedEntry
+import app.mauri.cucuto.navigation.TopLevelTab
 import app.mauri.cucuto.packspec.CharacterPreview
 import app.mauri.cucuto.packspec.Download
 import app.mauri.cucuto.packspec.RepositoryEntry
@@ -21,7 +22,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Discover: the default repository with the two demo packs, one installed and one new. Covers and sprites come from
+ * Discover, a tab of the app shell: the default repository with the two demo packs, one installed and one new. Covers and sprites come from
  * `packs/` through a fake [PreviewLoader]: nothing is downloaded.
  */
 class DiscoverScreenshotTest(
@@ -44,29 +45,31 @@ class DiscoverScreenshotTest(
                     card(DemoContent.critters, listOf("chiptune", "animals", "demo"), InstallState.INSTALLED),
                     card(DemoContent.kitchen, listOf("percussion", "objects", "demo"), InstallState.NEW),
                 )
-            DiscoverContent(
-                state =
-                    DiscoverUiState(
-                        sections =
-                            listOf(
-                                RepositorySection(
-                                    repository = repository,
-                                    host = "cucuto.mauri.app",
-                                    title = "Cucuto packs",
-                                    loading = false,
-                                    error = null,
-                                    loaded = true,
-                                    cards = cards,
-                                    totalCards = cards.size,
+            InShell(TopLevelTab.Discover) {
+                DiscoverContent(
+                    state =
+                        DiscoverUiState(
+                            sections =
+                                listOf(
+                                    RepositorySection(
+                                        repository = repository,
+                                        host = "cucuto.mauri.app",
+                                        title = "Cucuto packs",
+                                        loading = false,
+                                        error = null,
+                                        loaded = true,
+                                        cards = cards,
+                                        totalCards = cards.size,
+                                    ),
                                 ),
-                            ),
-                        repositories = listOf(repository),
-                        tags = listOf("demo", "animals", "chiptune", "objects", "percussion"),
-                    ),
-                previews = { url, _ -> localFile(url.encodedPath) },
-                actions = DiscoverActions(),
-                onOpenRepositories = {},
-            )
+                            repositories = listOf(repository),
+                            tags = listOf("demo", "animals", "chiptune", "objects", "percussion"),
+                        ),
+                    previews = { url, _ -> localFile(url.encodedPath) },
+                    actions = DiscoverActions(),
+                    onOpenRepositories = {},
+                )
+            }
         }
 
     private fun card(

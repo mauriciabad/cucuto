@@ -3,15 +3,18 @@ package app.mauri.cucuto.home
 import android.content.Context
 import android.content.Intent
 import android.provider.DocumentsContract
+import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.mauri.cucuto.backup.AutoBackupControl
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.settings.OnboardingSettings
 import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.packs.IncomingImports
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -82,13 +85,17 @@ fun homeJourney(
     }
 }
 
-/** First-run journey state that outlives Home's screen: the saved "first voice celebrated" flag, the demo import. */
+/**
+ * First-run journey state that outlives Home's screen: the saved "first voice celebrated" flag, the demo import, and
+ * what a restore started from Home needs beyond the restore flow itself.
+ */
 @HiltViewModel
 class HomeJourneyViewModel
     @Inject
     constructor(
         private val onboarding: OnboardingSettings,
         private val incoming: IncomingImports,
+        private val autoBackup: AutoBackupControl,
     ) : ViewModel() {
         val firstVoiceCelebrated: StateFlow<Boolean?> =
             onboarding.firstVoiceCelebrated.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -112,6 +119,26 @@ class HomeJourneyViewModel
         /** Hands the picked demo pack file to the Packs tab, which opens and reviews it (the same path as "Open with"). */
         fun importDemoPacks(source: ImportSource) {
             incoming.offer(source)
+        }
+
+        /**
+         * After a restore from Home, keeps automatic backups going into the restored file (ADR 0040), as Settings
+         * does. A failure leaves automatic backups off; Settings → Backup and restore shows their state.
+         */
+        fun keepForBackups(documentUri: String) {
+            viewModelScope.launch {
+                try {
+                    autoBackup.chooseFile(documentUri)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not keep automatic backups in the restored file", e)
+                }
+            }
+        }
+
+        private companion object {
+            const val TAG = "HomeJourney"
         }
     }
 

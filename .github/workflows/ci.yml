@@ -58,6 +58,8 @@ jobs:
               - "brand/tokens/**"
               - "brand/app-icon/android-res/**"
               - "brand/sounds/**"
+              # The routing integration suite installs the demo packs' clips (ADR 0047).
+              - "packs/**"
               - ".github/workflows/ci.yml"
             web:
               - "web/**"
@@ -432,6 +434,20 @@ jobs:
             --description "Every Cucuto demo pack in one file." \
             --cover packs/chiptune-critters/cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
           "$packer" validate --strict dist/*.soundpack.zip
+
+      # The Android routing integration suite installs the demo packs from checked-in manifests (ADR 0047): they
+      # must be exactly what the packer builds from pack.yaml.
+      - name: Check the integration suite's demo manifests
+        run: |
+          for pack in packs/*/pack.yaml; do
+            id=$(sed -n 's/^id: //p' "$pack")
+            version=$(sed -n 's/^version: //p' "$pack")
+            manifest="android/xposed/src/test/resources/integration/demo-packs/$id.json"
+            if ! unzip -p "dist/$id-$version.soundpack.zip" pack.json | diff -u "$manifest" -; then
+              echo "::error file=$manifest::Out of date: build the pack with packer and copy its pack.json here (ADR 0047)"
+              exit 1
+            fi
+          done
 
       - name: Build repository index
         run: |

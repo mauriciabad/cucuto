@@ -61,22 +61,22 @@ import app.mauri.cucuto.ui.components.ChoiceButtonGroup
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSettingsSection
-import app.mauri.cucuto.ui.settings.restore.RestoreActions
-import app.mauri.cucuto.ui.settings.restore.RestoreFlow
-import app.mauri.cucuto.ui.settings.restore.RestoreViewModel
+import app.mauri.cucuto.ui.settings.restore.RestoreHost
+import app.mauri.cucuto.ui.status.SetupAttentionBanner
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import app.mauri.cucuto.ui.theme.rememberReducedMotion
 
 /**
  * Settings (#28, ADR 0028): the global switch, sound and feel, backup and restore, setup, diagnostics, about and
- * (debug builds) developer tools. Restore runs as a full-screen flow on top ([RestoreFlow]).
+ * (debug builds) developer tools. Restore runs as a full-screen flow on top ([RestoreHost]). When
+ * [setupNeedsAttention] (the shell's badge on this tab, #180), a banner on top leads to Settings → Setup.
  */
 @Composable
 fun SettingsScreen(
     onNavigate: (CucutoDestination) -> Unit,
     modifier: Modifier = Modifier,
+    setupNeedsAttention: Boolean = false,
     viewModel: SettingsViewModel = hiltViewModel(),
-    restoreViewModel: RestoreViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
@@ -97,10 +97,6 @@ fun SettingsScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFileNames.MIME_TYPE)) { uri ->
             viewModel.chooseFile(uri?.toString())
         }
-    val pickBackup =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let { restoreViewModel.open(it.toString()) }
-        }
 
     LaunchedEffect(message) {
         val shown = message ?: return@LaunchedEffect
@@ -108,29 +104,32 @@ fun SettingsScreen(
         viewModel.messageShown()
     }
 
-    SettingsContent(
-        state = state,
-        systemRemovesAnimations = rememberReducedMotion(),
-        snackbar = snackbar,
-        phoneRingtones = { PhoneRingtoneSettingsSection() },
-        actions =
-            SettingsActions(
-                onEnabled = viewModel::setEnabled,
-                onSoundLevel = viewModel::setSoundLevel,
-                onHaptics = viewModel::setHaptics,
-                onRemoveAnimations = viewModel::setRemoveAnimations,
-                onExport = { exportDialog = true },
-                onRestore = { launchSafely { pickBackup.launch(ZIP_TYPES) } },
-                onChooseFolder = { launchSafely { chooseFolder.launch(null) } },
-                onChooseFile = { launchSafely { chooseFile.launch(viewModel.suggestedAutoFileName()) } },
-                onTurnOffAutoBackup = viewModel::turnOffAutoBackup,
-                onAutoIncludePacks = viewModel::setAutoIncludePacks,
-                onBackUpNow = viewModel::backUpNow,
-                onLicenses = { licenses = true },
-                onNavigate = onNavigate,
-            ),
-        modifier = modifier,
-    )
+    RestoreHost(onNavigate = onNavigate, onKeepForBackups = viewModel::chooseFile) { pickBackup ->
+        SettingsContent(
+            state = state,
+            systemRemovesAnimations = rememberReducedMotion(),
+            snackbar = snackbar,
+            phoneRingtones = { PhoneRingtoneSettingsSection() },
+            setupNeedsAttention = setupNeedsAttention,
+            actions =
+                SettingsActions(
+                    onEnabled = viewModel::setEnabled,
+                    onSoundLevel = viewModel::setSoundLevel,
+                    onHaptics = viewModel::setHaptics,
+                    onRemoveAnimations = viewModel::setRemoveAnimations,
+                    onExport = { exportDialog = true },
+                    onRestore = pickBackup,
+                    onChooseFolder = { launchSafely { chooseFolder.launch(null) } },
+                    onChooseFile = { launchSafely { chooseFile.launch(viewModel.suggestedAutoFileName()) } },
+                    onTurnOffAutoBackup = viewModel::turnOffAutoBackup,
+                    onAutoIncludePacks = viewModel::setAutoIncludePacks,
+                    onBackUpNow = viewModel::backUpNow,
+                    onLicenses = { licenses = true },
+                    onNavigate = onNavigate,
+                ),
+            modifier = modifier,
+        )
+    }
 
     if (exportDialog) {
         ExportDialog(
@@ -142,38 +141,6 @@ fun SettingsScreen(
         )
     }
     if (licenses) LicensesDialog(onDismiss = { licenses = false })
-
-    val restoreStep by restoreViewModel.step.collectAsStateWithLifecycle()
-    RestoreFlow(
-        step = restoreStep,
-        actions =
-            RestoreActions(
-                onClose = restoreViewModel::close,
-                onPassphrase = restoreViewModel::submitPassphrase,
-                onPickAnother = {
-                    restoreViewModel.close()
-                    launchSafely { pickBackup.launch(ZIP_TYPES) }
-                },
-                onRetryPack = restoreViewModel::restorePack,
-                onContinue = restoreViewModel::continueToContacts,
-                onToggleConflict = restoreViewModel::toggleConflict,
-                onSelectAll = restoreViewModel::selectAllConflicts,
-                onApplyConflicts = restoreViewModel::applyConflicts,
-                onOpenSetup = {
-                    restoreViewModel.close()
-                    onNavigate(CucutoDestination.Onboarding)
-                },
-                onOpenDiagnostics = {
-                    restoreViewModel.close()
-                    onNavigate(CucutoDestination.Diagnostics)
-                },
-                onKeepForBackups = { uri ->
-                    viewModel.chooseFile(uri)
-                    restoreViewModel.keepForBackups()
-                },
-            ),
-        onPackFilePick = restoreViewModel::importPackFile,
-    )
 }
 
 /** Backups and packs are plain zips; some providers report them as octet streams. */
@@ -214,6 +181,7 @@ internal fun SettingsContent(
     modifier: Modifier = Modifier,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
     phoneRingtones: (@Composable () -> Unit)? = null,
+    setupNeedsAttention: Boolean = false,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
@@ -237,6 +205,12 @@ internal fun SettingsContent(
                 ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // The Settings tab's badge (#180) leads here: say what needs the user first, not six sections down.
+            if (setupNeedsAttention) {
+                item(key = "attention") {
+                    SetupAttentionBanner(onOpen = { actions.onNavigate(CucutoDestination.Setup) })
+                }
+            }
             item(key = "voices") { VoicesSection(state.enabled, actions.onEnabled) }
             if (phoneRingtones != null) item(key = "ringtones") { phoneRingtones() }
             item(key = "feel") { FeelSection(state, systemRemovesAnimations, actions) }

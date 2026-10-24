@@ -91,5 +91,5 @@ in debug builds was rejected: it needs the packer in the Android build and still
   `ShellNavigationTest` (Robolectric Compose UI: tabs, per-tab state and stacks, system back) plus journey cases
   in `HomeContentTest`.
 - The status card's door is drawn in `primaryContainer` on a `primaryContainer` card, so only the door shows, not
-  the house (seen in Robolectric renders; a follow-up for the card's owner). Journey cards use
+  the house (seen in Robolectric renders; fixed in ADR 0050). Journey cards use
   `surfaceContainerHigh` so the whole house reads.

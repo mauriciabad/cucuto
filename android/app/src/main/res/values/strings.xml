@@ -89,7 +89,7 @@
     <string name="status_whatsapp_missing">Install WhatsApp or WhatsApp Business. Cucuto gives voices to their notifications.</string>
     <string name="status_whatsapp_name" translatable="false">WhatsApp</string>
     <string name="status_whatsapp_business_name" translatable="false">WhatsApp Business</string>
-    <string name="status_list_separator">, </string>
+    <string name="status_list_separator">", "</string>
     <plurals name="status_packs_installed">
         <item quantity="one">%d pack installed.</item>
         <item quantity="other">%d packs installed.</item>

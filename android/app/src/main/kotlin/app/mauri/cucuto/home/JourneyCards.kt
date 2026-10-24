@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -56,10 +58,11 @@ internal fun JourneyCard(
     onPreviewCharacters: () -> Unit,
     onDismissCelebration: () -> Unit,
     modifier: Modifier = Modifier,
+    onRestoreBackup: () -> Unit = {},
 ) {
     when (step) {
         JourneyStep.None -> Unit
-        JourneyStep.ImportPacks -> ImportPacksCard(onGetDemoPacks, onImportDemoPacks, modifier)
+        JourneyStep.ImportPacks -> ImportPacksCard(onGetDemoPacks, onImportDemoPacks, onRestoreBackup, modifier)
         JourneyStep.WaitForMessages -> WaitForMessagesCard(onPreviewCharacters, modifier)
         is JourneyStep.GiveFirstVoice -> GiveFirstVoiceCard(step.chat, onOpen = { onOpenChat(step.chat.key) }, modifier)
         is JourneyStep.FirstVoice -> FirstVoiceCard(step.chat, onDismissCelebration, modifier)
@@ -69,11 +72,14 @@ internal fun JourneyCard(
 /**
  * Step 1: no packs yet. "Get the demo packs" opens Discover, which installs the demo bundle from the default repository
  * through the usual review (#214); offline, the user can pick a demo packs file they already have. Nothing is bundled.
+ * Someone moving to a new phone restores a backup from here instead (the restore flow of ADR 0028).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ImportPacksCard(
     onGetDemoPacks: () -> Unit,
     onImportDemoPacks: () -> Unit,
+    onRestoreBackup: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     JourneySurface(modifier) {
@@ -89,8 +95,17 @@ private fun ImportPacksCard(
             shapes = ButtonDefaults.shapes(),
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.home_get_demo_packs)) }
-        TextButton(onClick = onImportDemoPacks, shapes = ButtonDefaults.shapes()) {
-            Text(stringResource(R.string.home_journey_import_button))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+            itemVerticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            TextButton(onClick = onImportDemoPacks, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.home_journey_import_button))
+            }
+            TextButton(onClick = onRestoreBackup, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.home_journey_restore))
+            }
         }
     }
 }

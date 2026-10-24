@@ -57,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.components.CuckooDoor
+import app.mauri.cucuto.ui.components.CuckooDoorDefaults
 import app.mauri.cucuto.ui.components.CuckooDoorStill
 import app.mauri.cucuto.ui.components.CucutoTopBar
 import app.mauri.cucuto.ui.components.ParticleBurst
@@ -148,7 +149,7 @@ data object SetupCardKey
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SetupContent(
+internal fun SetupContent(
     report: StatusReport?,
     beat: FeedbackBeat?,
     selfTest: SelfTestMessage,
@@ -303,6 +304,7 @@ private fun StatusDoor(
             // Already green when the screen opened: show the door open, without replaying the celebration.
             CuckooDoorStill(
                 seconds = SETTLED_SECONDS,
+                colors = CuckooDoorDefaults.onContainerColors(),
                 modifier = Modifier.fillMaxWidth().semanticsDescription(R.string.status_door_open),
             )
         }
@@ -314,6 +316,7 @@ private fun StatusDoor(
                     stringResource(
                         if (ready) R.string.status_door_open else R.string.status_door_closed,
                     ),
+                colors = CuckooDoorDefaults.onContainerColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
         }

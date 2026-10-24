@@ -1,0 +1,204 @@
+{
+  "formatVersion": 1,
+  "id": "app.mauri.demo.chiptune-critters",
+  "name": "Chiptune critters",
+  "version": "1.1.0",
+  "author": "Cucuto contributors",
+  "license": "CC0-1.0",
+  "homepage": "https://cucuto.mauri.app",
+  "description": "Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog hops by day, croaks at night and also sings a pond song as a ringtone, bright by day and sleepy at night.",
+  "cover": "cover.svg",
+  "tags": [
+    "chiptune",
+    "animals",
+    "demo"
+  ],
+  "characters": [
+    {
+      "id": "frog",
+      "name": "Bleep the frog",
+      "sprite": "characters/frog/sprite.svg",
+      "seedColor": "#4CAF50",
+      "tags": [
+        "pond"
+      ],
+      "clips": [
+        {
+          "file": "characters/frog/clips/ribbit.ogg",
+          "label": "Ribbit",
+          "weight": 2
+        },
+        {
+          "file": "characters/frog/clips/croak.ogg",
+          "label": "Croak",
+          "when": {
+            "time": "night"
+          }
+        },
+        {
+          "file": "characters/frog/clips/hop.ogg",
+          "label": "Hop",
+          "when": {
+            "time": "day"
+          }
+        }
+      ],
+      "ringtones": [
+        {
+          "file": "characters/frog/ringtones/pond-song-day.ogg",
+          "label": "Pond song (day)",
+          "tags": [
+            "day"
+          ],
+          "when": {
+            "time": "day"
+          },
+          "loop": {
+            "startMs": 0,
+            "endMs": 8000
+          }
+        },
+        {
+          "file": "characters/frog/ringtones/pond-song-night.ogg",
+          "label": "Pond song (night)",
+          "tags": [
+            "night"
+          ],
+          "when": {
+            "time": "night"
+          },
+          "fadeInMs": 1500
+        }
+      ],
+      "haptic": {
+        "mode": "custom",
+        "events": [
+          {
+            "at": 0,
+            "preset": "CLICK",
+            "scale": 0.9
+          },
+          {
+            "at": 200,
+            "preset": "CLICK",
+            "scale": 0.7
+          }
+        ]
+      }
+    },
+    {
+      "id": "bird",
+      "name": "Tweet the bird",
+      "sprite": "characters/bird/sprite.svg",
+      "seedColor": "#29B6F6",
+      "tags": [
+        "sky"
+      ],
+      "clips": [
+        {
+          "file": "characters/bird/clips/chirp.ogg",
+          "label": "Chirp"
+        },
+        {
+          "file": "characters/bird/clips/trill.ogg",
+          "label": "Trill"
+        },
+        {
+          "file": "characters/bird/clips/whistle.ogg",
+          "label": "Whistle"
+        }
+      ],
+      "haptic": {
+        "mode": "custom",
+        "events": [
+          {
+            "at": 0,
+            "preset": "TICK",
+            "scale": 0.6
+          },
+          {
+            "at": 120,
+            "preset": "TICK",
+            "scale": 0.6
+          },
+          {
+            "at": 240,
+            "preset": "TICK",
+            "scale": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "cat",
+      "name": "Mew the cat",
+      "sprite": "characters/cat/sprite.svg",
+      "seedColor": "#FF9800",
+      "tags": [
+        "home"
+      ],
+      "clips": [
+        {
+          "file": "characters/cat/clips/mew.ogg",
+          "label": "Mew"
+        },
+        {
+          "file": "characters/cat/clips/mrrp.ogg",
+          "label": "Mrrp"
+        },
+        {
+          "file": "characters/cat/clips/purr.ogg",
+          "label": "Purr"
+        }
+      ],
+      "haptic": {
+        "mode": "auto"
+      }
+    },
+    {
+      "id": "bee",
+      "name": "Bzz the bee",
+      "sprite": "characters/bee/sprite.svg",
+      "seedColor": "#FFC107",
+      "tags": [
+        "garden"
+      ],
+      "clips": [
+        {
+          "file": "characters/bee/clips/buzz.ogg",
+          "label": "Buzz"
+        },
+        {
+          "file": "characters/bee/clips/zip.ogg",
+          "label": "Zip"
+        }
+      ],
+      "haptic": {
+        "mode": "custom",
+        "events": [
+          {
+            "at": 0,
+            "initialSharpness": 0.2,
+            "envelope": [
+              {
+                "intensity": 0.6,
+                "sharpness": 0.3,
+                "ms": 150
+              },
+              {
+                "intensity": 0.4,
+                "sharpness": 0.3,
+                "ms": 300
+              },
+              {
+                "intensity": 0.0,
+                "sharpness": 0.2,
+                "ms": 200
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
