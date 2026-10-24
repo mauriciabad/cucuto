@@ -61,7 +61,7 @@
 	</div>
 </section>
 
-<!-- Explainer video (#42): the poster with "coming soon" until static/video/ has the files (docs/explainer-video.md). -->
+<!-- Explainer video (#42, published in #302): plays the files in static/video/ (docs/explainer-video.md). -->
 <section class="section" aria-labelledby="video-title">
 	<div class="container">
 		<h2 id="video-title" class="headline-large">{t.videoTitle}</h2>

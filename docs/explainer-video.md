@@ -94,8 +94,9 @@ no shake, no whip pans.
 | 10 | 00:53.0–00:58.0 | **End card** | The Cucuto logo ([`brand/logo/cucuto-logo.svg`](../brand/logo/cucuto-logo.svg), light variant) on cream, the line "Give each contact a voice." and **cucuto.mauri.app**. Fine print: "Free and open source · Android 17 · Needs root and LSPosed · Not affiliated with WhatsApp or Meta". (English only; the Spanish end card is dropped with the Spanish cut, #194.) | `assign.ogg` once at 53.2 s. VO 54.0–57.85 s. Silence to the end. |
 
 **Poster frame.** The frame at 00:32.8 (the burst around the frog tile, snackbar not yet up) is the poster. Export it
-as described in [Deliverables](#deliverables). Until the video exists, the site shows an illustrated, text-free
-poster with the same idea ([`web/src/lib/assets/images/explainer-poster.svg`](../web/src/lib/assets/images/explainer-poster.svg)).
+as described in [Deliverables](#deliverables). ~~Until the video exists, the site shows an illustrated, text-free
+poster with the same idea.~~ Since #302 the site uses the real frame,
+[`web/src/lib/assets/images/explainer-poster.png`](../web/src/lib/assets/images/explainer-poster.png).
 
 ## Voice-over script
 
@@ -233,7 +234,33 @@ settings, and the sound cues. Renders, masters and stems are build output, not c
    tracks.
 
 `cd android && ./gradlew :video:explainerVideo` runs all three into `android/video/build/explainer/`. The manual
-`explainer-video` workflow (Actions tab) does the same and uploads the files as an artifact. Nothing is committed.
+`explainer-video` workflow (Actions tab) does the same and uploads the files as an artifact. The workflow commits
+nothing: an approved cut is published by hand, see [Publishing](#publishing).
+
+### Publishing
+
+> **Owner update 2026-10-24 (#302).** "the video is ready to be published it is a moment". The cut from run
+> [40092869144](https://github.com/mauriciabad/cucuto/actions/runs/40092869144) is live on Home
+> ([ADR 0070](decisions/0070-illustrated-explainer-video-project.md#published-2026-10-24-302)).
+
+The published cut lives in the repository as website assets (about 6.3 MB): `web/static/video/explainer.webm`,
+`web/static/video/explainer.mp4` and `web/src/lib/assets/images/explainer-poster.png`. To republish after a change
+to the video:
+
+1. Change the scenes or the timeline in `android/video`, then run `cd android && ./gradlew
+   :video:writeExplainerCaptions` and commit the regenerated `web/static/video/explainer.{en,es}.vtt` with it (the
+   `:video` tests fail if they don't match the timeline).
+2. Once that is on `main`, run the `explainer-video` workflow from the Actions tab (keep `av1_preset` at 4).
+3. Watch the review MP4 in the artifact, with sound and with each caption track. Publish only a cut a person has
+   watched and approved (the owner, for a change to the story or the voice).
+4. Download the artifact (`gh run download <run id> -n explainer-video`) and copy `explainer.webm` and
+   `explainer.mp4` over the ones in `web/static/video/` and `explainer-poster.png` over the one in
+   `web/src/lib/assets/images/`. Don't commit `explainer-review.mp4` or `voice/`.
+5. Check the sizes against the budgets (WebM 10 MB, MP4 16 MB), run `cd web && bun run check && bun run test && bun
+   run build`, and open a PR that names the run. Merging it to `main` redeploys the site.
+
+To take the video down, delete the two cuts: the site goes back to the "coming soon" card on its own (it then needs a
+poster again in `web/src/lib/assets/images/`).
 
 Earlier routes, kept for the record (from #42, before #194): an animatic from the scripted screenshots (#41), the
 app's real screens rendered offline (built in #195, [ADR 0060](decisions/0060-explainer-video-draft-pipeline.md),
@@ -260,7 +287,7 @@ unused.
 | `explainer.webm` | English cut, modern browsers | AV1 (SVT-AV1, `-crf 34 -preset 4`, 10-bit `yuv420p10le`) + Opus 96 kb/s stereo, 1920 × 1080, 60 fps. Budget 10 MB. |
 | `explainer.mp4` | English cut, everything else (Safari without AV1 hardware) | H.264 High 4.2 (`libx264 -crf 22 -preset slow -pix_fmt yuv420p`) + AAC-LC 128 kb/s, `-movflags +faststart`, 1920 × 1080, 60 fps. Budget 16 MB. |
 | `explainer.en.vtt`, `explainer.es.vtt` | Captions | WebVTT, UTF-8, LF line endings, SDH (see [Captions](#captions)). |
-| `web/src/lib/assets/images/explainer-poster.png` | Poster frame | The frame at 00:32.8 of the English cut, 1920 × 1080 PNG. The site encodes it to JPEG XL, AVIF and PNG at build time (`?picture`), so the poster is served as JPEG XL with fallbacks for browsers that can't decode it; replace the import of `explainer-poster.svg` in `ExplainerVideo.svelte` with it and delete the SVG. |
+| `web/src/lib/assets/images/explainer-poster.png` | Poster frame | The frame at 00:32.8 of the English cut, 1920 × 1080 PNG. The site encodes it to JPEG XL, AVIF and PNG at build time (`?picture`), so the poster is served as JPEG XL with fallbacks for browsers that can't decode it. `ExplainerVideo.svelte` imports it (the SVG stand-in was deleted in #302). |
 
 Encoding, from a lossless master (`master-en.mov`):
 
