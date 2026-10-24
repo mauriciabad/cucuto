@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Create
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +42,7 @@ fun PackDetailSheet(
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onDuplicate: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -112,6 +114,21 @@ fun PackDetailSheet(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (onDuplicate != null && !pack.filesMissing) {
+                OutlinedButton(onClick = onDuplicate, shapes = ButtonDefaults.shapes()) {
+                    Icon(
+                        Icons.Rounded.Create,
+                        contentDescription = null,
+                        modifier = Modifier.size(ButtonDefaults.IconSize),
+                    )
+                    Text(stringResource(R.string.packs_duplicate), Modifier.padding(start = ButtonDefaults.IconSpacing))
+                }
+                Text(
+                    stringResource(R.string.packs_duplicate_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             OutlinedButton(
                 onClick = onRemove,
                 shapes = ButtonDefaults.shapes(),

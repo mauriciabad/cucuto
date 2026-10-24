@@ -75,6 +75,7 @@ cd android
 ./gradlew :app:verifyRoborazziDebug   # screenshot tests against their golden images (CI runs this)
 ./gradlew :app:recordRoborazziDebug   # re-record them after an intended UI change (ADR 0032)
 ./gradlew :app:exportWebScreenshots   # also refresh the website's screenshots
+./gradlew :app:exportStoreScreenshots # also refresh the store listing's screenshots (fastlane/, ADR 0046)
 
 # Website and PWA pack creator
 cd web
@@ -130,6 +131,9 @@ update all three. Write "Cucuto" with a capital C in prose.
 4. **Open a pull request** with `Closes #N`, fill in the template, and keep it focused. Run the relevant builds and tests
    before pushing.
 5. **Squash-merge.** The PR title becomes the commit title on `main`, so it must be a Conventional Commit too.
+   `feat`, `fix`, `perf` and `docs` titles also become lines of the release notes, so write them for users. If a
+   title can't be, add `Release note: <words for users>` (or `Release note: skip`) on its own line in the PR
+   description ([releasing.md](docs/releasing.md#release-notes)).
    `main` is protected by a ruleset: changes land through pull requests only, and the single required status check is
    `ci-ok` (the last job of `.github/workflows/ci.yml`, green when every needed job passed or was skipped). Enable
    auto-merge (`gh pr merge --auto --squash`) and GitHub merges once `ci-ok` is green.

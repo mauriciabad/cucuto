@@ -4,6 +4,7 @@ import android.app.Application
 import app.mauri.cucuto.backup.AutoBackup
 import app.mauri.cucuto.core.data.routing.RoutingPublisher
 import app.mauri.cucuto.core.jxl.JxlCoilDecoder
+import app.mauri.cucuto.core.ringtone.PhoneRingtones
 import app.mauri.cucuto.packs.AutoHapticsRunner
 import coil3.ImageLoader
 import coil3.PlatformContext
@@ -23,6 +24,8 @@ class CucutoApplication :
 
     @Inject lateinit var autoBackup: AutoBackup
 
+    @Inject lateinit var phoneRingtones: PhoneRingtones
+
     override fun onCreate() {
         super.onCreate()
         // libxposed hands the framework service to the app at process start; from then on every database change
@@ -32,6 +35,8 @@ class CucutoApplication :
         autoHaptics.start()
         // Automatic backups to the folder the user picked, shortly after each change (ADR 0028).
         autoBackup.start()
+        // Phone ringtones (#52): when on, keeps linked Android contacts in line and repairs missing ring files.
+        phoneRingtones.start()
     }
 
     /**

@@ -68,6 +68,21 @@ test('home links to the install guide', async ({ page }) => {
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Install guide');
 });
 
+for (const { path, name } of [
+	{ path: '/install/', name: 'Get it with Obtainium' },
+	{ path: '/es/install/', name: 'Consíguelo con Obtainium' }
+]) {
+	test(`${path} links to Obtainium with Cucuto's config`, async ({ page }) => {
+		await page.goto(path);
+		const link = page.getByRole('link', { name });
+		await expect(link).toHaveAttribute('href', /^obtainium:\/\/app\/%7B/);
+		const href = (await link.getAttribute('href'))!;
+		const config = JSON.parse(decodeURIComponent(href.slice('obtainium://app/'.length)));
+		expect(config).toMatchObject({ id: 'app.mauri.cucuto', name: 'Cucuto' });
+		await expect(page.locator('#updates')).toBeVisible();
+	});
+}
+
 test('the language switch opens the same page in the other language', async ({ page }) => {
 	await page.goto('/install/');
 	await page.getByRole('link', { name: 'Español' }).click();

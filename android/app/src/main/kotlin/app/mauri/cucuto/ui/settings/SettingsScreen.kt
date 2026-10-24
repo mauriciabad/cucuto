@@ -60,6 +60,7 @@ import app.mauri.cucuto.core.data.settings.UiSoundLevel
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSettingsSection
 import app.mauri.cucuto.ui.settings.restore.RestoreActions
 import app.mauri.cucuto.ui.settings.restore.RestoreFlow
 import app.mauri.cucuto.ui.settings.restore.RestoreViewModel
@@ -111,6 +112,7 @@ fun SettingsScreen(
         state = state,
         systemRemovesAnimations = rememberReducedMotion(),
         snackbar = snackbar,
+        phoneRingtones = { PhoneRingtoneSettingsSection() },
         actions =
             SettingsActions(
                 onEnabled = viewModel::setEnabled,
@@ -211,6 +213,7 @@ internal fun SettingsContent(
     actions: SettingsActions,
     modifier: Modifier = Modifier,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
+    phoneRingtones: (@Composable () -> Unit)? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
@@ -235,6 +238,7 @@ internal fun SettingsContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item(key = "voices") { VoicesSection(state.enabled, actions.onEnabled) }
+            if (phoneRingtones != null) item(key = "ringtones") { phoneRingtones() }
             item(key = "feel") { FeelSection(state, systemRemovesAnimations, actions) }
             item(key = "language") { LanguageSection() }
             item(key = "daynight") { DayNightSection(actions.onNavigate) }

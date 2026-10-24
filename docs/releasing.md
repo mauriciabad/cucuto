@@ -2,7 +2,7 @@
 
 A release is a signed APK on [GitHub Releases](https://github.com/mauriciabad/cucuto/releases), built by
 [`.github/workflows/release.yml`](../.github/workflows/release.yml) when a `v*` tag is pushed. The website's Download
-APK button follows it automatically. Why it works this way: [ADR 0021](decisions/0021-signed-release-apk.md). Key setup status: #140.
+APK button follows it automatically. Why it works this way: [ADR 0021](decisions/0021-signed-release-apk.md); release notes, store metadata and the reproducibility check: [ADR 0046](decisions/0046-distribution.md). Key setup status: #140. Where the APK goes from there (Obtainium, IzzyOnDroid, F-Droid): [distribution.md](distribution.md).
 
 ## Once: create the signing key (owner only)
 
@@ -56,21 +56,55 @@ gh variable set RELEASE_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprin
 ## Every release
 
 1. Make sure `main` is green and has everything the release should contain.
-2. Tag the commit on `main` and push the tag:
+2. **Write the changelog** in a release PR (ADR 0046). From an up-to-date `main`:
+
+   ```sh
+   git switch -c chore/<issue>-release-0.2.0 origin/main
+   kotlin tools/release/release-notes.main.kts 0.2.0
+   ```
+
+   It reads the Conventional Commits since the previous `v*` tag and writes
+   `fastlane/metadata/android/en-US/changelogs/2000.txt` (the versionCode) and a `## [0.2.0]` section at the top of
+   `CHANGELOG.md`. Edit both into words for users: say what changed for them, merge related lines, drop what nobody
+   notices, mention anything broken (a known issue) or anything they must do. Add
+   `fastlane/metadata/android/es-ES/changelogs/2000.txt` if you can (otherwise clients show the English one). Check
+   the limits with `kotlin tools/release/release-notes.main.kts --check`, then merge the PR as
+   `chore(release): 0.2.0`. If screens changed, refresh the store screenshots in the same PR
+   (`cd android && ./gradlew :app:exportStoreScreenshots`).
+3. Tag the merge commit on `main` and push the tag:
 
    ```sh
    git switch main && git pull
-   git tag v0.1.0
-   git push origin v0.1.0
+   git tag v0.2.0
+   git push origin v0.2.0
    ```
 
-3. The workflow checks the tag and the secrets, builds `:app:assembleRelease` with the key, verifies the signature
+4. The workflow checks the tag and the secrets, builds `:app:assembleRelease` with the key, verifies the signature
    (one signer, not a debug key, the pinned certificate) and the version with `apksigner` and `aapt2`, then publishes
-   the release `Cucuto 0.1.0` with `cucuto-0.1.0.apk` and `cucuto-0.1.0.apk.sha256`. The notes start with the AI
-   banner, list the checksum and the certificate fingerprint, and end with GitHub's generated changelog.
-4. It then starts `ci.yml` on `main` with `site_only=true`, which rebuilds and redeploys the website with the new
+   the release `Cucuto 0.2.0` with `cucuto-0.2.0.apk` and `cucuto-0.2.0.apk.sha256`. The notes start with the AI
+   banner, list the checksum and the certificate fingerprint, and end with the changes since the previous tag,
+   grouped into New, Fixes and Docs, from the same script (`--notes`). If the tag has no store changelog for its
+   versionCode (step 2 skipped), the run warns and puts the generated files in its summary as a patch to commit.
+5. It then starts `ci.yml` on `main` with `site_only=true`, which rebuilds and redeploys the website with the new
    version, size and download link (`web/scripts/build-data.ts`). Releases created with `GITHUB_TOKEN` don't trigger
    `site-rebuild.yml`, hence the explicit dispatch.
+6. The `reproducible` job rebuilds the tag unsigned on a fresh runner and compares it with the published APK
+   ([reproducible-builds.md](reproducible-builds.md)). A red result doesn't undo the release; open an issue with the
+   job summary.
+
+### Release notes
+
+The notes list `feat` commits under **New**, `fix` and `perf` under **Fixes** and `docs` under **Docs**, minus internal
+scopes (`web`, `ci`, `deps`, `owner-log`, `release`, `screenshots` and a few more: `internalScopes` in the script).
+PR titles become the lines, so write them for users when the change is visible. When a title can't be, add a line to
+the PR description (squash merges keep it as the commit body):
+
+```
+Release note: Pack import works again
+```
+
+`Release note: skip` leaves the PR out. Where the notes go: GitHub release, `CHANGELOG.md`, and the store changelog
+that F-Droid, IzzyOnDroid and Obtainium show ([distribution.md](distribution.md)).
 
 If the run fails (missing secrets, a tag that is not on `main`), fix the cause and use **Re-run jobs** on the run: it
 reads the secrets again, and a release that already exists only gets its assets replaced. A tag that should not be a
@@ -129,6 +163,11 @@ refused with "the event provider's app is signed by another key" (logged, rate-l
 senders and no module status; alerts never depend on events, and contacts without an assignment (all of them, until
 the backup is restored) keep WhatsApp's tone. The reboot that LSPosed needs anyway loads the new APK, reads its
 certificate and fixes it. A regular update signed with the same key never hits this: the certificate stays the same.
+
+**Website and Obtainium.** The release certificate is also pinned in `RELEASE_CERT_SHA256` of `web/src/lib/site.ts`,
+which the Install page shows and puts into its Obtainium config. Update it with the repository variable. Obtainium
+installs made from the old link refuse the new APK until their users update the expected certificate (or re-add the
+app from the Install page).
 
 **Rotating instead of replacing.** While the old key still exists, APK Signature Scheme v3 can rotate it: `apksigner
 rotate` writes a lineage that proves the new key comes from the old one, and an APK signed with that lineage installs

@@ -2,6 +2,7 @@ package app.mauri.cucuto.ui.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.core.repo.IndexCache
 import app.mauri.cucuto.core.repo.LinkResult
 import app.mauri.cucuto.core.repo.RepoError
@@ -13,6 +14,7 @@ import app.mauri.cucuto.core.repo.RepositoryLink
 import app.mauri.cucuto.core.repo.RepositoryLinks
 import app.mauri.cucuto.core.repo.RepositorySnapshot
 import app.mauri.cucuto.packs.ImportController
+import app.mauri.cucuto.packs.ImportUi
 import app.mauri.cucuto.packs.PackCatalog
 import app.mauri.cucuto.packs.PackOrigin
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -43,7 +46,8 @@ import javax.inject.Inject
  *
  * Network rule (minimum intrusion): requests happen only while this screen is open: the indexes when it opens or the
  * user pulls to refresh, previews when they are shown or tapped, a download when the user installs, and an index when
- * the user adds a repository. Nothing runs in the background and nothing is reported anywhere.
+ * the user adds a repository. Nothing runs in the background and nothing is reported anywhere. Home's "Get the demo
+ * packs" (#179, ADR 0045) opens this screen and starts the demo bundle's install, so that tap is the user's install.
  */
 @HiltViewModel
 class DiscoverViewModel
@@ -54,8 +58,9 @@ class DiscoverViewModel
         private val indexCache: IndexCache,
         private val previews: PreviewStore,
         private val downloader: PackDownloader,
-        catalog: PackCatalog,
+        private val catalog: PackCatalog,
         private val links: IncomingRepoLinks,
+        private val demoRequests: DemoPacksRequests,
     ) : ViewModel() {
         /** Blocking cache calls (removing a repository's index copy). Replaced in tests. */
         internal var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -65,13 +70,16 @@ class DiscoverViewModel
         private val filters = MutableStateFlow(Filters())
         private val form = MutableStateFlow<RepositoryForm?>(null)
         private val message = MutableStateFlow<DiscoverMessage?>(null)
+        private val demo = MutableStateFlow<DemoPacksUi?>(null)
         private val accesses = ConcurrentHashMap<Long, RepositoryAccess>()
         private val refreshJobs = mutableMapOf<Long, Job>()
         private var formJob: Job? = null
+        private var demoJob: Job? = null
 
         private data class Filters(
             val query: String = "",
             val tag: String? = null,
+            val focus: String? = null,
         )
 
         private val content =
@@ -82,23 +90,28 @@ class DiscoverViewModel
                 filters,
             ) { repositories, installed, loads, filters ->
                 DiscoverUiState(
-                    sections = repositories?.let { sections(it, loads, installed, filters.query, filters.tag) },
+                    sections =
+                        repositories?.let { sections(it, loads, installed, filters.query, filters.tag, filters.focus) },
                     repositories = repositories.orEmpty(),
                     query = filters.query,
                     tag = filters.tag,
+                    focus = filters.focus,
                     tags = repositories?.let { tagsOf(it, loads) }.orEmpty(),
                 )
             }
 
         val state: StateFlow<DiscoverUiState> =
-            combine(content, imports.state, form, message) { content, import, form, message ->
-                content.copy(import = import, form = form, message = message)
+            combine(content, imports.state, form, message, demo) { content, import, form, message, demo ->
+                content.copy(import = import, form = form, message = message, demo = demo)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), DiscoverUiState())
 
         init {
             viewModelScope.launch {
                 store.ensureDefault()
-                refresh()
+                refreshAll()
+                // Home's "Get the demo packs": right away, or when tapped again while Discover stays open. After
+                // refreshAll, so the default repository's fetch is already under way and is not started twice.
+                demoRequests.pending.filter { it }.collect { if (demoRequests.take()) getDemoPacks() }
             }
             // "Add to app" links from websites and QR codes.
             viewModelScope.launch {
@@ -108,12 +121,14 @@ class DiscoverViewModel
 
         /** Fetches every enabled repository again (ETag: unchanged indexes cost one small request each). */
         fun refresh() {
-            viewModelScope.launch {
-                store.repositories
-                    .first()
-                    .filter { it.enabled }
-                    .forEach(::refresh)
-            }
+            viewModelScope.launch { refreshAll() }
+        }
+
+        private suspend fun refreshAll() {
+            store.repositories
+                .first()
+                .filter { it.enabled }
+                .forEach(::refresh)
         }
 
         /** Fetches [repository] again. */
@@ -126,6 +141,7 @@ class DiscoverViewModel
 
         fun clearFilters() {
             filters.value = Filters()
+            if (demo.value is DemoPacksUi.Failed) demo.value = null
         }
 
         // region Adding repositories and signing in
@@ -299,17 +315,77 @@ class DiscoverViewModel
         fun install(card: PackCard) {
             viewModelScope.launch {
                 val repository = store.repositories.first().firstOrNull { it.id == card.repositoryId } ?: return@launch
-                val access = access(repository) ?: return@launch
-                imports.start {
-                    downloader.download(
-                        name = card.name,
-                        url = card.entry.downloadUrl,
-                        expected = card.entry.expected,
-                        access = access,
-                        origin = PackOrigin.Repository(repository.url),
-                    )
-                }
+                install(card, repository)
             }
+        }
+
+        private suspend fun install(
+            card: PackCard,
+            repository: SavedRepository,
+        ): Boolean {
+            val access = access(repository) ?: return false
+            imports.start {
+                downloader.download(
+                    name = card.name,
+                    url = card.entry.downloadUrl,
+                    expected = card.entry.expected,
+                    access = access,
+                    origin = PackOrigin.Repository(repository.url),
+                )
+            }
+            return true
+        }
+
+        /**
+         * The demo packs (#179): shows only the demo bundle of the default repository, fetches its index if this
+         * visit has no fresh copy, and starts the bundle's download into the usual review, where the user still
+         * confirms. Offline, or without the bundle in the index, it says why and offers to pick the file instead.
+         * Also the failure card's "Try again".
+         */
+        fun getDemoPacks() {
+            demoJob?.cancel()
+            demoJob = viewModelScope.launch { findDemoPacks() }
+        }
+
+        private suspend fun findDemoPacks() {
+            filters.value = Filters(focus = DEMO_BUNDLE_ID)
+            demo.value = DemoPacksUi.Finding
+            store.ensureDefault()
+            var repository = store.repositories.first().firstOrNull { it.isDefault } ?: return run { demo.value = null }
+            if (!repository.enabled) {
+                // The user asked for this repository's packs, so a default repository they turned off comes back on.
+                store.setEnabled(repository.id, true)
+                repository = repository.copy(enabled = true)
+            }
+            val current = loads.value[repository.id]
+            val fresh = current?.snapshot != null && current.error == null
+            if (current?.loading != true && !fresh) refresh(repository)
+            val load = loads.first { it[repository.id]?.loading == false }.getValue(repository.id)
+            load.error?.let { error ->
+                // Offline, or the server is down: a stale copy would only fail at the download.
+                demo.value = DemoPacksUi.Failed(DemoProblem.Unreachable(error))
+                return
+            }
+            val snapshot = load.snapshot ?: return run { demo.value = null }
+            val card = cards(repository.id, snapshot, store.installed.first()).firstOrNull { it.id == DEMO_BUNDLE_ID }
+            demo.value =
+                when {
+                    card == null -> DemoPacksUi.Failed(DemoProblem.NotListed)
+
+                    // The card says "Needs a newer Cucuto"; there is nothing to start.
+                    !card.entry.supported -> null
+
+                    install(card, repository) -> DemoPacksUi.Importing
+
+                    else -> DemoPacksUi.Failed(DemoProblem.Unreachable(RepoError.InsecureUrl(hostOf(repository.url))))
+                }
+        }
+
+        /** The fallback when the demo packs cannot be downloaded: a pack file the user picked (from Downloads). */
+        fun importFile(source: ImportSource) {
+            demoJob?.cancel()
+            demo.value = DemoPacksUi.Importing
+            imports.start { catalog.prepare(source) }
         }
 
         fun setSelected(
@@ -318,9 +394,16 @@ class DiscoverViewModel
         ) = imports.setSelected(packId, selected)
 
         /** Installs what the review shows (the sheet's install button). */
-        fun confirmInstall() = imports.install { message.value = DiscoverMessage.Installed(it) }
+        fun confirmInstall() =
+            imports.install {
+                message.value = DiscoverMessage.Installed(it)
+                if (demo.value == DemoPacksUi.Importing) demo.value = null
+            }
 
-        fun closeImport() = imports.close()
+        fun closeImport() {
+            imports.close()
+            if (demo.value == DemoPacksUi.Importing && imports.state.value == ImportUi.Idle) demo.value = null
+        }
 
         // endregion
 

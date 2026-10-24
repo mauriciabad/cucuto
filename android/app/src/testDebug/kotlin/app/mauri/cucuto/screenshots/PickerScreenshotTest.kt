@@ -10,7 +10,7 @@ class PickerScreenshotTest(
 ) : ScreenshotTest(variant) {
     @Test
     fun picker() =
-        screenshot("picker", web = "picker") {
+        screenshot("picker", web = "picker", store = 2) {
             val chat = DemoContent.chats().first { it.voice == null }
             PickerContent(
                 state =
