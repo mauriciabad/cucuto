@@ -672,3 +672,23 @@ The owner set up #188 with an agent driving the Cloud console in Chrome while th
 
 (Project `cucuto-app`, Drive and Picker APIs enabled, scope `drive.file` only, Android clients for the release and
 debug keys, published to production. Details on #188.)
+
+> redact sensitive info
+
+(The quoted emails in the entry above and the Cloud project number were removed in #382.)
+
+## 2026-10-25: no Drive sign-in, stay on F-Droid (#188)
+
+Relayed by the lead session:
+
+> about the google drive, do we have to code something? if so, tell the other agent do do it. the full-round feature completed
+
+(Drive sign-in on Android needs Google Play services: Android OAuth clients are checked only by Play services, and
+Google no longer supports custom URI scheme or loopback redirects for Android. The options were a second build
+flavor with Play services, a deprecated workaround, or no Drive sign-in.)
+
+> i want C. i preffer to be in fdroid. then we have to undo the settincs we just did in agmin google...
+
+Asked whether to shut down the Google Cloud project `cucuto-app`, the owner picked "Shut down project (Recommended)".
+
+(The project was shut down, `:core:drive` deleted, ADR 0040 amended and #188 closed as not planned.)

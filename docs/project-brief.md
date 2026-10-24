@@ -260,7 +260,7 @@ cucuto/
 Keeping the Pokémon pack in a private Google Drive works well:
 
 - **Day one:** tap Import in the app. Android's file picker shows Google Drive; pick the `.soundpack.zip` file. No public link, no sharing settings, nothing leaves the owner's account.
-- **Later, optional:** a Google Drive folder can be added as a private pack repository, so updates appear in the app's Discover screen (see Pack repositories).
+- **No Drive folder repository** (owner, #188, 2026-10-25): it would need Google sign-in, which needs Google Play services, and Cucuto stays F-Droid-clean ([ADR 0040](decisions/0040-google-drive-backups-and-pack-folders.md)). Packs from Drive come in through the file picker.
 
 Guards in the public repo:
 
@@ -345,7 +345,7 @@ Supported sources:
 | --- | --- | --- | --- |
 | Static HTTPS site (GitHub Pages, Cloudflare Pages, S3 or R2, any web server) | Paste the folder or `repository.json` URL, scan a QR code, or tap "Add to app" on a website | v1 | The main path. The project website is the default repository. |
 | Direct link to one `.soundpack.zip` | Paste the link | v1 | One-off download through the same importer. |
-| Google Drive folder | Sign in with Google and pick a folder | v1.1 | Read-only Drive API access to that folder. The app reads `repository.json` there, or lists `.zip` files and reads their manifests. Fits the owner's private Drive. Public Drive links are a poor host: files above roughly 100 MB return a virus-scan warning page instead of the file, popular files get throttled, and folders can't be listed without the API. |
+| Google Drive folder | — | Not planned | Owner, #188 (2026-10-25): Drive API access needs Google sign-in, which needs Google Play services, so it is dropped to stay on F-Droid ([ADR 0040](decisions/0040-google-drive-backups-and-pack-folders.md)). Import Drive files through the file picker instead. Originally planned as read-only Drive API access to that folder. The app reads `repository.json` there, or lists `.zip` files and reads their manifests. Fits the owner's private Drive. Public Drive links are a poor host: files above roughly 100 MB return a virus-scan warning page instead of the file, popular files get throttled, and folders can't be listed without the API. |
 | MEGA link | Paste the link | Later | MEGA encrypts files on the client, so the app would need the MEGA SDK and the key in the link to decrypt. Check the SDK's license against GPL-3.0 before committing. |
 
 Authentication:
@@ -509,7 +509,7 @@ Gradle modules (under `android/`):
 - `:app` — Compose UI, view models, onboarding, Discover, pack creator, diagnostics.
 - `:xposed` — module entry point and hooks. Small, defensive, no Compose and no heavy dependencies, since it loads inside `system_server`.
 - `:core:pack` — pack and bundle models, JSON Schema validation, safe unzip, importer.
-- `:core:repo` — repository sources (HTTPS index first, Google Drive later), credentials, download and verification.
+- `:core:repo` — repository sources (HTTPS indexes; no Google Drive source, ADR 0040), credentials, download and verification.
 - `:core:data` — Room database, repositories, the routing table that the module reads.
 - `:core:conditions` — `when` conditions (day and night from sunrise and sunset, hour ranges, seasons, weekdays, dates) compiled into instants, and where local days start for first-of-the-day clips; shared by clips and ringtone variants.
 - `:core:ringtone` — MediaStore export, per-contact ringtones, variant rules and boundary alarms.
@@ -546,13 +546,13 @@ Development is near the end (owner, 2026-10-24). From now on, occasional single 
 | M2 Contacts and senders | Recent senders, group policy, WhatsApp Business, Signal and Molly (#374) | Add chats from Android contacts (#292); group sender device check (#157, owner) |
 | M3 UI and game feel | All screens and the four-tab shell, feedback engine, Spanish, accessibility pass, picker folding and "Surprise me" | TalkBack and Scanner walkthrough on the phone (#226, owner) |
 | M4 Haptics | Everything: pack haptics, auto haptics, editor, per-contact override, AI-written patterns | — |
-| M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, drawn haptic previews on the website and in the app (#301), credentials, verification | Import speed (#279, #268); Drive folder source, v1.1 (#37, blocked on #188) |
+| M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, drawn haptic previews on the website and in the app (#301), credentials, verification | Import speed (#279, #268) |
 | M6 Website | Every page, release-driven builds, the default repository, JPEG XL, screenshots, GitHub Pages and DNS | Explainer video rework (#271); TypeScript 7 (#162, blocked upstream) |
 | M7 Open-source release | Public repo and docs, CI with the media guard, signed releases, backup and restore UI, store listing metadata | Contact re-linking (PR #266) and a wiped-phone restore (#43, owner); developer verification (#358, owner); clean-install end to end (#46, owner); F-Droid after v1 (#275) |
 | M8 Pack creator (v1.1) | In-app creator, website Create page and its tools, golden packs through every validator | Creator vibrations, ringtones and animated sprites (#185, PR #225) |
 | M9 Ringtones | Ring files and auto-cut clips, phone ringtones with variants, ringtone picker, independent voice and ringtone, day and night, the ringtone rules screen and per-contact rules (#288) | Sound flow rethink (#298); supervised device runs (#143, #228, owner); automatic WhatsApp call ringtones (#273, blocked on #228); the owner's K.K. check |
 
-No milestone: special clips (#120, PR #258), finding Drive backups on a fresh install (#163, needs #188).
+No milestone: special clips (#120, PR #258). Not planned: finding Drive backups on a fresh install (#163) and Drive sign-in (#188), since both need Google Play services (ADR 0040).
 
 ### M0 — Device spike (gate)
 
@@ -602,7 +602,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [x] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)). Owner update 2026-10-24 (#301): previews also draw the vibration, in Discover and on the website.
 - [x] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
 - [x] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
-- [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.
+- [ ] ~~v1.1 follow-up: Google Drive folder source with read-only access.~~ Not planned (#188, ADR 0040: needs Google Play services).
 
 ### M6 — Website
 
@@ -659,7 +659,7 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 | Phone ringtone files deleted or moved by the user | Contacts fall back to the default ringtone | Keep ringtones in a dedicated `Ringtones/cucuto/` folder and re-check them on app start; repair automatically. |
 | JPEG XL decoding gaps (no built-in Android decoder assumed; Firefox needs a preference) | Missing sprites or site images | JXL is optional: bundle jxl-rs (ADR 0006), otherwise convert at import. On the site, serve `<picture>` with fallbacks. |
 | Malicious or broken pack repositories | Crashes, storage abuse, misleading content | Same validation as local imports, size and SHA-256 checks, redirect caps, warning when adding an unknown repository. |
-| Google Drive and MEGA links are unreliable hosts | Failed downloads | Recommend static hosts for public repositories; use the Drive API (not public links) for Drive folders; treat MEGA as a later, SDK-based source. |
+| Google Drive and MEGA links are unreliable hosts | Failed downloads | Recommend static hosts for public repositories; Drive folders are not a source (no Drive API, ADR 0040); treat MEGA as a later, SDK-based source. |
 | Losing the phone | All assignments gone | Automatic backups to a user-chosen folder (for example Google Drive), tested restore. |
 | Copyrighted media leaks into the public repo | Takedown risk | `.gitignore`, CI media allowlist, demo-pack-only screenshots and video. |
 | Very rapid bursts of messages | Clips cut each other off | The system already plays one notification sound at a time; cooldown softens bursts. Optional per-contact minimum gap in settings. |

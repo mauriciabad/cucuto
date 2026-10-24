@@ -214,8 +214,8 @@ updates; what stays open carries `deps:major` (ADR 0004).
 
 ## 11. What only the owner can do
 
-`gh issue list --label owner-action` lists it: Android developer verification (#358), the Google Cloud project for
-Drive sign-in (#188), supervised device runs that need a second phone or LSPosed changes (#143, #228), and checks
-that need real incoming messages or a wiped phone (#12, #157, #43, #46). Leave these alone unless the owner is
+`gh issue list --label owner-action` lists it: Android developer verification (#358), supervised device runs that
+need a second phone or LSPosed changes (#143, #228), and checks that need real incoming messages or a wiped phone
+(#12, #157, #43, #46). Leave these alone unless the owner is
 present and says go. When your work creates a new one, label it `owner-action` and write the exact steps in the
 issue.

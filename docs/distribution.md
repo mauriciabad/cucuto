@@ -123,7 +123,7 @@ with what it does and what was checked in [`fdroid/README.md`](../fdroid/README.
 - It updates itself on new `v*` tags. F-Droid reads `versionCode` and `versionName` from
   `android/app/build.gradle.kts`, which the release PR now sets ([releasing.md](releasing.md)).
 - **No inclusion blockers.** The release APK has no Google Play services, Firebase, GMS, Google sign-in, trackers or
-  proprietary libraries. `:core:drive` isn't part of it. `fdroid scanner` and `fdroid lint` pass with the recipe.
+  proprietary libraries. `fdroid scanner` and `fdroid lint` pass with the recipe.
 - **No anti-features** (since #374, [ADR 0081](decisions/0081-signal-support.md)): Cucuto works fully with Signal or
   Molly, which are free software, so `NonFreeDep` no longer applies. `NonFreeNet` doesn't fit, because Cucuto never
   talks to any messenger's servers.
