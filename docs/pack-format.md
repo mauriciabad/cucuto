@@ -309,9 +309,10 @@ fallback and depend on the device's frequency profile.
 model can write a more precise `custom` timeline from the sound ([ADR 0053](decisions/0053-ai-written-haptic-patterns.md)).
 Cucuto runs no model and calls no service; the user carries the text over:
 
-1. **Copy for AI** (haptic editor) puts a prompt on the clipboard: the character's clips (up to 6) with each one's
-   length and its auto analysis as `ms,loudness,sharpness` rows (0 to 100), the current pattern, these rules and an
-   example. The user pastes it into any AI chat, with the audio file attached if the chat takes audio.
+1. **Copy for AI** (the app's haptic editor, or a character's custom vibration on the website's Create page) puts a
+   prompt on the clipboard: the character's clips (up to 6) with each one's length and its auto analysis as
+   `ms,loudness,sharpness` rows (0 to 100; the website computes a simpler one in the browser), the current pattern,
+   these rules and an example. The user pastes it into any AI chat, with the audio file attached if the chat takes audio.
 2. **Paste pattern** reads the answer back. It takes the first code block holding JSON (else the first JSON object or
    array in the text) and accepts the whole `haptic` object, a character's `{ "haptic": { … } }`, a bare
    `{ "events": [ … ] }` or the events array alone. Everything else follows the rules above strictly (and
@@ -602,8 +603,16 @@ authority: readers detect the type from the contents.
   SHA-256) and asks for the files of local-only packs.
 - `contacts`: every known contact with all the messenger keys seen for it (`package` + `conversationKey`), phone
   numbers in E.164, the linked Android contact lookup key, group policy, the message assignment (pack ID, character
-  ID, disabled clip paths, haptic override) and the ringtone assignment (pack ID, character ID, variant rule).
+  ID, disabled clip paths, haptic override) and the phone ringtone (pack ID, character ID, variant rule).
   Contact IDs are unique within a backup (`DUPLICATE_ID`).
+  - `ringtone.followsVoice: true` means the ringtone follows the message character. Its pack and character IDs still
+    name the voice's character at backup time, for readers that ignore the flag.
+  - `ringtone.undo` is device-local: the Android contact's own ringtone before Cucuto (`originalRingtone`, absent for
+    the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
+    contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later
+    then gives the contact its own ringtone back. Every other phone ignores it.
+  - On restore, Android contacts are matched again by phone number, then by lookup key, then by exact name. A contact
+    with no match on the new phone keeps its ringtone choice and waits for the user to link it.
 
 Restore is idempotent: running it twice gives the same result, and it never overwrites assignments made on the new
 phone without asking.

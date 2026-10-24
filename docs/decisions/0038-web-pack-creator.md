@@ -57,7 +57,8 @@ app's `PackWriter`).
   WebP like the app (quality 1 for pictures with transparency, lossless in Chromium; quality 0.9 for photos), and
   PNG or JPEG where the browser cannot write WebP (Safari).
 - Haptics stay `auto` (the format's default): browsers cannot play rich haptics, and the page says to make custom
-  patterns in the app.
+  patterns in the app. (Superseded by [ADR 0058](0058-create-page-tools.md): the page now edits custom patterns, checked
+  with the shared haptic text, and still says to preview them in the app.)
 
 **Checks before download.** The page zips the pack, runs `validateArchive` on those exact bytes and only then offers
 the file, like the app's `PackWriter`. "Add to app": the app accepts `application/zip` from the share sheet, so the
@@ -79,4 +80,5 @@ microphone is used only while recording.
   two can never drift.
 - The browser module grows by the authoring code (a few kB; kotlinx.serialization was already in it).
 - Not in this first version: covers, bundles, ringtones, a custom haptic editor, saving drafts across reloads,
-  editing an existing pack, and the "host your own repository" helper (#191).
+  editing an existing pack, and the "host your own repository" helper (#191). All but ringtones arrived with
+  [ADR 0058](0058-create-page-tools.md).

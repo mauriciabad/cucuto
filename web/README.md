@@ -12,7 +12,7 @@ bun run dev       # http://localhost:5173
 bun run check     # svelte-check (types, a11y warnings fail the run)
 bun run lint      # Prettier + ESLint (flat config)
 bun run build     # static site in build/
-bun run test      # Playwright smoke + axe tests against the built site (bun run playwright install chromium first)
+bun run test      # Playwright smoke, axe and no-sideways-overflow tests against the built site (bun run playwright install chromium first)
 bun run test:unit # every golden fixture in spec/fixtures through the pack validator (needs the module, below)
 SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in test-results/screenshots/
 ```
@@ -86,5 +86,11 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   the file before the download. `tests/creator.test.ts` (Bun) re-lays out every valid golden fixture;
   `tests/create.e2e.ts` makes a pack in Chromium and validates the download. `PORT=4848 bun run test` runs the
   e2e tests on another port when several checkouts share a machine.
+- **Creator tools (#191, ADR 0058).** Drafts are saved in IndexedDB (`src/lib/creator/drafts.ts`); a
+  `.soundpack.zip` opens as a draft with the app's "Duplicate and edit" rules (`open.ts`, also from `/open/`);
+  characters get a custom vibration editor with "Copy for AI" and "Paste pattern" (`HapticEditor.svelte`, the
+  shared `HapticPatternText`); `/create/bundle/` combines packs like `packer bundle` (`bundle.ts`) and
+  `/create/repository/` writes a repository folder like `packer index` (`indexer.ts`, the shared
+  `RepositoryIndexer`). `tests/creator-tools.test.ts` (Bun) and `tests/create-tools.e2e.ts` cover them.
 - **TypeScript 6.** TypeScript 7 is out, but SvelteKit 3, svelte-check and typescript-eslint still declare
   `typescript@^6` as their peer, so the site stays on 6.x until they support 7.

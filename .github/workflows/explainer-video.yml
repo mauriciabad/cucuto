@@ -1,0 +1,90 @@
+name: explainer-video
+
+# Builds the automated draft of the explainer video (issue #195, ADR 0060, docs/explainer-video.md) and uploads it as
+# an artifact: the app's real screens rendered frame by frame on the JVM (Robolectric, no device), then assembled with
+# ffmpeg (stage, CC0 demo-pack and brand sounds, captions). Manual only: run it from the Actions tab. Nothing is
+# committed or published; the draft is not the website's video.
+
+on:
+  workflow_dispatch:
+    inputs:
+      languages:
+        description: "Cuts to render: en, or en,es"
+        required: true
+        default: "en"
+        type: choice
+        options: ["en", "en,es"]
+      av1_preset:
+        description: "SVT-AV1 preset for the WebM (the brief's final setting is 4; higher is faster)"
+        required: true
+        default: "6"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: explainer-video-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  draft:
+    name: Explainer video draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check inputs
+        env:
+          PRESET: ${{ inputs.av1_preset }}
+        run: '[[ "$PRESET" =~ ^[0-9]{1,2}$ ]] || { echo "::error::av1_preset must be a number, got ''$PRESET''"; exit 1; }'
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          cache-read-only: true
+
+      # ffmpeg with SVT-AV1, x264 and Opus; the runner already has the Kotlin CLI for *.main.kts scripts.
+      - name: Install ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
+
+      - name: Render the frames
+        working-directory: android
+        env:
+          LANGUAGES: ${{ inputs.languages }}
+        run: ./gradlew :app:renderExplainerFrames "-Pexplainer.languages=$LANGUAGES" --stacktrace
+
+      - name: Assemble the draft
+        env:
+          LANGUAGES: ${{ inputs.languages }}
+          PRESET: ${{ inputs.av1_preset }}
+        run: kotlin tools/video/explainer.main.kts --languages "$LANGUAGES" --av1-preset "$PRESET"
+
+      - name: Upload the draft
+        uses: actions/upload-artifact@v7
+        with:
+          name: explainer-video-draft
+          path: |
+            android/app/build/explainer/*.webm
+            android/app/build/explainer/*.mp4
+            android/app/build/explainer/explainer-poster.png
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: explainer-video-reports
+          path: |
+            android/app/build/reports/tests/
+            android/app/build/test-results/
+          retention-days: 7

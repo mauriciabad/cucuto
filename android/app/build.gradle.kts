@@ -17,6 +17,16 @@ val storeScreenshots: Directory = layout.projectDirectory.dir("../../fastlane/me
 val exportStoreScreenshots =
     gradle.startParameter.taskNames.any { it.substringAfterLast(':') == "exportStoreScreenshots" }
 
+// Where `renderExplainerFrames` writes the explainer video's frames (ADR 0060), and whether this build runs it.
+val explainerFrames: Provider<Directory> = layout.buildDirectory.dir("explainer/frames")
+val renderExplainer =
+    gradle.startParameter.taskNames.any {
+        it.substringAfterLast(
+            ':',
+        ) in setOf("renderExplainerFrames", "explainerDraft")
+    }
+val explainerLanguages: Provider<String> = providers.gradleProperty("explainer.languages").orElse("en")
+
 android {
     namespace = "app.mauri.cucuto"
 
@@ -69,6 +79,19 @@ android {
                 it.systemProperty("cucuto.screenshots.store", storeScreenshots.asFile.absolutePath)
                 it.outputs.upToDateWhen { false }
             }
+            if (renderExplainer) {
+                // Only the video's frame tests, which skip themselves without these properties.
+                it.filter.includeTestsMatching("app.mauri.cucuto.video.*")
+                it.filter.isFailOnNoMatchingTests = false
+                it.systemProperty("cucuto.video.frames", explainerFrames.get().asFile.absolutePath)
+                it.systemProperty("cucuto.video.languages", explainerLanguages.get())
+                it.inputs
+                    .dir("../../brand")
+                    .withPropertyName("brand")
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
+                it.outputs.dir(explainerFrames)
+                it.outputs.upToDateWhen { false }
+            }
         }
     }
 
@@ -96,6 +119,36 @@ tasks.register("exportStoreScreenshots") {
     group = "verification"
     description = "Records the screenshot tests and writes the store listing's screenshots to fastlane/metadata/."
     dependsOn("recordRoborazziDebug")
+}
+
+// Explainer video draft (ADR 0060, docs/explainer-video.md): the frame tests render every shot from the app's real
+// screens on the test clock; tools/video/explainer.main.kts then adds the stage, the sound and the captions with
+// ffmpeg. `-Pexplainer.languages=en,es` renders the Spanish cut too.
+tasks.register("renderExplainerFrames") {
+    group = "explainer"
+    description = "Renders the explainer video's frames into build/explainer/frames/ (no device needed)."
+    dependsOn("testDebugUnitTest")
+}
+
+tasks.register<Exec>("explainerDraft") {
+    group = "explainer"
+    description =
+        "Renders the frames and assembles the explainer video draft in build/explainer/ (needs ffmpeg, kotlin)."
+    dependsOn("renderExplainerFrames")
+    workingDir = layout.projectDirectory.dir("../..").asFile
+    commandLine(
+        "kotlin",
+        "tools/video/explainer.main.kts",
+        "--frames",
+        explainerFrames.get().asFile.absolutePath,
+        "--out",
+        layout.buildDirectory
+            .dir("explainer")
+            .get()
+            .asFile.absolutePath,
+        "--languages",
+        explainerLanguages.get(),
+    )
 }
 
 // Brand UI sounds (brand/sounds/*.ogg) become R.raw.ui_* through a generated resource directory.

@@ -175,11 +175,30 @@ data class BackupMessageAssignment(
     val haptic: JsonElement? = null,
 )
 
+/**
+ * A contact's phone ringtone (ADR 0039, ADR 0057). [packId] and [characterId] name the character that rang when the
+ * backup was written, even when it [followsVoice].
+ */
 @Serializable
 data class BackupRingtoneAssignment(
     val packId: String,
     val characterId: String,
+    /** True when the ringtone follows the message character; omitted (null) otherwise. */
+    val followsVoice: Boolean? = null,
     val rule: BackupRingtoneRule,
+    /** Device-local undo record: used only on the same phone ([BackupRingtoneUndo]). */
+    val undo: BackupRingtoneUndo? = null,
+)
+
+/**
+ * What turning a phone ringtone off gives back: the Android contact's own ringtone before Cucuto ([originalRingtone],
+ * null for the default) and the ring file Cucuto wrote last ([writtenUri]). Both are URIs of this phone, so a restore
+ * applies them only when the contact still rings with exactly [writtenUri] (the same phone, after a reinstall).
+ */
+@Serializable
+data class BackupRingtoneUndo(
+    val originalRingtone: String? = null,
+    val writtenUri: String,
 )
 
 @Serializable

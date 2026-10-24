@@ -167,6 +167,11 @@
 		width: auto;
 	}
 
+	/* Let the nav shrink below its links' width so the list scrolls instead of overflowing (#135). */
+	nav {
+		min-width: 0;
+	}
+
 	nav ul {
 		display: flex;
 		gap: 0.25rem;

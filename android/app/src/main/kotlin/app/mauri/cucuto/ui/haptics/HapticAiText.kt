@@ -5,13 +5,9 @@ import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.doubleOrNull
+import app.mauri.cucuto.packspec.authoring.HapticPatternText
 import kotlin.math.roundToInt
+import app.mauri.cucuto.packspec.HapticEvent as PackHapticEvent
 
 /**
  * One clip as "Copy for AI" describes it.
@@ -128,11 +124,12 @@ sealed interface PatternProblem {
  * "Copy for AI" and "Paste pattern" (#217): Cucuto never calls an AI itself. [export] writes a compact, self-contained
  * prompt (the clips' durations and analysed loudness, the current pattern, the format and an example) that the user
  * pastes into any AI chat; [parse] reads the answer back, checked against the pack format's haptic rules, so a pasted
- * pattern behaves exactly like a pack haptic. The prompt stays in English: it is read by a model, not shown in the UI.
+ * pattern behaves exactly like a pack haptic. The text format itself is shared with the website's creator (#191):
+ * `HapticPatternText` in shared/pack-spec; this object maps it to the editor's timeline (thousandths).
  */
 object HapticAiText {
     /** Clips described at most, to keep the prompt short. */
-    const val MAX_CLIPS: Int = 6
+    const val MAX_CLIPS: Int = HapticPatternText.MAX_CLIPS
 
     /** The prompt for [clips] of [character] (null for a scratch pad) and the [current] timeline. */
     fun export(
@@ -140,42 +137,23 @@ object HapticAiText {
         clips: List<AiClip>,
         current: List<HapticEvent>,
     ): String =
-        buildString {
-            appendLine("Write a vibration pattern for a phone notification sound (Android, the app Cucuto).")
-            appendLine(
-                "Make the phone vibrate in time with the sound: a tap on each beat or accent, a swell where a sound " +
-                    "is held, nothing where it is quiet. Cucuto's automatic vibration already follows the loudness " +
-                    "below; yours should hit the rhythm more precisely. If I attached the audio, listen to it.",
-            )
-            appendLine("Answer with only the JSON pattern in one code block.")
-            appendLine()
-            appendLine("## The sound")
-            if (clips.isEmpty()) {
-                appendLine("No clip details. Use the audio I attached, or ask me to describe the sound.")
-            } else {
-                if (character != null) appendLine("Character: $character.")
-                if (clips.size > 1) {
-                    appendLine(
-                        "The pattern plays with each of its ${clips.size} clips (one at random per message): make it " +
-                            "fit them all, the first one best.",
+        HapticPatternText.prompt(
+            character = character,
+            clips =
+                clips.map { clip ->
+                    HapticPatternText.PromptClip(
+                        path = clip.path,
+                        durationMs = clip.durationMs,
+                        loudness =
+                            clip.loudness?.let { envelope ->
+                                loudnessRows(envelope).map { (t, level, sharp) ->
+                                    HapticPatternText.LoudnessRow(t, level, sharp)
+                                }
+                            },
                     )
-                }
-                clips.take(MAX_CLIPS).forEachIndexed { i, clip -> appendClip(i + 1, clip) }
-                if (clips.size > MAX_CLIPS) appendLine("(${clips.size - MAX_CLIPS} more clips not listed.)")
-            }
-            appendLine()
-            appendLine("## Current pattern")
-            if (current.isEmpty()) {
-                appendLine("None yet.")
-            } else {
-                appendLine("Improve it or replace it:")
-                appendLine("```json")
-                appendLine(patternJson(current))
-                appendLine("```")
-            }
-            appendLine()
-            append(FORMAT)
-        }.trimEnd() + "\n"
+                },
+            currentJson = current.takeIf { it.isNotEmpty() }?.let(::patternJson),
+        )
 
     /** [events] as the pack format's compact `{"mode":"custom","events":[…]}` JSON. */
     fun patternJson(events: List<HapticEvent>): String = HapticJson.toJson(Haptic.Custom(events)).toString()
@@ -197,210 +175,102 @@ object HapticAiText {
                 }
         }
 
-    private fun StringBuilder.appendClip(
-        number: Int,
-        clip: AiClip,
-    ) {
-        val length = clip.durationMs?.let { "$it ms long" } ?: "length unknown"
-        appendLine()
-        appendLine("Clip $number, \"${clip.path}\": $length.")
-        val loudness = clip.loudness
-        if (loudness == null) {
-            appendLine("No loudness data (silent, or not analysed yet).")
-            return
-        }
-        appendLine(
-            "Loudness, analysed in 20 ms windows over at most the first 2 s and simplified (ms from the start, " +
-                "loudness 0-100, sharpness 0-100 from pitch):",
-        )
-        appendLine("ms,loudness,sharpness")
-        loudnessRows(loudness).forEach { (t, level, sharp) -> appendLine("$t,$level,$sharp") }
-    }
-
     private fun percent(milli: Int): Int = (milli / 10f).roundToInt()
-
-    private val FORMAT =
-        """
-        ## Format (Cucuto pack format, "custom" haptic)
-        {"mode":"custom","events":[...]} with 1 to 64 events, sorted by "at".
-        - "at": start in whole milliseconds from the start of the sound, 0 to 5000.
-        - Preset: {"at":0,"preset":"CLICK","scale":0.8}. "preset" is CLICK (crisp tap), TICK (lighter) or LOW_TICK
-          (lightest, lower); "scale" is 0 to 1 (default 1).
-        - Envelope, a swell: {"at":220,"initialSharpness":0.3,"envelope":[{"intensity":1,"sharpness":0.8,"ms":120},
-          {"intensity":0,"sharpness":0.4,"ms":180}]}. 1 to 16 points; "intensity" and "sharpness" are 0 to 1 (sharp
-          feels crisp, low feels soft and deep); "ms" (whole number, 1 to 5000) is the time to reach this point from
-          the previous one; the last point must have intensity 0.
-        Rules: an event may not start before the previous envelope has ended; leave at least 50 ms after a preset;
-        everything ends by 5000 ms. No other fields.
-
-        Example:
-        ```json
-        {"mode":"custom","events":[{"at":0,"preset":"CLICK","scale":0.9},{"at":180,"preset":"TICK","scale":0.6},{"at":320,"envelope":[{"intensity":0.8,"sharpness":0.5,"ms":60},{"intensity":0,"sharpness":0.3,"ms":240}]}]}
-        ```
-        """.trimIndent()
-
-    // Paste.
 
     /**
      * The pattern in [text]: the JSON of the first code block that holds one, else the first JSON object or array in
      * the text. Accepts the full haptic (`{"mode":"custom","events":[…]}`), a character's `{"haptic":{…}}`, a bare
      * `{"events":[…]}` or the events array alone. Everything else follows the pack format strictly.
      */
-    fun parse(text: String): PatternParse {
-        val root = extractJson(text) ?: return invalid(PatternProblem.NotJson)
-        return try {
-            PatternParse.Valid(Reader().read(root))
-        } catch (e: Refused) {
-            invalid(e.problem)
+    fun parse(text: String): PatternParse =
+        when (val parsed = HapticPatternText.parse(text)) {
+            is HapticPatternText.Parse.Valid -> PatternParse.Valid(parsed.events.map(::event))
+            is HapticPatternText.Parse.Invalid -> PatternParse.Invalid(problem(parsed.problem))
         }
+
+    /** A checked pack event in the editor's thousandths. */
+    private fun event(event: PackHapticEvent): HapticEvent {
+        val at = event.at.toInt()
+        val preset = event.preset
+        if (preset != null) {
+            return HapticEvent.Preset(at, HapticPreset.valueOf(preset), milli(event.scale ?: 1.0))
+        }
+        val points =
+            event.envelope.orEmpty().map {
+                ControlPoint(
+                    milli(it.intensity),
+                    milli(it.sharpness),
+                    it.ms.toInt(),
+                )
+            }
+        val initial = event.initialSharpness?.let(::milli) ?: HapticEvent.Envelope.DEFAULT_SHARPNESS
+        return HapticEvent.Envelope(at, points, initial)
     }
 
-    private fun invalid(problem: PatternProblem) = PatternParse.Invalid(problem)
+    private fun milli(fraction: Double): Int = (fraction * HapticTimeline.MILLI_ONE).roundToInt()
 
-    private val FENCE = Regex("```[A-Za-z0-9_-]*[ \\t]*\\r?\\n?(.*?)```", RegexOption.DOT_MATCHES_ALL)
+    private fun spot(spot: HapticPatternText.Spot) = PatternSpot(spot.event, spot.point)
 
-    internal fun extractJson(text: String): JsonElement? {
-        val candidates = FENCE.findAll(text).map { it.groupValues[1] } + sequenceOf(text)
-        for (candidate in candidates) {
-            val start = candidate.indexOfFirst { it == '{' || it == '[' }
-            if (start < 0) continue
-            val end = candidate.lastIndexOf(if (candidate[start] == '{') '}' else ']')
-            if (end <= start) continue
-            val element =
-                try {
-                    Json.parseToJsonElement(candidate.substring(start, end + 1))
-                } catch (_: IllegalArgumentException) {
-                    // kotlinx.serialization reports malformed JSON as SerializationException, an IllegalArgumentException.
-                    null
-                }
-            if (element is JsonObject || element is JsonArray) return element
-        }
-        return null
-    }
-
-    private class Refused(
-        val problem: PatternProblem,
-    ) : Exception() {
-        override fun fillInStackTrace(): Throwable = this
-    }
-
-    private class Reader {
-        fun read(root: JsonElement): List<HapticEvent> {
-            val events = eventsOf(root)
-            if (events.isEmpty()) refuse(PatternProblem.NoEvents)
-            if (events.size > HapticTimeline.MAX_EVENTS) refuse(PatternProblem.TooManyEvents)
-            val parsed = events.mapIndexed { i, element -> event(i + 1, element) }
-            checkTimeline(parsed)
-            return parsed
-        }
-
-        private fun eventsOf(root: JsonElement): JsonArray {
-            if (root is JsonArray) return root
-            var obj = root as JsonObject
-            (obj["haptic"] as? JsonObject)?.takeIf { obj.size == 1 }?.let { obj = it }
-            val pattern = PatternSpot()
-            obj.keys.firstOrNull { it !in TOP_FIELDS && !it.startsWith("x-") }?.let {
-                refuse(PatternProblem.UnknownField(pattern, it))
+    private fun problem(problem: HapticPatternText.Problem): PatternProblem =
+        when (problem) {
+            HapticPatternText.Problem.NotJson -> {
+                PatternProblem.NotJson
             }
-            obj["mode"]?.let { mode ->
-                val name = (mode as? JsonPrimitive)?.content ?: mode.toString()
-                if (name != "custom") refuse(PatternProblem.NotCustom(name))
-            }
-            return obj["events"] as? JsonArray ?: refuse(PatternProblem.NoEvents)
-        }
 
-        private fun event(
-            n: Int,
-            element: JsonElement,
-        ): HapticEvent {
-            val obj = element as? JsonObject ?: refuse(PatternProblem.NotAnEvent(n))
-            val isPreset = "preset" in obj
-            if (isPreset == ("envelope" in obj)) refuse(PatternProblem.NotAnEvent(n))
-            val spot = PatternSpot(event = n)
-            val allowed = if (isPreset) PRESET_FIELDS else ENVELOPE_FIELDS
-            obj.keys.firstOrNull { it !in allowed }?.let { refuse(PatternProblem.UnknownField(spot, it)) }
-            val at = whole(obj, spot, "at", min = 0)
-            return if (isPreset) {
-                val name = (obj["preset"] as? JsonPrimitive)?.takeIf { it.isString }?.content
-                val preset =
-                    HapticPreset.entries.firstOrNull { it.name == name }
-                        ?: refuse(PatternProblem.UnknownPreset(n, name ?: obj["preset"].toString()))
-                HapticEvent.Preset(at, preset, fraction(obj, spot, "scale") ?: HapticTimeline.MILLI_ONE)
-            } else {
-                val initial = fraction(obj, spot, "initialSharpness") ?: HapticEvent.Envelope.DEFAULT_SHARPNESS
-                val points = obj["envelope"] as? JsonArray ?: refuse(PatternProblem.PointCount(n, 0))
-                if (points.size !in 1..HapticTimeline.MAX_POINTS) refuse(PatternProblem.PointCount(n, points.size))
-                val parsed = points.mapIndexed { i, point -> point(PatternSpot(n, i + 1), point) }
-                if (parsed.last().milliIntensity != 0) refuse(PatternProblem.NotClosed(n))
-                HapticEvent.Envelope(at, parsed, initial)
+            HapticPatternText.Problem.NoEvents -> {
+                PatternProblem.NoEvents
+            }
+
+            HapticPatternText.Problem.TooManyEvents -> {
+                PatternProblem.TooManyEvents
+            }
+
+            is HapticPatternText.Problem.NotCustom -> {
+                PatternProblem.NotCustom(problem.mode)
+            }
+
+            is HapticPatternText.Problem.NotAnEvent -> {
+                PatternProblem.NotAnEvent(problem.event)
+            }
+
+            is HapticPatternText.Problem.MissingField -> {
+                PatternProblem.MissingField(spot(problem.spot), problem.field)
+            }
+
+            is HapticPatternText.Problem.UnknownField -> {
+                PatternProblem.UnknownField(spot(problem.spot), problem.field)
+            }
+
+            is HapticPatternText.Problem.NotWholeNumber -> {
+                PatternProblem.NotWholeNumber(spot(problem.spot), problem.field, problem.value)
+            }
+
+            is HapticPatternText.Problem.OutOfRange -> {
+                PatternProblem.OutOfRange(spot(problem.spot), problem.field, problem.min, problem.max, problem.value)
+            }
+
+            is HapticPatternText.Problem.UnknownPreset -> {
+                PatternProblem.UnknownPreset(problem.event, problem.name)
+            }
+
+            is HapticPatternText.Problem.PointCount -> {
+                PatternProblem.PointCount(problem.event, problem.count)
+            }
+
+            is HapticPatternText.Problem.NotClosed -> {
+                PatternProblem.NotClosed(problem.event)
+            }
+
+            is HapticPatternText.Problem.Unsorted -> {
+                PatternProblem.Unsorted(problem.event)
+            }
+
+            is HapticPatternText.Problem.Overlap -> {
+                PatternProblem.Overlap(problem.event, problem.atMs, problem.busyUntilMs)
+            }
+
+            is HapticPatternText.Problem.TooLong -> {
+                PatternProblem.TooLong(problem.ms)
             }
         }
-
-        private fun point(
-            spot: PatternSpot,
-            element: JsonElement,
-        ): ControlPoint {
-            val obj = element as? JsonObject ?: refuse(PatternProblem.MissingField(spot, "intensity"))
-            obj.keys.firstOrNull { it !in POINT_FIELDS }?.let { refuse(PatternProblem.UnknownField(spot, it)) }
-            return ControlPoint(
-                milliIntensity = fraction(obj, spot, "intensity", required = true)!!,
-                milliSharpness = fraction(obj, spot, "sharpness", required = true)!!,
-                durationMs = whole(obj, spot, "ms", min = 1),
-            )
-        }
-
-        /** The pack format's order, overlap and length rules (`PackValidator.checkHaptic`). */
-        private fun checkTimeline(events: List<HapticEvent>) {
-            var previousStart = -1
-            var busyUntil = 0
-            events.forEachIndexed { i, event ->
-                if (event.atMs < previousStart) refuse(PatternProblem.Unsorted(i + 1))
-                if (event.atMs < busyUntil) refuse(PatternProblem.Overlap(i + 1, event.atMs, busyUntil))
-                previousStart = event.atMs
-                if (event is HapticEvent.Envelope) busyUntil = maxOf(busyUntil, HapticTimeline.endOf(event))
-            }
-            if (busyUntil > HapticTimeline.MAX_MS) refuse(PatternProblem.TooLong(busyUntil))
-        }
-
-        private fun whole(
-            obj: JsonObject,
-            spot: PatternSpot,
-            field: String,
-            min: Int,
-        ): Int {
-            val element = obj[field] ?: refuse(PatternProblem.MissingField(spot, field))
-            val value =
-                (element as? JsonPrimitive)?.takeIf { !it.isString }?.doubleOrNull
-                    ?: refuse(PatternProblem.NotWholeNumber(spot, field, element.toString()))
-            if (value % 1.0 != 0.0) refuse(PatternProblem.NotWholeNumber(spot, field, element.toString()))
-            if (value < min || value > HapticTimeline.MAX_MS) {
-                refuse(PatternProblem.OutOfRange(spot, field, min, HapticTimeline.MAX_MS, element.toString()))
-            }
-            return value.toInt()
-        }
-
-        /** A 0 to 1 number as thousandths, or null when absent and optional. */
-        private fun fraction(
-            obj: JsonObject,
-            spot: PatternSpot,
-            field: String,
-            required: Boolean = false,
-        ): Int? {
-            val element = obj[field] ?: if (required) refuse(PatternProblem.MissingField(spot, field)) else return null
-            val value = (element as? JsonPrimitive)?.takeIf { !it.isString }?.doubleOrNull
-            if (value == null || value < 0.0 || value > 1.0) {
-                refuse(PatternProblem.OutOfRange(spot, field, 0, 1, element.toString()))
-            }
-            return (value * HapticTimeline.MILLI_ONE).roundToInt()
-        }
-
-        private fun refuse(problem: PatternProblem): Nothing = throw Refused(problem)
-
-        private companion object {
-            val TOP_FIELDS = setOf("mode", "events")
-            val PRESET_FIELDS = setOf("at", "preset", "scale")
-            val ENVELOPE_FIELDS = setOf("at", "initialSharpness", "envelope")
-            val POINT_FIELDS = setOf("intensity", "sharpness", "ms")
-        }
-    }
 }

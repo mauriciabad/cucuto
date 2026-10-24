@@ -293,7 +293,7 @@ private fun Context.localized(locale: Locale): Context {
 
 /** The screen in the requested theme and language, with the system bars drawn over it. */
 @Composable
-private fun DeviceFrame(
+internal fun DeviceFrame(
     dark: Boolean,
     locale: Locale,
     fontScale: Float,

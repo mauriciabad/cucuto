@@ -134,13 +134,13 @@ export function renderCrop(picture: Picture, crop: Crop, maxSide: number): HTMLC
 export interface EncodedImage {
 	bytes: Uint8Array;
 	/** File extension, without the dot. */
-	extension: 'jxl' | 'webp' | 'png' | 'jpg';
+	extension: string;
 	type: string;
 	/** A data: URL for previews (the site's CSP allows data: images). */
 	preview: string;
 }
 
-const EXTENSIONS: Record<string, EncodedImage['extension']> = {
+const EXTENSIONS: Record<string, string> = {
 	'image/jxl': 'jxl',
 	'image/webp': 'webp',
 	'image/png': 'png',

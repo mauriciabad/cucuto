@@ -84,7 +84,7 @@ fun validateDocument(kind: String, bytes: ByteArray): PackSpecResult {
     return DocumentValidator.validate(documentKind, bytes).toResult(null, emptyArray())
 }
 
-private fun PackValidation.toResult(): PackSpecResult {
+internal fun PackValidation.toResult(): PackSpecResult {
     val kind = when (content) {
         is PackContent.Single -> "pack"
         is PackContent.Bundle -> "bundle"

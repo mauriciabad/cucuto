@@ -49,9 +49,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -64,12 +66,14 @@ import app.mauri.cucuto.R
 import app.mauri.cucuto.backup.PackFailure
 import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.PushedScreen
 import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.ringtone.rememberContactsPermissionFlow
 import app.mauri.cucuto.ui.settings.ZIP_TYPES
 import app.mauri.cucuto.ui.settings.launchSafely
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -104,6 +108,7 @@ fun RestoreScreen(
             if (uri != null) onPickAnother(uri.toString())
         }
     val feedback = LocalFeedback.current
+    val turnOnRingtones = rememberContactsPermissionFlow(onGrant = viewModel::enablePhoneRingtones)
     LaunchedEffect(step is RestoreStep.Done) {
         if (step is RestoreStep.Done) feedback.fire(Feedback.Success)
     }
@@ -127,6 +132,7 @@ fun RestoreScreen(
                 onOpenSetup = { onLeave(CucutoDestination.Onboarding) },
                 onOpenDiagnostics = { onLeave(CucutoDestination.Diagnostics) },
                 onKeepForBackups = viewModel::keepForBackups,
+                onTurnOnPhoneRingtones = turnOnRingtones,
             ),
         modifier = modifier,
     )
@@ -147,6 +153,8 @@ internal data class RestoreActions(
     val onOpenDiagnostics: () -> Unit = {},
     /** Turns automatic backups on into the restored file. */
     val onKeepForBackups: () -> Unit = {},
+    /** Asks for the contacts permission (explained first), then turns phone ringtones on. */
+    val onTurnOnPhoneRingtones: () -> Unit = {},
 )
 
 @Composable
@@ -559,12 +567,13 @@ private fun DoneStep(
                     ) {
                         SummaryLine(R.plurals.restore_done_packs_missing, summary.packsMissing)
                     }
-                    if (summary.ringtonesPending >
-                        0
-                    ) {
-                        SummaryLine(R.plurals.restore_done_ringtones, summary.ringtonesPending)
+                    if (summary.ringtonesKept > 0) {
+                        SummaryLine(R.plurals.restore_done_ringtones_kept, summary.ringtonesKept)
                     }
                 }
+            }
+            summary.phoneRingtones?.takeIf { it.restored > 0 }?.let { ringtones ->
+                item { PhoneRingtonesCard(ringtones, summary.phoneRingtonesWaiting, actions.onTurnOnPhoneRingtones) }
             }
             step.reusableSource?.let { source ->
                 item { KeepForBackupsCard(kept = step.keptForBackups, onKeep = actions.onKeepForBackups) }
@@ -606,6 +615,49 @@ private fun DoneStep(
                 onClick = actions.onClose,
                 shapes = ButtonDefaults.shapes(),
             ) { Text(stringResource(R.string.restore_finish)) }
+        }
+    }
+}
+
+/**
+ * The restored phone ringtones (ADR 0057): how many came back, which have no Android contact on this phone (linked by
+ * hand from each chat), and the one tap that turns them on when they wait for it.
+ */
+@Composable
+private fun PhoneRingtonesCard(
+    ringtones: PhoneRingtoneRestore,
+    waiting: Boolean,
+    onTurnOn: () -> Unit,
+) {
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.restore_ringtones_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(pluralStringResource(R.plurals.restore_ringtones_back, ringtones.restored, ringtones.restored))
+            if (ringtones.missing.isNotEmpty()) {
+                val unnamed = stringResource(R.string.chat_unnamed)
+                Text(
+                    pluralStringResource(
+                        R.plurals.restore_ringtones_missing,
+                        ringtones.missing.size,
+                        ringtones.missing.joinToString { it ?: unnamed },
+                    ),
+                )
+            }
+            if (waiting) {
+                Text(stringResource(R.string.restore_ringtones_off))
+                FilledTonalButton(onClick = onTurnOn, shapes = ButtonDefaults.shapes()) {
+                    Text(stringResource(R.string.ringtone_turn_on))
+                }
+            } else if (ringtones.linked > 0) {
+                Text(
+                    pluralStringResource(R.plurals.restore_ringtones_written, ringtones.linked, ringtones.linked),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
         }
     }
 }

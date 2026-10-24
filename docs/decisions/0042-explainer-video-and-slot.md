@@ -65,7 +65,7 @@ directly.
 
 **Automated draft: explored, not built.** The three routes and why none is cheap today are in the brief. The
 recommended pipeline (Compose frames rendered offline under Robolectric, device footage for the system UI shots, an
-ffmpeg assembly script) is #195.
+ffmpeg assembly script) is #195, built in ADR 0060.
 
 The defaults the owner may change (voice, one or two cuts, muted autoplay, WhatsApp test accounts, the poster file)
 are in #194.
