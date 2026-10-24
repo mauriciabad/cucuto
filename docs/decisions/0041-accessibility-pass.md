@@ -94,6 +94,39 @@ test). They are verified on every build like the other goldens, so a layout that
   word per line. The haptic editor uses `CucutoTopBar` (a medium flexible top bar), so its title shows in full at
   200% and in Spanish.
 
+**Screens added on 2026-10-24 (#226).** The ringtone rules screen (ADR 0074), the ringtone step of the sound flow with
+"Other choices" and the header cover (ADR 0073), adding a chat from contacts and "Who is this?" (ADR 0065), the sample
+chat (ADR 0075), and the pickers' folding, search and dice (ADR 0072) were audited the same way.
+
+- *Every "Surprise me" pick is announced.* The top bar's dice is a polite live region whose state is the pick ("Picked
+  Buzz the bee"). It stays on screen through every roll, unlike the packs' sticky headers, the grid cells and the bar
+  that appears with the pick, and Compose only announces a live region whose own text or state changes. So one place
+  speaks for every dice and for "Re-roll"; the packs' dice stay quiet so a pick is never said twice.
+- *Saves are announced.* The ringtone picker's save button says "Saved" (a polite live region) in the moment before the
+  screen closes. In the sample chat the "Voice: …" line is a live region. The character picker already announces its
+  assignment in the header.
+- *Playing and paused in words.* The ringtone play button (picker, rules screen) says "Playing" or "Paused" instead of
+  the toggle's "on" and "off". The sample chat's characters and "Play a sample message" say "Playing" while a clip
+  plays.
+- *Smaller fixes.* The rules screen's "When" and fallback menus mark the chosen option as selected (the check mark was
+  drawn only), and its loading indicator has a label. The ringtone rule chips are a selectable group. The sample chat's
+  demo banner is one TalkBack stop, and its pack names are headings. "OnTertiary on tertiary" (the sample chat's
+  "Demo" label) joined `ContrastTest`.
+- *200%.* With large fonts the "Android default" and "Leave as is" header puts its words under the icon:
+  "Predeterminado de Android" was split mid-word in Spanish. Discover's character badges grow 1.5 times wider (the
+  row scrolls sideways), so the drawn vibration's "Follows the voice" and "No vibration" keep whole words. The drawing
+  itself is decorative and says "Vibration: own pattern, N s".
+- *Checks.* The base list already had the rules screen, the ringtone picker, both contacts screens, "Who is this?"
+  and the sample chat. `A11yFlowScreens` adds the states it left out: a picker with a folded pack and a pick, a
+  search, the ringtone step, "Android default" chosen, a ringtone pick, the rules screen without a chat, the sample
+  chat before any pack, and Discover with the three kinds of drawn vibration, with their 200% goldens.
+  `NewScreensSemanticsTest` asserts the headings, states, live regions and selections above.
+- *TalkBack walkthrough (owner, on the phone).* Add to #226's list: in each picker, fold and unfold a pack (hear
+  "Folded" or "Unfolded"), search, roll the dice from the top bar and from a pack and re-roll (hear "Picked …" once per
+  roll); the ringtone step (Skip, "Other choices", Save: hear "Saved"); the rules screen (play and pause, the radio
+  list, the "When" menus); "Add a chat from contacts" (explainer, the list's checkboxes, the add button);
+  "Who is this?"; the sample chat (choose a voice, play, the ringtone chips and the call).
+
 ## Consequences
 
 - New screens get the same checks by adding one line to `A11yScreens`.

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
@@ -83,7 +84,7 @@ import app.mauri.cucuto.picker.PickerNoMatches
 import app.mauri.cucuto.picker.PickerScrollToRoll
 import app.mauri.cucuto.picker.PickerSearchField
 import app.mauri.cucuto.picker.RerollButton
-import app.mauri.cucuto.picker.SurpriseButton
+import app.mauri.cucuto.picker.SurpriseAllButton
 import app.mauri.cucuto.picker.animateCellUnlessReduced
 import app.mauri.cucuto.picker.gridIndexOf
 import app.mauri.cucuto.ui.components.BottomActionBar
@@ -277,8 +278,8 @@ fun RingtonePickerContent(
                     TextButton(onClick = actions.onSkip) { Text(stringResource(R.string.ringtone_picker_skip)) }
                 }
                 if (!state.loading && state.packs.isNotEmpty() && !state.done) {
-                    SurpriseButton(
-                        label = stringResource(R.string.picker_surprise_all),
+                    SurpriseAllButton(
+                        picked = selected?.character?.name?.takeIf { state.rolled },
                         onClick = { actions.onSurprise(null) },
                     )
                 }
@@ -470,9 +471,11 @@ private fun Header(
         }
         if (state.modes.isNotEmpty()) {
             SectionTitle(R.string.ringtone_picker_rule)
+            // One rule at a time: TalkBack hears them as a group ("1 of 4").
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.selectableGroup(),
             ) {
                 for (mode in state.modes) {
                     FilterChip(
@@ -651,9 +654,22 @@ private fun SaveBar(
 ) {
     val name = state.selectedCharacter?.character?.name
     val choice = state.choice
+    val saved = stringResource(R.string.a11y_saved)
     BottomActionBar {
         if (state.rolled) RerollButton(onReroll)
-        Button(onClick = onSave, enabled = state.canSave, shapes = ButtonDefaults.shapes()) {
+        Button(
+            onClick = onSave,
+            enabled = state.canSave,
+            shapes = ButtonDefaults.shapes(),
+            // The screen lingers a moment after saving, then closes: TalkBack says the save landed (#226).
+            modifier =
+                Modifier.semantics {
+                    if (state.done) {
+                        liveRegion = LiveRegionMode.Polite
+                        stateDescription = saved
+                    }
+                },
+        ) {
             Text(
                 when {
                     choice == RingtoneChoice.ANDROID_DEFAULT && (state.canSave || state.done) -> {

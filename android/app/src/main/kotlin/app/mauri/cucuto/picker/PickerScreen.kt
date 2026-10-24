@@ -229,8 +229,8 @@ fun PickerContent(
                     },
                     actions = {
                         if (state.packs.isNotEmpty() && state.assigned == null) {
-                            SurpriseButton(
-                                label = stringResource(R.string.picker_surprise_all),
+                            SurpriseAllButton(
+                                picked = state.character(state.roll?.pick)?.name?.takeIf { state.rolled },
                                 onClick = { onSurprise(null) },
                             )
                         }

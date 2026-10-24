@@ -5,6 +5,11 @@
     <string name="a11y_refreshing">Refreshing</string>
     <string name="a11y_checking">Checking</string>
     <string name="a11y_playing">Playing</string>
+    <string name="a11y_paused">Paused</string>
+    <!-- A save that landed, said as the save button's state (#226). -->
+    <string name="a11y_saved">Saved</string>
+    <!-- The "Surprise me" dice's state after a roll, announced (#226). %1$s: the character, e.g. "Bleep the frog". -->
+    <string name="a11y_surprise_picked">Picked %1$s</string>
     <!-- A button's visible text, then what it does: "Simulate message. Play what this chat's next message will do" -->
     <string name="a11y_label_and_hint">%1$s. %2$s</string>
     <!-- The rhythm pad's TalkBack action: each double tap records one short beat. -->
