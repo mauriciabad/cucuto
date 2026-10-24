@@ -543,3 +543,23 @@ group; ADR 0073 and brand/motion.md updated.)
 > 2 "The explainer shows every time" NO. I completely disagree. this is making the UX worse and is a very bad idea.
 
 (Already changed by #337 / PR #344: the contacts explainer shows only while the permission is missing. #309 closed.)
+
+## 2026-10-24 (night): animated sprites, issue cleanup, v0.2.1 on the phone
+
+> animated sprites are not needed. is a feature that i dont want to spend time, unless it is already started and very few work is neded to finish it
+
+(Nothing had been built: the app never shows animated sprites. The lead stopped the agent it had just started, before it changed anything, and closed #324 as not planned.)
+
+> lets cleanup issues you and me. we'll decide wich ones are keept and wich ones not
+
+> go
+
+(20 open issues became 8. The phone checks #12, #157, #226, #43 and #46 moved into #329. #228 and #143 were folded into #273 (WhatsApp call ringtones), and #163 and #37 into #188 (the Google Cloud project); both are kept as v1.1 and the owner can close them to drop them. #332, #338 and #162 were closed.)
+
+> i rebooted
+
+(v0.2.1 was installed. After boot the module received the routing table with 12 keys and 12 voices, so the database upgrade from v0.1.7 kept every assignment.)
+
+> backup worked
+
+(Ticked on #329: restore onto a wiped phone.)
