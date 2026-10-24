@@ -128,6 +128,40 @@ class MigrationTest {
         }
 
     @Test
+    fun version5KeepsEveryRingtoneChoiceWithoutRulesOfItsOwn() =
+        runTest {
+            file.delete()
+            helper.createDatabase(4).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO contacts (id, displayName, isGroup, groupPolicy, shuffleSeed, createdAt, updatedAt) " +
+                        "VALUES (1, 'Ada', 0, 'GROUP', 7, 1, 1)",
+                )
+                connection.execSQL(
+                    "INSERT INTO phone_ringtones (contactId, packId, characterId, mode, variant, updatedAt, " +
+                        "followsVoice) VALUES (1, 'com.example.songs', 'bubblegum', 'FIXED', 'radio.ogg', 1, 0)",
+                )
+            }
+            helper.runMigrationsAndValidate(5, listOf(CucutoMigrations.MIGRATION_4_5)).close()
+            val db =
+                Room
+                    .databaseBuilder(ApplicationProvider.getApplicationContext(), CucutoDatabase::class.java, file.path)
+                    .setDriver(AndroidSQLiteDriver())
+                    .addMigrations(*CucutoMigrations.ALL)
+                    .build()
+            try {
+                val row = db.phoneRingtoneDao().get(1)!!
+                assertEquals(RingtoneMode.FIXED, row.mode)
+                assertEquals("radio.ogg", row.variant)
+                assertEquals(null, row.rules)
+                val rules = listOf(RingtoneRuleEntry("radio.ogg"))
+                db.phoneRingtoneDao().upsert(row.copy(mode = RingtoneMode.CUSTOM, rules = RingtoneRules.encode(rules)))
+                assertEquals(rules, RingtoneRules.decode(db.phoneRingtoneDao().get(1)!!.rules))
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun dataWrittenAtVersion1SurvivesOpeningWithRoom() =
         runTest {
             file.delete()

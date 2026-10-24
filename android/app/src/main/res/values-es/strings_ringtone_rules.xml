@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The ringtone rules screen (#288, ADR 0074): the pack's rules in plain words and a contact's own rules. -->
+<resources>
+    <string name="ringtone_rules_title">Reglas del tono</string>
+    <string name="ringtone_rules_open">Ver y editar las reglas</string>
+    <string name="ringtone_rules_now">Ahora suena: %1$s</string>
+    <string name="ringtone_rules_pack_section">Las reglas del pack</string>
+    <string name="ringtone_rules_day_note">El día va del amanecer al atardecer en tu lugar de día y noche (de 7:00 a 19:00 hasta que elijas uno).</string>
+    <string name="ringtone_rules_contact_section">Para %1$s</string>
+    <string name="ringtone_rules_one_version">Este tono tiene una sola versión, así que siempre suena esa.</string>
+    <string name="ringtone_rules_other_character">%1$s aún no suena para %2$s. Guárdalo primero en el selector de tonos y luego cambia aquí sus reglas.</string>
+    <string name="ringtone_rules_view_only">Para cambiarlas para un contacto, abre el selector de tonos desde su chat.</string>
+    <string name="ringtone_rules_missing">Este personaje ya no está instalado.</string>
+    <string name="ringtone_rule_custom">Tus propias reglas</string>
+    <string name="ringtone_rule_custom_body">Parte de las reglas del pack: apaga versiones o elige cuándo suena cada una.</string>
+    <string name="ringtone_rules_yours">Tus reglas: %1$s</string>
+    <string name="ringtone_rules_use_version">Sonar con %1$s</string>
+    <string name="ringtone_rules_when">Cuándo suena %1$s</string>
+    <string name="ringtone_rules_last_on">Al menos una versión sigue activa.</string>
+    <string name="ringtone_rules_fallback_label">Cuando no se cumple ninguna</string>
+    <string name="ringtone_rules_save">Guardar</string>
+    <string name="ringtone_rules_reset">Volver a las reglas del pack</string>
+    <string name="ringtone_rules_reset_done">Has vuelto a las reglas del pack</string>
+    <string name="ringtone_rules_failed">No se han podido guardar las reglas. Inténtalo de nuevo.</string>
+
+    <!-- Plain words. "Suena de día", "Suena en primavera y verano", "Suena cada sábado y domingo". -->
+    <string name="ringtone_rules_rings">Suena %1$s</string>
+    <string name="ringtone_rules_always_rings">Suena siempre</string>
+    <string name="ringtone_rules_rest">Suena el resto del tiempo</string>
+    <string name="ringtone_rules_rest_short">el resto del tiempo</string>
+    <string name="ringtone_rules_never">Nunca suena: %1$s va antes y suena a las mismas horas</string>
+    <string name="ringtone_rules_fallback">Cuando no se cumple ninguna, suena %1$s.</string>
+    <string name="ringtone_rules_always">Siempre %1$s</string>
+    <!-- One version and when it rings: "Live de día". -->
+    <string name="ringtone_rules_item">%1$s %2$s</string>
+    <string name="ringtone_rules_by_day">de día</string>
+    <string name="ringtone_rules_at_night">de noche</string>
+    <string name="ringtone_rules_time_range">de %1$s a %2$s</string>
+    <string name="ringtone_rules_in">en %1$s</string>
+    <string name="ringtone_rules_every">cada %1$s</string>
+    <string name="ringtone_rules_spring">primavera</string>
+    <string name="ringtone_rules_summer">verano</string>
+    <string name="ringtone_rules_autumn">otoño</string>
+    <string name="ringtone_rules_winter">invierno</string>
+
+    <!-- The "When" menu of a version in "Your own rules". -->
+    <string name="ringtone_rules_choice_any">A cualquier hora</string>
+    <string name="ringtone_rules_choice_day">De día</string>
+    <string name="ringtone_rules_choice_night">De noche</string>
+    <string name="ringtone_rules_choice_spring">En primavera</string>
+    <string name="ringtone_rules_choice_summer">En verano</string>
+    <string name="ringtone_rules_choice_autumn">En otoño</string>
+    <string name="ringtone_rules_choice_winter">En invierno</string>
+    <string name="ringtone_rules_choice_pack">Como dice el pack: %1$s</string>
+
+    <!-- Packs: a character's rules. -->
+    <string name="packs_ringtone_rules">Reglas</string>
+    <string name="packs_ringtone_rules_label">Reglas de %1$s</string>
+</resources>

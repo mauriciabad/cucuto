@@ -48,6 +48,14 @@
       "ringtone": { "packId": "com.example.private.songs.day", "characterId": "bubblegum", "rule": { "mode": "random" } }
     },
     {
+      "id": "c5",
+      "displayName": "Eva",
+      "phoneNumbers": ["+34600999000"],
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "34600999000@s.whatsapp.net" }],
+      "androidContact": { "lookupKey": "0r5-MNO", "displayName": "Eva" },
+      "ringtone": { "packId": "com.example.private.songs.day", "characterId": "bubblegum", "rule": { "mode": "custom", "rules": [{ "variant": "characters/bubblegum/ringtones/radio.ogg" }, { "variant": "characters/bubblegum/ringtones/live.ogg", "when": { "time": "day", "season": ["spring", "summer"] } }] } }
+    },
+    {
       "id": "c1",
       "displayName": "Family",
       "isGroup": true,

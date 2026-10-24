@@ -9,6 +9,8 @@ import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.data.di.ApplicationScope
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
@@ -384,6 +386,7 @@ class PhoneRingtones
                         } else {
                             null
                         },
+                    rules = current.rules.takeIf { mode == RingtoneMode.CUSTOM },
                     updatedAt = clock.now(),
                 ),
             )
@@ -392,8 +395,8 @@ class PhoneRingtones
         /**
          * The ringtone picker's choice (#53, ADR 0063): the character that rings for [contactId] ([packId] and
          * [characterId] null for its voice's), whether it keeps [followsVoice] (the user picked the voice's own
-         * character, or left the kept one as it was) or is the user's own pick, how its variant is picked, and the
-         * variant for [RingtoneMode.FIXED].
+         * character, or left the kept one as it was) or is the user's own pick, how its variant is picked, the
+         * variant for [RingtoneMode.FIXED], and the contact's own [rules] for [RingtoneMode.CUSTOM] (ADR 0074).
          */
         suspend fun choose(
             contactId: Long,
@@ -402,6 +405,7 @@ class PhoneRingtones
             mode: RingtoneMode,
             variant: String?,
             followsVoice: Boolean = packId == null || characterId == null,
+            rules: List<RingtoneRuleEntry> = emptyList(),
         ) {
             val own = packId != null && characterId != null
             dao.upsert(
@@ -413,6 +417,7 @@ class PhoneRingtones
                     variant = if (mode == RingtoneMode.FIXED) variant else null,
                     updatedAt = clock.now(),
                     followsVoice = followsVoice || !own,
+                    rules = if (mode == RingtoneMode.CUSTOM) RingtoneRules.encode(rules) else null,
                 ),
             )
         }

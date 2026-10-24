@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The ringtone rules screen (#288, ADR 0074): the pack's rules in plain words and a contact's own rules. -->
+<resources>
+    <string name="ringtone_rules_title">Ringtone rules</string>
+    <string name="ringtone_rules_open">See and edit the rules</string>
+    <string name="ringtone_rules_now">Ringing now: %1$s</string>
+    <string name="ringtone_rules_pack_section">The pack\'s rules</string>
+    <string name="ringtone_rules_day_note">Day runs from sunrise to sunset at your day and night place (7:00 to 19:00 until you choose one).</string>
+    <string name="ringtone_rules_contact_section">For %1$s</string>
+    <string name="ringtone_rules_one_version">This ringtone has one version, so it always rings.</string>
+    <string name="ringtone_rules_other_character">%1$s doesn\'t ring for %2$s yet. Save it in the ringtone picker first, then change its rules here.</string>
+    <string name="ringtone_rules_view_only">To change them for one contact, open the ringtone picker from the contact\'s chat.</string>
+    <string name="ringtone_rules_missing">This character is no longer installed.</string>
+    <string name="ringtone_rule_custom">Your own rules</string>
+    <string name="ringtone_rule_custom_body">Start from the pack\'s rules: turn versions off or choose when each one rings.</string>
+    <string name="ringtone_rules_yours">Your rules: %1$s</string>
+    <string name="ringtone_rules_use_version">Ring with %1$s</string>
+    <string name="ringtone_rules_when">When %1$s rings</string>
+    <string name="ringtone_rules_last_on">At least one version stays on.</string>
+    <string name="ringtone_rules_fallback_label">When none of these apply</string>
+    <string name="ringtone_rules_save">Save</string>
+    <string name="ringtone_rules_reset">Reset to the pack\'s rules</string>
+    <string name="ringtone_rules_reset_done">Back to the pack\'s rules</string>
+    <string name="ringtone_rules_failed">Couldn\'t save the rules. Try again.</string>
+
+    <!-- Plain words. "Rings by day", "Rings in spring and summer", "Rings every Saturday and Sunday". -->
+    <string name="ringtone_rules_rings">Rings %1$s</string>
+    <string name="ringtone_rules_always_rings">Always rings</string>
+    <string name="ringtone_rules_rest">Rings the rest of the time</string>
+    <string name="ringtone_rules_rest_short">the rest of the time</string>
+    <string name="ringtone_rules_never">Never rings: %1$s comes first at the same times</string>
+    <string name="ringtone_rules_fallback">When none of these apply, %1$s rings.</string>
+    <string name="ringtone_rules_always">Always %1$s</string>
+    <!-- One version and when it rings: "Live by day". -->
+    <string name="ringtone_rules_item">%1$s %2$s</string>
+    <string name="ringtone_rules_by_day">by day</string>
+    <string name="ringtone_rules_at_night">at night</string>
+    <string name="ringtone_rules_time_range">from %1$s to %2$s</string>
+    <string name="ringtone_rules_in">in %1$s</string>
+    <string name="ringtone_rules_every">every %1$s</string>
+    <string name="ringtone_rules_spring">spring</string>
+    <string name="ringtone_rules_summer">summer</string>
+    <string name="ringtone_rules_autumn">autumn</string>
+    <string name="ringtone_rules_winter">winter</string>
+
+    <!-- The "When" menu of a version in "Your own rules". -->
+    <string name="ringtone_rules_choice_any">Any time</string>
+    <string name="ringtone_rules_choice_day">By day</string>
+    <string name="ringtone_rules_choice_night">At night</string>
+    <string name="ringtone_rules_choice_spring">In spring</string>
+    <string name="ringtone_rules_choice_summer">In summer</string>
+    <string name="ringtone_rules_choice_autumn">In autumn</string>
+    <string name="ringtone_rules_choice_winter">In winter</string>
+    <string name="ringtone_rules_choice_pack">As the pack says: %1$s</string>
+
+    <!-- Packs: a character's rules. -->
+    <string name="packs_ringtone_rules">Rules</string>
+    <string name="packs_ringtone_rules_label">Rules of %1$s</string>
+</resources>

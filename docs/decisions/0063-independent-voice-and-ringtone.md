@@ -1,7 +1,7 @@
 # 0063. Message voice and ringtone are independent choices; ringtone previews ring like the call
 
 - Status: accepted (owner updates 2026-10-24, #245, #246 and #242; the defaults below can be overridden on those
-  issues)
+  issues); `phone_ringtones` gains `rules` in [ADR 0074](0074-ringtone-rules-screen.md) (database version 5, #288)
 - Date: 2026-10-24
 - Issues: #245 (independent choices, capability filters), #246 (ringtone previews), #242 (preview length, pause)
 - Amends: [ADR 0017](0017-home-recent-senders-and-picker.md) (picker), [ADR 0039](0039-phone-ringtones-on-the-device.md)

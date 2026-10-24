@@ -54,6 +54,7 @@ fun PackDetailScreen(
     onPackMissing: () -> Unit,
     onDuplicate: (packId: String) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenRules: (characterId: String) -> Unit = {},
     viewModel: PacksViewModel = parentViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -72,6 +73,7 @@ fun PackDetailScreen(
             }
         },
         onDuplicate = { onDuplicate(packId) },
+        onOpenRules = onOpenRules,
         modifier = modifier,
     )
 }
@@ -85,6 +87,7 @@ internal fun PackDetailContent(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
     onDuplicate: (() -> Unit)? = null,
+    onOpenRules: (characterId: String) -> Unit = {},
 ) {
     val player = rememberClipPlayer()
     val ringtones = rememberRingtonePlayback()
@@ -140,6 +143,7 @@ internal fun PackDetailContent(
                             key = "${pack.id}/${character.id}",
                             clips = player,
                             ringtones = ringtones,
+                            onOpenRules = { onOpenRules(character.id) },
                         )
                     }
                 }

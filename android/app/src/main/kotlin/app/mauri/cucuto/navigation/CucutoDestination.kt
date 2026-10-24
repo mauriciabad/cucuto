@@ -55,6 +55,17 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey,
     ) : CucutoDestination
 
+    /**
+     * The rules of a character's ringtone versions (#288, ADR 0074): from the ringtone picker for [chat], where they
+     * can be changed for it, or from Packs with no chat, where they are only shown.
+     */
+    @Serializable
+    data class RingtoneRules(
+        val packId: String,
+        val characterId: String,
+        val chat: ChatKey? = null,
+    ) : CucutoDestination
+
     /** The pack creator (#47); with [sourcePackId], a copy of that installed pack to edit ("duplicate and edit"). */
     @Serializable
     data class Creator(
