@@ -27,8 +27,9 @@ internal sealed interface VibrationSwap<out E : Any> {
  * - [Haptic.Auto] never reaches here (the router resolves it against the chosen clip with `forClip`); if it did, it
  *   keeps the original.
  *
- * The device's [HapticCapabilities] are set once, with [useCapabilities], before the first custom haptic; until then
- * a custom haptic keeps the original vibration. Effects are immutable, so each haptic is built once and cached
+ * The device's [HapticCapabilities] are set once, with [useCapabilities], from the background thread after boot
+ * ([CapabilitiesLoader], #190); until then a custom haptic keeps the original vibration, and the notification path
+ * only does a volatile read of [capabilities]. Effects are immutable, so each haptic is built once and cached
  * (bounded LRU, failures included): a repeated alert costs one map lookup and no allocation. The key is the haptic's
  * value, so a republished table whose haptics did not change reuses the effects already built.
  *

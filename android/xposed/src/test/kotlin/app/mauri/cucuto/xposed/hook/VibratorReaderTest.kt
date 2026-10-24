@@ -1,6 +1,5 @@
 package app.mauri.cucuto.xposed.hook
 
-import android.content.Context
 import app.mauri.cucuto.core.haptics.HapticCapabilities
 import app.mauri.cucuto.core.routing.HapticPreset
 import org.junit.Assert.assertEquals
@@ -10,47 +9,41 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VibratorReaderTest {
-    @Suppress("unused")
-    private open class BaseHelper {
-        private val mContext: Context? = null
-    }
-
-    @Suppress("unused")
-    private class DerivedHelper : BaseHelper() {
-        private val mOtherContext: Context? = null
-    }
-
-    @Suppress("unused")
-    private class RenamedHelper {
-        private val name: String = "helper"
-        private val context: Context? = null
-    }
-
-    @Suppress("unused")
-    private class NoContextHelper {
-        private val name: String = "helper"
-    }
-
     @Test
-    fun findsTheHelpersContextFieldUpTheHierarchy() {
-        assertTrue(VibratorReader(BaseHelper::class.java).usable)
-        assertTrue(VibratorReader(DerivedHelper::class.java).usable)
-        assertTrue(VibratorReader(RenamedHelper::class.java).usable)
-    }
-
-    @Test
-    fun aHelperWithoutContextIsNotUsable() {
-        assertFalse(VibratorReader(NoContextHelper::class.java).usable)
-        assertNull(VibratorReader(NoContextHelper::class.java).capabilities(NoContextHelper()))
+    fun theContextIsNotAskedBeforeTheVibratorServiceIsRegistered() {
+        // The system context caches its VibratorManager: one created before the service exists stays broken.
+        var asked = 0
+        val reader =
+            VibratorReader(context = {
+                asked++
+                null
+            }, serviceRegistered = { false })
+        assertNull(reader.read())
+        assertEquals(0, asked)
     }
 
     @Test
     fun readingNeverThrows() {
-        val reader = VibratorReader(BaseHelper::class.java)
-        // A null Context, a missing helper and an object of the wrong class all read as "unknown".
-        assertNull(reader.capabilities(BaseHelper()))
-        assertNull(reader.capabilities(null))
-        assertNull(reader.capabilities("not a helper"))
+        assertNull(VibratorReader(context = { null }, serviceRegistered = { true }).read())
+        assertNull(VibratorReader(context = { error("no system context yet") }, serviceRegistered = { true }).read())
+        assertNull(VibratorReader(context = { null }, serviceRegistered = { error("no ServiceManager") }).read())
+    }
+
+    @Test
+    fun vibratorInfoIsReadyOnceEveryVibratorIsLoaded() {
+        assertTrue(VibratorReader.infoReady(intArrayOf(1)) { true })
+        assertTrue(VibratorReader.infoReady(intArrayOf(1, 2)) { true })
+        // A NullVibrator (info not loaded yet) for any id means "retry later".
+        assertFalse(VibratorReader.infoReady(intArrayOf(1, 2)) { it == 1 })
+        assertFalse(VibratorReader.infoReady(null) { true })
+        // No vibrator at all is a known answer.
+        assertTrue(VibratorReader.infoReady(intArrayOf()) { false })
+    }
+
+    @Test
+    fun theServiceCheckIsFalseOffTheDevice() {
+        // android.jar's stubs have no ServiceManager: the check degrades to "not registered", it never throws.
+        assertFalse(vibratorManagerRegistered())
     }
 
     @Test
