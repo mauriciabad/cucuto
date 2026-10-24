@@ -386,8 +386,9 @@ In the website (PWA):
 - A **Create** page, installable as a PWA and usable offline (service worker, web app manifest). Where the browser supports file handling, the installed PWA opens pack files directly (`file_handlers` for `application/zip` / `.zip`; owner update 2026-10-23).
 - Audio is decoded and trimmed with the Web Audio API and recorded with MediaRecorder. Encode with WebCodecs where the browser supports the codec, otherwise fall back to WAV (a WebAssembly encoder would need `'wasm-unsafe-eval'` in the site's CSP; [ADR 0038](decisions/0038-web-pack-creator.md)). Layout, file names and clip processing are the shared Kotlin of both creators (`authoring` in `shared/pack-spec`).
 - Images are cropped on a canvas and written as JPEG XL where the browser can encode it, otherwise WebP, PNG or JPEG (ADR 0038).
-- Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews.
-- Haptic patterns are edited visually. Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
+- Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews, the same as `packer index` (shared `RepositoryIndexer`), with steps for GitHub Pages and other hosts (#191, [ADR 0058](decisions/0058-create-page-tools.md)). A bundle tool combines finished packs like `packer bundle`.
+- Drafts are saved in the browser (IndexedDB) after every change, and an existing `.soundpack.zip` opens as a draft with the same pass-through rules as the app's duplicate-and-edit (ADR 0058).
+- Haptic patterns are edited visually, with the app's "Copy for AI" and "Paste pattern" (shared Kotlin, ADR 0058). Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
 
 Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. One Kotlin implementation (`shared/pack-spec`) validates everywhere: in `packer`, in the app, and on the website compiled to JavaScript (owner, #60: option 1; Kotlin/JS rather than Wasm per ADR 0022, #116). It runs against the same fixtures in CI, so a pack made anywhere imports everywhere. Whether more of the PWA creator can be shared Kotlin (Kotlin/Wasm) is spike #117.
 
@@ -478,7 +479,7 @@ The Android side is Kotlin, Jetpack Compose and the libxposed API 102 in one Gra
 | Audio in app | `SoundPool` for previews (the app is in the foreground, so Android 17's background limits do not apply) | Decoding with `MediaExtractor` and `MediaCodec` for the auto-haptic analysis |
 | Hooking | [libxposed API](https://github.com/libxposed/api) 102, `compileOnly` | `minApiVersion` and `targetApiVersion` 102; modules targeting 102 cannot call the legacy Xposed API, so don't |
 | Module scope | System Framework only: `system` in `scope.list`, which is `system_server` for modern modules ([ADR 0002](decisions/0002-xposed-scope-system.md); `android` would be wrong) | Never scope WhatsApp |
-| Root utilities | libsu | Optional: read WhatsApp's contact database, run diagnostics |
+| Root utilities | None for now (libsu was planned) | Cucuto reads none of WhatsApp's files, so the root import that needed libsu is not built. Default; the owner can override it on #254 ([ADR 0065](decisions/0065-chats-before-they-message.md)). |
 | Website | SvelteKit (Svelte 5) with the static adapter, TypeScript, service worker and web app manifest for the PWA; Bun for installs and scripts (owner, #63; #115) | Deployed by GitHub Actions to GitHub Pages (#55) |
 | Tests | JUnit and Turbine (unit), Compose UI tests, Playwright for the site, a device test checklist |  |
 | CI | GitHub Actions: Android build, lint and tests; web build; demo packs and repository index; media allowlist guard; release APK on tag |  |
@@ -507,7 +508,7 @@ How the app and the module talk:
 - **Clip files (system to app):** an exported read-only `ContentProvider` at `content://<appId>.clips/<pack>/<character>/<clip>`. It checks the calling UID and allows only the system and the process that actually opens notification sounds (historically SystemUI's ringtone player; confirm in M0). It refuses everyone else.
 - **Seen senders (module to app):** the module posts a lightweight event (package, conversation key, display name, group flag) that the app records. The event goes through the provider or a protected broadcast, so the home screen can offer "recent senders" for one-tap assignment.
 
-Contact identity: the stable key is `package + conversation key`. Prefer the notification's conversation shortcut ID if M0 shows it is the WhatsApp JID; otherwise fall back to the MessagingStyle conversation title. With root, the app can optionally read WhatsApp's local contact database to list all chats and groups with their JIDs; treat that schema as unstable and fail softly.
+Contact identity: the stable key is `package + conversation key`. Prefer the notification's conversation shortcut ID if M0 shows it is the WhatsApp JID; otherwise fall back to the MessagingStyle conversation title. Contacts who have not written yet can be added from Android's contacts: WhatsApp's own sync adapter keeps an entry with a phone JID for each WhatsApp contact saved on the phone. Cucuto reads those entries (`READ_CONTACTS`, already used for phone ringtones), never WhatsApp's database. The chat's `@lid` is linked by name on its first notification. Groups appear when they first notify. This is a default the owner can override on #254 ([ADR 0065](decisions/0065-chats-before-they-message.md)); the kickoff plan was a root read of WhatsApp's local database.
 
 ## Milestones and acceptance criteria
 
@@ -538,7 +539,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M2 — Contacts and senders
 
 - [ ] "Recent senders" feed from the module, with one-tap assignment.
-- [ ] Optional root import of all WhatsApp chats and groups.
+- [ ] Add chats before they message, from Android's contacts (WhatsApp's own entries there), not from WhatsApp's database. Groups come from notifications. Default; owner can override on #254 ([ADR 0065](decisions/0065-chats-before-they-message.md); was "optional root import of all WhatsApp chats and groups").
 - [ ] Group policy: one character per group, or per sender inside a group.
 - [ ] WhatsApp Business supported with the same flows.
 
@@ -582,8 +583,8 @@ A throwaway module plus a debug screen, run on the owner's phone.
 
 - [ ] In-app creator: pack details, characters, sprite crop, import or record clips, waveform trim, normalize, haptics, validate, export or install.
 - [ ] Duplicate-and-edit for installed packs.
-- [x] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser (#48, [ADR 0038](decisions/0038-web-pack-creator.md); covers, bundles and custom haptics follow).
-- [ ] "Host your own repository" helper that outputs a folder with `repository.json` and previews.
+- [x] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser (#48, [ADR 0038](decisions/0038-web-pack-creator.md); covers, bundles, custom haptics, drafts and editing existing packs in #191, [ADR 0058](decisions/0058-create-page-tools.md)).
+- [x] "Host your own repository" helper that outputs a folder with `repository.json` and previews (#191, ADR 0058).
 - [ ] Golden test packs run through `shared/pack-spec` on the JVM (packer), on Android and in the browser build used by the website, all green in CI (#116).
 
 ### M9 — Ringtones (v1, before the M7 release)

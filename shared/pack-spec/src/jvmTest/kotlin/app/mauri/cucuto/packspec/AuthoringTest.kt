@@ -7,6 +7,8 @@ import app.mauri.cucuto.packspec.authoring.DraftFile
 import app.mauri.cucuto.packspec.authoring.DraftProblem
 import app.mauri.cucuto.packspec.authoring.PackAssembler
 import app.mauri.cucuto.packspec.authoring.PackDraft
+import app.mauri.cucuto.packspec.authoring.RingtoneDraft
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -114,6 +116,45 @@ class AuthoringTest {
         assertFalse(pack.manifestJson.startsWith("﻿"))
         m.characters.forEach { assertTrue(slug.matches(it.id)) }
         pack.files.forEach { assertFalse(PackPaths.isUnsafe(it.path) || PackPaths.isInvalidName(it.path), it.path) }
+    }
+
+    @Test
+    fun `pass-through data from a duplicated pack is written unchanged`() {
+        val day = Ringtone(file = "ignored", label = "Pond song (day)", tags = listOf("day"), `when` = When(time = JsonPrimitive("day")), fadeInMs = 500)
+        val night = Ringtone(file = "ignored", label = "Night", loop = JsonPrimitive(false), weight = 3.0)
+        val base = draft()
+        val song =
+            CharacterDraft(
+                id = "song",
+                name = "Song",
+                sprite = DraftFile("song.png", "png"),
+                seedColor = null,
+                clips = emptyList(),
+                description = " A pond song. ",
+                tags = listOf("pond"),
+                spriteAnimated = DraftFile("song.gif", "gif"),
+                ringtones = listOf(RingtoneDraft(DraftFile("r1.ogg", "ogg"), day), RingtoneDraft(DraftFile("r1.ogg", "ogg"), night)),
+            )
+        val frog = base.characters[0].let { c -> c.copy(clips = c.clips.mapIndexed { i, clip -> if (i == 0) clip.copy(`when` = When(time = JsonPrimitive("night"))) else clip }) }
+        val draft = base.copy(homepage = "https://example.com", tags = listOf("birds"), characters = listOf(frog, song))
+        assertEquals(emptyList<DraftProblem>(), PackAssembler.problems(draft), "a song-only character needs no clip")
+
+        val pack = PackAssembler.assemble(draft)
+        val m = pack.manifest
+        assertEquals("https://example.com", m.homepage)
+        assertEquals(listOf("birds"), m.tags)
+        assertEquals("night", (m.characters[0].clips[0].`when`?.time as JsonPrimitive).content)
+        val s = m.characters[1]
+        assertEquals("A pond song.", s.description)
+        assertEquals(listOf("pond"), s.tags)
+        assertEquals("characters/song/sprite-anim.gif", s.spriteAnimated)
+        // One file for both variants, named after the first; everything else as it was.
+        val path = "characters/song/ringtones/pond-song-day.ogg"
+        assertEquals(listOf(day.copy(file = path), night.copy(file = path)), s.ringtones)
+        assertEquals(1, pack.files.count { it.key == "r1.ogg" })
+
+        val wrong = draft.copy(characters = listOf(song.copy(spriteAnimated = DraftFile("still.png", "png"))))
+        assertEquals(listOf(DraftProblem(DraftProblem.Kind.UNSUPPORTED_FILE, 0)), PackAssembler.problems(wrong))
     }
 
     @Test
