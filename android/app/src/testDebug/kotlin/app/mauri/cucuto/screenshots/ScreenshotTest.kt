@@ -138,6 +138,9 @@ abstract class ScreenshotTest(
      * is the image's position in the store listing (light theme only), written only by `exportStoreScreenshots`.
      * [settleMillis] of test-clock time pass before the capture: enough for entry animations and sheets to rest.
      * A [fontScale] above 1 records a large-font golden instead, in the light theme, in English and in Spanish.
+     * [animated] marks a screen with a never-ending animation (the onboarding's moving wavy progress bar): its golden
+     * tolerates [ANIMATED_CHANGE_THRESHOLD] of changed pixels, because that animation's phase in the capture is not
+     * the same on every run.
      */
     @OptIn(ExperimentalRoborazziApi::class)
     protected fun screenshot(
@@ -146,6 +149,7 @@ abstract class ScreenshotTest(
         store: Int? = null,
         settleMillis: Long = SETTLE_MILLIS,
         fontScale: Float = 1f,
+        animated: Boolean = false,
         content: @Composable () -> Unit,
     ) {
         val exportDir = System.getProperty(WEB_EXPORT_PROPERTY).orEmpty()
@@ -174,6 +178,7 @@ abstract class ScreenshotTest(
         compose.waitForIdle()
         redrawEverything()
 
+        val goldenOptions = if (animated) animatedGoldenOptions else goldenOptions
         if (largeFont) {
             val language = if (variant.isEnglish) "" else "-${variant.language}"
             captureScreenRoboImage("$name-font${(fontScale * PERCENT).roundToInt()}$language-light.png", goldenOptions)
@@ -269,6 +274,20 @@ abstract class ScreenshotTest(
          */
         private val goldenOptions by lazy {
             RoborazziOptions(recordOptions = RoborazziOptions.RecordOptions(resizeScale = GOLDEN_SCALE))
+        }
+
+        /**
+         * At most 0.3 % of the pixels changed (about 1,100 of the golden's 366,000): the moving wave of a wavy
+         * progress bar changes about 0.1 % from run to run; any real change to the screen is larger.
+         */
+        private const val ANIMATED_CHANGE_THRESHOLD = 0.003f
+
+        /** [goldenOptions] for a screen with a never-ending animation (`animated`). */
+        private val animatedGoldenOptions by lazy {
+            RoborazziOptions(
+                compareOptions = RoborazziOptions.CompareOptions(changeThreshold = ANIMATED_CHANGE_THRESHOLD),
+                recordOptions = RoborazziOptions.RecordOptions(resizeScale = GOLDEN_SCALE),
+            )
         }
 
         /** Website images: always written, 493 px wide (twice the largest slot on the home page). */

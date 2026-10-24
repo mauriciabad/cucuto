@@ -13,12 +13,15 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Restored phone ringtones finding their Android contacts on a new phone, or on the same one (ADR 0057). */
-class RingtoneRelinkerTest {
+/**
+ * Restored contacts (Android links and phone ringtones) finding their Android contacts on a new phone, or on the same
+ * one (ADR 0057; ADR 0013's amendment for #43).
+ */
+class ContactRelinkerTest {
     private val contacts = FakeContacts()
     private val links = FakeLinks()
     private val store = FakeStore()
-    private val relinker = RingtoneRelinker(contacts, links, store) { 42L }
+    private val relinker = ContactRelinker(contacts, links, store) { 42L }
 
     private fun person(
         key: String,
@@ -36,7 +39,7 @@ class RingtoneRelinkerTest {
             links.keys[1] = "0r1-ABC"
             links.numbers[1] = listOf("+34600111222")
 
-            val result = relinker.relink(RestoredRingtone(1, "Ada", androidName = "Ada Lovelace"))
+            val result = relinker.relink(RestoredLink(1, "Ada", androidName = "Ada Lovelace"))
             assertEquals(RelinkOutcome.LINKED, result.outcome)
             assertEquals("new-key-ada", links.keys[1])
         }
@@ -47,7 +50,7 @@ class RingtoneRelinkerTest {
             person("0r1-ABC", "Ada", "+34600111222")
             links.keys[1] = "0r1-ABC"
             links.numbers[1] = listOf("+34600111222")
-            assertEquals(RelinkOutcome.KEPT, relinker.relink(RestoredRingtone(1)).outcome)
+            assertEquals(RelinkOutcome.KEPT, relinker.relink(RestoredLink(1)).outcome)
             assertEquals(0, links.linkCalls)
         }
 
@@ -58,7 +61,7 @@ class RingtoneRelinkerTest {
             person("ada-here", "Ada", "+34600111222")
             links.keys[1] = "0r1-ABC"
             links.numbers[1] = listOf("+34600111222")
-            val result = relinker.relink(RestoredRingtone(1))
+            val result = relinker.relink(RestoredLink(1))
             assertEquals(RelinkOutcome.LINKED, result.outcome)
             assertEquals("ada-here", result.lookupKey)
         }
@@ -69,7 +72,7 @@ class RingtoneRelinkerTest {
             person("home", "Casa", "+34930000000")
             person("ada", "Ada Lovelace", "+34930000000")
             links.numbers[1] = listOf("+34930000000")
-            val result = relinker.relink(RestoredRingtone(1, androidName = "ada lovelace"))
+            val result = relinker.relink(RestoredLink(1, androidName = "ada lovelace"))
             assertEquals("ada", result.lookupKey)
         }
 
@@ -78,11 +81,11 @@ class RingtoneRelinkerTest {
         runTest {
             person("0r2-DEF", "Bruno")
             links.keys[2] = "0r2-DEF"
-            assertEquals(RelinkOutcome.KEPT, relinker.relink(RestoredRingtone(2, androidName = "Bruno")).outcome)
+            assertEquals(RelinkOutcome.KEPT, relinker.relink(RestoredLink(2, androidName = "Bruno")).outcome)
 
             person("bruno-here", "Carla")
             links.keys[3] = "gone"
-            val byName = relinker.relink(RestoredRingtone(3, androidName = "Carla"))
+            val byName = relinker.relink(RestoredLink(3, androidName = "Carla"))
             assertEquals(RelinkOutcome.LINKED, byName.outcome)
             assertEquals("bruno-here", links.keys[3])
         }
@@ -95,7 +98,7 @@ class RingtoneRelinkerTest {
             person("twin-2", "Twin")
             links.keys[1] = "0r1-ABC"
             links.numbers[1] = listOf("+34600111222")
-            val result = relinker.relink(RestoredRingtone(1, androidName = "Twin", writtenUri = "content://x"))
+            val result = relinker.relink(RestoredLink(1, androidName = "Twin", writtenUri = "content://x"))
             assertEquals(RelinkOutcome.MISSING, result.outcome)
             assertNull(result.lookupKey)
             assertTrue(1 in links.keys)
@@ -111,7 +114,7 @@ class RingtoneRelinkerTest {
             links.keys[1] = "0r1-ABC"
             links.numbers[1] = listOf("+34600111222")
             val item =
-                RestoredRingtone(
+                RestoredLink(
                     1,
                     originalRingtone = "content://media/internal/audio/media/31",
                     writtenUri = "content://media/external/audio/media/1042",
@@ -140,7 +143,7 @@ class RingtoneRelinkerTest {
         runTest {
             person("ada", "Ada", "+34600111222", ringtone = null)
             links.numbers[1] = listOf("+34600111222")
-            val result = relinker.relink(RestoredRingtone(1, writtenUri = "content://media/external/audio/media/1042"))
+            val result = relinker.relink(RestoredLink(1, writtenUri = "content://media/external/audio/media/1042"))
             assertEquals(RelinkOutcome.LINKED, result.outcome)
             assertFalse(result.undoSeeded)
             assertTrue(store.writes.isEmpty())
@@ -150,14 +153,38 @@ class RingtoneRelinkerTest {
     fun `the pending list survives a round trip through settings and shrugs off garbage`() {
         val items =
             listOf(
-                RestoredRingtone(1, "Ada", "Ada L.", "content://o", "content://w"),
-                RestoredRingtone(2),
+                RestoredLink(1, "Ada", "Ada L.", originalRingtone = "content://o", writtenUri = "content://w"),
+                RestoredLink(2),
+                RestoredLink(4, "Bruno", "Bruno", ringtone = false),
             )
-        assertEquals(items, RestoredRingtone.decode(RestoredRingtone.encode(items)))
-        assertEquals(emptyList<RestoredRingtone>(), RestoredRingtone.decode("{not json"))
-        assertEquals(emptyList<RestoredRingtone>(), RestoredRingtone.decode(null))
-        assertEquals(listOf(RestoredRingtone(3)), RestoredRingtone.decode("""[{"contactId":3},{"name":"x"}]"""))
+        assertEquals(items, RestoredLink.decode(RestoredLink.encode(items)))
+        assertEquals(emptyList<RestoredLink>(), RestoredLink.decode("{not json"))
+        assertEquals(emptyList<RestoredLink>(), RestoredLink.decode(null))
+        // Lists written before #43 have no "ringtone": they held phone ringtones only.
+        assertEquals(listOf(RestoredLink(3)), RestoredLink.decode("""[{"contactId":3},{"name":"x"}]"""))
+        assertEquals(listOf(RestoredLink(5)), RestoredLink.decode("""[{"contactId":5,"ringtone":"no"}]"""))
     }
+
+    @Test
+    fun `a contact restored with only its Android link is matched the same way and never adopts an undo record`() =
+        runTest {
+            person("new-key-bruno", "Bruno", "+34600333444", ringtone = "content://media/external/audio/media/1042")
+            links.keys[2] = "0r2-DEF"
+            links.numbers[2] = listOf("+34600333444")
+            val item =
+                RestoredLink(
+                    2,
+                    "Bruno",
+                    androidName = "Bruno",
+                    ringtone = false,
+                    writtenUri = "content://media/external/audio/media/1042",
+                )
+            val result = relinker.relink(item)
+            assertEquals(RelinkOutcome.LINKED, result.outcome)
+            assertEquals("new-key-bruno", links.keys[2])
+            assertFalse(result.undoSeeded)
+            assertTrue(store.writes.isEmpty())
+        }
 
     private data class Person(
         val name: String,
@@ -195,7 +222,7 @@ class RingtoneRelinkerTest {
         override suspend fun phoneNumbers(lookupKey: String) = people[lookupKey]?.numbers.orEmpty()
     }
 
-    private class FakeLinks : RingtoneLinks {
+    private class FakeLinks : ContactLinks {
         val keys = HashMap<Long, String?>()
         val numbers = HashMap<Long, List<String>>()
         var linkCalls = 0

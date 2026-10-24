@@ -2,6 +2,7 @@ package app.mauri.cucuto.core.conditions
 
 import java.time.DayOfWeek
 import java.time.LocalTime
+import java.time.MonthDay
 
 /**
  * A pack's `when` condition (docs/pack-format.md): every present key must match (AND), a list matches any of its
@@ -10,20 +11,26 @@ import java.time.LocalTime
  * @property time Day, night or an hour range; null when absent.
  * @property seasons Meteorological seasons, mirrored for the southern hemisphere.
  * @property weekdays Local weekdays.
+ * @property dates Calendar days every year (holidays the pack defines, ADR 0059); any of them matches.
  */
 public data class ClipWhen(
     val time: TimeOfDay? = null,
     val seasons: Set<Season> = emptySet(),
     val weekdays: Set<DayOfWeek> = emptySet(),
+    val dates: List<DateSpan> = emptyList(),
 ) {
-    /** True when no key is present (such a `when` is a schema violation, and would always match). */
-    val isEmpty: Boolean get() = time == null && seasons.isEmpty() && weekdays.isEmpty()
+    /**
+     * True when no time key is present. Such a `when` may still hold conversation moments (`firstOfDay`, `burst`),
+     * which are not time conditions and never reach [ConditionCompiler].
+     */
+    val isEmpty: Boolean get() = time == null && seasons.isEmpty() && weekdays.isEmpty() && dates.isEmpty()
 
     public companion object {
         /**
          * Reads the JSON values of a `when` object as plain values: [time] is `"day"`, `"night"` or a `from`/`to`
-         * pair of `HH:MM` strings; [seasons] and [weekdays] are the names of the pack format. Returns null when a
-         * value is not understood, so callers treat the clip as unconditional (a validated pack never does this).
+         * pair of `HH:MM` strings; [seasons] and [weekdays] are the names of the pack format; [dates] are `MM-DD`
+         * spans (one day is a span from and to the same day). Returns null when a value is not understood, so callers
+         * treat the clip as unconditional (a validated pack never does this), and when no time key is present.
          */
         public fun of(
             time: String? = null,
@@ -31,6 +38,7 @@ public data class ClipWhen(
             to: String? = null,
             seasons: List<String> = emptyList(),
             weekdays: List<String> = emptyList(),
+            dates: List<Pair<String, String>> = emptyList(),
         ): ClipWhen? {
             val timeOfDay =
                 when {
@@ -63,7 +71,11 @@ public data class ClipWhen(
                 }
             val seasonSet = seasons.map { name -> Season.entries.firstOrNull { it.key == name } ?: return null }.toSet()
             val weekdaySet = weekdays.map { name -> WEEKDAYS[name] ?: return null }.toSet()
-            return ClipWhen(timeOfDay, seasonSet, weekdaySet).takeUnless { it.isEmpty }
+            val spans =
+                dates.map { (from, to) ->
+                    DateSpan(parseMonthDay(from) ?: return null, parseMonthDay(to) ?: return null)
+                }
+            return ClipWhen(timeOfDay, seasonSet, weekdaySet, spans).takeUnless { it.isEmpty }
         }
 
         private val WEEKDAYS: Map<String, DayOfWeek> =
@@ -77,6 +89,14 @@ public data class ClipWhen(
                 "sun" to DayOfWeek.SUNDAY,
             )
 
+        /** `MM-DD`, or null when it is not a calendar day (`02-29` is one: it matches in leap years). */
+        internal fun parseMonthDay(text: String): MonthDay? {
+            if (text.length != 5 || text[2] != '-') return null
+            val month = text.substring(0, 2).toIntOrNull() ?: return null
+            val day = text.substring(3, 5).toIntOrNull() ?: return null
+            return runCatching { MonthDay.of(month, day) }.getOrNull()
+        }
+
         private fun parseTime(text: String): LocalTime? {
             if (text.length != 5 || text[2] != ':') return null
             val hour = text.substring(0, 2).toIntOrNull() ?: return null
@@ -85,6 +105,18 @@ public data class ClipWhen(
             return LocalTime.of(hour, minute)
         }
     }
+}
+
+/**
+ * One span of a `when.date`: from [from] to [to], both inclusive, every year. A span that ends before it starts wraps
+ * the new year (24 December to 6 January).
+ */
+public data class DateSpan(
+    val from: MonthDay,
+    val to: MonthDay,
+) {
+    /** Whether [day] is inside the span. */
+    public fun contains(day: MonthDay): Boolean = if (from <= to) day in from..to else day >= from || day <= to
 }
 
 /** The `time` key of a `when` condition. */

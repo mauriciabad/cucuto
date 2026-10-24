@@ -2,12 +2,18 @@ package app.mauri.cucuto.picker
 
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
+import app.mauri.cucuto.core.data.settings.PickerKind
+import app.mauri.cucuto.core.data.settings.RememberedFolds
+import app.mauri.cucuto.core.data.voices.VoicePack
 import app.mauri.cucuto.testing.FakeCharacterDirectory
 import app.mauri.cucuto.testing.FakeChatDirectory
+import app.mauri.cucuto.testing.FakePickerFoldSettings
 import app.mauri.cucuto.testing.FakeVoicePreview
+import app.mauri.cucuto.testing.TestData
 import app.mauri.cucuto.testing.TestData.ADA
 import app.mauri.cucuto.testing.TestData.CRITTERS
 import app.mauri.cucuto.testing.TestData.KITCHEN
+import app.mauri.cucuto.testing.TestData.character
 import app.mauri.cucuto.testing.TestData.chat
 import app.mauri.cucuto.testing.TestData.frog
 import app.mauri.cucuto.testing.TestData.kettle
@@ -26,6 +32,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -36,6 +43,7 @@ class PickerViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private val directory = FakeChatDirectory(listOf(chat(ADA, "Ada")))
     private val preview = FakeVoicePreview()
+    private val folds = FakePickerFoldSettings()
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -43,7 +51,10 @@ class PickerViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(chat: ChatKey? = ADA) = PickerViewModel(chat, directory, FakeCharacterDirectory(), preview)
+    private fun viewModel(
+        chat: ChatKey? = ADA,
+        packs: List<VoicePack> = TestData.packs,
+    ) = PickerViewModel(chat, directory, FakeCharacterDirectory(packs), preview, folds)
 
     /** Keeps [PickerViewModel.state] subscribed, as the screen does. */
     private fun TestScope.collect(vm: PickerViewModel) = backgroundScope.launch { vm.state.collect {} }
@@ -172,5 +183,156 @@ class PickerViewModelTest {
 
             assertEquals(listOf(ADA), directory.unassigned)
             assertNull(vm.state.value.currentVoice)
+        }
+
+    /** A large pack (folded by default) with a ringtone-only song that must never speak for messages. */
+    private val bigPacks =
+        TestData.packs +
+            VoicePack(
+                "app.mauri.test.creatures",
+                "Pocket creatures",
+                List(20) { character("c$it", "Creature $it", packId = "app.mauri.test.creatures") } +
+                    character("song", "Only a song", packId = "app.mauri.test.creatures", clips = 0)
+                        .copy(ringtoneCount = 1),
+            )
+
+    @Test
+    fun largePacksStartFoldedAndAFoldIsRememberedForNextTime() =
+        runTest(dispatcher) {
+            val vm = viewModel(packs = bigPacks)
+            collect(vm)
+            val creatures = "app.mauri.test.creatures"
+            assertEquals(
+                listOf(true, true, false),
+                vm.state.value.sections
+                    .map { it.expanded },
+            )
+            assertEquals(
+                20,
+                vm.state.value.sections
+                    .last()
+                    .total,
+            )
+
+            vm.toggleFold(creatures)
+            vm.toggleFold(CRITTERS)
+
+            assertEquals(
+                listOf(false, true, true),
+                vm.state.value.sections
+                    .map { it.expanded },
+            )
+            assertEquals(
+                RememberedFolds(expanded = setOf(creatures), folded = setOf(CRITTERS)),
+                folds.folds.value[PickerKind.Voice],
+            )
+            // A new visit opens as the user left it.
+            val again = viewModel(packs = bigPacks)
+            collect(again)
+            assertEquals(
+                listOf(false, true, true),
+                again.state.value.sections
+                    .map { it.expanded },
+            )
+        }
+
+    @Test
+    fun theChatsCurrentPackOpensUnfolded() =
+        runTest(dispatcher) {
+            val creature = ChatVoice("app.mauri.test.creatures", "c3")
+            directory.chats.value = listOf(chat(ADA, "Ada", voice = creature))
+            folds.remember(PickerKind.Voice, creature.packId, expanded = false)
+            val vm = viewModel(packs = bigPacks)
+            collect(vm)
+            assertTrue(
+                vm.state.value.sections
+                    .last()
+                    .expanded,
+            )
+        }
+
+    @Test
+    fun searchFindsCharactersInAFoldedPack() =
+        runTest(dispatcher) {
+            val vm = viewModel(packs = bigPacks)
+            collect(vm)
+
+            vm.search("creature 1")
+
+            val sections = vm.state.value.sections
+            assertEquals(listOf("app.mauri.test.creatures"), sections.map { it.packId })
+            assertEquals(listOf("Creature 1") + List(10) { "Creature 1$it" }, sections.single().shown.map { it.name })
+            vm.search("")
+            assertFalse(
+                vm.state.value.sections
+                    .last()
+                    .expanded,
+            )
+        }
+
+    @Test
+    fun surpriseFromAPackPicksOnlyCharactersWithClipsAndNeverRepeats() =
+        runTest(dispatcher) {
+            val vm = viewModel(packs = bigPacks)
+            collect(vm)
+            var previous: ChatVoice? = null
+            repeat(60) {
+                val pick = vm.surprise("app.mauri.test.creatures", atNanos = 7L)
+                assertEquals("app.mauri.test.creatures", pick?.packId)
+                assertNotEquals("song", pick?.id)
+                assertNotEquals(previous, pick?.voice)
+                assertEquals(pick?.voice, vm.state.value.selected)
+                assertTrue(vm.state.value.rolled)
+                previous = pick?.voice
+            }
+            assertEquals(
+                60,
+                vm.state.value.roll
+                    ?.count,
+            )
+            assertTrue(preview.plays.all { it.withHaptic && it.atNanos == 7L })
+            assertTrue(directory.assigned.isEmpty())
+        }
+
+    @Test
+    fun surpriseFromEveryPackSkipsTheCurrentVoiceAndShowsThePick() =
+        runTest(dispatcher) {
+            directory.chats.value = listOf(chat(ADA, "Ada", voice = frog.voice))
+            val vm = viewModel()
+            collect(vm)
+            vm.filterPack(KITCHEN)
+            vm.search("whistle")
+            val seen = mutableSetOf<String>()
+            repeat(40) {
+                val pick = vm.surprise(null)!!
+                seen += pick.id
+                val state = vm.state.value
+                assertEquals("", state.query)
+                assertTrue(state.packFilter == null || state.packFilter == pick.packId)
+                assertTrue(
+                    state.sections
+                        .first { it.packId == pick.packId }
+                        .shown
+                        .any { it.voice == pick.voice },
+                )
+            }
+            assertEquals(setOf("frog", "owl", "kettle"), seen)
+            // The very first roll never lands on the voice the chat already has: covered by never repeating.
+        }
+
+    @Test
+    fun aRolledCharacterIsAssignedLikeASecondTap() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            collect(vm)
+            val pick = vm.surprise(KITCHEN)!!
+            assertEquals(kettle.voice, pick.voice)
+
+            assertEquals(PickerTap.Assign, vm.tap(pick))
+            vm.assign(pick, clipAtNanos = null)
+
+            assertEquals(listOf(Triple(ADA, KITCHEN, "kettle")), directory.assigned)
+            assertFalse(vm.state.value.rolled)
+            assertNull(vm.surprise(null))
         }
 }

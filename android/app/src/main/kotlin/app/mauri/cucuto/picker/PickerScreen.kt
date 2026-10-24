@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
@@ -142,6 +143,15 @@ fun PickerScreen(
             feedback.fire(Feedback.SegmentTick)
             viewModel.filterPack(packId)
         },
+        onSearch = viewModel::search,
+        onToggleFold = { packId ->
+            feedback.fire(Feedback.Tap)
+            viewModel.toggleFold(packId)
+        },
+        onSurprise = { packId ->
+            val beat = feedback.fire(Feedback.Roll)
+            viewModel.surprise(packId, beat.revealAtNanos)
+        },
     )
 }
 
@@ -158,6 +168,9 @@ fun PickerContent(
     modifier: Modifier = Modifier,
     onOpenDiscover: () -> Unit = {},
     onFilterPack: (String?) -> Unit = {},
+    onSearch: (String) -> Unit = {},
+    onToggleFold: (String) -> Unit = {},
+    onSurprise: (String?) -> Unit = {},
 ) {
     val bitmaps = remember { mutableStateMapOf<ChatVoice, Bitmap>() }
     val focus = state.selected ?: state.currentVoice
@@ -170,11 +183,28 @@ fun PickerContent(
         if (state.failed) snackbar.showSnackbar(failedMessage)
     }
 
+    val grid = rememberLazyGridState()
+    val sections =
+        remember(state.packs, state.packFilter, state.query, state.folds, state.chat?.voice) { state.sections }
+    // Full-width items before the first pack: the header, the search field and the chips.
+    val leading = if (state.chips.isEmpty()) 2 else 3
+    PickerScrollToRoll(grid, state.roll?.count) { sections.gridIndexOf(leading) { it.voice == state.roll?.pick } }
+
     CharacterTheme(seed = seed) {
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         Scaffold(
             modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             snackbarHost = { SnackbarHost(snackbar) },
+            bottomBar = {
+                val rolled = state.character(state.roll?.pick)
+                if (state.rolled && rolled != null) {
+                    SurpriseBar(
+                        useLabel = stringResource(R.string.picker_use, rolled.name).takeIf { state.canAssign },
+                        onReroll = { onSurprise(state.roll?.packId) },
+                        onUse = { onTap(rolled) },
+                    )
+                }
+            },
             topBar = {
                 MediumFlexibleTopAppBar(
                     title = { Text(stringResource(R.string.picker_title), Modifier.semantics { heading() }) },
@@ -198,6 +228,12 @@ fun PickerContent(
                         }
                     },
                     actions = {
+                        if (state.packs.isNotEmpty() && state.assigned == null) {
+                            SurpriseButton(
+                                label = stringResource(R.string.picker_surprise_all),
+                                onClick = { onSurprise(null) },
+                            )
+                        }
                         if (state.canAssign && state.chat?.voice != null && state.assigned == null) {
                             IconButton(onClick = onUnassign) {
                                 Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.picker_remove))
@@ -219,14 +255,15 @@ fun PickerContent(
                 else -> {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(CELL_MIN_WIDTH),
+                        state = grid,
                         contentPadding =
                             PaddingValues(
                                 start = 12.dp,
                                 end = 12.dp,
-                                top = innerPadding.calculateTopPadding(),
                                 bottom = innerPadding.calculateBottomPadding() + 24.dp,
                             ),
-                        modifier = Modifier.fillMaxSize(),
+                        // Below the top bar, not under it, so the packs' sticky headers stay in sight.
+                        modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
                     ) {
                         fullWidth("header") { PickerHeader(state, assignBeat) }
                         if (state.packs.isEmpty()) {
@@ -238,7 +275,9 @@ fun PickerContent(
                                     onOpenDiscover = onOpenDiscover,
                                 )
                             }
+                            return@LazyVerticalGrid
                         }
+                        fullWidth("search") { PickerSearchField(state.query, onSearch) }
                         if (state.chips.isNotEmpty()) {
                             fullWidth("chips") {
                                 PackFilterChips(
@@ -249,9 +288,21 @@ fun PickerContent(
                                 )
                             }
                         }
-                        state.visiblePacks.forEach { pack ->
-                            fullWidth("pack/${pack.packId}") { PackHeader(pack.name) }
-                            items(pack.characters, key = { "character/${it.packId}/${it.id}" }) { character ->
+                        if (sections.isEmpty()) fullWidth("no-matches") { PickerNoMatches(state.query) }
+                        sections.forEach { section ->
+                            stickyHeader(key = "pack/${section.packId}", contentType = "pack") {
+                                PackSectionHeader(
+                                    section = section,
+                                    onToggle = { onToggleFold(section.packId) },
+                                    onSurprise = { onSurprise(section.packId) },
+                                    enabled = state.assigned == null,
+                                )
+                            }
+                            items(
+                                section.shown,
+                                key = { "character/${it.packId}/${it.id}" },
+                                contentType = { "character" },
+                            ) { character ->
                                 val voice = character.voice
                                 CharacterCell(
                                     character = character,
@@ -262,6 +313,7 @@ fun PickerContent(
                                     beat = assignBeat?.takeIf { state.assigned == voice },
                                     onTap = { onTap(character) },
                                     onBitmap = { bitmaps[voice] = it },
+                                    modifier = animateCellUnlessReduced(),
                                 )
                             }
                         }
@@ -343,16 +395,6 @@ private fun PickerHeader(
 }
 
 @Composable
-private fun PackHeader(name: String) {
-    Text(
-        text = name,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 16.dp, bottom = 4.dp).semantics { heading() },
-    )
-}
-
-@Composable
 private fun CharacterCell(
     character: VoiceCharacter,
     selected: Boolean,
@@ -362,6 +404,7 @@ private fun CharacterCell(
     beat: FeedbackBeat?,
     onTap: () -> Unit,
     onBitmap: (Bitmap) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
     val stateLabel =
@@ -373,7 +416,7 @@ private fun CharacterCell(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.zIndex(if (beat != null) 1f else 0f).padding(vertical = 8.dp),
+        modifier = modifier.zIndex(if (beat != null) 1f else 0f).padding(vertical = 8.dp),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(AVATAR_BOX)) {
             VoiceAvatar(

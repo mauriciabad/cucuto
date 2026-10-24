@@ -4,6 +4,7 @@
 - Date: 2026-10-24
 - Issues: #118 (day and night from sunrise and sunset), #75 item 3 (owner: "i want sunrise and sunset from the
   phone's location, or a user setting"), #120 (battery-free condition ideas), #52 (rule-based ringtone variants)
+- Extended by [ADR 0059](0059-rare-and-moment-clips.md): `when.date`, and rare, first of the day and burst clips
 
 ## Context
 

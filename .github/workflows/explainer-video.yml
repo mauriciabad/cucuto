@@ -1,23 +1,18 @@
 name: explainer-video
 
-# Builds the automated draft of the explainer video (issue #195, ADR 0060, docs/explainer-video.md) and uploads it as
-# an artifact: the app's real screens rendered frame by frame on the JVM (Robolectric, no device), then assembled with
-# ffmpeg (stage, CC0 demo-pack and brand sounds, captions). Manual only: run it from the Actions tab. Nothing is
-# committed or published; the draft is not the website's video.
+# Builds the explainer video (issue #271, ADR 0070, docs/explainer-video.md) and uploads it as an artifact: the
+# illustrated scenes in android/video rendered frame by frame on the JVM (Robolectric, no device), the English
+# voice-over spoken by a local open-source text-to-speech model (Kokoro-82M on sherpa-onnx, no cloud service), then
+# mixed and encoded with ffmpeg (CC0 demo-pack and brand sounds only). Manual only: run it from the Actions tab.
+# Nothing is committed or published.
 
 on:
   workflow_dispatch:
     inputs:
-      languages:
-        description: "Cuts to render: en, or en,es"
-        required: true
-        default: "en"
-        type: choice
-        options: ["en", "en,es"]
       av1_preset:
         description: "SVT-AV1 preset for the WebM (the brief's final setting is 4; higher is faster)"
         required: true
-        default: "6"
+        default: "4"
         type: string
 
 permissions:
@@ -28,8 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  draft:
-    name: Explainer video draft
+  video:
+    name: Explainer video
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -56,26 +51,34 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
 
+      # The text-to-speech engine and model (about 370 MB), pinned by version and SHA-256 in voice.main.kts.
+      - name: Cache the voice model
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/cucuto/tts
+          key: tts-${{ runner.os }}-${{ hashFiles('tools/video/voice.main.kts') }}
+
       - name: Render the frames
         working-directory: android
-        env:
-          LANGUAGES: ${{ inputs.languages }}
-        run: ./gradlew :app:renderExplainerFrames "-Pexplainer.languages=$LANGUAGES" --stacktrace
+        run: ./gradlew :video:renderExplainerFrames --stacktrace
 
-      - name: Assemble the draft
+      - name: Speak the voice-over
+        run: kotlin tools/video/voice.main.kts
+
+      - name: Mix and encode
         env:
-          LANGUAGES: ${{ inputs.languages }}
           PRESET: ${{ inputs.av1_preset }}
-        run: kotlin tools/video/explainer.main.kts --languages "$LANGUAGES" --av1-preset "$PRESET"
+        run: kotlin tools/video/explainer.main.kts --av1-preset "$PRESET"
 
-      - name: Upload the draft
+      - name: Upload the video
         uses: actions/upload-artifact@v7
         with:
-          name: explainer-video-draft
+          name: explainer-video
           path: |
-            android/app/build/explainer/*.webm
-            android/app/build/explainer/*.mp4
-            android/app/build/explainer/explainer-poster.png
+            android/video/build/explainer/*.webm
+            android/video/build/explainer/*.mp4
+            android/video/build/explainer/explainer-poster.png
+            android/video/build/explainer/voice/voice.tsv
           if-no-files-found: error
           retention-days: 30
 
@@ -85,6 +88,6 @@ jobs:
         with:
           name: explainer-video-reports
           path: |
-            android/app/build/reports/tests/
-            android/app/build/test-results/
+            android/video/build/reports/tests/
+            android/video/build/test-results/
           retention-days: 7

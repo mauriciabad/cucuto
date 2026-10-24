@@ -1,6 +1,7 @@
 package app.mauri.cucuto.backup
 
 import app.mauri.cucuto.core.backup.AssignmentConflict
+import app.mauri.cucuto.core.backup.BackupAndroidContact
 import app.mauri.cucuto.core.backup.BackupApp
 import app.mauri.cucuto.core.backup.BackupContact
 import app.mauri.cucuto.core.backup.BackupDocument
@@ -18,7 +19,8 @@ import app.mauri.cucuto.core.backup.SettingsRestoreResult
 import app.mauri.cucuto.core.backup.VoiceOutcome
 import app.mauri.cucuto.core.backup.VoiceSnapshot
 import app.mauri.cucuto.core.data.db.GroupPolicy
-import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.ContactLinkRestore
+import app.mauri.cucuto.core.ringtone.UnmatchedContact
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
@@ -95,6 +97,8 @@ object BackupTestData {
         created: Int = 0,
         keysElsewhere: Int = 0,
         ringtones: List<RingtoneRestoreOutcome> = emptyList(),
+        /** Backup contact IDs (among [applied]) whose Android link came from the backup. */
+        linked: Set<String> = emptySet(),
     ): RestoreReport {
         val outcomes =
             applied.mapIndexed { i, id ->
@@ -104,6 +108,8 @@ object BackupTestData {
                     match = if (i < created) ContactMatch.CREATED else ContactMatch.MESSENGER_KEY,
                     voice = VoiceOutcome.APPLIED,
                     keysOwnedElsewhere = if (i < keysElsewhere) listOf("com.whatsapp:1@lid") else emptyList(),
+                    displayName = "Contact $id",
+                    androidContact = if (id in linked) BackupAndroidContact("0r$id-OLD", "Contact $id") else null,
                 )
             } +
                 conflicts.map {
@@ -130,6 +136,25 @@ object BackupTestData {
         id: String,
         outcome: RingtoneOutcome = RingtoneOutcome.APPLIED,
     ) = RingtoneRestoreOutcome(id, id.toLong(), outcome, "Contact $id", androidContact = null, undo = null)
+
+    /** Where restored contacts stand, as the gateway reports it. */
+    fun links(
+        restored: Int = 0,
+        linked: Int = 0,
+        unmatched: List<UnmatchedContact> = emptyList(),
+        ringtones: Int = 0,
+        ringtonesLinked: Int = 0,
+        waitingForPermission: Boolean = false,
+        ringtonesEnabled: Boolean = true,
+    ) = ContactLinkRestore(
+        restored,
+        linked,
+        unmatched,
+        ringtones,
+        ringtonesLinked,
+        waitingForPermission,
+        ringtonesEnabled,
+    )
 }
 
 class FakeSession(
@@ -206,22 +231,43 @@ class FakeBackupGateway : BackupGateway {
         return reports.removeFirst()
     }
 
-    /** What [restorePhoneRingtones] answers, and the reports it was given. */
-    var phoneRingtones = PhoneRingtoneRestore(0, 0, emptyList(), waitingForPermission = false, enabled = true)
-    val phoneRingtoneReports = mutableListOf<RestoreReport>()
+    /** What [restoreContactLinks] answers, and the reports it was given. */
+    var contactLinks = BackupTestData.links()
+    val contactLinkReports = mutableListOf<RestoreReport>()
 
     /** What [enablePhoneRingtones] answers (null: the permission is still missing). */
-    var enableResult: PhoneRingtoneRestore? = null
+    var enableResult: ContactLinkRestore? = null
     var enableCalls = 0
 
-    override suspend fun restorePhoneRingtones(reports: List<RestoreReport>): PhoneRingtoneRestore {
-        phoneRingtoneReports.addAll(reports)
-        return phoneRingtones
+    /** What [findRestoredContacts] answers (null: the permission is still missing). */
+    var findResult: ContactLinkRestore? = null
+    var findCalls = 0
+
+    /** Contact picker results that link ([linkPickedContact] answers false for any other URI). */
+    val pickable = mutableSetOf<String>()
+    val picked = mutableListOf<Pair<Long, String>>()
+
+    override suspend fun restoreContactLinks(reports: List<RestoreReport>): ContactLinkRestore {
+        contactLinkReports.addAll(reports)
+        return contactLinks
     }
 
-    override suspend fun enablePhoneRingtones(): PhoneRingtoneRestore? {
+    override suspend fun findRestoredContacts(): ContactLinkRestore? {
+        findCalls++
+        return findResult
+    }
+
+    override suspend fun enablePhoneRingtones(): ContactLinkRestore? {
         enableCalls++
         return enableResult
+    }
+
+    override suspend fun linkPickedContact(
+        contactId: Long,
+        contactUri: String,
+    ): Boolean {
+        picked += contactId to contactUri
+        return contactUri in pickable
     }
 
     override fun restorePack(

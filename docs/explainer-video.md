@@ -13,7 +13,8 @@ video is in [ADR 0042](decisions/0042-explainer-video-and-slot.md).
 > So: **one English cut** with an **AI voice-over**, **no people** on or behind the camera, and **no real app
 > screens or phone recordings**. Every phone shot is a **simplified, illustrated UI** drawn for the video. The video
 > is **source in the repository** (scenes, timeline, voice script, sound cues), so a new feature means a new scene.
-> The draft pipeline from #195 still renders the real screens; reworking it is #271.
+> Built in #271 ([ADR 0070](decisions/0070-illustrated-explainer-video-project.md)): the project is
+> [`android/video`](../android/video/README.md), and the voice is Kokoro-82M, run locally.
 
 Rules from the [project brief](project-brief.md#website) that this video must follow:
 
@@ -81,7 +82,7 @@ no shake, no whip pans.
 
 | # | Time | Beat | Picture | Sound |
 | --- | --- | --- | --- | --- |
-| 1 | 00:00.0–00:05.0 | **Same ping** | Lock screen (cream wallpaper, no personal widgets). Three WhatsApp notifications land one after another, from Ada ("Dinner at 8?"), Bea ("Running 5 min late") and Leo ("Look at this 😄"). All three look and sound alike. | Plain ping at 0.6, 1.6 and 2.6 s. VO from 3.0 s. |
+| 1 | 00:00.0–00:05.0 | **Same ping** | Lock screen (cream wallpaper, no personal widgets). Three WhatsApp notifications land one after another, from Ada ("Dinner at 8?"), Bea ("Running 5 min late") and Leo ("Look at this 😄"). All three look and sound alike. | Plain ping at 0.6, 1.6 and 2.6 s. VO from 2.8 s. |
 | 2 | 00:05.0–00:09.0 | **The door** | Full frame: the brand's signature door-open animation ([`brand/motion/door-open.svg`](../brand/motion/door-open.svg), timing in [`motion.md`](../brand/motion.md#the-signature-the-door-pops-open)). The door swings open at 5.45 s, the bird calls, the wordmark fades in below. | `assign.ogg` ("cu-cu!") with the door, at 5.45 s. VO from 6.2 s. |
 | 3 | 00:09.0–00:15.0 | **Set up once** | App: onboarding. Welcome ("Give every contact a voice", 1.5 s), swipe to "Before you start" (Android 17, root, LSPosed, 1.5 s), then the self-test: tap **Post the self-test** and the status card turns green, "Cu-cu! All set". Skip the risks and reboot pages in the edit (a quick wipe), but never hide that setup needs root. | VO 9.3–13.6 s. `success.ogg` when the card turns green, at 13.8 s. |
 | 4 | 00:15.0–00:21.0 | **Get the demo packs** | App: Home, card "Give your chats a voice" → tap **Get the demo packs** → Discover opens on the "Cucuto demo packs" bundle and the import sheet downloads it (#179) → the review lists Chiptune critters and Kitchen orchestra → tap **Install**. | VO 15.4–19.8 s. `success.ogg` when the packs appear, at 20.0 s. |
@@ -90,7 +91,7 @@ no shake, no whip pans.
 | 7 | 00:36.0–00:40.0 | **The cuckoo door** | App: back on Home, the first-voice card "Ada has a voice!": the cuckoo door pops open on the frog, with a burst in its colors. | `assign.ogg` with the door at 36.45 s, frog `croak.ogg` +130 ms. VO 37.4–40.0 s. |
 | 8 | 00:40.0–00:46.0 | **Simulate message** | App: Ada's contact detail (frog avatar, clip pool). Tap **Simulate message** at 41.6 s; the card says "Through the module…". Show the vibration as two quick ripples around the phone outline (the frog's haptic is two clicks). | VO 40.3–43.0 s. Frog clip at 43.3 s (record the take that plays `ribbit.ogg`). |
 | 9 | 00:46.0–00:53.0 | **The real thing** | The illustrated phone, screen on, locked. A message from Ada lands ("Dinner at 8? 🍝") and the phone plays the frog and wiggles. Then one from Bea ("Running 5 min late"): the kettle whistles. Bea was given Tootle the kettle off camera. | Frog `ribbit.ogg` at 46.8 s, kettle `whistle.ogg` at 49.4 s. VO 50.6–52.8 s. |
-| 10 | 00:53.0–00:58.0 | **End card** | The Cucuto logo ([`brand/logo/cucuto-logo.svg`](../brand/logo/cucuto-logo.svg), light variant) on cream, the line "Give each contact a voice." and **cucuto.mauri.app**. Fine print: "Free and open source · Android 17 · Needs root and LSPosed · Not affiliated with WhatsApp or Meta". (English only; the Spanish end card is dropped with the Spanish cut, #194.) | `assign.ogg` once at 53.2 s. VO 54.0–57.6 s. Silence to the end. |
+| 10 | 00:53.0–00:58.0 | **End card** | The Cucuto logo ([`brand/logo/cucuto-logo.svg`](../brand/logo/cucuto-logo.svg), light variant) on cream, the line "Give each contact a voice." and **cucuto.mauri.app**. Fine print: "Free and open source · Android 17 · Needs root and LSPosed · Not affiliated with WhatsApp or Meta". (English only; the Spanish end card is dropped with the Spanish cut, #194.) | `assign.ogg` once at 53.2 s. VO 54.0–57.85 s. Silence to the end. |
 
 **Poster frame.** The frame at 00:32.8 (the burst around the frog tile, snackbar not yet up) is the poster. Export it
 as described in [Deliverables](#deliverables). Until the video exists, the site shows an illustrated, text-free
@@ -105,7 +106,7 @@ for `/es/`, in Spain Spanish with "tú".
 
 | # | Slot | English (spoken) | Spanish (captions only) |
 | --- | --- | --- | --- |
-| 1 | 03.0–04.9 | Same sound every time. Who was that? | Siempre el mismo sonido. ¿Quién era? |
+| 1 | 02.8–05.0 | Same sound every time. Who was that? | Siempre el mismo sonido. ¿Quién era? |
 | 2 | 06.2–08.9 | Cucuto gives each WhatsApp contact a voice. | Cucuto da voz a cada contacto de WhatsApp. |
 | 3 | 09.3–13.6 | Set it up once on a rooted Android 17 phone with LSPosed. | Se configura una vez, en un Android 17 con root y LSPosed. |
 | 4 | 15.4–19.8 | Import a sound pack. The free demo packs bring eight characters. | Importa un pack de sonidos. Los de demostración traen ocho personajes. |
@@ -115,7 +116,7 @@ for `/es/`, in Spain Spanish with "tú".
 | 7 | 37.4–40.0 | Next time Ada writes, you hear Bleep the frog. | La próxima vez que Ada escriba, oirás a la rana Bleep. |
 | 8 | 40.3–43.0 | Simulate a message to hear exactly what's coming. | Simula un mensaje y oye justo lo que llegará. |
 | 9 | 50.6–52.8 | Now you know who wrote, without looking. | Ahora sabes quién te escribe, sin mirar. |
-| 10 | 54.0–57.6 | Cucuto. Free and open source, at cucuto.mauri.app. | Cucuto. Gratis y de código abierto, en cucuto.mauri.app. |
+| 10 | 54.0–57.85 | Cucuto. Free and open source, at cucuto.mauri.app. | Cucuto. Gratis y de código abierto, en cucuto.mauri.app. |
 
 About 95 words, roughly 2.4 words a second while the narrator speaks. The gaps are on purpose: the characters do
 the talking.
@@ -123,7 +124,11 @@ the talking.
 **The voice is AI-generated** (owner, #194: "dont involve humans, AI voice"; this replaces the earlier default of a
 human volunteer). Use an open text-to-speech model run locally, whose model and voice licenses allow publishing the
 audio, and record the model, voice and settings next to the script so the voice can be regenerated identically
-when a line changes (#271). No cloned or celebrity voice.
+when a line changes (#271). No cloned or celebrity voice. **Chosen (#271, ADR 0070):** Kokoro-82M v1.0, voice
+`af_heart`, on sherpa-onnx 1.13.8, all Apache-2.0. The engine, model, voice and speed rules are pinned in
+[`tools/video/voice.main.kts`](../tools/video/voice.main.kts) and the pronunciations in
+[`voice-lexicon.txt`](../tools/video/voice-lexicon.txt). The spoken text is the English column above; the timeline
+may respell a word for the voice ("cucuto dot mauri dot app").
 
 ## Sound design
 
@@ -154,8 +159,9 @@ Specifics:
 ## Captions
 
 Closed captions in WebVTT, one file per language: `explainer.en.vtt` and `explainer.es.vtt`, both timed to the one
-English cut (`/es/` shows the Spanish ones). Drafts that match this script are already in
-[`web/static/video/`](../web/static/video); adjust the times to the final edit and keep the cue IDs.
+English cut (`/es/` shows the Spanish ones). Both are generated from the video's timeline
+([`android/video`](../android/video/README.md)) into [`web/static/video/`](../web/static/video) with
+`./gradlew :video:writeExplainerCaptions`, keeping the cue IDs; a unit test fails when they don't match it.
 
 - **Captions for deaf and hard-of-hearing viewers (SDH)**: the voice-over plus every meaningful sound in square
   brackets: "[The same plain ping, three times]", "[Cat mews]", "[Cuckoo call, then the frog ribbits]".
@@ -211,52 +217,36 @@ motion graphics built from `brand/` files (shots 2 and 10). The project lives in
 be added as a new scene: the scenes, the timeline (this shot list with its times), the voice-over text and voice
 settings, and the sound cues. Renders, masters and stems are build output, not committed (#271).
 
-### An automated draft
+### How it is built (#271)
 
-We looked for a way to make a draft video with no human editor. Findings (from #42, before the owner's answer on
-#194; routes 2 and 3 use the real app, which the owner has now ruled out):
+[ADR 0070](decisions/0070-illustrated-explainer-video-project.md) has the details;
+[`android/video/README.md`](../android/video/README.md) explains how to add a scene.
 
-1. **From the scripted screenshots (#41).** Once the screenshot pipeline captures one still per shot (Home with
-   recent senders, the picker, the burst, contact detail…), a small Kotlin script (`*.main.kts`) can build an
-   animatic: each still held for its slot from the shot list above, slow 3 % push-ins (`zoompan`), cross-fades
-   (`xfade`), the clips and brand sounds placed at their times (`adelay` + `amix`), and the draft captions burned
-   in for review (`subtitles`). Cheap (one script, no device, runs in CI) and good for checking timing and the
-   script, but it is a slideshow: no taps, no springs, no burst. A timing animatic, not the public video.
-2. **From Compose, rendered offline.** The app's screens already render under Robolectric with fakes (the UI tests
-   do it). A test with `composeTestRule.mainClock.autoAdvance = false` can step the clock 16 ms at a time and
-   capture each frame (`captureToImage()`, or Roborazzi's `captureRoboGif`/frame capture) while it performs the taps,
-   then ffmpeg turns the PNG sequence into video. That gives the real springs, burst and door, pixel-exact and
-   repeatable, with no device and no private data. It can't show system UI (lock screen, notifications, file
-   picker), so shots 1, 4 (file picker part) and 9 still come from the device.
-3. **On the device.** UI Automator drives the app while `screenrecord` films it. The most real, but it needs the
-   rooted phone with the module enabled and WhatsApp test accounts (`needs-device`), and it is the flakiest.
+1. **Pictures.** The Gradle module `:video` (`android/video/`) draws every shot in Compose from `brand/` and
+   `packs/` and never depends on the app. `Explainer.kt` is the timeline: each shot's length, picture, sounds,
+   vibrations, captions and voice lines. `./gradlew :video:renderExplainerFrames` renders the 3 480 frames on the
+   JVM (Robolectric, no device), about 5 min.
+2. **Voice.** `kotlin tools/video/voice.main.kts` speaks the voice lines with Kokoro-82M (voice `af_heart`) on
+   sherpa-onnx, locally. Each line must fit its slot, at most 1.15× faster.
+3. **Mix and encode.** `kotlin tools/video/explainer.main.kts` places the CC0 clips and brand sounds, puts the voice
+   on top, normalizes to −16 LUFS / −1 dBTP and writes the deliverables below, plus a review MP4 with both caption
+   tracks.
 
-**Built: route 2 plus an assembly script** (#195, [ADR 0060](decisions/0060-explainer-video-draft-pipeline.md)).
+`cd android && ./gradlew :video:explainerVideo` runs all three into `android/video/build/explainer/`. The manual
+`explainer-video` workflow (Actions tab) does the same and uploads the files as an artifact. Nothing is committed.
 
-```sh
-cd android && ./gradlew :app:explainerDraft                          # English cut
-cd android && ./gradlew :app:explainerDraft -Pexplainer.languages=en,es  # both cuts
-```
+Earlier routes, kept for the record (from #42, before #194): an animatic from the scripted screenshots (#41), the
+app's real screens rendered offline (built in #195, [ADR 0060](decisions/0060-explainer-video-draft-pipeline.md),
+now superseded) and UI Automator with `screenrecord` on the device. The owner's answer ruled out the last two.
 
-`renderExplainerFrames` records every shot on the JVM from the app's real screens and motion, with this brief's
-cast and the demo packs, stepping Compose's test clock one frame at a time (shots 4–8 are one take in the app shell;
-shot 2 is the app's own door; shot 10 the end card). `tools/video/explainer.main.kts` then puts the phone on the stage,
-places the CC0 clips and brand sounds at the shot list's times, and writes the deliverables below into
-`android/app/build/explainer/`, plus `explainer-review.<lang>.mp4` with both caption files as tracks. The manual
-`explainer-video` workflow (Actions tab) does the same and uploads the draft as an artifact. Nothing is committed.
+## Credits
 
-What the draft is not yet: there is no voice-over (pass `--voice-over-en FILE` to the script once one exists), and
-the camera is static. So the website keeps its "coming soon" card until the final cut.
-
-**To be reworked (#271).** The owner's answer on #194 rules out the app's real screens and device footage, and the
-Spanish cut. The pipeline keeps its frame-stepped Compose recorder and the ffmpeg assembly script, but:
-
-- the phone shows illustrated scenes drawn for the video that never import the app's screens;
-- shots 1 and 9 stay drawn, and become final rather than stand-ins;
-- an English AI voice-over is generated from the script;
-- only the English cut is rendered (Spanish captions stay).
-
-Until then, the draft above is a timing reference only.
+- Voice: [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) v1.0 by hexgrad, voice `af_heart`, Apache-2.0,
+  run with [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) (Apache-2.0). The audio it makes has no licence
+  conditions.
+- Sounds: the CC0 demo packs ([`packs/`](../packs)) and the brand's UI sounds (CC0, [`brand/sounds`](../brand/sounds)).
+- Pictures: the brand ([`brand/`](../brand), GPL-3.0-or-later) and the demo packs' sprites (CC0). Typeface: Google
+  Sans Flex (SIL OFL 1.1).
 
 ## Deliverables
 
