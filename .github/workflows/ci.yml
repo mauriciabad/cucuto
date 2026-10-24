@@ -106,7 +106,8 @@ jobs:
 
   # Store listing metadata (fastlane/, ADR 0046, ADR 0071): the limits of F-Droid, IzzyOnDroid and Obtainium, and the
   # stricter Google Play ones kept from ADR 0071 (lengths, description tags, the WhatsApp rules, image sizes and
-  # alpha), so a too-long text or a refused image fails here instead of being cut off or rejected at upload. The runner's Kotlin CLI runs the script.
+  # alpha), so a too-long text or a refused image fails here instead of being cut off or rejected at upload. The
+  # runner's Kotlin CLI runs the script.
   store-metadata:
     name: Store metadata
     needs: changes
