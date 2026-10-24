@@ -32,6 +32,9 @@ class FakeContactsProvider : ContentProvider() {
     /** Every URI queried, to check that nothing else is read. */
     val queried = mutableListOf<Uri>()
 
+    /** The thread of every query, to check that callers on the main thread are never blocked (#330). */
+    val threads = mutableListOf<Thread>()
+
     fun add(
         lookupKey: String,
         name: String,
@@ -56,6 +59,7 @@ class FakeContactsProvider : ContentProvider() {
         sortOrder: String?,
     ): Cursor {
         queried += uri
+        threads += Thread.currentThread()
         val segments = uri.pathSegments
         val columns = projection ?: arrayOf(Contacts._ID, Contacts.LOOKUP_KEY, Contacts.DISPLAY_NAME)
         val cursor = MatrixCursor(columns)

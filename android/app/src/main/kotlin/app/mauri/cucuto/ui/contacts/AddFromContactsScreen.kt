@@ -452,7 +452,11 @@ private fun ContactList(
                 )
             }
         }
-        items(state.rows, key = { "${it.entry.packageName}/${it.entry.lookupKey}" }) { row ->
+        items(
+            state.rows,
+            key = { "${it.entry.packageName}/${it.entry.lookupKey}" },
+            contentType = { "contact" },
+        ) { row ->
             ContactItem(
                 row = row,
                 onToggle = {

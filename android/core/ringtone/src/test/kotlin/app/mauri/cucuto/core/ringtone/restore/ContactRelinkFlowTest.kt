@@ -106,6 +106,21 @@ class ContactRelinkFlowTest {
             assertNull(androidContacts.resolve("content://media/external/audio/media/1"))
         }
 
+    @Test
+    fun `contacts queries never run on the caller's thread, so screens can call them from the main thread`() =
+        runTest {
+            grantRead()
+            val caller = Thread.currentThread()
+            androidContacts.byPhoneNumber("+34600111222")
+            androidContacts.byName("Bruno")
+            androidContacts.phoneNumbers("here-ada")
+            androidContacts.find("here-ada")
+            androidContacts.resolve(provider.pickerUri("here-bruno").toString())
+
+            assertEquals(6, provider.threads.size)
+            assertTrue(provider.threads.none { it === caller })
+        }
+
     private class Links(
         private val contacts: AndroidContacts,
     ) : ContactLinks {
