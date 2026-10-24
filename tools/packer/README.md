@@ -104,6 +104,10 @@ site/repo/
 └── packs/<file>.soundpack.zip          (only without --download-base-url)
 ```
 
+Each character preview has the character's sprite, its first clip as `sample` (ringtone-only characters have none
+yet, #325) and, next to a sample, `x-haptic`: the character's `haptic` from `pack.json` (`{ "mode": "auto" }` when
+the pack leaves it out), so apps can vibrate with the sample ([ADR 0069](../../docs/decisions/0069-haptic-previews-in-discover.md)).
+
 Folder inputs contribute every `.zip` in them. Every input is validated first. Entries are sorted by ID; if an ID appears twice the higher version wins. Each
 download has its exact size and SHA-256. Preview URLs are relative, so the folder can be hosted anywhere (they resolve
 against the index URL). `generatedAt` is written only with `--generated-at` or when `SOURCE_DATE_EPOCH` is set, so
@@ -166,16 +170,20 @@ characters:
         label: Purr                 # default: from the file name ("purr" -> "Purr")
         weight: 2
       - file: mittens/snore.ogg
-        when: night                 # night-only clip; same shorthands as for ringtones
+        when: night                 # night-only clip; same shorthands as for ringtones (below)
+      - file: mittens/hiss.ogg
+        when: [12-24..01-06, sat, sun]   # the holidays, on weekends
       - file: mittens/yawn.ogg
-        when: { firstOfDay: true }  # special clips: also { burst: 3 }, or oneIn: 25 for a rare clip
+        when: { firstOfDay: true, time: 05:00-12:00 }   # special clips: also { burst: 3 }
+      - file: mittens/shiny.ogg
+        oneIn: 25                   # a rare clip, about one message in 25
       - cut: songs/day.flac         # auto-cut clip: the song's hook, cut at build time (needs ffmpeg)
       - cut: songs/night.flac       # or from a given point: startMs, lengthMs (default 2500),
         startMs: 30500              # or search only fromMs..toMs for the hook
         label: Lullaby
     ringtones:
       - file: songs/day.flac
-        when: day                   # shorthand for { time: day }; also a season or weekday name
+        when: day                   # shorthand for { time: day }, see "when shorthands"
         loop: { startMs: 1200, endMs: 98000 }
         fadeInMs: 500
       - file: songs/night.flac
@@ -188,6 +196,23 @@ characters:
     #       - { intensity: 1.0, sharpness: 0.8, ms: 120 }
     #       - { intensity: 0.0, sharpness: 0.4, ms: 180 }
 ```
+
+A character may have only `ringtones` (a song) or only `clips`; it needs one of the two.
+
+**`when` shorthands.** `when` takes the full pack.json form or one word or a list of words, each a time of day
+(`day`, `night`, or hours such as `22:00-06:00`), a season (`spring` … `winter`), a weekday (`mon` … `sun`) or a date
+(`12-25`, or a range such as `12-24..01-06`). Words of the same kind are alternatives, different kinds must all hold:
+
+| pack.yaml | pack.json |
+| --- | --- |
+| `when: night` | `{ "time": "night" }` |
+| `when: [night, sat, sun]` | `{ "time": "night", "weekday": ["sat", "sun"] }` |
+| `when: [summer, autumn]` | `{ "season": ["summer", "autumn"] }` |
+| `when: 22:00-06:00` | `{ "time": { "from": "22:00", "to": "06:00" } }` |
+| `when: [12-25, 12-24..01-06]` | `{ "date": ["12-25", { "from": "12-24", "to": "01-06" }] }` |
+
+In the full form, `time: 22:00-06:00` and dates written as `12-24..01-06` expand the same way. Only one time of day
+fits in a condition (`[day, night]` is refused).
 
 Every other key is copied to `pack.json` unchanged, so all pack.json fields work. Text files next to `pack.yaml`
 named `LICENSE`, `LICENCE`, `README`, `CREDITS`, `NOTICE`, `AUTHORS` or `COPYING` (optionally with `.txt` or `.md`)
