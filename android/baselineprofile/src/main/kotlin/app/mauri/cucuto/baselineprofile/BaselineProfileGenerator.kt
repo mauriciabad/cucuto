@@ -20,13 +20,15 @@ class BaselineProfileGenerator {
     @Test
     fun startup() = rule.collect(packageName = TARGET_PACKAGE, includeInStartupProfile = true) { start() }
 
-    /** Home, the character picker and Packs. */
+    /** Home, contact detail with its ringtone picker and rules, the character picker, add from contacts and Packs. */
     @Test
     fun mainJourneys() =
         rule.collect(packageName = TARGET_PACKAGE) {
             start()
             home()
+            contactDetail()
             picker()
+            addFromContacts()
             packs()
         }
 }

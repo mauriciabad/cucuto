@@ -1,14 +1,18 @@
 package app.mauri.cucuto.baselineprofile
 
+import android.os.ParcelFileDescriptor
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.StaleObjectException
+import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 
 /**
- * The main journeys (start, Home, the character picker, Packs) as steps on the installed app, shared by the
+ * The main journeys (start, Home, contact detail, the ringtone picker and its rules, the character picker with
+ * folding and search, add from contacts and Packs) as steps on the installed app, shared by the
  * Baseline Profile generator and any future Macrobenchmark. Each step does what it can and moves on: on a phone still
  * in onboarding, or without chats, the profile simply covers less.
  *
@@ -18,6 +22,9 @@ internal const val TARGET_PACKAGE = "app.mauri.cucuto"
 
 /** Resource ID of a chat row on Home (`CHAT_ROW_TAG` in the app). */
 private const val CHAT_ROW = "chat_row"
+
+/** Resource ID of a pack's section header in the pickers (`PACK_HEADER_TAG` in the app). */
+private const val PACK_HEADER = "pack_header"
 
 private const val TIMEOUT_MS = 5_000L
 
@@ -33,21 +40,58 @@ internal fun MacrobenchmarkScope.home() {
     scrollMainList()
 }
 
-/** The character picker: opens the first chat on Home (through its detail if it has a voice) and scrolls. */
+/**
+ * Contact detail of the first chat on Home, when it has a voice: scrolled, then its ringtone picker ("Phone calls")
+ * and the ringtone rules, from the picker or else from the detail. Back on Home at the end.
+ */
+internal fun MacrobenchmarkScope.contactDetail() {
+    if (!openFirstChatDetail()) return backToHome()
+    scrollMainList()
+    if (tapInMainList(By.text(appString("contact_row_calls")), expect = By.text(appString("ringtone_picker_title")))) {
+        scrollMainList()
+        val rules = By.text(appString("ringtone_rules_title"))
+        if (tapInMainList(By.text(appString("ringtone_rules_open")), expect = rules)) {
+            scrollMainList()
+            back()
+        }
+        back()
+    }
+    backToHome()
+}
+
+/**
+ * The character picker: the first chat on Home (through its detail's "Messages" row when it has a voice), scrolled,
+ * a pack folded and unfolded, and a search typed.
+ */
 internal fun MacrobenchmarkScope.picker() {
     openTab("tab_home")
-    val chat = device.wait(Until.findObject(By.res(CHAT_ROW)), TIMEOUT_MS) ?: return
-    chat.click()
-    device.waitForIdle()
-    // A chat with a voice opens its detail first; "Change" leads to the picker.
-    device.findObject(By.text(appString("contact_change")))?.let {
-        it.click()
-        device.waitForIdle()
+    val searchField = By.text(appString("picker_search_hint"))
+    if (openFirstChatDetail()) {
+        if (!tapInMainList(By.text(appString("contact_row_messages")), expect = searchField)) return backToHome()
+    } else if (!device.wait(Until.hasObject(searchField), TIMEOUT_MS)) {
+        return backToHome()
     }
     scrollMainList()
-    device.pressBack()
-    device.waitForIdle()
+    device.wait(Until.findObject(By.res(PACK_HEADER)), TIMEOUT_MS)?.let { header ->
+        click(header) // Folds the pack.
+        device.findObject(By.res(PACK_HEADER))?.let(::click) // Unfolds it again.
+    }
+    search("picker_search_hint", "a")
+    backToHome()
+}
+
+/** "Add a chat from contacts", from Home's "Assign a voice": the explainer or the list, scrolled and searched. */
+internal fun MacrobenchmarkScope.addFromContacts() {
     openTab("tab_home")
+    val assign = device.wait(Until.findObject(By.desc(appString("home_fab"))), TIMEOUT_MS) ?: return
+    click(assign)
+    if (!tapInMainList(By.text(appString("contacts_add")))) {
+        back()
+        return
+    }
+    scrollMainList()
+    search("contacts_search_hint", "a")
+    backToHome()
 }
 
 /** Packs: the installed packs, scrolled through. */
@@ -56,10 +100,108 @@ internal fun MacrobenchmarkScope.packs() {
     scrollMainList()
 }
 
+/**
+ * Opens the first chat on Home: true when its contact detail shows (the chat has a voice; detail is found by its
+ * "Messages" row). A chat without a voice opens the character picker instead, left on screen.
+ */
+private fun MacrobenchmarkScope.openFirstChatDetail(): Boolean {
+    openTab("tab_home")
+    val chat = findInMainList(By.res(CHAT_ROW)) ?: return false
+    click(chat)
+    return device.wait(Until.hasObject(By.text(appString("contact_row_messages"))), TIMEOUT_MS)
+}
+
 /** Taps a tab of the navigation bar by its label (a string resource of the app). */
 private fun MacrobenchmarkScope.openTab(label: String) {
     val tab = device.wait(Until.findObject(By.text(appString(label))), TIMEOUT_MS) ?: return
-    tab.click()
+    click(tab)
+    // A query left in Home's search bar would hide the chats from the next step.
+    if (label == "tab_home") device.findObject(By.desc(appString("home_search_clear")))?.let(::click)
+}
+
+/**
+ * Types [text] into the search field whose placeholder is the string [hint], then closes the keyboard. The text goes
+ * straight to that field, never to whatever else has the focus (Home's own search bar, say).
+ */
+private fun MacrobenchmarkScope.search(
+    hint: String,
+    text: String,
+) {
+    val field = findInMainList(By.text(appString(hint)), Direction.UP) ?: return
+    try {
+        field.click()
+        device.waitForIdle()
+        field.text = text
+    } catch (_: StaleObjectException) {
+        device.findObject(By.clazz(EDIT_TEXT).focused(true))?.text = text
+    }
+    device.waitForIdle()
+    hideKeyboard()
+}
+
+/** Closes the on-screen keyboard if it is shown: it covers the navigation bar, and it takes a back press. */
+private fun MacrobenchmarkScope.hideKeyboard() {
+    if (shell("dumpsys input_method").contains("mInputShown=true")) back()
+}
+
+/**
+ * Scrolls the main list until [selector] shows, then taps it and, given [expect], waits for that to show (the next
+ * screen). False when either never shows.
+ */
+private fun MacrobenchmarkScope.tapInMainList(
+    selector: BySelector,
+    expect: BySelector? = null,
+): Boolean {
+    val target = findInMainList(selector) ?: return false
+    click(target)
+    return expect == null || device.wait(Until.hasObject(expect), TIMEOUT_MS)
+}
+
+/** [selector] on screen, scrolling the main list towards [direction] a few times until it shows. */
+private fun MacrobenchmarkScope.findInMainList(
+    selector: BySelector,
+    direction: Direction = Direction.DOWN,
+): UiObject2? {
+    device.wait(Until.findObject(selector), SHORT_TIMEOUT_MS)?.let { return it }
+    repeat(FIND_SCROLLS) {
+        val list = device.findObject(By.scrollable(true)) ?: return null
+        try {
+            list.setGestureMarginPercentage(GESTURE_MARGIN)
+            list.scroll(direction, SCROLL_PERCENT)
+        } catch (_: StaleObjectException) {
+            // Replaced by a recomposition: look it up again.
+        }
+        device.waitForIdle()
+        device.findObject(selector)?.let { return it }
+    }
+    return null
+}
+
+private fun MacrobenchmarkScope.click(target: UiObject2) {
+    try {
+        target.click()
+    } catch (_: StaleObjectException) {
+        return
+    }
+    device.waitForIdle()
+}
+
+/**
+ * Goes back to Home: the keyboard closed first, then back until no back arrow shows (a tab root), never past it, as
+ * a back press there would leave the app.
+ */
+private fun MacrobenchmarkScope.backToHome() {
+    hideKeyboard()
+    val arrow = By.desc(appString("navigate_back"))
+    for (attempt in 1..BACK_ATTEMPTS) {
+        if (!device.hasObject(arrow)) break
+        back()
+    }
+    openTab("tab_home")
+}
+
+private fun MacrobenchmarkScope.back() {
+    device.pressBack()
     device.waitForIdle()
 }
 
@@ -101,6 +243,26 @@ private fun MacrobenchmarkScope.appString(name: String): String {
     return resources.getString(id)
 }
 
+/**
+ * Runs [script] in a shell of the instrumentation's session and returns its output. The script
+ * goes through stdin, so it can quote freely (a plain shell command is split at every space).
+ */
+private fun shell(script: String): String {
+    val (output, input) = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommandRw("sh")
+    ParcelFileDescriptor.AutoCloseOutputStream(input).use { it.write(script.toByteArray()) }
+    return ParcelFileDescriptor.AutoCloseInputStream(output).use { it.readBytes().decodeToString() }
+}
+
 private const val GESTURE_MARGIN = 0.2f
 
 private const val FLING_ATTEMPTS = 3
+
+private const val FIND_SCROLLS = 4
+
+private const val SCROLL_PERCENT = 0.8f
+
+private const val SHORT_TIMEOUT_MS = 1_000L
+
+private const val BACK_ATTEMPTS = 4
+
+private const val EDIT_TEXT = "android.widget.EditText"

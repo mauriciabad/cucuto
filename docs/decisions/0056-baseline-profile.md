@@ -22,11 +22,12 @@ runner).
   `benchmark-macro-junit4` 1.5.0 (the latest stable, 2026-09-09; since 1.5.0-alpha01 it works with AGP 9's new DSL),
   plus UiAutomator 2.4.0. Its setup lives in the `cucuto.android.baselineprofile` convention plugin. It targets `:app`
   and uses connected devices only. `BaselineProfileGenerator` records the startup journey (also the Startup Profile)
-  and the main journeys: Home, the character picker and Packs. The steps live in `Journeys.kt`, where a future
-  Macrobenchmark can reuse them.
+  and the main journeys: Home, contact detail with the ringtone picker and the ringtone rules, the character picker
+  (folding a pack, searching), add from contacts and Packs (update 2026-10-24, #350). The
+  steps live in `Journeys.kt`, where a future Macrobenchmark can reuse them.
 - **Steps that survive language and data.** Tabs are found by the app's own string resources, read in the phone's
-  language. Chat rows on Home carry a resource ID (`testTag("chat_row")` under `testTagsAsResourceId`). Any step
-  that finds nothing moves on instead of failing.
+  language. Chat rows on Home carry a resource ID (`testTag("chat_row")` under `testTagsAsResourceId`). So do the
+  pickers' pack headers (`pack_header`, #350). Any step that finds nothing moves on instead of failing.
 - **The app consumes, never generates during a build.** `:app` applies the consumer side with `mergeIntoMain = true`
   and `automaticGenerationDuringBuild = false`, and depends on ProfileInstaller 1.4.1, which compiles the profile
   for sideloaded installs. Release builds merge `src/main/generated/baselineProfiles/` when it exists. Until then

@@ -150,7 +150,10 @@ fun HomeScreen(
         onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat, ringtoneNext = true)) },
         onOpenPacks = { onNavigate(CucutoDestination.Packs) },
         modifier = modifier,
-        onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
+        onOpenDetail = { chat ->
+            viewModel.handOffDetail(chat)
+            onNavigate(CucutoDestination.ContactDetail(chat))
+        },
         onAssign = { onNavigate(CucutoDestination.AssignVoice) },
         journey = journey,
         // Discover installs the demo bundle from the default repository, through the usual review (#179, #214).

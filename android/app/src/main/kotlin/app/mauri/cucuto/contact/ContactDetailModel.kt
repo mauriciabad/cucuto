@@ -11,6 +11,7 @@ import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Moment
+import app.mauri.cucuto.home.ChatRow
 import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import app.mauri.cucuto.xposed.events.Outcome
 import app.mauri.cucuto.xposed.route.AlertRouter
@@ -136,6 +137,13 @@ data class ContactDetailState(
     /** The group's policy; null for 1:1 chats. */
     val groupPolicy: GroupPolicy? get() = if (isGroup) chat?.groupPolicy ?: GroupPolicy.GROUP else null
 }
+
+/**
+ * Still loading, but with what Home showed for the chat ([row]): enough for the header (the title, the avatar, the
+ * ringtone badge, "speaks as" and the colours), not for the rest, which waits for the data (#360).
+ */
+fun ContactDetailState.seededWith(row: ChatRow): ContactDetailState =
+    copy(chat = row.chat, character = row.character, packName = row.packName, ringtone = row.ringtone)
 
 /** How many of the chat's decisions contact detail lists. */
 const val RECENT_DECISIONS: Int = 8
