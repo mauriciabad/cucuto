@@ -19,6 +19,15 @@ class MonoPcm(
     val durationMs: Long get() = if (sampleRate == 0) 0 else samples.size * 1000L / sampleRate
 }
 
+/** Decodes the start of an audio file to mono PCM. Blocking: call it off the main thread. */
+fun interface PcmDecoder {
+    /** Decodes up to [maxDurationMs] of [file]. Throws [IOException] when the file cannot be decoded. */
+    fun decode(
+        file: File,
+        maxDurationMs: Int,
+    ): MonoPcm
+}
+
 /**
  * Decodes the start of an audio file to mono PCM with [MediaExtractor] and [MediaCodec] (synchronous mode), the
  * same platform stack the importer verifies clips with and the system plays them with. Channels are averaged; 8,
@@ -28,11 +37,11 @@ class MonoPcm(
  */
 class ClipPcmDecoder(
     private val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
-) {
+) : PcmDecoder {
     /** Decodes up to [maxDurationMs] of [file]. Throws [IOException] when the file cannot be decoded. */
-    fun decode(
+    override fun decode(
         file: File,
-        maxDurationMs: Int = AutoHapticAnalyzer.MAX_DURATION_MS,
+        maxDurationMs: Int,
     ): MonoPcm {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
