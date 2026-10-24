@@ -23,6 +23,7 @@ import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.haptics.HapticEditorScreen
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
+import app.mauri.cucuto.ui.ringtone.RingtonePickerScreen
 import app.mauri.cucuto.ui.settings.BackupExportScreen
 import app.mauri.cucuto.ui.settings.LicensesScreen
 import app.mauri.cucuto.ui.settings.SettingsScreen
@@ -99,6 +100,17 @@ fun cucutoEntries(
                 onBack = goBack,
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
                 onEditPattern = { navigate(CucutoDestination.HapticEditor(key.chat)) },
+                onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
+            )
+        }
+        entry<CucutoDestination.RingtonePicker>(
+            clazzContentKey = { "ringtone/${it.chat.packageName}/${it.chat.conversationKey}" },
+        ) { key ->
+            RingtonePickerScreen(
+                chat = key.chat,
+                onBack = goBack,
+                onDone = { navigator.remove(key) },
+                onOpenPacks = { navigate(CucutoDestination.Packs) },
             )
         }
 

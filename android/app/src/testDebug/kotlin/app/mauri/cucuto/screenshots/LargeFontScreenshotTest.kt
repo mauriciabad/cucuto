@@ -60,6 +60,8 @@ class LargeFontScreenshotTest(
 
     @Test fun assignVoice() = largeFont("assign-voice")
 
+    @Test fun ringtonePicker() = largeFont("ringtone-picker")
+
     private fun largeFont(screen: String) =
         screenshot(screen, fontScale = LARGEST_FONT_SCALE) {
             A11yScreens.content(screen)()
