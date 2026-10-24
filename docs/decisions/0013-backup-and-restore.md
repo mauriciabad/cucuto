@@ -3,6 +3,7 @@
 - Status: accepted (defaults the owner may override: #108)
 - Date: 2026-10-24
 - Issue: #43
+- Amended: 2026-10-24 (#43, re-linking Android contacts on a new phone)
 
 ## Context
 
@@ -48,7 +49,8 @@ the included file in a full backup and are left out of a plain backup (reported 
 the bundle's name and version (database version 2, migration `1 → 2` adds two nullable columns).
 
 **Restore never overwrites without asking.** Contacts match on any messenger key, then any phone number. A matched
-contact gains the backup's missing keys, name and Android link; keys that belong to another contact are reported and
+contact gains the backup's missing keys, name and Android link (matched again on the new phone afterwards, see
+"Re-linking Android contacts" below); keys that belong to another contact are reported and
 left alone, because merging two contacts is the user's call. A voice (message assignment plus group policy) is applied
 when the contact is new or has nothing set, skipped when equal, and otherwise reported as a conflict; restoring again
 with the chosen contact IDs in `RestoreOptions.overwrite` replaces only those. Repositories are added when their URL is
@@ -68,6 +70,42 @@ changes) belongs with the Settings UI.
   is what protects the app; the hash still verifies repository and URL downloads.
 - Ringtone assignments are kept in the format but have no table yet: restore counts them (`ringtonesPending`) until
   call ringtones land (M9).
-- Not done here, and tracked on #43: the restore screen (pick file, passphrase, pack checklist with downloads and
-  pickers, conflicts, the final LSPosed checklist), SAF export and the automatic backup folder, and re-linking Android
-  contacts on a new phone (lookup keys are per device; the backup keeps the key and name for that step).
+- Not done here: the restore screen, SAF export and the automatic backup folder ([ADR 0028](0028-settings-and-backup-ui.md)),
+  and re-linking Android contacts on a new phone (the amendment below).
+
+## Amendment 2026-10-24 (#43): re-linking Android contacts
+
+A backup names Android contacts in one field: `contacts[].androidContact`, the lookup key and the name of the contact a
+chat was linked to (for phone ringtones today; contact detail shows it). Lookup keys are per device, so on another phone
+the key is a hint at best, and the contact's `phoneNumbers` are what really finds the person. Until now only restored
+phone ringtones were matched again ([ADR 0057](0057-ringtone-picker-and-ringtone-backups.md)); a chat linked without a
+ringtone kept a key that meant nothing on the new phone.
+
+**Every Android link a restore brings in is matched again, with ADR 0057's matcher.** No second matcher:
+
+- `BackupRestorer` reports, for each contact, the Android link it took from the backup
+  (`ContactRestoreOutcome.androidContact`, with the contact's name). That is a created contact, or a matched one that
+  had no link on this phone. A link the user set on this phone is this phone's own and is left alone.
+- The app hands those contacts, plus the restored phone ringtones, to `ContactRelinker` in `:core:ringtone`
+  (`RingtoneRelinker` before; renamed because it now serves every link). The order is unchanged:
+  1. phone numbers;
+  2. then the lookup key, when it still resolves;
+  3. then the exact name, when exactly one contact has it.
+- The backup's undo record is still only adopted for phone ringtones.
+- A contact with no match is unlinked, so the stale key is never shown as if it were a contact.
+- Matching only reads contacts, so it asks for `READ_CONTACTS` alone. Phone ringtones still need `WRITE_CONTACTS` when
+  they are turned on. Without the permission, the list waits in settings (the JSON list of ADR 0057, which gains a
+  `ringtone` flag; entries without it are phone ringtones). It finishes when the user grants the permission from the
+  restore summary, turns phone ringtones on, or opens the app later with the permission.
+
+The restore summary lists the contacts that could not be matched, each with "Choose contact". That button opens
+Android's contact picker, which needs no permission, and links the one the user picks
+([ADR 0028](0028-settings-and-backup-ui.md#amendment-2026-10-24-43-the-contacts-card)).
+
+Consequences:
+
+- The backup format does not change: `androidContact` and `phoneNumbers` already carried what the matcher needs.
+- Tests: `ContactRelinkerTest` (the matcher, as before), `ContactRelinkFlowTest`, which runs the real
+  `ResolverAndroidContacts` and the matcher against a fake contacts provider under Robolectric, restorer cases for
+  `androidContact`, and `RestoreViewModelTest` cases for the summary.
+- Still open on #43: a tested restore on a wiped phone (`needs-device`).

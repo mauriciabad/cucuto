@@ -73,8 +73,13 @@ class PackerTest {
         assertEquals("day", day["when"]!!.jsonObject["time"]!!.jsonPrimitive.content)
         assertEquals("custom", frog["haptic"]!!.jsonObject["mode"]!!.jsonPrimitive.content)
         // A folder of clips expands to every audio file in it, sorted.
-        val bird = manifest["characters"]!!.jsonArray[1].jsonObject
-        assertEquals(listOf("chirp", "trill", "whistle"), (bird["clips"] as JsonArray).map { it.jsonObject["file"]!!.jsonPrimitive.content.substringAfterLast('/').substringBefore('.') })
+        val cat = manifest["characters"]!!.jsonArray[2].jsonObject
+        assertEquals(listOf("mew", "mrrp", "purr"), (cat["clips"] as JsonArray).map { it.jsonObject["file"]!!.jsonPrimitive.content.substringAfterLast('/').substringBefore('.') })
+        // Special clips (#120): YAML scalars of oneIn, firstOfDay and burst become JSON numbers and booleans.
+        val bird = manifest["characters"]!!.jsonArray[1].jsonObject["clips"]!!.jsonArray.map { it.jsonObject }
+        assertEquals("true", bird[3]["when"]!!.jsonObject["firstOfDay"]!!.jsonPrimitive.toString())
+        assertEquals("3", bird[4]["when"]!!.jsonObject["burst"]!!.jsonPrimitive.toString())
+        assertEquals("25", bird[5]["oneIn"]!!.jsonPrimitive.toString())
         assertTrue("LICENSE" in loaded.pack.files)
     }
 
@@ -83,7 +88,7 @@ class PackerTest {
         val packs = tmp.resolve("packs")
         for (src in demoPacks) assertEquals(0, packer("build", src.toString(), "-o", packs.toString()).statusCode)
         // Packs and bundles are always written as <id>-<version>.soundpack.zip (ADR 0007).
-        assertTrue(packs.resolve("app.mauri.demo.chiptune-critters-1.1.0.soundpack.zip").toFile().isFile)
+        assertTrue(packs.resolve("app.mauri.demo.chiptune-critters-1.2.0.soundpack.zip").toFile().isFile)
         val bundle = packs.resolve("app.mauri.demo.all-1.0.0.soundpack.zip")
         val result = packer(
             "bundle", "--id", "app.mauri.demo.all", "--name", "Cucuto demo packs", "--version", "1.0.0",

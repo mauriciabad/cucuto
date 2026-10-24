@@ -10,6 +10,7 @@ import app.mauri.cucuto.core.data.routing.HapticJson
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import app.mauri.cucuto.xposed.events.Outcome
 import app.mauri.cucuto.xposed.route.AlertRouter
@@ -21,6 +22,7 @@ import java.io.File
  *
  * @property path The clip's path from `pack.json` (what the toggle stores).
  * @property canToggle False for the last enabled clip: switching it off would silence the voice.
+ * @property moment When the clip plays outside the rotation (rare, first of the day, a burst; ADR 0059).
  */
 @Immutable
 data class ClipRow(
@@ -29,6 +31,7 @@ data class ClipRow(
     val file: File,
     val enabled: Boolean,
     val canToggle: Boolean,
+    val moment: Moment = Moment.NONE,
 )
 
 /** Where the chat's vibration comes from (the haptic override editor, #33, changes it). */
@@ -164,6 +167,7 @@ fun clipRows(
             file = character.clips[i],
             enabled = enabled,
             canToggle = !enabled || enabledCount > 1,
+            moment = character.clipMoments.getOrNull(i) ?: Moment.NONE,
         )
     }
 }

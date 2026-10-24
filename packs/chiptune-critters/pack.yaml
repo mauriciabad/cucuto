@@ -4,11 +4,11 @@
 # Format:     tools/packer/README.md (pack.yaml) and docs/pack-format.md (pack.json)
 id: app.mauri.demo.chiptune-critters
 name: Chiptune critters
-version: 1.1.0
+version: 1.2.0
 author: Cucuto contributors
 license: CC0-1.0
 homepage: https://cucuto.mauri.app
-description: Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog hops by day, croaks at night and also sings a pond song as a ringtone, bright by day and sleepy at night.
+description: Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog hops by day, croaks at night and also sings a pond song as a ringtone, bright by day and sleepy at night. Tweet the bird greets the first message of the day with a dawn chorus, squawks at the third message in a row and, once in a blue moon, calls like a cuckoo.
 cover: cover.svg
 tags: [chiptune, animals, demo]
 characters:
@@ -45,7 +45,18 @@ characters:
     sprite: bird/sprite.svg
     seedColor: "#29B6F6"
     tags: [sky]
-    clips: bird/clips/
+    clips:
+      - bird/clips/chirp.ogg
+      - bird/clips/trill.ogg
+      - bird/clips/whistle.ogg
+      # Special clips (#120), never drawn from the shuffle bag: the dawn chorus plays for a chat's first message of the
+      # day, the squawk for the third message in a row, and the cuckoo on about one message in 25.
+      - file: bird/clips/dawn-chorus.ogg
+        when: { firstOfDay: true }
+      - file: bird/clips/squawk.ogg
+        when: { burst: 3 }
+      - file: bird/clips/cuckoo.ogg
+        oneIn: 25
     haptic:
       - { at: 0, preset: TICK, scale: 0.6 }
       - { at: 120, preset: TICK, scale: 0.6 }

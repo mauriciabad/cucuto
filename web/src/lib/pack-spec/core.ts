@@ -105,8 +105,10 @@ export interface ClipDraftInput {
 	file: DraftFileRef;
 	label: string | null;
 	weight?: number | null;
-	/** The clip's condition (day and night clips), kept from an opened pack. */
+	/** The clip's condition (day and night clips, moments), kept from an opened pack. */
 	when?: Record<string, unknown> | null;
+	/** A rare clip's chance, one in `oneIn` (docs/pack-format.md#special-clips), kept from an opened pack. */
+	oneIn?: number | null;
 }
 
 /** One envelope point of a custom haptic, as in `pack.json`. */

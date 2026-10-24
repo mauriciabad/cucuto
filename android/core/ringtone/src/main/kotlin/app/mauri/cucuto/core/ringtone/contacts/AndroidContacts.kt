@@ -36,6 +36,9 @@ interface AndroidContacts {
     /** Whether Cucuto may read and change contacts (`READ_CONTACTS` and `WRITE_CONTACTS`). */
     fun canReadAndWrite(): Boolean
 
+    /** Whether Cucuto may read contacts (`READ_CONTACTS`): enough to match restored contacts (#43). */
+    fun canRead(): Boolean = canReadAndWrite()
+
     /** The contact behind [lookupKey] with its ringtone, or null when it no longer exists. */
     suspend fun find(lookupKey: String): AndroidContactRingtone?
 
@@ -69,6 +72,8 @@ class ResolverAndroidContacts
 
         override fun canReadAndWrite(): Boolean =
             granted(Manifest.permission.READ_CONTACTS) && granted(Manifest.permission.WRITE_CONTACTS)
+
+        override fun canRead(): Boolean = granted(Manifest.permission.READ_CONTACTS)
 
         override suspend fun find(lookupKey: String): AndroidContactRingtone? {
             if (!granted(Manifest.permission.READ_CONTACTS)) return null

@@ -1,15 +1,16 @@
 WEBVTT
 
 NOTE
-Draft Spanish captions for the Cucuto explainer video (docs/explainer-video.md). Same cue IDs and times as
-explainer.en.vtt, so both files line up with both cuts.
+Captions of the Cucuto explainer video (docs/explainer-video.md), generated from its timeline in
+android/video (Explainer.kt). Edit the timeline, then run ./gradlew :video:writeExplainerCaptions.
+Cue IDs (s<shot>-<what>) and times are the same in explainer.en.vtt and explainer.es.vtt.
 
 s1-ping
-00:00:00.500 --> 00:00:02.900
+00:00:00.500 --> 00:00:02.800
 [El mismo aviso, tres veces]
 
 s1-vo
-00:00:03.000 --> 00:00:04.900
+00:00:02.800 --> 00:00:05.000
 Siempre el mismo sonido. ¿Quién era?
 
 s2-call
@@ -105,6 +106,6 @@ s10-call
 [Canto de cuco: cu-cu]
 
 s10-vo
-00:00:54.000 --> 00:00:57.600
+00:00:54.000 --> 00:00:57.850
 Cucuto. Gratis y de código abierto,
 en cucuto.mauri.app.

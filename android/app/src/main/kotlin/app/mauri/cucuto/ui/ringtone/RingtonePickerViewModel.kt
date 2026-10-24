@@ -10,8 +10,15 @@ import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.di.WallClock
+import app.mauri.cucuto.core.data.settings.PickerFoldSettings
+import app.mauri.cucuto.core.data.settings.PickerKind
 import app.mauri.cucuto.core.ringtone.variants.RuleContext
 import app.mauri.cucuto.core.ringtone.variants.VariantRules
+import app.mauri.cucuto.picker.PackFolds
+import app.mauri.cucuto.picker.PackSection
+import app.mauri.cucuto.picker.SurprisePick
+import app.mauri.cucuto.picker.SurpriseRoll
+import app.mauri.cucuto.picker.packSections
 import app.mauri.cucuto.ui.components.PackChip
 import app.mauri.cucuto.ui.components.packChips
 import app.mauri.cucuto.ui.components.selectedChip
@@ -65,6 +72,9 @@ data class PlayingVariant(
  * @property packs Installed packs with characters that have ringtones (only those: ADR 0063).
  * @property packFilter The pack chip chosen, or null for all packs.
  * @property playing The version ringing or paused; [preview] has its progress and whether it is paused.
+ * @property query The search field's text (ADR 0072).
+ * @property folds Which pack sections are folded (ADR 0072).
+ * @property roll The last "Surprise me" pick (ADR 0072).
  */
 @Immutable
 data class RingtonePickerState(
@@ -82,6 +92,9 @@ data class RingtonePickerState(
     val otherSaved: RingtoneChoice? = null,
     val failed: Boolean = false,
     val packFilter: String? = null,
+    val query: String = "",
+    val folds: PackFolds = PackFolds(),
+    val roll: SurpriseRoll<ChatVoice>? = null,
 ) {
     val contactId: Long? get() = chat?.contactId
 
@@ -97,6 +110,25 @@ data class RingtonePickerState(
 
     /** The chat's message character. */
     val voice: ChatVoice? get() = chat?.voice
+
+    /** The pack sections the grid shows: chip, search and folds applied; the ringing character's pack unfolded. */
+    val sections: List<PackSection<RingtoneCharacterItem>>
+        get() =
+            packSections(
+                packs = packs,
+                id = { it.packId },
+                name = { it.name },
+                characters = { it.characters },
+                characterName = { it.character.name },
+                chipPack = selectedChip(chips, packFilter),
+                query = query,
+                folds = folds,
+                currentPack = (saved?.voice ?: voice)?.packId,
+            )
+
+    /** The selection came from "Surprise me": the save bar offers to re-roll it. */
+    val rolled: Boolean
+        get() = roll != null && roll.pick == selection?.voice && !done && choice == RingtoneChoice.CHARACTER
 
     /** What the screen shows as chosen: the edit, else what is stored, else the voice's own ringtone. */
     val selection: RingtoneSelection?
@@ -170,12 +202,18 @@ class RingtonePickerViewModel
         private val source: RingtonePickerSource,
         private val preview: RingtonePreview,
         private val clock: WallClock,
+        private val foldSettings: PickerFoldSettings,
     ) : ViewModel() {
         private val interaction = MutableStateFlow(RingtonePickerState(chatKey = chatKey))
         private val playback = RingtonePlayback<PlayingVariant>(viewModelScope, preview)
 
         val state: StateFlow<RingtonePickerState> =
-            combine(source.observe(chatKey), interaction, playback.playing) { data, local, playing ->
+            combine(
+                source.observe(chatKey),
+                foldSettings.observe(PickerKind.Ringtone),
+                interaction,
+                playback.playing,
+            ) { data, remembered, local, playing ->
                 local.copy(
                     loading = false,
                     chat = data.chat,
@@ -184,6 +222,7 @@ class RingtonePickerViewModel
                     savedChoice = data.saved?.choice,
                     playing = playing?.key,
                     preview = playing,
+                    folds = local.folds.copy(remembered = remembered),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), interaction.value)
 
@@ -203,6 +242,60 @@ class RingtonePickerViewModel
                 stopPreview()
                 return
             }
+            choose(current, item)
+        }
+
+        /** The search field's text: finds covers in folded packs too (ADR 0072). */
+        fun search(query: String) {
+            interaction.update { it.copy(query = query) }
+        }
+
+        /** Folds or unfolds [packId]'s section, and remembers it for next time (ADR 0072). */
+        fun toggleFold(packId: String) {
+            val section = state.value.sections.firstOrNull { it.packId == packId && it.foldable } ?: return
+            val expanded = !section.expanded
+            interaction.update { it.copy(folds = it.folds.with(packId, expanded)) }
+            viewModelScope.launch {
+                try {
+                    foldSettings.remember(PickerKind.Ringtone, packId, expanded)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Only the memory for next time is lost; the section still folds now.
+                }
+            }
+        }
+
+        /**
+         * "Surprise me" (ADR 0072, #290): picks a random character with ringtones from [packId], or from every pack
+         * for null, never the one selected now ([SurprisePick]), and rings it like a tap on its cover. The pick becomes
+         * visible: the search clears, a chip hiding it goes back to "All" and its pack unfolds for this visit. Returns
+         * the pick, or null when there is none.
+         */
+        fun surprise(packId: String?): RingtoneCharacterItem? {
+            val current = state.value
+            if (current.done) return null
+            val pool = current.packs.filter { packId == null || it.packId == packId }.flatMap { it.characters }
+            val previous = current.selection?.voice
+            val pick = SurprisePick.pick(pool, pool.firstOrNull { it.voice == previous }) ?: return null
+            val home = pick.voice.packId
+            interaction.update {
+                it.copy(
+                    query = "",
+                    packFilter = it.packFilter?.takeIf { chip -> chip == home },
+                    folds = it.folds.with(home, expanded = true),
+                    roll = SurpriseRoll(packId, pick.voice, (it.roll?.count ?: 0) + 1),
+                )
+            }
+            choose(current, pick)
+            return pick
+        }
+
+        /** Picks [item] (keeping the rule when it still applies) and rings the version that rule picks now. */
+        private fun choose(
+            current: RingtonePickerState,
+            item: RingtoneCharacterItem,
+        ) {
             val modes = PhoneRingtoneViewModel.modesFor(item.variants.map { it.variant })
             val previous = current.selection
             val mode = previous?.mode?.takeIf { it in modes } ?: RingtoneMode.PACK

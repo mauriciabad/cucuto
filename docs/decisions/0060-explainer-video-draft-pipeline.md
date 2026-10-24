@@ -1,7 +1,8 @@
 # 0060. Explainer video: an automated draft from the app's real screens
 
-- Status: accepted, **to be reworked**: the owner's answer on #194 rules out the app's real screens (see
-  [Owner update](#owner-update-2026-10-24-194-no-real-screens)); rework in #271
+- Status: **superseded by [ADR 0070](0070-illustrated-explainer-video-project.md)** (#271): the owner's answer on
+  #194 rules out the app's real screens (see [Owner update](#owner-update-2026-10-24-194-no-real-screens)). The frame
+  stepping, the cue files, the stage, the mix, the encodes and the manual workflow live on there.
 - Date: 2026-10-24
 - Issues: #195 (this work), #42 and ADR 0042 (brief and the website's slot), #194 (voice and device footage), #202 and
   ADR 0032 (the Roborazzi screenshot harness this builds on)
@@ -102,3 +103,9 @@ clock, the cue and vibration files, the stage, the mix, the encodes and the manu
 - The scenes, timeline, voice text and cues are the editable project files, all in the repository.
 
 Until #271 lands, the current draft is a timing reference only, and the website keeps "coming soon".
+
+**Done in #271 ([ADR 0070](0070-illustrated-explainer-video-project.md)).** The scenes moved to their own module,
+`:video` (`android/video/`), which never depends on `:app`. The recorder no longer steps Compose's animation clock:
+every frame is a function of time. The phone shots are illustrated, shots 1 and 9 included. The English voice-over
+is Kokoro-82M on sherpa-onnx, run locally, and only the English cut is made. `ExplainerPhoneTest`, `ExplainerCast`
+and the app's `renderExplainerFrames` and `explainerDraft` tasks are gone.

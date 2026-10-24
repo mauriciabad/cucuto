@@ -100,8 +100,13 @@ class DraftTest {
         assertEquals(listOf("robin", "song", "ringer"), draft.characters.map { it.id })
         val robin = draft.characters[0]
         assertEquals("#E65100", robin.seedColor)
-        assertEquals(listOf("Chirp", "Tweet"), robin.clips.map { it.label })
-        assertEquals(listOf(2.0, 0.5), robin.clips.map { it.weight })
+        assertEquals(
+            listOf("Chirp", "Tweet", "Good morning", "Impatient", "Golden chirp", "Spooky"),
+            robin.clips.map {
+                it.label
+            },
+        )
+        assertEquals(listOf(2.0, 0.5, 1.0, 1.0, 1.0, 1.0), robin.clips.map { it.weight })
         assertTrue(robin.clips.all { it.durationMs in 200..30_000 })
         assertEquals(HapticMode.CUSTOM, robin.haptic)
         assertEquals(4, robin.customHaptic.size)

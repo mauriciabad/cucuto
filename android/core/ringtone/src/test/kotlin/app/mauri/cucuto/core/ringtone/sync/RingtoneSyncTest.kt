@@ -409,7 +409,7 @@ class RingtoneSyncTest {
     fun anUndoRecordAdoptedFromABackupGivesTheContactItsOwnRingtoneBackLater() =
         runTest {
             // The same phone after a reinstall: Cucuto's old file is on the contact but no longer Cucuto's own
-            // MediaStore entry, and the restore adopted the backup's undo record (RingtoneRelinker, ADR 0057).
+            // MediaStore entry, and the restore adopted the backup's undo record (ContactRelinker, ADR 0057).
             contacts.people["ada"] = "content://media/external/audio/media/1042"
             store.writes["ada"] =
                 ContactRingtoneWriteEntity(

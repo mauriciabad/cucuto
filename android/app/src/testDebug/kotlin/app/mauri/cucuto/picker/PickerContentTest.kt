@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasStateDescription
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -40,6 +41,9 @@ class PickerContentTest {
                     onOpenPacks = { taps += "packs" },
                     onOpenDiscover = { taps += "discover" },
                     onFilterPack = { taps += "filter:$it" },
+                    onSearch = { taps += "search:$it" },
+                    onToggleFold = { taps += "fold:$it" },
+                    onSurprise = { taps += "surprise:$it" },
                 )
             }
         }
@@ -100,6 +104,61 @@ class PickerContentTest {
         show(previewPickerState().copy(chatKey = null, chat = null, selected = null))
         compose.onNodeWithText("Preview characters").assertIsDisplayed()
         compose.onNode(hasContentDescription("Remove voice")).assertDoesNotExist()
+    }
+
+    @Test
+    fun aFoldedPackHidesItsCharactersAndItsHeaderUnfoldsIt() {
+        val state = previewPickerState()
+        show(state.copy(folds = state.folds.with("app.mauri.demo.kitchen", expanded = false)))
+
+        compose.onNodeWithText("Tootle the kettle").assertDoesNotExist()
+        compose
+            .onNode(hasContentDescription("Kitchen orchestra, 1 character") and isHeading())
+            .assert(hasStateDescription("Folded"))
+            .assert(hasClickLabel("Unfold"))
+            .performClick()
+        compose
+            .onNode(hasContentDescription("Chiptune critters, 3 characters") and isHeading())
+            .assert(hasStateDescription("Unfolded"))
+            .assert(hasClickLabel("Fold"))
+
+        assertEquals(listOf("fold:app.mauri.demo.kitchen"), taps)
+    }
+
+    @Test
+    fun searchShowsOnlyTheMatchesAndSaysWhenNothingMatches() {
+        show(previewPickerState().copy(query = "purr"))
+        compose.onNodeWithContentDescription("Purr the cat").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Bleep the frog").assertDoesNotExist()
+        compose.onNodeWithText("Kitchen orchestra").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Clear search").performClick()
+        assertEquals(listOf("search:"), taps)
+    }
+
+    @Test
+    fun searchWithNoMatchSaysSo() {
+        show(previewPickerState().copy(query = "zebra"))
+        compose.onNodeWithText("No character matches “zebra”").assertIsDisplayed()
+    }
+
+    @Test
+    fun theDiceSurpriseFromEveryPackOrFromOnePack() {
+        show(previewPickerState())
+        compose.onNodeWithContentDescription("Surprise me with a character from any pack").performClick()
+        compose.onNodeWithContentDescription("Surprise me with a character from Kitchen orchestra").performClick()
+        assertEquals(listOf("surprise:null", "surprise:app.mauri.demo.kitchen"), taps)
+    }
+
+    @Test
+    fun aRolledCharacterCanBeRerolledOrUsed() {
+        val state = previewPickerState()
+        val bee = state.selected!!
+        show(state.copy(roll = SurpriseRoll("app.mauri.demo.critters", bee, count = 1)))
+
+        compose.onNodeWithText("Re-roll").performClick()
+        compose.onNodeWithText("Use Buzz the bee").performClick()
+
+        assertEquals(listOf("surprise:app.mauri.demo.critters", "bee"), taps)
     }
 
     private fun hasClickLabel(label: String) =

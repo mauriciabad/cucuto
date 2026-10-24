@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.ringtone
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -7,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
@@ -121,12 +123,15 @@ class RingtonePickerContentTest {
     }
 
     @Test
-    // Tall enough that the chips clear the bottom bar under the header and the other choices.
-    @Config(qualifiers = "w411dp-h1200dp")
     fun packChipsOfferThePacksWithRingtonesAndTheirCount() {
         show(state())
         compose.onNodeWithText("All · 2").assertIsDisplayed()
-        compose.onNodeWithText("Kitchen orchestra · 1").performClick()
+        // The chips sit low on the small test screen, behind the save bar: click through semantics.
+        compose
+            .onNodeWithText(
+                "Kitchen orchestra · 1",
+            ).performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(listOf("filter:app.mauri.demo.kitchen"), events)
     }
 

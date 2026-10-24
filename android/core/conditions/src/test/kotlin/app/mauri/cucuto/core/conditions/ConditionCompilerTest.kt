@@ -7,6 +7,7 @@ import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.MonthDay
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -136,5 +137,72 @@ class ConditionCompilerTest {
         assertEquals(null, ClipWhen.of(time = "dusk"))
         assertEquals(null, ClipWhen.of(from = "25:00", to = "06:00"))
         assertEquals(null, ClipWhen.of())
+        assertEquals(
+            ClipWhen(
+                dates =
+                    listOf(
+                        DateSpan(MonthDay.of(12, 24), MonthDay.of(1, 6)),
+                        DateSpan(MonthDay.of(2, 29), MonthDay.of(2, 29)),
+                    ),
+            ),
+            ClipWhen.of(dates = listOf("12-24" to "01-06", "02-29" to "02-29")),
+        )
+        assertEquals(null, ClipWhen.of(dates = listOf("02-30" to "02-30")))
+        assertEquals(null, ClipWhen.of(dates = listOf("13-01" to "13-02")))
+    }
+
+    @Test
+    fun datesRepeatEveryYearAndWrapTheNewYear() {
+        val compiler = ConditionCompiler(null, madrid, LocalDate.parse("2026-10-24"))
+        val halloween = compiler.compile(ClipWhen(dates = listOf(DateSpan(MonthDay.of(10, 25), MonthDay.of(10, 31)))))
+        assertEquals(TimeCondition.INACTIVE, halloween.at("2026-10-24T23:59:00+02:00"))
+        assertEquals(TimeCondition.ACTIVE, halloween.at("2026-10-25T00:00:00+02:00"))
+        assertEquals(TimeCondition.ACTIVE, halloween.at("2026-10-31T23:59:00+01:00"))
+        assertEquals(TimeCondition.INACTIVE, halloween.at("2026-11-01T00:00:00+01:00"))
+        // Next year too, within the 400 days.
+        assertEquals(TimeCondition.ACTIVE, halloween.at("2027-10-28T12:00:00+02:00"))
+        assertEquals(4, halloween.toggleCount)
+
+        val holidays = compiler.compile(ClipWhen(dates = listOf(DateSpan(MonthDay.of(12, 24), MonthDay.of(1, 6)))))
+        assertEquals(TimeCondition.ACTIVE, holidays.at("2026-12-31T23:00:00+01:00"))
+        assertEquals(TimeCondition.ACTIVE, holidays.at("2027-01-06T23:00:00+01:00"))
+        assertEquals(TimeCondition.INACTIVE, holidays.at("2027-01-07T00:00:00+01:00"))
+
+        // A night on Halloween week: dates AND time.
+        val spooky =
+            compiler.compile(
+                ClipWhen(TimeOfDay.Night, dates = listOf(DateSpan(MonthDay.of(10, 25), MonthDay.of(10, 31)))),
+            )
+        assertEquals(TimeCondition.ACTIVE, spooky.at("2026-10-26T22:00:00+01:00"))
+        assertEquals(TimeCondition.INACTIVE, spooky.at("2026-10-26T12:00:00+01:00"))
+        assertEquals(TimeCondition.INACTIVE, spooky.at("2026-11-02T22:00:00+01:00"))
+
+        // 29 February only exists in leap years: none in the next 400 days from here.
+        val leap = compiler.compile(ClipWhen(dates = listOf(DateSpan(MonthDay.of(2, 29), MonthDay.of(2, 29)))))
+        assertEquals(0, leap.toggleCount)
+        assertEquals(TimeCondition.INACTIVE, leap.at("2027-03-01T12:00:00+01:00"))
+    }
+
+    @Test
+    fun localDaysStartAtFourAndFollowDaylightSaving() {
+        val compiler = ConditionCompiler(null, madrid, LocalDate.parse("2026-10-24"))
+        val days = compiler.localDays()
+        // CEST until 25 October, then CET, CEST again on 28 March 2027 and CET on 31 October 2027.
+        assertEquals(7200 - 4 * 3600, days.shiftAtStart)
+        assertEquals(3, days.transitionCount)
+        assertEquals(ms("2026-10-25T03:00:00+02:00"), days.transition(0))
+        assertEquals(3600 - 4 * 3600, days.shift(0))
+        val day = days.dayOf(ms("2026-10-26T04:00:00+01:00"))
+        assertEquals(day, days.dayOf(ms("2026-10-27T03:59:59+01:00")))
+        assertEquals(day + 1, days.dayOf(ms("2026-10-27T04:00:00+01:00")))
+        assertEquals(day - 1, days.dayOf(ms("2026-10-26T03:59:59+01:00")))
+        // The 25-hour day of the change is one day.
+        assertEquals(days.dayOf(ms("2026-10-25T04:00:00+01:00")), days.dayOf(ms("2026-10-26T03:59:00+01:00")))
+        assertEquals(day - 1, days.dayOf(ms("2026-10-25T04:00:00+01:00")))
+        // Zones without daylight saving have no transitions.
+        assertEquals(
+            0,
+            ConditionCompiler(null, ZoneId.of("Asia/Tokyo"), LocalDate.parse("2026-10-24")).localDays().transitionCount,
+        )
     }
 }

@@ -23,7 +23,11 @@
       "tags": ["bird"],
       "clips": [
         { "file": "characters/robin/clips/chirp.ogg", "label": "Chirp", "weight": 2, "when": { "time": "day" } },
-        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5, "when": { "time": "night", "season": ["autumn", "winter"] } }
+        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5, "when": { "time": "night", "season": ["autumn", "winter"] } },
+        { "file": "characters/robin/clips/morning.ogg", "label": "Good morning", "when": { "firstOfDay": true, "time": { "from": "05:00", "to": "12:00" } } },
+        { "file": "characters/robin/clips/impatient.ogg", "label": "Impatient", "when": { "burst": 3 } },
+        { "file": "characters/robin/clips/golden.ogg", "label": "Golden chirp", "oneIn": 50 },
+        { "file": "characters/robin/clips/spooky.ogg", "label": "Spooky", "when": { "date": [{ "from": "10-25", "to": "10-31" }, "02-29"], "time": "night" } }
       ],
       "haptic": {
         "mode": "custom",
@@ -48,7 +52,8 @@
         { "file": "characters/song/ringtones/day.ogg", "label": "Day", "tags": ["live"], "when": { "time": "day" }, "loop": { "startMs": 0, "endMs": 5000 }, "fadeInMs": 500 },
         { "file": "characters/song/ringtones/night.ogg", "label": "Night", "tags": ["radio"], "when": { "time": "night", "season": ["autumn", "winter"] }, "loop": false },
         { "file": "characters/song/ringtones/day.ogg", "label": "Weekend mornings", "when": { "weekday": ["sat", "sun"], "time": { "from": "09:00", "to": "12:30" } }, "loop": { "startMs": 1000 }, "weight": 3 },
-        { "file": "characters/song/ringtones/night.ogg", "label": "Summer", "when": { "season": "summer" }, "loop": true }
+        { "file": "characters/song/ringtones/night.ogg", "label": "Summer", "when": { "season": "summer" }, "loop": true },
+        { "file": "characters/song/ringtones/day.ogg", "label": "Holidays", "when": { "date": { "from": "12-24", "to": "01-06" } } }
       ],
       "haptic": { "mode": "none" }
     },
