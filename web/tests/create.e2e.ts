@@ -22,6 +22,8 @@ const generated = join(
 const built = existsSync(generated);
 
 test.beforeEach(async ({ page }) => {
+	// Each test makes a whole pack (decoding, Kotlin DSP, encoding, zipping, validating): give slow CI machines room.
+	test.setTimeout(90_000);
 	test.skip(!built, 'Pack validator not built (./gradlew syncWebPackSpec in shared/pack-spec)');
 	// The microphone: a 440 Hz tone from Web Audio instead of a real device, so the recording path (getUserMedia,
 	// MediaRecorder, decoding) runs the same on every machine. Chromium's fake capture device needs the OS's

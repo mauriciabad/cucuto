@@ -52,7 +52,7 @@ app's `PackWriter`).
 - Clips: Ogg Opus through WebCodecs where `isConfigSupported` says yes. Otherwise **16-bit WAV**, with a notice. The
   brief's WebAssembly encoder fallback would need `'wasm-unsafe-eval'` in the site's Content Security Policy and a
   large download for the minority of browsers without an Opus encoder; WAV is bigger but every importer plays it.
-  Question for the owner: #QUESTION.
+  Question for the owner: #189.
 - Sprites: JPEG XL when the browser can encode it (none today, so the code is ready for when one does), otherwise
   WebP like the app (quality 1 for pictures with transparency, lossless in Chromium; quality 0.9 for photos), and
   PNG or JPEG where the browser cannot write WebP (Safari).
@@ -79,4 +79,4 @@ microphone is used only while recording.
   two can never drift.
 - The browser module grows by the authoring code (a few kB; kotlinx.serialization was already in it).
 - Not in this first version: covers, bundles, ringtones, a custom haptic editor, saving drafts across reloads,
-  editing an existing pack, and the "host your own repository" helper (#FOLLOWUP).
+  editing an existing pack, and the "host your own repository" helper (#191).
