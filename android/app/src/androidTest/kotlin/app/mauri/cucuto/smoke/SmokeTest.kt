@@ -2,9 +2,11 @@ package app.mauri.cucuto.smoke
 
 import android.app.Activity
 import android.app.Instrumentation
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.MediaStore
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
@@ -91,6 +93,7 @@ abstract class SmokeTest {
     fun tearDownSmoke() {
         Intents.release()
         scenario?.close()
+        downloads.forEach { runCatching { context.contentResolver.delete(it, null, null) } }
     }
 
     /**
@@ -147,6 +150,29 @@ abstract class SmokeTest {
             }
         }
     }
+
+    /**
+     * A demo pack saved to Downloads, as a browser saves the website's file: a `content:` URI of the media provider,
+     * another app's provider, which is what "Open with" accepts (ADR 0079).
+     */
+    protected fun demoPackDownload(pack: String): Uri {
+        val resolver = context.contentResolver
+        val values =
+            ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, "smoke-$pack.soundpack.zip")
+                put(MediaStore.Downloads.MIME_TYPE, "application/zip")
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+        val uri = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+        checkNotNull(resolver.openOutputStream(uri)).use { out ->
+            demoPackFile(pack).inputStream().use { it.copyTo(out) }
+        }
+        resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+        downloads += uri
+        return uri
+    }
+
+    private val downloads = mutableListOf<Uri>()
 
     /** Answers the next system file picker with [action] (open or create a document) with [file]. */
     protected fun answerFilePicker(

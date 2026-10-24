@@ -1,7 +1,6 @@
 package app.mauri.cucuto.smoke
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.ui.test.hasText
 import app.mauri.cucuto.R
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -37,9 +36,15 @@ class FirstRunSmokeTest : SmokeTest() {
     }
 
     @Test
-    fun openWithImportsAPackFromAFileUri() {
-        val file = demoPackFile(KITCHEN)
-        startApp(intent = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.fromFile(file), "application/zip"))
+    fun openWithImportsAPackSharedByAnotherApp() {
+        // A browser download opened from its notification: a content: URI (file: URIs are refused, ADR 0079).
+        val uri = demoPackDownload(KITCHEN)
+        startApp(
+            intent =
+                Intent(
+                    Intent.ACTION_VIEW,
+                ).setDataAndType(uri, "application/zip").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
+        )
 
         waitForText(R.string.import_install)
         tap(R.string.import_install)
