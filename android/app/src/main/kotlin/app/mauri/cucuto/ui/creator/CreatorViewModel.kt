@@ -554,7 +554,7 @@ class CreatorViewModel
 
         // region Finish
 
-        /** Builds the pack and checks it with every rule: the "Check and finish" sheet. */
+        /** Builds the pack and checks it with every rule: the "Check and finish" screen. */
         fun check() {
             val start = state.value.draft ?: return
             setState { copy(finish = FinishUi.Checking) }

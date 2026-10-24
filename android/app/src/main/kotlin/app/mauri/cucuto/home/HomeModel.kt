@@ -39,7 +39,7 @@ data class PackFilterOption(
  * @property recent The "recent senders" strip: chats without a voice that messaged in the last
  *   [HomeRules.RECENT_WINDOW_MS], newest first. Hidden while searching or filtering.
  * @property chats The chat list after search and pack filter.
- * @property unassigned Every chat without a voice, newest first (the "Assign a voice" sheet).
+ * @property unassigned Every chat without a voice, newest first (the "Assign a voice" screen).
  * @property voiced Every chat with a voice (installed or not), newest first, ignoring search and filter.
  * @property totalChats Chats before search and filter (tells "no chats yet" from "no matches").
  */

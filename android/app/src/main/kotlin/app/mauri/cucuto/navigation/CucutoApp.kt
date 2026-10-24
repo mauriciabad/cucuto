@@ -77,7 +77,7 @@ fun CucutoApp(
 
 /**
  * The shell with the real screens. A pack handed over by another app opens the Packs tab, which imports it; an "Add
- * to app" repository link opens the Discover tab, which shows the add sheet (#36).
+ * to app" repository link opens the Discover tab, which opens the add form (#36).
  */
 @Composable
 fun CucutoShell(

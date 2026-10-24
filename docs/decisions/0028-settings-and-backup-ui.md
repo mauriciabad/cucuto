@@ -34,7 +34,7 @@ row shows it as on and disabled.
 library, the credential store and SAF). View models depend on the interface and see documents as URI strings, so
 they are unit-tested with a fake.
 
-- **Manual export:** a dialog (full backup, password with confirmation and an 8-character minimum, repository
+- **Manual export:** a screen since ADR 0055, a dialog before (full backup, password with confirmation and an 8-character minimum, repository
   passwords only with a password), then `ACTION_CREATE_DOCUMENT` with `cucuto-backup-YYYY-MM-DD.zip`. A failed
   export deletes the half-written document. The password lives in memory only until the export, then is wiped; it
   never goes into saved state.
@@ -48,8 +48,8 @@ they are unit-tested with a fake.
   Automatic backups are never encrypted and never include credentials (nobody is there to type a password) and,
   by default, **include the sound packs**, so a restore works even if a repository is gone (the owner's reason for
   wanting Drive backups on #108). No WorkManager: every change that matters happens while the app runs.
-- **Restore (`RestoreViewModel` + `RestoreFlow`):** a Material 3 full-screen dialog over Settings, so the flow needs
-  no extra route. Steps: open (passphrase prompt for encrypted backups; packs and broken files are plain problems),
+- **Restore (`RestoreViewModel` + `RestoreScreen`):** a screen on the tab it starts from (Settings or Home), since
+  ADR 0055; it was a Material 3 full-screen dialog over Settings. Steps: open (passphrase prompt for encrypted backups; packs and broken files are plain problems),
   the pack checklist from `PackRestorePlanner` (packs in the backup, repository and link downloads start by
   themselves, one at a time; local-only packs show "Choose file"; failures can be retried; the plan is recomputed
   after each install so a bundle can satisfy several rows), contacts and voices (`BackupRestorer`), conflicts
@@ -63,7 +63,7 @@ they are unit-tested with a fake.
   hash from the reference instead of the re-zipped one, so later backups still point at what repositories serve.
   They use the `INTERNET` permission Discover added.
 
-**About** shows the version, website, source and a licenses dialog: GPL-3.0-or-later for Cucuto, OFL 1.1 for Google
+**About** shows the version, website, source and a licenses screen (a dialog before ADR 0055): GPL-3.0-or-later for Cucuto, OFL 1.1 for Google
 Sans Flex, CC0 1.0 for the demo packs, and the libraries' licenses.
 
 ## Consequences

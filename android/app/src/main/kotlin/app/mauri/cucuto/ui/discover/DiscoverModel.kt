@@ -22,7 +22,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 data class DiscoverUiState(
     /** One section per enabled repository; null while the saved repositories load. */
     val sections: List<RepositorySection>? = null,
-    /** Every saved repository, enabled or not, for the repositories sheet. */
+    /** Every saved repository, enabled or not, for the Repositories screen. */
     val repositories: List<SavedRepository> = emptyList(),
     val query: String = "",
     val tag: String? = null,
@@ -138,8 +138,8 @@ sealed interface DiscoverMessage {
 enum class AuthKind { NONE, BASIC, BEARER }
 
 /**
- * The "add a repository" sheet, or the sign-in sheet of a saved repository ([repositoryId] set, URL fixed). The URL is
- * parsed as the user types so the sheet can show the host and the unknown-source warning before anything is fetched.
+ * The "add a repository" form, or the sign-in form of a saved repository ([repositoryId] set, URL fixed). The URL is
+ * parsed as the user types so the form can show the host and the unknown-source warning before anything is fetched.
  * Secrets live only here, in memory, and [toString] never shows them.
  */
 data class RepositoryForm(
@@ -158,10 +158,10 @@ data class RepositoryForm(
 
     val link: RepositoryLink? get() = (parsed as? LinkResult.Ok)?.link
 
-    /** The host the link points at, shown in the sheet. */
+    /** The host the link points at, shown in the form. */
     val host: String? get() = link?.url?.host
 
-    /** False for anything but the project website: the sheet shows the unknown-source warning. */
+    /** False for anything but the project website: the form shows the unknown-source warning. */
     val trusted: Boolean get() = host == DEFAULT_HOST
 
     /** The credentials as typed. Throws [IllegalArgumentException] when they are not valid header values. */

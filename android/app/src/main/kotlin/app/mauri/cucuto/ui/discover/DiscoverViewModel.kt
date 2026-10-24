@@ -416,7 +416,7 @@ class DiscoverViewModel
             selected: Boolean,
         ) = imports.setSelected(packId, selected)
 
-        /** Installs what the review shows (the sheet's install button). */
+        /** Installs what the review shows (the review's install button). */
         fun confirmInstall() =
             imports.install {
                 message.value = DiscoverMessage.Installed(it)
