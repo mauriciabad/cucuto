@@ -19,5 +19,13 @@ export const PACK_FORMAT_URL = `${REPO_URL}/blob/main/docs/pack-format.md`;
 export const PACKER_README_URL = `${REPO_URL}/blob/main/tools/packer/README.md`;
 export const ISSUES_URL = `${REPO_URL}/issues`;
 
+/**
+ * SHA-256 of the certificate that signs every Cucuto release (lowercase hex). The same value as the repository
+ * variable RELEASE_CERT_SHA256 that release.yml checks; it never changes unless the signing key is replaced
+ * (docs/releasing.md).
+ */
+export const RELEASE_CERT_SHA256 =
+	'6ded92bf5c2939abaad6958b7c998ffb1be692a8ef22b02cfc9beb6890a76bae';
+
 /** When the privacy page last changed in substance (shown on the page). */
 export const PRIVACY_UPDATED = '2026-10-24';

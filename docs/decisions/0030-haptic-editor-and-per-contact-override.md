@@ -1,6 +1,6 @@
 # 0030. Haptic editor, tap the rhythm and per-contact haptic override
 
-- Status: accepted (owner may override the defaults below, #170)
+- Status: accepted (owner closed #170: defaults kept; AI-written vibrations suggested, #217)
 - Date: 2026-10-24
 - Issues: #32, #33
 
@@ -74,3 +74,13 @@ empty timeline. Saving stores a `Custom` override.
   (`needs-device`).
 - A per-character editor for the in-app pack creator (M8) can reuse `HapticDraft`, `HapticTimelineView` and
   `RhythmRecorder` as they are; they know nothing about contacts.
+
+## Owner answer (2026-10-24, #170)
+
+> I'd also recommend users using AI to generate the vibrations based on the soundwaves for more precise results.
+
+The owner closed the issue, so the three defaults stand. Auto mode already follows each clip's loudness envelope
+(ADR 0012, ADR 0020); the suggestion is read as recommending AI-written `custom` patterns, which can follow beats and
+accents rather than loudness alone. #217 adds the recommendation plus "copy for AI" (prompt, onsets and envelope as
+text) and "paste pattern" (validated, loaded into this editor's timeline). No model runs on the phone and the app calls
+no AI service.

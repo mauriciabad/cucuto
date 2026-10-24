@@ -17,6 +17,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
 
             extensions.configure<ApplicationExtension> {
                 configureKotlinAndroid(this)
+                // AGP strips the native libraries with this NDK's llvm-strip. Without a pinned version it picks
+                // whatever NDK the machine offers, and strip versions lay out .shstrtab differently, so the APK's
+                // bytes would depend on the machine (docs/reproducible-builds.md). The same NDK as :core:jxl.
+                ndkVersion = libs.version("ndk")
                 defaultConfig {
                     targetSdk {
                         version = release(libs.version("sdk-target").toInt())

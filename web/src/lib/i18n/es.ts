@@ -123,16 +123,32 @@ export const es: Messages = {
 		]),
 		screenshotsTitle: 'Un vistazo por dentro',
 		screenshotsLead:
-			'Las capturas de la app con los packs de demostración gratuitos llegarán con la primera versión.',
-		screenshotSoon: 'Captura muy pronto',
+			'La app con los dos packs de demostración gratuitos y chats inventados, en tu tema claro u oscuro.',
 		screenshots: [
-			{ title: 'Estado', text: 'Una tarjeta que se pone verde cuando todo está listo.' },
-			{ title: 'Chats', text: 'Quienes te han escrito hace poco, esperando una voz.' },
 			{
-				title: 'Personajes',
-				text: 'Toca un personaje para oírlo y vuelve a tocarlo para asignarlo.'
+				image: 'onboarding',
+				title: 'Configuración',
+				text: 'Una configuración guiada y breve comprueba el módulo y su ámbito por ti.',
+				alt: 'La pantalla de bienvenida de Cucuto: el reloj de cuco con la puerta abierta y lo que hace la app.'
 			},
-			{ title: 'Packs', text: 'Explora repositorios, escucha los clips y descarga packs.' }
+			{
+				image: 'home',
+				title: 'Chats',
+				text: 'Quienes te han escrito hace poco, esperando una voz.',
+				alt: 'La pantalla de inicio: quienes te han escrito sin voz y los chats con sus personajes.'
+			},
+			{
+				image: 'picker',
+				title: 'Personajes',
+				text: 'Toca un personaje para oírlo y vuelve a tocarlo para asignarlo.',
+				alt: 'El selector de personajes de un chat, con los personajes de los packs de demostración por pack.'
+			},
+			{
+				image: 'packs',
+				title: 'Packs',
+				text: 'Tus packs y sus personajes. Toca uno para oírlo.',
+				alt: 'La pantalla Packs con los packs de demostración Chiptune critters y Kitchen orchestra.'
+			}
 		],
 		requirementsTitle: 'Requisitos',
 		requirementsLead:
@@ -293,6 +309,23 @@ export const es: Messages = {
 		testTitle: 'Pruébalo',
 		testHtml:
 			'En Cucuto, abre <strong>Diagnóstico</strong> y toca <strong>Enviar notificación de prueba</strong>. Con el módulo activo oirás un gorjeo corto de dos tonos y notarás un clic en lugar del sonido predeterminado, y la decisión aparecerá en la lista de abajo en unos segundos.',
+		updatesTitle: 'Actualizaciones',
+		updatesHtml:
+			'Cucuto nunca busca actualizaciones ni se conecta a internet para buscarlas. Las versiones nuevas aparecen en la <a href="{releases}" rel="external">página de versiones</a>, y Cucuto sigue funcionando aunque te saltes alguna. Para recibirlas en el móvil sin mirar a mano, usa <a href="{obtainium}" rel="external">Obtainium</a>, una app gratuita que instala apps directamente desde sus versiones en GitHub. Después de cada actualización, reinicia: el módulo carga la versión nueva al arrancar.',
+		obtainiumButton: 'Consíguelo con Obtainium',
+		obtainiumHint:
+			'Abre Obtainium con los ajustes de Cucuto ya rellenados. Funciona en un móvil con Obtainium instalado.',
+		obtainiumManualTitle: 'Configurar Obtainium a mano',
+		obtainiumManualHtml:
+			'En Obtainium, toca <strong>Añadir aplicación</strong>, pega la URL de origen y abre las opciones adicionales para rellenar el resto. El filtro de títulos se salta las versiones de los packs de demostración, y el certificado hace que Obtainium rechace un APK firmado por otra persona.',
+		// Obtainium's own labels, verbatim, so readers find them in its UI (its Spanish translation leaves some in English).
+		obtainiumFields: {
+			source: 'URL origen de la aplicación',
+			apkFilter: 'Filter links by regular expression',
+			titleFilter: 'Filtrar por título de versión',
+			cert: 'Expected signing certificate hashes'
+		},
+		obtainiumJson: 'Los mismos ajustes como configuración de app de Obtainium (JSON):',
 		troubleTitle: 'Solución de problemas',
 		trouble: [
 			{

@@ -24,6 +24,8 @@ import androidx.sqlite.execSQL
         PackRepositoryEntity::class,
         DecisionLogEntity::class,
         SeenSenderEntity::class,
+        PhoneRingtoneEntity::class,
+        ContactRingtoneWriteEntity::class,
     ],
     version = CucutoDatabase.VERSION,
     exportSchema = true,
@@ -42,8 +44,10 @@ abstract class CucutoDatabase : RoomDatabase() {
 
     abstract fun seenSenderDao(): SeenSenderDao
 
+    abstract fun phoneRingtoneDao(): PhoneRingtoneDao
+
     companion object {
-        const val VERSION: Int = 2
+        const val VERSION: Int = 3
         const val NAME: String = "cucuto.db"
 
         /** Opens the on-disk database with the platform SQLite (no bundled native library needed). */
@@ -70,5 +74,23 @@ object CucutoMigrations {
             }
         }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    /** 2 to 3: phone-call ringtones and the record that undoes them (#52, ADR 0039). */
+    val MIGRATION_2_3: Migration =
+        object : Migration(2, 3) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `phone_ringtones` (`contactId` INTEGER NOT NULL, `packId` TEXT, " +
+                        "`characterId` TEXT, `mode` TEXT NOT NULL, `variant` TEXT, `updatedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`contactId`), FOREIGN KEY(`contactId`) REFERENCES `contacts`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE )",
+                )
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `contact_ringtone_writes` (`lookupKey` TEXT NOT NULL, " +
+                        "`contactId` INTEGER NOT NULL, `originalRingtone` TEXT, `writtenUri` TEXT, `variant` TEXT, " +
+                        "`userChanged` INTEGER NOT NULL, `writtenAt` INTEGER NOT NULL, PRIMARY KEY(`lookupKey`))",
+                )
+            }
+        }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 }

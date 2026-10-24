@@ -14,6 +14,17 @@ export interface IconItem {
 	text: string;
 }
 
+/**
+ * One screenshot on the home page. `image` names the files written by the app's screenshot tests
+ * (`./gradlew :app:exportWebScreenshots`, ADR 0032) to src/lib/assets/images/screenshots/.
+ */
+export interface Shot {
+	image: 'onboarding' | 'home' | 'picker' | 'packs';
+	title: string;
+	text: string;
+	alt: string;
+}
+
 export interface QA {
 	q: string;
 	aHtml: string;
@@ -136,14 +147,33 @@ export const en = {
 		]),
 		screenshotsTitle: 'A look inside',
 		screenshotsLead:
-			'Screenshots of the app with the free demo packs arrive with the first release.',
-		screenshotSoon: 'Screenshot coming soon',
+			'The app with the two free demo packs and made-up chats, in your light or dark theme.',
 		screenshots: [
-			{ title: 'Status', text: 'One card that turns green when everything is ready.' },
-			{ title: 'Chats', text: 'People who wrote recently, waiting for a voice.' },
-			{ title: 'Characters', text: 'Tap to hear a character, tap again to assign it.' },
-			{ title: 'Packs', text: 'Browse repositories, preview clips, download packs.' }
-		],
+			{
+				image: 'onboarding',
+				title: 'Setup',
+				text: 'A short guided setup checks the module and its scope for you.',
+				alt: 'Cucuto’s welcome screen: the cuckoo clock with its door open and what the app does.'
+			},
+			{
+				image: 'home',
+				title: 'Chats',
+				text: 'People who wrote recently, waiting for a voice.',
+				alt: 'The home screen: recent senders without a voice and chats with their characters.'
+			},
+			{
+				image: 'picker',
+				title: 'Characters',
+				text: 'Tap to hear a character, tap again to assign it.',
+				alt: 'The character picker for a chat, with the demo packs’ characters grouped by pack.'
+			},
+			{
+				image: 'packs',
+				title: 'Packs',
+				text: 'Your packs and their characters. Tap one to hear it.',
+				alt: 'The Packs screen with the Chiptune critters and Kitchen orchestra demo packs.'
+			}
+		] satisfies Shot[] as Shot[],
 		requirementsTitle: 'Requirements',
 		requirementsLead:
 			'Cucuto is a power-user tool. Check that your phone has all of these before you install it.',
@@ -303,6 +333,23 @@ export const en = {
 		testTitle: 'Test it',
 		testHtml:
 			'In Cucuto, open <strong>Diagnostics</strong> and tap <strong>Post test notification</strong>. With the module active you hear a short two-tone chirp and feel a click instead of the default sound, and the decision shows up in the list below within a few seconds.',
+		updatesTitle: 'Updates',
+		updatesHtml:
+			'Cucuto never checks for updates and never goes online to look for them. New versions appear on the <a href="{releases}" rel="external">releases page</a>, and Cucuto keeps working when you skip one. To get them on your phone without checking by hand, use <a href="{obtainium}" rel="external">Obtainium</a>, a free app that installs apps straight from their GitHub releases. After every update, reboot: the module loads the new version at boot.',
+		obtainiumButton: 'Get it with Obtainium',
+		obtainiumHint:
+			'Opens Obtainium with Cucuto’s settings filled in. It works on a phone with Obtainium installed.',
+		obtainiumManualTitle: 'Set up Obtainium by hand',
+		obtainiumManualHtml:
+			'In Obtainium, tap <strong>Add app</strong>, paste the source URL, then open the additional options and fill in the rest. The release title filter skips the demo pack releases, and the certificate makes Obtainium refuse an APK signed by anyone else.',
+		// Obtainium's own labels, verbatim, so readers find them in its UI.
+		obtainiumFields: {
+			source: 'App source URL',
+			apkFilter: 'Filter links by regex',
+			titleFilter: 'Filter release titles by regex',
+			cert: 'Expected signing certificate hashes'
+		},
+		obtainiumJson: 'The same settings as an Obtainium app config (JSON):',
 		troubleTitle: 'Troubleshooting',
 		trouble: [
 			{

@@ -29,7 +29,7 @@ These are fixed by the owner; design around them rather than reopening them.
 | Root and hooking | Rooted; LSPosed with libxposed API 102 (WaEnhancer X already runs) | Root-only features are allowed. The module targets libxposed API 102 and uses no legacy Xposed API. |
 | Self-contained | No Tasker, MacroDroid, BuzzKill or other helper apps | One APK contains the app and its Xposed module. |
 | Target apps | WhatsApp (`com.whatsapp`) and WhatsApp Business (`com.whatsapp.w4b`) | Routing is keyed by package, so other messengers can be added later. Phone calls get ringtones through Android contacts. |
-| Coexistence | WaEnhancer X is installed and hooks WhatsApp | Do not hook the WhatsApp process. Stay in `system_server` to avoid clashes. |
+| Coexistence | WaEnhancer X is installed and hooks WhatsApp | Do not hook the WhatsApp process by default. Stay in `system_server` to avoid clashes. Owner update 2026-10-24 (#145, [ADR 0051](decisions/0051-optional-whatsapp-scope.md)): not hooking WhatsApp is "a preference, not a requirement"; a feature that cannot work otherwise (only automatic WhatsApp call ringtones) may use an optional, opt-in WhatsApp scope, explained to the user first, with minimum intrusion (nothing of messages read) and verified compatibility with WaEnhancer X. |
 | Minimum intrusion | "I want it to work with the minimum intrusion possible, so we lower the risk of critical vulnerabilities/mistakes" (owner, #67) | Hook as little as possible, in as few processes as possible; fewest permissions, asked only when a feature needs them; read only what a feature uses. No backwards-compatibility code. When two designs work, pick the less intrusive one. |
 | License | GPL-3.0-or-later | Derived works must stay open source. Demo packs are CC0. |
 | Repository | One public monorepo on GitHub | Android app, website, packer tool, schemas and demo packs live together. |
@@ -59,7 +59,7 @@ What the chosen design gives us:
 - **One sound, no duplicates.** We replace WhatsApp's tone on the exact notification that was going to alert. Muted chats, re-posted updates, Do Not Disturb, ringer mode and notification cooldown keep working exactly as Android implements them.
 - **No WhatsApp settings to change.** Leave WhatsApp's tone and vibration on. If the module is off or a hook fails, the default WhatsApp tone plays: safe degradation.
 - **No foreground service, no persistent notification, no battery exemptions.** The app only needs to run when the owner opens it.
-- **No conflict with WaEnhancer X.** We never touch the WhatsApp process.
+- **No conflict with WaEnhancer X.** The required scope never touches the WhatsApp process. Only the optional WhatsApp call-ringtone scope does, if the user turns it on, and it must coexist with WaEnhancer X ([ADR 0051](decisions/0051-optional-whatsapp-scope.md)).
 
 The first milestone (M0 below) is a short device spike that confirms the hook points on the owner's exact build before any UI is written.
 
@@ -193,9 +193,9 @@ Where ringtones apply:
 
 | Call type | How | Notes |
 | --- | --- | --- |
-| Phone calls, fixed or rule-based variant | Android's per-contact ringtone (`ContactsContract.Contacts.CUSTOM_RINGTONE`) | Native; Telecom plays it and the Contacts app shows it. Needs `READ_CONTACTS` and `WRITE_CONTACTS`. Ringtone files are copied into the shared `Ringtones/cucuto/` folder through MediaStore so the system can play them. For rule-based variants the app rewrites the contact's ringtone at each boundary (time-of-day change, new season) with an exact alarm. |
+| Phone calls, fixed or rule-based variant | Android's per-contact ringtone (`ContactsContract.Contacts.CUSTOM_RINGTONE`) | Native; Telecom plays it and the Contacts app shows it. Needs `READ_CONTACTS` and `WRITE_CONTACTS`. Ringtone files are copied into the shared `Ringtones/cucuto/` folder through MediaStore so the system can play them. For rule-based variants the app rewrites the contact's ringtone at each boundary (time-of-day change, new season) with an inexact alarm, which needs no exact-alarm permission ([ADR 0039](decisions/0039-phone-ringtones-on-the-device.md)). |
 | Phone calls, random per call | The app re-rolls the contact's ringtone after each call (no hook) | M9 spike (#50, [ADR 0023](decisions/0023-call-ringtones-native-first.md)): Telecom runs inside `system_server` (scope `system` covers it), but no hook is needed: the app rewrites `CUSTOM_RINGTONE` when a call ends, so the next call rings with a new variant. A per-contact call vibration rides on the ringtone URI's `vibration_uri` parameter (Android 17, enabled on Pixel). Telecom hooks (`Call.getRingtone()`, `Ringer.vibrateIfNeeded`) are prepared in `spikes/m9/` as a fallback only. |
-| WhatsApp calls | Guided per-chat ringtone (no hook) | M9 spike (#50): WhatsApp's calls are self-managed (Telecom does not ring) and its call channel has no sound, so WhatsApp rings inside its own process. Changing that would mean hooking WhatsApp, which the rules forbid. The app exports the ringtone to `Ringtones/cucuto/` and guides the user to WhatsApp's per-chat call ringtone (one file, no variants). |
+| WhatsApp calls | Guided per-chat ringtone by default; automatic with an optional WhatsApp scope | M9 spike (#50): WhatsApp's calls are self-managed (Telecom does not ring) and its call channel has no sound, so WhatsApp rings inside its own process. By default the app exports the ringtone to `Ringtones/cucuto/` and guides the user to WhatsApp's per-chat call ringtone (one file, no variants). Owner update 2026-10-24 (#145): automatic WhatsApp call ringtones matter, so this feature alone may hook WhatsApp through an optional, opt-in scope the user enables in LSPosed after a plain explanation ([ADR 0051](decisions/0051-optional-whatsapp-scope.md)); the least intrusive hook and the scope UX are spike #215. |
 
 Contacts: each app contact links to an Android contact for phone ringtones. Match WhatsApp senders to Android contacts by phone number, and let the user confirm or pick manually.
 
@@ -422,11 +422,13 @@ Playback in notifications: the module sets the chosen `VibrationEffect` on Whats
 
 In-app haptics: use Compose `LocalHapticFeedback` types for standard touches (toggles, confirms, list ticks). Reserve richer Builder effects for moments of delight: assigning a character, importing a pack, a successful test. Follow Android's haptics design principles: short, crisp, never a long buzz for a UI action.
 
-**Haptic editor (M4).** A timeline screen where the owner taps to drop presets, drags envelope points, sees a live waveform, and previews with the clip. It also has a "tap the rhythm" mode that records taps into presets.
+**Haptic editor (M4).** A timeline screen where the owner taps to drop presets, drags envelope points, sees a live waveform, and previews with the clip. It also has a "tap the rhythm" mode that records taps into presets. Owner suggestion (#170): recommend that users ask an AI to write the vibration from the sound wave for more precise results than auto mode; the editor helps with "copy for AI" and "paste pattern" (#217).
 
 ## UX, game feel and Material 3 Expressive
 
 The app should feel like a small game: every action answers with synchronized motion, sound and haptics, on a Material 3 Expressive foundation. Juice never gets in the way of getting a contact set up in under 10 seconds.
+
+Screens over dialogs (owner, #166): a flow or a body of content gets a real screen with predictive back; dialogs and bottom sheets are only for very minimal, temporary content (a confirmation, a short choice, a blocking progress card). Conversions: #218.
 
 Screens:
 
@@ -589,10 +591,10 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
 - [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
 - [ ] Album-cover ringtone picker with preview and variant chips; contact linking by phone number.
-- [ ] WhatsApp call ringtones if the M9 spike shows it can be done without hooking WhatsApp.
+- [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215), compatible with WaEnhancer X. Without the scope, the guided per-chat ringtone.
 - [ ] The owner's K.K. Slider pack assigned to several contacts, with day and night variants switching correctly.
 
-Later ideas, out of scope for v1: other messengers (Telegram, Signal, SMS), per-contact ringtones for WhatsApp calls, a home-screen widget, MEGA links as a pack source, community pack submissions to the official repository.
+Later ideas, out of scope for v1: other messengers (Telegram, Signal, SMS), a home-screen widget, MEGA links as a pack source, community pack submissions to the official repository.
 
 ## Risks and open questions
 
@@ -605,7 +607,7 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 | Group messages alert through the summary notification, not the child | Wrong or missing sender | M0 confirms which record alerts. If it is the summary, resolve the sender from the newest child in the same group. |
 | The process that plays notification sounds can't read our clip URI | Silence instead of a clip | Provider caller allowlist confirmed in M0. Fallback: have the module copy clips to a location that process can read. |
 | WhatsApp identifiers change (phone JIDs versus newer `@lid` IDs) | Assignments stop matching | Store every key seen for a contact; match on any. The "recent senders" feed makes reassignment one tap. |
-| WhatsApp plays its call ringtone inside its own process (confirmed statically in M9) | No custom WhatsApp call ringtones without hooking WhatsApp | Treat WhatsApp call ringtones as best effort (guided per-chat ringtone); phone-call ringtones work natively regardless. |
+| WhatsApp plays its call ringtone inside its own process (confirmed statically in M9) | No custom WhatsApp call ringtones without hooking WhatsApp | Guided per-chat ringtone by default; automatic ringtones only through the optional WhatsApp scope (ADR 0051, #215), which can break when WhatsApp changes its ringer, so it falls back to WhatsApp's own ringtone on any error. Phone-call ringtones work natively regardless. |
 | Phone ringtone files deleted or moved by the user | Contacts fall back to the default ringtone | Keep ringtones in a dedicated `Ringtones/cucuto/` folder and re-check them on app start; repair automatically. |
 | JPEG XL decoding gaps (no built-in Android decoder assumed; Firefox needs a preference) | Missing sprites or site images | JXL is optional: bundle jxl-rs (ADR 0006), otherwise convert at import. On the site, serve `<picture>` with fallbacks. |
 | Malicious or broken pack repositories | Crashes, storage abuse, misleading content | Same validation as local imports, size and SHA-256 checks, redirect caps, warning when adding an unknown repository. |

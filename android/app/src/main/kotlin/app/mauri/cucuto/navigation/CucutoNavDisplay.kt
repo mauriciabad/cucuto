@@ -29,6 +29,7 @@ import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.haptics.HapticEditorScreen
@@ -123,6 +124,7 @@ private fun entries(
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onBack = goBack,
                 onOpenDetail = { chat -> navigate(CucutoDestination.ContactDetail(chat)) },
+                onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
         }
     }
@@ -148,8 +150,13 @@ private fun entries(
         }
     }
     entry<CucutoDestination.Packs> {
-        PacksScreen(onBack = goBack, onDiscover = { navigate(CucutoDestination.Discover) })
+        PacksScreen(
+            onBack = goBack,
+            onDiscover = { navigate(CucutoDestination.Discover) },
+            onCreate = { source -> navigate(CucutoDestination.Creator(source)) },
+        )
     }
+    entry<CucutoDestination.Creator> { key -> CreatorScreen(sourcePackId = key.sourcePackId, onBack = goBack) }
     entry<CucutoDestination.Discover> { DiscoverScreen(onBack = goBack) }
     entry<CucutoDestination.HapticEditor> { key ->
         HapticEditorScreen(chat = key.chat, onBack = goBack, onDone = { backStack.remove(key) })

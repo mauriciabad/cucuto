@@ -10,6 +10,7 @@ import app.mauri.cucuto.testing.TestData.BEA
 import app.mauri.cucuto.testing.TestData.CRITTERS
 import app.mauri.cucuto.testing.TestData.NOW
 import app.mauri.cucuto.testing.TestData.chat
+import app.mauri.cucuto.ui.discover.DemoPacksRequests
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -34,7 +35,7 @@ class HomeViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = HomeViewModel(directory, characters, WallClock { NOW })
+    private fun viewModel() = HomeViewModel(directory, characters, WallClock { NOW }, DemoPacksRequests())
 
     @Test
     fun startsLoadingThenShowsChatsAndTheStrip() =

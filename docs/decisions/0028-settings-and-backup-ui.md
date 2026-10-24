@@ -1,6 +1,6 @@
 # 0028. Settings, backup and restore UI
 
-- Status: accepted (defaults the owner may override: #166)
+- Status: accepted; the owner confirmed the #166 defaults except item 9 (restore becomes a screen, #218)
 - Date: 2026-10-24
 - Issues: #28, #43 (the UI left over from [ADR 0013](0013-backup-and-restore.md))
 
@@ -74,3 +74,13 @@ Sans Flex, CC0 1.0 for the demo packs, and the libraries' licenses.
   chosen folder (10 copies at most, and only when something changed); the switch to leave packs out is next to it.
 - Re-linking Android contacts on a new phone, and Google Drive backups (the owner's request on #108, now #163), are separate
   work.
+
+## Owner answer (2026-10-24, #166)
+
+> 9 i preffer a screen unless the content is very minimal and temporary.
+> other LGTM
+
+Defaults 1 to 8 stand. Item 9 changes: the restore flow becomes a screen (a navigation destination with predictive
+back), not a full-screen dialog. The answer also became a UI rule in the brief ("Screens over dialogs"): dialogs and
+sheets only for very minimal, temporary content. The manual backup options dialog and the licenses dialog are
+non-trivial too; all conversions are listed in #218.

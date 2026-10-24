@@ -33,7 +33,10 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   `{placeholder}` links (`src/lib/i18n/links.ts`); render them with `<Html>`. Link to pages with
   `pageHref('/install/', locale)`. `hooks.server.ts` sets `<html lang>`; `Seo` adds `hreflang` alternates. The pack
   format spec stays English-only.
-- **Screenshot slots.** The home page has placeholders for the scripted screenshots (#41); replace them there.
+- **Screenshots (#41).** The home page shows the app's own screenshots from `src/lib/assets/images/screenshots/`
+  (`<name>-light.png` and `-dark.png`, Spanish ones in `es/` once the app is translated). They are rendered from the
+  demo packs by the app's screenshot tests: refresh them with `cd android && ./gradlew :app:exportWebScreenshots`
+  (ADR 0032).
 - **Explainer video (#42, ADR 0042).** `ExplainerVideo.svelte` on Home. The build looks for
   `static/video/explainer.{webm,mp4}` (and the optional Spanish cut `explainer.es.*`) and shows the poster with "coming
   soon" until they exist; then it plays muted when scrolled into view (never with reduced motion or Data Saver), or
