@@ -301,6 +301,116 @@ class RingtoneSyncTest {
     @Test
     fun leaveAsIsWithoutALinkGivesTheRecordedContactItsRingtoneBack() = runTest { unlinkedChatGetsItsContactBack(null) }
 
+    /**
+     * #372: own ringtone → a character → Android default → Leave as is, each an explicit save ([RingtoneSync.decideAgain]
+     * before the sync, as `PhoneRingtones` does). The contact's own ringtone comes back at the end.
+     */
+    @Test
+    fun explicitChoicesInARowGiveTheOwnRingtoneBackOnLeaveAsIs() =
+        runTest {
+            contacts.people["ada"] = "content://own"
+            val sync = sync()
+
+            store.rows = listOf(row(characterId = "solo"))
+            sync.decideAgain("ada")
+            sync.sync(SyncReason.Changed)
+            assertEquals(exports.uriOf("solo"), contacts.people["ada"])
+
+            store.rows = listOf(defaultRow())
+            sync.decideAgain("ada")
+            assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+            assertNull(contacts.people["ada"])
+            assertEquals("content://own", store.writes.getValue("ada").originalRingtone)
+
+            store.rows = emptyList()
+            sync.decideAgain("ada")
+            sync.sync(SyncReason.Changed)
+            assertEquals("content://own", contacts.people["ada"])
+            assertTrue(store.writes.isEmpty())
+        }
+
+    /** The owner's case (#372): Android default, Crackle set in Contacts, then a character saved in the picker. */
+    private suspend fun changeInContactsThenExplicitPick(): RingtoneSync {
+        contacts.people["ada"] = null
+        store.rows = listOf(defaultRow())
+        val sync = sync()
+        sync.sync(SyncReason.Changed)
+        contacts.people["ada"] = "content://crackle"
+
+        // A passive sync respects the change.
+        assertEquals(RingtoneProblem.ChangedElsewhere, sync.sync(SyncReason.Changed).problems[1])
+        assertTrue(store.writes.getValue("ada").userChanged)
+        store.rows = listOf(row(characterId = "solo"))
+        assertEquals(RingtoneProblem.ChangedElsewhere, sync.sync(SyncReason.Changed).problems[1])
+        assertEquals("content://crackle", contacts.people["ada"])
+
+        // The explicit save is a fresh decision.
+        sync.decideAgain("ada")
+        val write = store.writes.getValue("ada")
+        assertFalse(write.userChanged)
+        assertEquals("content://crackle", write.originalRingtone)
+        assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+        assertEquals(exports.uriOf("solo"), contacts.people["ada"])
+        return sync
+    }
+
+    @Test
+    fun anExplicitPickAfterAChangeInContactsWritesTheCharacterAndLeaveAsIsGivesTheChangeBack() =
+        runTest {
+            val sync = changeInContactsThenExplicitPick()
+
+            store.rows = emptyList()
+            sync.decideAgain("ada")
+            sync.sync(SyncReason.Changed)
+            assertEquals("content://crackle", contacts.people["ada"])
+        }
+
+    @Test
+    fun anExplicitAndroidDefaultAfterAChangeInContactsClearsItAndKeepsItForUndo() =
+        runTest {
+            contacts.people["ada"] = "content://original"
+            store.rows = listOf(row(characterId = "solo"))
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+            contacts.people["ada"] = "content://crackle"
+            sync.sync(SyncReason.Changed)
+
+            store.rows = listOf(defaultRow())
+            sync.decideAgain("ada")
+            assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+            assertNull(contacts.people["ada"])
+            assertEquals("content://crackle", store.writes.getValue("ada").originalRingtone)
+        }
+
+    @Test
+    fun anExplicitLeaveAsIsAfterAChangeInContactsKeepsIt() =
+        runTest {
+            contacts.people["ada"] = "content://original"
+            store.rows = listOf(row(characterId = "solo"))
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+            contacts.people["ada"] = "content://crackle"
+            sync.sync(SyncReason.Changed)
+
+            store.rows = emptyList()
+            sync.decideAgain("ada")
+            sync.sync(SyncReason.Changed)
+            assertEquals("content://crackle", contacts.people["ada"])
+            assertTrue(store.writes.isEmpty())
+        }
+
+    @Test
+    fun decidingAgainKeepsTheOriginalWhileTheContactHasCucutosFile() =
+        runTest {
+            contacts.people["ada"] = "content://own"
+            store.rows = listOf(row(characterId = "solo"))
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+            val before = store.writes.getValue("ada")
+            sync.decideAgain("ada")
+            assertEquals(before, store.writes.getValue("ada"))
+        }
+
     @Test
     fun androidDefaultWithALinkClearsCucutosFileOnAContactWithoutItsOwn() =
         runTest {

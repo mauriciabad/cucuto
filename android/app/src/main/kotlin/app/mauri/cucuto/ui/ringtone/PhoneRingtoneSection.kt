@@ -286,10 +286,14 @@ fun PhoneCallsRowContent(
     onChangeContact: () -> Unit = {},
 ) {
     val character = state.ringingCharacter
-    val name = state.characterName.takeIf { state.hasRingtone && !state.isDefault && !state.isUnchanged }
+    val name =
+        state.characterName.takeIf {
+            state.hasRingtone && !state.isDefault && !state.isUnchanged && !state.setInContacts
+        }
     val value =
         when {
             state.loading -> ""
+            state.setInContacts -> stringResource(R.string.ringtone_row_contacts)
             state.isDefault -> stringResource(R.string.ringtone_row_default)
             state.isUnchanged -> stringResource(R.string.ringtone_row_unchanged)
             name == null -> stringResource(R.string.ringtone_row_none)
@@ -298,6 +302,7 @@ fun PhoneCallsRowContent(
     val relation =
         when {
             state.loading -> null
+            state.setInContacts -> stringResource(R.string.ringtone_row_contacts_detail)
             state.isDefault -> stringResource(R.string.ringtone_row_default_detail)
             state.isUnchanged -> stringResource(R.string.ringtone_row_unchanged_detail)
             name == null -> null
@@ -356,7 +361,7 @@ private fun LinkLines(
                 Text(stringResource(R.string.ringtone_change_contact))
             }
         }
-        if (!state.isDefault && state.using && state.hasRingtone) {
+        if (!state.isDefault && state.using && state.hasRingtone && !state.setInContacts) {
             Text(
                 state.exportTitle?.let { stringResource(R.string.ringtone_whatsapp_hint, it) }
                     ?: stringResource(R.string.ringtone_whatsapp_hint_generic),

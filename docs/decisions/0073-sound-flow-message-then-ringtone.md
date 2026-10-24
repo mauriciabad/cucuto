@@ -2,7 +2,8 @@
 
 - Status: accepted (owner update 2026-10-24, #298; the defaults below can be overridden on #282); contact detail's
   Phone calls row and set-up card amended 2026-10-24 (#348), the rule chips moved to the rules screen (#347, ADR 0074);
-  undo without a link amended 2026-10-24 (#369)
+  undo without a link amended 2026-10-24 (#369); an explicit choice overrides a change in Contacts, amended
+  2026-10-24 (#372)
 - Date: 2026-10-24
 - Issue: #298
 - Amends: [ADR 0063](0063-independent-voice-and-ringtone.md) (ringtone choices, first-assign flow, display),
@@ -78,7 +79,7 @@ How the two new choices compare, for a linked contact with phone ringtones on:
 | None (the phone's default) | nothing written | nothing written |
 | Its own (set in Contacts) | cleared, kept in the undo record | untouched |
 | Cucuto's ring file | cleared (the undo record keeps the original) | the original comes back |
-| Changed in Contacts after Cucuto cleared it | "Changed in Contacts", left alone until "Use Cucuto's ringtone again" | untouched |
+| Changed in Contacts after Cucuto cleared it | "Changed in Contacts", left alone until "Use Cucuto's ringtone again" or a new save in the picker | untouched |
 
 Turning phone ringtones off, unlinking, or switching to Leave as is gives an Android default contact its original
 ringtone back, as for ring files (ADR 0039).
@@ -88,6 +89,13 @@ key, whether or not the chat is still linked, and only while the contact still h
 without a link has no Android contact to clear, so for it Android default means "give back the recorded contact, then
 nothing". The sync writes Android default before rendering any ring file. "Change" under the Phone calls row no longer
 unlinks, and a one-time repair re-links chats that lost their link this way (ADR 0039's amendment).
+
+Amended 2026-10-24 (#372): saving any choice in the ringtone picker or the rules screen is a fresh decision. It
+clears "Changed in Contacts" and takes the contact's current ringtone (unless it is Cucuto's own) as the one to give
+back later. So after a change in Contacts, picking a character writes Cucuto's file, Android default clears the
+contact, and Leave as is keeps the ringtone set in Contacts. Only passive syncs keep respecting a change in Contacts
+(ADR 0039's amendment). While they do, the header says "Rings with the ringtone set in Contacts" and the Phone calls
+row "Set in Contacts", never the character.
 
 ### Data
 

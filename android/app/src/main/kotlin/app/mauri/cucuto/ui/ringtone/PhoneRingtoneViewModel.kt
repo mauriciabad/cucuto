@@ -61,6 +61,8 @@ data class VariantChip(
  * @property previewSound The version that rings now, for the play button (#246); null when there is nothing to play.
  * @property preview Its preview while it rings or is paused, with its progress (owner update 2026-10-24, #242).
  * @property choice The stored kind of ringtone (ADR 0073), null when nothing is stored.
+ * @property setInContacts The ringtone was changed in Contacts after Cucuto, and Cucuto respects it (#372): the contact
+ *   rings with that one, not [choice], until the user takes it back or saves a new choice in the picker.
  */
 @Immutable
 data class PhoneRingtoneUiState(
@@ -89,6 +91,7 @@ data class PhoneRingtoneUiState(
     val previewSound: RingSound? = null,
     val preview: PreviewPlaying<RingSound>? = null,
     val choice: RingtoneChoice? = null,
+    val setInContacts: Boolean = false,
 ) {
     /** "Android default": the phone's default ringtone (ADR 0073). */
     val isDefault: Boolean get() = choice == RingtoneChoice.ANDROID_DEFAULT
@@ -105,9 +108,13 @@ data class PhoneRingtoneUiState(
      */
     val shownProblem: RingtoneProblem?
         get() =
-            problem?.takeUnless {
-                it == RingtoneProblem.NotLinked || it == RingtoneProblem.NoRingtones ||
-                    (it == RingtoneProblem.RenderFailed && ringingWith != null)
+            if (setInContacts) {
+                RingtoneProblem.ChangedElsewhere
+            } else {
+                problem?.takeUnless {
+                    it == RingtoneProblem.NotLinked || it == RingtoneProblem.NoRingtones ||
+                        (it == RingtoneProblem.RenderFailed && ringingWith != null)
+                }
             }
 
     /**
@@ -115,7 +122,9 @@ data class PhoneRingtoneUiState(
      * allow the phone permission, or fix a problem. Otherwise what rings is only the "Phone calls" row's.
      */
     val needsAction: Boolean
-        get() = needsSetUp && (!enabled || !linked || !using || needsPhonePermission || shownProblem != null)
+        get() =
+            (needsSetUp || setInContacts) &&
+                (!enabled || !linked || !using || needsPhonePermission || shownProblem != null)
 
     /** The linked contact and the WhatsApp hint sit under the "Phone calls" row (#348). */
     val showsLink: Boolean get() = !loading && contactId != null && needsSetUp && enabled && linked
@@ -245,6 +254,7 @@ class PhoneRingtoneViewModel
                         contact.character?.fileOf(v)?.let { RingSound(it, v.loop, v.fadeInMs) }
                     },
                 choice = contact.ringtone?.choice,
+                setInContacts = setInContacts(contact),
             )
         }
 
@@ -365,6 +375,15 @@ class PhoneRingtoneViewModel
                     add(RingtoneMode.FIXED)
                 }
             }
+
+            /**
+             * Whether [contact]'s ringtone was changed in Contacts after Cucuto and Cucuto respects it (#372): its undo
+             * record says so and the stored choice is one Cucuto would write ("Leave as is" never writes).
+             */
+            fun setInContacts(contact: ContactPhoneRingtone): Boolean =
+                contact.linkedLookupKey != null &&
+                    contact.write?.userChanged == true &&
+                    contact.ringtone.let { it != null && it.choice != RingtoneChoice.UNCHANGED }
 
             private fun RingtoneVariant.chipLabel(): String =
                 label ?: file.substringAfterLast('/').substringBeforeLast('.')

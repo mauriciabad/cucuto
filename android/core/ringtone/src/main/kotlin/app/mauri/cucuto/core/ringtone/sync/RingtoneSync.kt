@@ -71,7 +71,8 @@ data class SyncResult(
  *   linked elsewhere) gets that ringtone back from the record alone, whether or not its chat is still linked, unless
  *   someone changed it in the meantime (#369).
  * - **Respect.** A ringtone that is neither what Cucuto wrote nor one of its ring files was set by the user (or another
- *   app); Cucuto stops writing that contact and reports [RingtoneProblem.ChangedElsewhere].
+ *   app); Cucuto stops writing that contact and reports [RingtoneProblem.ChangedElsewhere], until the user takes it
+ *   over ([takeOver]) or saves a new choice ([decideAgain], #372).
  * - **Ring files.** Every variant of a used character is exported once (shared by every contact with that character),
  *   so a re-roll or a boundary is only a contact write. Files no longer used are deleted.
  */
@@ -234,6 +235,29 @@ class RingtoneSync(
         val current = contacts.find(lookupKey)?.ringtone
         store.upsertWrite(
             write.copy(originalRingtone = current, writtenUri = null, userChanged = false, writtenAt = wallClock()),
+        )
+    }
+
+    /**
+     * The user saved a choice for [lookupKey] in the ringtone picker or the rules screen (#372): a fresh decision that
+     * overrides an earlier change in Contacts. The contact's current ringtone becomes the one to restore later, unless
+     * it is still what Cucuto left there (its last write, one of its ring files, nothing after a clear), in which case
+     * the recorded original stays. The next sync then applies the choice. Passive syncs never call this, so they keep
+     * respecting a change in Contacts.
+     */
+    suspend fun decideAgain(lookupKey: String) {
+        val write = store.writes().firstOrNull { it.lookupKey == lookupKey } ?: return
+        val android = contacts.find(lookupKey) ?: return
+        val current = android.ringtone
+        val ours = exports.list().mapTo(HashSet()) { it.uri }
+        if (!write.userChanged && write.stillOn(current, ours)) return
+        store.upsertWrite(
+            write.copy(
+                originalRingtone = if (current in ours) write.originalRingtone else current,
+                writtenUri = null,
+                userChanged = false,
+                writtenAt = wallClock(),
+            ),
         )
     }
 

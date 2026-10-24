@@ -4,7 +4,8 @@
   [ADR 0063](0063-independent-voice-and-ringtone.md); the rule modes gain "your own rules" in
   [ADR 0074](0074-ringtone-rules-screen.md) (#288); the `choice` column (Android default, Leave as is) and the
   `cucuto:default` undo marker come from [ADR 0073](0073-sound-flow-message-then-ringtone.md); undo without a link,
-  renamed ring files and "Change" are amended for #369 (end of this ADR)
+  renamed ring files and "Change" are amended for #369, and an explicit choice overriding a change in Contacts for
+  #372 (end of this ADR)
 - Date: 2026-10-24
 - Issue: #52 (picker UI: #53; device run: #143)
 
@@ -62,7 +63,8 @@ how every change can be undone.
    - A contact that loses its phone ringtone (stopped, unlinked, linked elsewhere) gets its original back.
    - A ringtone that is neither Cucuto's last write nor one of its files was changed by the user. Cucuto stops
      writing that contact and never restores over it, until the user taps "Use Cucuto's ringtone again", which makes
-     the user's latest ringtone the one to restore later.
+     the user's latest ringtone the one to restore later. Saving a choice in the ringtone picker or the rules screen
+     does the same (amended for #372, end of this ADR).
    - Turning the feature off restores every contact and deletes every ring file. The choices stay for next time.
    - It runs on database changes while the app runs (debounced), once per app start (this repairs deleted files,
      brief risk table), at boundaries, and after calls.
@@ -146,3 +148,25 @@ Found on the owner's phone with v0.2.1: "Android default" and "Leave as is" seem
   contact, and the contact still has what Cucuto wrote. A setting marks it done.
 - Tests: `RingtoneSyncTest` (Android default, a character and "Leave as is", each with and without a link; Android
   default before rendering; renamed files reused) and `LinkRepairTest`.
+
+## Amendment (#372, 2026-10-24): an explicit choice is a fresh decision
+
+Found on the owner's phone with v0.2.3: after "Android default", the user set Crackle in Contacts (Cucuto left it
+alone, correctly), then saved "Ring with Agent K.K." in the ringtone picker. The contact kept Crackle, the undo record
+kept `userChanged`, and contact detail said "Rings with Agent K.K.".
+
+- **Explicit saves.** Saving in the ringtone picker or the rules screen, of any choice (a character, Android default,
+  Leave as is), and "Ring with …" on the set-up card, is a fresh decision. Before the next sync, Cucuto clears
+  `userChanged` and takes the contact's *current* ringtone as the new original, unless that ringtone is still what
+  Cucuto left there (its last write, one of its ring files, or nothing after a clear): then the recorded original
+  stays. A character then writes Cucuto's file, Android default clears the contact, and Leave as is gives back that
+  original (Crackle here). This is "Use Cucuto's ringtone again" (decision 4), applied by the save itself.
+- **Passive syncs** (a voice change the ringtone follows, a pack update, a boundary, app start) still respect a later
+  change in Contacts, as before.
+- **Saying it truthfully.** While a change in Contacts is respected, contact detail's header says "Rings with the
+  ringtone set in Contacts" (Home's row shows the call icon), the Phone calls row says "Set in Contacts", and the set-up
+  card offers "Use Cucuto's ringtone again". None of them names the character. The chat list reads the undo records
+  for this (`Chat.ringtoneSetInContacts`).
+- Tests: `RingtoneSyncTest` (own ringtone, then a character, Android default and Leave as is, which gives the own
+  ringtone back; a change in Contacts, then an explicit pick of each choice), `PhoneRingtoneModesTest` (the view
+  model's "Set in Contacts" state), `PhoneRingtoneContentTest`, `ContactDetailContentTest` and `HomeModelTest`.

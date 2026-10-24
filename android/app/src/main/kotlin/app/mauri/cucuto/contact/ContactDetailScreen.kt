@@ -408,6 +408,14 @@ private fun Header(
                         )
                     }
 
+                    RingtoneDisplay.SetInContacts -> {
+                        Text(
+                            stringResource(R.string.contact_rings_contacts),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
                     null -> {}
                 }
             }

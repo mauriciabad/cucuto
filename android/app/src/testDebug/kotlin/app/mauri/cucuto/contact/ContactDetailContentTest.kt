@@ -93,6 +93,14 @@ class ContactDetailContentTest {
     }
 
     @Test
+    fun theHeaderSaysWhenARingtoneSetInContactsRings() {
+        // #372: never the stored character while Cucuto respects a change in Contacts.
+        show(previewContactDetailState().copy(ringtone = RingtoneDisplay.SetInContacts))
+        compose.onNodeWithText("Rings with the ringtone set in Contacts").assertIsDisplayed()
+        compose.onNodeWithText("Rings with Bubblegum K.K.").assertDoesNotExist()
+    }
+
+    @Test
     fun withoutARingtoneTheHeaderSaysNothingAboutCalls() {
         show(previewContactDetailState().copy(ringtone = null))
         compose.onNodeWithText("Rings with", substring = true).assertDoesNotExist()
