@@ -117,7 +117,7 @@ Name: `Root and LSPosed requirement`
 Any other information (paste this; under 500 characters):
 
 ```text
-Cucuto sets a notification sound and vibration per WhatsApp contact. That part is an LSPosed module: it needs Android 17 with root, which a review device lacks. No login. Without root: tap Skip, get the demo packs on Home, then Hear the characters (tap one to hear it and feel its vibration), browse Discover, and open Settings > Diagnostics to see what is missing. Video and full notes: https://github.com/mauriciabad/cucuto/blob/main/docs/google-play.md#review-notes
+Cucuto sets a notification sound and vibration per WhatsApp contact. That part is an LSPosed module: it needs Android 17 with root, which a review device lacks. No login. Without root: tap Skip, Get the demo packs on Home, then Try a sample chat: pick a character, tap Play a sample message and hear and feel what a message from that chat would do. Settings > Diagnostics shows what is missing. Video and notes: https://github.com/mauriciabad/cucuto/blob/main/docs/google-play.md#review-notes
 ```
 
 ### Content rating
@@ -234,15 +234,22 @@ nothing else:
 1. Open Cucuto. The setup explains the requirements; tap **Skip**.
 2. Home → **Get the demo packs** (or Packs → **Get free demo packs**). Discover downloads two small packs of CC0
    cartoon characters from `cucuto.mauri.app`.
-3. Back on Home, the card "Your characters are ready" → **Hear the characters**: tap a character to hear its
-   clip and feel its vibration.
-4. Discover: browse the pack repository and preview characters.
+3. Back on Home, the card "Your characters are ready" → **Try a sample chat**. This is the core feature, as a demo
+   (ADR 0075): a made-up chat, clearly labelled **Demo**, that works without the module.
+   - Tap a character under **Message voice** to give the sample chat that voice (it previews right away).
+   - Tap **Play a sample message**: the phone plays one of the character's clips with its vibration, as a WhatsApp
+     message from a chat with that voice would.
+   - Under **Call ringtone**, keep **Same as the voice** (Bleep the frog has a ringtone) or pick another, then
+     **Play a sample call** and **Stop**.
+   The sample chat posts no notification, isn't sent to the module, isn't in backups and needs no permission. Real
+   chats replace it on Home once the module sees their first message.
+4. **Hear the characters** on the same card, and Discover: browse the pack repository and preview characters.
 5. Settings → **Diagnostics** (and the setup card on Home) shows which check fails: the module in
    `system_server`, its LSPosed scope, WhatsApp, a pack. That's the honest state of a review device.
 6. Optional: the haptic editor (make a vibration or tap out a rhythm) and the pack creator (record or import a clip).
 
-Assigning a voice to a chat needs a chat, and chats appear when the module sees their first notification. A sample
-chat that works without the module is planned (#285).
+With root and the module, the same voice plays for the real chat's WhatsApp notifications, and contact detail's
+**Simulate message** sends a test through the module itself (shown in the video).
 
 **Video of the root feature:** `<link from #286>` (Diagnostics self-test, then a chat's voice played through the
 module on a rooted Android 17 phone).
@@ -255,7 +262,7 @@ module on a rooted Android 17 phone).
   ringtone setting that Android doesn't offer. The user enables it in LSPosed and can remove it there.
 - *Minimum functionality.* The app is a complete product for its audience (rooted phones), and the requirements are
   in the first lines of the description and in the app's setup. Without root, the app still works as a pack manager
-  and previewer, and it says plainly what's missing.
+  and previewer, the sample chat shows the core feature end to end in the app, and it says plainly what's missing.
 - *Intellectual property.* The name, icon and graphics are original (`brand/`). "WhatsApp" appears only to say which
   notifications the app works with, and the listing says Cucuto isn't affiliated with WhatsApp or Meta.
 
