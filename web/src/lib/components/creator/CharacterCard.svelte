@@ -24,6 +24,7 @@
 	import { uid, type CharacterState, type ClipState, type SavedClip } from '#lib/creator/pack.js';
 	import type { Authoring } from '#lib/pack-spec/index.js';
 	import ClipDialog from './ClipDialog.svelte';
+	import HapticEditor from './HapticEditor.svelte';
 	import CropDialog from './CropDialog.svelte';
 	import { cookiePolygon } from './cookie.js';
 
@@ -85,6 +86,8 @@
 		try {
 			const canvas = renderCrop(source, crop, targets.spriteSize);
 			character.sprite = await encodeSprite(canvas);
+			// The animated picture of an opened pack would still show the old picture (#222's default in the app).
+			character.spriteAnimated = null;
 			character.seedColor = suggestSeedColor(canvas) ?? character.seedColor;
 		} catch (error) {
 			problem = fill(t.picture.failed, { error: String(error) });
@@ -151,6 +154,7 @@
 				existing.samples = saved.samples;
 				existing.durationMs = saved.durationMs;
 				existing.edit = saved.edit;
+				existing.source = item.source;
 			}
 		} else {
 			character.clips.push({
@@ -158,6 +162,7 @@
 				label: item.label,
 				weight: 1,
 				source: item.source,
+				when: null,
 				...saved
 			});
 		}
@@ -199,6 +204,7 @@
 	}
 
 	async function togglePlay(clip: ClipState) {
+		if (!clip.samples) return;
 		if (playingClip === clip.uid) {
 			stop();
 			playingClip = null;
@@ -290,6 +296,7 @@
 							<button
 								type="button"
 								class="icon-button tonal"
+								disabled={!clip.samples}
 								aria-label="{playingClip === clip.uid
 									? t.clips.stopPlaying
 									: t.clips.play}: {clip.label}"
@@ -318,18 +325,18 @@
 									title={t.clips.weightHint}
 								/>
 							</label>
-							<button
-								type="button"
-								class="icon-button"
-								aria-label="{t.clips.edit}: {clip.label}"
-								onclick={() =>
-									(pending = [
-										...pending,
-										{ source: clip.source, name: clip.label, label: clip.label, clip }
-									])}
-							>
-								<Icon name="content-cut" />
-							</button>
+							{#if clip.source ?? clip.samples}
+								{@const source = (clip.source ?? clip.samples) as Float32Array}
+								<button
+									type="button"
+									class="icon-button"
+									aria-label="{t.clips.edit}: {clip.label}"
+									onclick={() =>
+										(pending = [...pending, { source, name: clip.label, label: clip.label, clip }])}
+								>
+									<Icon name="content-cut" />
+								</button>
+							{/if}
 							<button
 								type="button"
 								class="icon-button"
@@ -385,6 +392,8 @@
 		{/if}
 	</div>
 
+	<HapticEditor bind:character {authoring} name={displayName} />
+
 	<div aria-live="polite">
 		{#if problem}<p class="problem body-medium"><Icon name="error" />{problem}</p>{/if}
 	</div>
@@ -401,7 +410,7 @@
 			{authoring}
 			source={item.source}
 			sourceName={item.name}
-			edit={item.clip?.edit}
+			edit={item.clip && item.clip.source === item.source ? item.clip.edit : undefined}
 			onsave={(saved) => {
 				saveClip(item, saved);
 				pending = pending.slice(1);

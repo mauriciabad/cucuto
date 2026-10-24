@@ -7,7 +7,9 @@ import app.mauri.cucuto.packspec.FileKind
 import app.mauri.cucuto.packspec.Haptic
 import app.mauri.cucuto.packspec.Limits
 import app.mauri.cucuto.packspec.PackManifest
+import app.mauri.cucuto.packspec.Ringtone
 import app.mauri.cucuto.packspec.SpecJson
+import app.mauri.cucuto.packspec.When
 
 /**
  * A file a creator holds for the pack: [key] is opaque to the assembler (a local path in the app, a Blob ID on the
@@ -18,7 +20,10 @@ data class DraftFile(
     val extension: String,
 )
 
-/** A pack being made in a creator. Blank optional texts are left out of the manifest. */
+/**
+ * A pack being made in a creator. Blank optional texts are left out of the manifest. [homepage] and [tags] are not
+ * edited by the creators yet: they come through unchanged from a duplicated pack.
+ */
 data class PackDraft(
     /** The pack ID; null to derive it with [Authoring.suggestPackId] from [author], [name] and [idSuffix]. */
     val id: String?,
@@ -30,8 +35,14 @@ data class PackDraft(
     val description: String? = null,
     val cover: DraftFile? = null,
     val characters: List<CharacterDraft>,
+    val homepage: String? = null,
+    val tags: List<String> = emptyList(),
 )
 
+/**
+ * A character of a [PackDraft]. [description], [tags], [spriteAnimated] and [ringtones] are pass-through data: the
+ * creators do not edit them yet, but a duplicated pack keeps them.
+ */
 data class CharacterDraft(
     /** The character ID; null to derive a unique slug from [name]. Fix it once the pack has been shared. */
     val id: String?,
@@ -42,6 +53,11 @@ data class CharacterDraft(
     val clips: List<ClipDraft>,
     /** Null for the format's default (`auto`). */
     val haptic: Haptic? = null,
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+    /** A GIF, animated WebP or animated JPEG XL. */
+    val spriteAnimated: DraftFile? = null,
+    val ringtones: List<RingtoneDraft> = emptyList(),
 )
 
 data class ClipDraft(
@@ -49,6 +65,17 @@ data class ClipDraft(
     val label: String?,
     /** Null for the default weight (1). */
     val weight: Double? = null,
+    /** The clip's condition (day and night clips), kept from a duplicated pack. */
+    val `when`: When? = null,
+)
+
+/**
+ * A ringtone variant, kept as it is from a duplicated pack: [entry] is written unchanged except its `file`, which
+ * becomes [file]'s place in the pack. Several variants may share one [file] (the same [DraftFile.key]).
+ */
+data class RingtoneDraft(
+    val file: DraftFile,
+    val entry: Ringtone,
 )
 
 /** Something a draft still needs before it can become a pack. [character] is the index of the character concerned. */
@@ -99,10 +126,13 @@ class AssembledPack(
  * pack.json
  * cover.<ext>                          (optional)
  * characters/<character id>/sprite.<ext>
+ * characters/<character id>/sprite-anim.<ext>               (optional)
  * characters/<character id>/clips/<label slug>.<ext>
+ * characters/<character id>/ringtones/<label slug>.<ext>    (optional)
  * ```
  *
- * Character IDs and clip file names are slugs of the names and labels, made unique with `-2`, `-3`…. The result still
+ * Character IDs, clip and ringtone file names are slugs of the names and labels, made unique with `-2`, `-3`… (a
+ * ringtone file shared by several variants is written once, named after the first). The result still
  * goes through [app.mauri.cucuto.packspec.PackValidator] (every rule, media included) before anyone gets the file.
  */
 object PackAssembler {
@@ -118,10 +148,13 @@ object PackAssembler {
             draft.characters.forEachIndexed { i, c ->
                 if (c.name.isBlank()) add(DraftProblem(DraftProblem.Kind.CHARACTER_NAME_MISSING, i))
                 if (c.sprite == null) add(DraftProblem(DraftProblem.Kind.SPRITE_MISSING, i))
-                if (c.clips.isEmpty()) add(DraftProblem(DraftProblem.Kind.NO_CLIPS, i))
+                // The format asks for a clip or a ringtone: a song-only character (from a duplicated pack) is fine.
+                if (c.clips.isEmpty() && c.ringtones.isEmpty()) add(DraftProblem(DraftProblem.Kind.NO_CLIPS, i))
                 if (c.clips.size > MAX_CLIPS) add(DraftProblem(DraftProblem.Kind.TOO_MANY_CLIPS, i))
                 val badSprite = c.sprite != null && !isImage(c.sprite)
-                if (badSprite || c.clips.any { !isAudio(it.file) }) {
+                val badAnimation = c.spriteAnimated != null && !canAnimate(c.spriteAnimated)
+                val badAudio = c.clips.any { !isAudio(it.file) } || c.ringtones.any { !isAudio(it.file) }
+                if (badSprite || badAnimation || badAudio) {
                     add(DraftProblem(DraftProblem.Kind.UNSUPPORTED_FILE, i))
                 }
             }
@@ -163,14 +196,48 @@ object PackAssembler {
                         names += base
                         val path = "$folder/clips/$base.$ext"
                         files += AssembledFile(path, clip.file.key)
-                        Clip(file = path, label = label?.take(MAX_LABEL), weight = clip.weight?.takeIf { it != 1.0 })
+                        Clip(
+                            file = path,
+                            label = label?.take(MAX_LABEL),
+                            weight = clip.weight?.takeIf { it != 1.0 },
+                            `when` = clip.`when`,
+                        )
+                    }
+                val spriteAnimated =
+                    c.spriteAnimated?.let {
+                        val path = "$folder/sprite-anim.${it.extension.lowercase()}"
+                        files += AssembledFile(path, it.key)
+                        path
+                    }
+                val ringtoneNames = mutableSetOf<String>()
+                val ringtonePaths = mutableMapOf<String, String>()
+                val ringtones =
+                    c.ringtones.map { ringtone ->
+                        val path =
+                            ringtonePaths.getOrPut(ringtone.file.key) {
+                                val base =
+                                    Authoring.uniqueSlug(
+                                        Authoring.slug(ringtone.entry.label.orEmpty(), MAX_CLIP_SLUG),
+                                        ringtoneNames,
+                                        FALLBACK_RINGTONE_SLUG,
+                                    )
+                                ringtoneNames += base
+                                "$folder/ringtones/$base.${ringtone.file.extension.lowercase()}".also {
+                                    files += AssembledFile(it, ringtone.file.key)
+                                }
+                            }
+                        ringtone.entry.copy(file = path)
                     }
                 Character(
                     id = id,
                     name = c.name.trim().take(MAX_NAME),
+                    description = c.description?.trim()?.takeIf { it.isNotEmpty() },
                     sprite = sprite,
+                    spriteAnimated = spriteAnimated,
                     seedColor = c.seedColor,
+                    tags = c.tags,
                     clips = clips,
+                    ringtones = ringtones,
                     haptic = c.haptic?.takeIf { it.mode != "auto" },
                 )
             }
@@ -182,8 +249,10 @@ object PackAssembler {
                 version = draft.version,
                 author = draft.author.trim().take(MAX_AUTHOR),
                 license = draft.license.trim(),
+                homepage = draft.homepage?.trim()?.takeIf { it.isNotEmpty() },
                 description = draft.description?.trim()?.takeIf { it.isNotEmpty() }?.take(MAX_DESCRIPTION),
                 cover = cover,
+                tags = draft.tags,
                 characters = characters,
             )
         return AssembledPack(manifest, files)
@@ -193,12 +262,15 @@ object PackAssembler {
 
     private fun isAudio(file: DraftFile) = FileFormat.of("f.${file.extension}")?.kind == FileKind.AUDIO
 
+    private fun canAnimate(file: DraftFile) = FileFormat.of("f.${file.extension}")?.canAnimate == true
+
     private const val MAX_CHARACTERS = 500
     private const val MAX_CLIPS = 200
     private const val MAX_NAME = 80
     private const val MAX_AUTHOR = 120
     private const val MAX_DESCRIPTION = 2_000
     private const val MAX_LABEL = 80
+    private const val FALLBACK_RINGTONE_SLUG = "ringtone"
 
     /** Room for `-NN.ext` inside the 255-character path limit. */
     private const val MAX_CLIP_SLUG = 48
