@@ -578,7 +578,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] Backup and restore: manual export, automatic backups to a chosen folder, optional encryption, and a tested restore on a wiped phone.
 - [ ] CI green, including the media allowlist guard.
 - [ ] Signed release APK on GitHub Releases, linked from the website.
-- [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
+- [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274, ready: [ADR 0071](decisions/0071-google-play-bundle-and-listing.md), [google-play.md](google-play.md)); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
 - [ ] After v1: F-Droid, reproducible and signed with Cucuto's key (#275).
 - [ ] The owner imports the private packs from Google Drive on a clean install and everything works end to end.
 
