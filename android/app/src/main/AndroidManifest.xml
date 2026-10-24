@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- The Feedback engine's rich haptics (VibrationEffect compositions with USAGE_TOUCH). -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Restoring a backup downloads its packs again from their repositories or links (HTTPS only, ADR 0011). -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
         Package visibility (Android 11+): the status card checks that WhatsApp or WhatsApp Business is installed.
@@ -69,6 +71,21 @@
                 <data android:pathAdvancedPattern=".*\\.[zZ][iI][pP]" />
             </intent-filter>
         </activity>
+
+        <!-- The "Cucuto voices" Quick Settings tile: the global switch (#28). Only the system binds to it. -->
+        <service
+            android:name=".tile.VoicesTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_cucuto"
+            android:label="@string/tile_voices"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
 
         <!--
             Clip provider (#16). Exported because SystemUI's ringtone player opens the clip URI the module swaps in;

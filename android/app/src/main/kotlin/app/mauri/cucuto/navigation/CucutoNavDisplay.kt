@@ -32,6 +32,7 @@ import app.mauri.cucuto.ui.motion.SharedElementEntry
 import app.mauri.cucuto.ui.motion.SharedElementsHost
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
 import app.mauri.cucuto.ui.placeholder.PlaceholderScreen
+import app.mauri.cucuto.ui.settings.SettingsScreen
 import app.mauri.cucuto.ui.status.StatusScreen
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -129,7 +130,7 @@ private fun entries(
     }
     entry<CucutoDestination.Discover> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.HapticEditor> { PlaceholderScreen(it, onBack = goBack) }
-    entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Settings> { SettingsScreen(onNavigate = navigate) }
     entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
     entry<CucutoDestination.Gallery> { GalleryScreen(onBack = goBack) }
 }
