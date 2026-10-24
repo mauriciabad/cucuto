@@ -292,3 +292,13 @@ pattern" in the haptic editor and the creators, is #217; auto haptics from the w
 still ran past the screen and hid its last link; it now shrinks and scrolls. Long inline code on
 `/authors/pack-format/` made that page 778 px wide on phones; it now wraps. `web/tests/overflow.e2e.ts` checks
 every page in both languages at 320, 360 and 656 px so the overflow cannot come back unnoticed.)
+
+> make sure agents are not blocked
+
+> i should be able to pick a diferent character for the ringtone than the notification. usually packs will be just one of them, so if tweet the bird has no ringtone, i can easily select one from the pther packs. an dif it had, i should be able to change it also. and when selecting pack there should be a filter based on this so i see the apropiate ones.
+>
+> on the kk pack, the sounds should be ringtones, not notifications. and when playing they should play longer and from the beginig.
+>
+> in discover the chiptune critters is duplicated as cucuto demo pack.
+
+(Three agents: independent message and ringtone characters with capability filters and full-length ringtone previews from the start; Discover shows bundles as bundles; the private K.K. pack is rebuilt as ringtone-only, version 1.1.0.)
