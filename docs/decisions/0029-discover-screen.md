@@ -1,6 +1,6 @@
 # 0029. Discover screen: browsing repositories, previews, installs and adding repositories
 
-- Status: accepted (defaults open for the owner in the `question` issue linked from #36)
+- Status: accepted (defaults open for the owner in #175)
 - Date: 2026-10-24
 - Issue: #36
 
