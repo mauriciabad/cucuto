@@ -302,3 +302,7 @@ every page in both languages at 320, 360 and 656 px so the overflow cannot come 
 > in discover the chiptune critters is duplicated as cucuto demo pack.
 
 (Three agents: independent message and ringtone characters with capability filters and full-length ringtone previews from the start; Discover shows bundles as bundles; the private K.K. pack is rebuilt as ringtone-only, version 1.1.0.)
+
+> when i tell you things dont skip the processes. the repo sas issues and docs, so maybe those need to be updated rather than jumping into coding and risking making contradictions
+
+(Lead opened #245, #246 and #247 for the feedback above, told the agents to update the brief and ADRs before coding, and made "issue first, docs before code" a standing rule.)
