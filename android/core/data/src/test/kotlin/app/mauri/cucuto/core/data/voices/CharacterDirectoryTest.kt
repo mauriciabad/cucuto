@@ -38,6 +38,8 @@ class CharacterDirectoryTest {
         assertEquals("Bleep the frog", frog.name)
         assertEquals(File("/packs/critters/1.0.0/characters/frog/sprite.svg"), frog.sprite)
         assertEquals(listOf(File("/packs/critters/1.0.0/characters/frog/clips/ribbit.ogg")), frog.clips)
+        // Pack paths stay index for index with the files, so a dropped clip never shifts the toggles.
+        assertEquals(listOf("characters/frog/clips/ribbit.ogg"), frog.clipPaths)
         assertEquals(0xFF4CAF50.toInt(), frog.seedColor)
         assertEquals("owl", owl.name)
         assertNull(owl.sprite)

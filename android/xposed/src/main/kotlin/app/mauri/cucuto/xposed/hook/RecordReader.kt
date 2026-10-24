@@ -8,6 +8,7 @@ import android.os.Parcelable
 import android.service.notification.StatusBarNotification
 import app.mauri.cucuto.xposed.route.ConversationKeys
 import app.mauri.cucuto.xposed.route.NotificationSnapshot
+import app.mauri.cucuto.xposed.route.Targets
 import java.lang.reflect.Method
 
 /**
@@ -49,6 +50,9 @@ internal class RecordReader(
         val group = ConversationKeys.isGroup(channelId, shortcutId ?: shortcutInfoId, isGroupConversation)
         val lastMessage = if (group) extras?.let { lastMessage(it) } else null
         val person = lastMessage?.let { safe { it.getParcelable(KEY_SENDER_PERSON, Person::class.java) } }
+        // The simulate extras are read only from Cucuto's own simulate channel; the package is the one
+        // system_server attributes the notification to, which no other app can claim.
+        val simulate = pkg == Targets.SELF_PACKAGE && channelId == Targets.SIMULATE_CHANNEL
         return NotificationSnapshot(
             packageName = pkg,
             channelId = channelId,
@@ -60,6 +64,8 @@ internal class RecordReader(
             isGroupConversation = isGroupConversation,
             senderKey = safe { person?.key },
             senderName = safe { person?.name?.toString() } ?: lastMessage?.let { text(it, KEY_SENDER) },
+            simulatePackage = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_PACKAGE) } else null,
+            simulateKey = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_KEY) } else null,
         )
     }
 

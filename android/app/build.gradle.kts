@@ -110,6 +110,8 @@ dependencies {
 
     // Compose UI tests on the JVM (Robolectric) live in src/testDebug: the test activity comes from the
     // debug-only ui-test-manifest.
+    // View model tests run the real settings classes on a DataStore in a temporary folder.
+    testImplementation(libs.androidx.datastore.preferences)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.robolectric)

@@ -19,6 +19,9 @@ package app.mauri.cucuto.xposed.route
  * @property senderKey Groups only: `Person.getKey()` of the newest message's sender (MessagingStyle), when present.
  * @property senderName Groups only: `Person.getName()` (or the legacy sender text) of the newest message. Message
  *   text is never read.
+ * @property simulatePackage Cucuto's own simulate notifications only ([Targets.SIMULATE_CHANNEL]): the messenger
+ *   package of the chat to simulate ([Targets.EXTRA_SIMULATE_PACKAGE]). Never read from any other app.
+ * @property simulateKey Likewise: the chat's conversation key ([Targets.EXTRA_SIMULATE_KEY]).
  */
 data class NotificationSnapshot(
     val packageName: String,
@@ -31,6 +34,8 @@ data class NotificationSnapshot(
     val isGroupConversation: Boolean = false,
     val senderKey: String? = null,
     val senderName: String? = null,
+    val simulatePackage: String? = null,
+    val simulateKey: String? = null,
 )
 
 /**
