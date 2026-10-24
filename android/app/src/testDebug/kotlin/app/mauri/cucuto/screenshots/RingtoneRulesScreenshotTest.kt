@@ -65,6 +65,7 @@ class RingtoneRulesScreenshotTest(
                 entries = entries,
                 chat = chat,
                 saved = RingtoneSelection(frog.voice, followsVoice = true, mode = RingtoneMode.CUSTOM, rules = rules),
+                ringsNow = true,
                 now = LocalDateTime.parse("2026-10-24T12:00"),
             )
         }

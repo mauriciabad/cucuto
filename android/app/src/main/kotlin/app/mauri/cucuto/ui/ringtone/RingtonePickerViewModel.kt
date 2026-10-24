@@ -156,20 +156,16 @@ data class RingtonePickerState(
     /** Whether [voice]'s cover is the chosen ringtone. */
     fun chosen(voice: ChatVoice): Boolean = choice == RingtoneChoice.CHARACTER && selection?.voice == voice
 
-    /** The rules worth offering for the selected character's versions ([PhoneRingtoneViewModel.modesFor]). */
-    val modes: List<RingtoneMode>
-        get() = selectedCharacter?.let(::modesFor).orEmpty()
-
     /**
-     * The rules offered for [item]: those its versions make sense for, plus "Your own rules" while they are what is
-     * stored for it (they are created and edited on the rules screen, ADR 0074).
+     * Whether the selected character has a rule to choose: two or more versions ([PhoneRingtoneViewModel.modesFor]).
+     * The rule itself is chosen on the rules screen only (#347, ADR 0074); the picker shows it in a few words.
      */
-    fun modesFor(item: RingtoneCharacterItem): List<RingtoneMode> {
-        val modes = PhoneRingtoneViewModel.modesFor(item.variants.map { it.variant })
-        val own = saved?.takeIf { it.voice == item.voice && it.mode == RingtoneMode.CUSTOM && it.rules.isNotEmpty() }
-        if (own == null || modes.isEmpty()) return modes
-        return modes.toMutableList().apply { add(indexOf(RingtoneMode.PACK) + 1, RingtoneMode.CUSTOM) }
-    }
+    val hasRules: Boolean
+        get() =
+            selectedCharacter
+                ?.let { item -> PhoneRingtoneViewModel.modesFor(item.variants.map { it.variant }) }
+                .orEmpty()
+                .isNotEmpty()
 
     /**
      * Something to save: a selected character with ringtones, different from what is stored. A chat without a contact
@@ -201,8 +197,8 @@ data class RingtonePickerState(
 /**
  * The ringtone picker (#53, brief "Ringtones"): every installed character with ringtones as an album cover, filtered by
  * pack. A tap picks it and plays the version its rule would ring with now (the record spins); each version plays on
- * its own too, from the start (#246). The user picks a character and a rule, or "Android default" or "Leave as is"
- * (ADR 0073), and saves. The message voice and the
+ * its own too, from the start (#246). The user picks a character, or "Android default" or "Leave as is" (ADR 0073),
+ * and saves; the rule that picks the version is chosen on the rules screen (#347, ADR 0074). The message voice and the
  * ringtone are independent (ADR 0063): the message character keeps following the voice, the character kept while the
  * voice has no ringtones keeps following too, and any other character is the user's own pick.
  */
@@ -226,7 +222,7 @@ class RingtonePickerViewModel
                 val before = lastSaved
                 lastSaved = data.saved
                 if (before != null && data.saved != before && interaction.value.assigned == null) {
-                    interaction.update { it.copy(edited = null) }
+                    interaction.update { it.copy(edited = null, pending = null) }
                 }
             }
 
@@ -255,8 +251,8 @@ class RingtonePickerViewModel
         }
 
         /**
-         * A tap on [item]'s cover: picks it (keeping the rule when it still applies) and previews the version that rule
-         * picks now. A tap on the cover that is playing stops it.
+         * A tap on [item]'s cover: picks it (with its stored rule when it is the character that rings, else the pack's
+         * rules) and previews the version that rule picks now. A tap on the cover that is playing stops it.
          */
         fun select(item: RingtoneCharacterItem) {
             val current = state.value
@@ -314,22 +310,19 @@ class RingtonePickerViewModel
             return pick
         }
 
-        /** Picks [item] (keeping the rule when it still applies) and rings the version that rule picks now. */
+        /**
+         * Picks [item] and rings the version its rule picks now. The rule is the one stored for it when it is the
+         * character that rings, else the pack's rules: other rules are chosen on the rules screen (#347, ADR 0074).
+         */
         private fun choose(
             current: RingtonePickerState,
             item: RingtoneCharacterItem,
         ) {
-            val modes = current.modesFor(item)
-            val previous = current.selection
-            val mode = previous?.mode?.takeIf { it in modes } ?: RingtoneMode.PACK
-            val variant =
-                if (mode == RingtoneMode.FIXED) {
-                    previous?.variant?.takeIf { item.variant(it) != null } ?: item.variants.first().file
-                } else {
-                    null
-                }
+            val stored = current.saved?.takeIf { it.voice == item.voice }
+            val mode = stored?.mode ?: RingtoneMode.PACK
+            val variant = stored?.variant?.takeIf { mode == RingtoneMode.FIXED }
             val rules =
-                current.saved
+                stored
                     ?.rules
                     .orEmpty()
                     .takeIf { mode == RingtoneMode.CUSTOM }
@@ -359,40 +352,6 @@ class RingtonePickerViewModel
             playback.toggle(PlayingVariant(item.voice, file), sound)
         }
 
-        fun setMode(mode: RingtoneMode) {
-            val selection = state.value.selection ?: return
-            val item = state.value.selectedCharacter ?: return
-            if (state.value.done) return
-            val variant =
-                if (mode == RingtoneMode.FIXED) {
-                    selection.variant?.takeIf { item.variant(it) != null } ?: item.variants.first().file
-                } else {
-                    null
-                }
-            // "Your own rules" are only offered while stored for this character: picking the chip again brings them back.
-            val rules =
-                state.value.saved
-                    ?.rules
-                    .orEmpty()
-                    .takeIf { mode == RingtoneMode.CUSTOM }
-                    .orEmpty()
-            interaction.update {
-                it.copy(edited = selection.copy(mode = mode, variant = variant, rules = rules), failed = false)
-            }
-        }
-
-        /** Always rings with [file] ("One version"). */
-        fun setVariant(file: String) {
-            val selection = state.value.selection ?: return
-            if (state.value.done || state.value.selectedCharacter?.variant(file) == null) return
-            interaction.update {
-                it.copy(
-                    edited = selection.copy(mode = RingtoneMode.FIXED, variant = file, rules = emptyList()),
-                    failed = false,
-                )
-            }
-        }
-
         /** Whether saving should first ask for the phone permission ("Random per call" re-rolls after each call). */
         fun needsPhonePermission(): Boolean =
             state.value.choice == RingtoneChoice.CHARACTER &&
@@ -406,7 +365,7 @@ class RingtonePickerViewModel
             val choice = current.choice ?: return false
             if (choice != RingtoneChoice.CHARACTER) return saveOther(current, choice)
             val selection = current.selection ?: return false
-            val single = current.modes.isEmpty()
+            val single = !current.hasRules
             val mode = if (single) RingtoneMode.PACK else selection.mode
             val variant = if (mode == RingtoneMode.FIXED) selection.variant else null
             val rules = if (mode == RingtoneMode.CUSTOM) selection.rules else emptyList()

@@ -26,7 +26,6 @@
 
     <!-- Detalle del contacto: la tarjeta de configuración para el predeterminado de Android -->
     <string name="ringtone_default_off_body">Para quitar un tono propio de este contacto, Cucuto lo cambia en los Contactos de Android.</string>
-    <string name="ringtone_status_default">Suena con el tono predeterminado del móvil.</string>
 
     <!-- Inicio: el tono de cada fila, para TalkBack -->
     <string name="home_chat_ringtone_a11y">Tono: %1$s</string>

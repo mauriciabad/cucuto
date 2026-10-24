@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,19 +18,16 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconToggleButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -46,6 +42,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -109,8 +106,6 @@ data class RingtonePickerActions(
     val onSelect: (RingtoneCharacterItem) -> Unit = {},
     val onTogglePreview: (RingtoneCharacterItem, String) -> Unit = { _, _ -> },
     val onStopPreview: () -> Unit = {},
-    val onMode: (RingtoneMode) -> Unit = {},
-    val onVariant: (String) -> Unit = {},
     val onSave: () -> Unit = {},
     val onOpenPacks: () -> Unit = {},
     val onOpenDiscover: () -> Unit = {},
@@ -133,7 +128,7 @@ data class RingtonePickerActions(
 /**
  * The ringtone picker (#53; brief, "Ringtones") for [chat], opened from the contact detail's Phone ringtone card: album
  * covers of every character with ringtones, a tap plays one with a spinning record, each version plays on its own,
- * then a rule and "Ring with …" saves it with the assign call and a burst in the character's colors ([onDone] closes).
+ * "Which version rings" opens the rules screen ([onOpenRules]), and "Ring with …" saves it with the assign call and a burst in the character's colors ([onDone] closes).
  * "Android default" and "Leave as is" sit above the covers (ADR 0073). With [step], it is step 2 of assigning a voice
  * from Home: optional, with Skip ([onDone] too).
  */
@@ -194,14 +189,6 @@ fun RingtonePickerScreen(
                     feedback.fire(Feedback.Tap)
                     viewModel.stopPreview()
                 },
-                onMode = { mode ->
-                    feedback.fire(Feedback.SegmentTick)
-                    viewModel.setMode(mode)
-                },
-                onVariant = { file ->
-                    feedback.fire(Feedback.SegmentTick)
-                    viewModel.setVariant(file)
-                },
                 onSave = { if (viewModel.needsPhonePermission()) askPhone() else save() },
                 onOpenPacks = onOpenPacks,
                 onOpenDiscover = onOpenDiscover,
@@ -227,6 +214,7 @@ fun RingtonePickerScreen(
                     viewModel.surprise(packId)
                 },
                 onOpenRules = { item ->
+                    feedback.fire(Feedback.Tap)
                     viewModel.stopPreview()
                     onOpenRules(item.voice)
                 },
@@ -407,7 +395,10 @@ private fun OtherChoices(
 private fun RingtonePickerState.chatName(): String? =
     chat?.displayName ?: chatKey?.let { stringResource(R.string.chat_unnamed) }
 
-/** The chosen character: its record, its versions with play buttons, and the rule that picks one. */
+/**
+ * The chosen character: its record, its versions with play buttons, and the rule that picks one in a few words, which
+ * opens the rules screen, the one place where it is chosen (#347, ADR 0074).
+ */
 @Composable
 private fun Header(
     state: RingtonePickerState,
@@ -461,35 +452,70 @@ private fun Header(
                 VariantRow(
                     variant = variant,
                     preview = state.preview?.takeIf { it.key == PlayingVariant(item.voice, variant.file) },
-                    fixed = selection.mode == RingtoneMode.FIXED && state.modes.isNotEmpty(),
-                    chosen = selection.variant == variant.file,
                     onPlay = { actions.onTogglePreview(item, variant.file) },
                     onStop = actions.onStopPreview,
-                    onChoose = { actions.onVariant(variant.file) },
                 )
             }
         }
-        if (state.modes.isNotEmpty()) {
-            SectionTitle(R.string.ringtone_picker_rule)
-            // One rule at a time: TalkBack hears them as a group ("1 of 4").
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.selectableGroup(),
-            ) {
-                for (mode in state.modes) {
-                    FilterChip(
-                        selected = selection.mode == mode,
-                        onClick = { if (selection.mode != mode) actions.onMode(mode) },
-                        label = { Text(stringResource(mode.label)) },
-                    )
-                }
-            }
-            Hint(stringResource(selection.mode.body))
-            TextButton(onClick = { actions.onOpenRules(item) }, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.ringtone_rules_open))
-            }
+        if (state.hasRules) {
+            RuleRow(
+                summary = ruleSummary(selection, item),
+                enabled = !state.done,
+                onClick = { actions.onOpenRules(item) },
+            )
         }
+    }
+}
+
+/** The rule as the picker says it: "Pack's rules", "Day and night", "One version: Live", "Your own rules". */
+@Composable
+private fun ruleSummary(
+    selection: RingtoneSelection,
+    item: RingtoneCharacterItem,
+): String {
+    val fixed = selection.variant?.takeIf { selection.mode == RingtoneMode.FIXED }?.let { item.variant(it)?.label }
+    return if (fixed != null) {
+        stringResource(R.string.ringtone_summary_fixed, fixed)
+    } else {
+        stringResource(selection.mode.label)
+    }
+}
+
+/** "Which version rings: …", one tap from the rules screen. */
+@Composable
+private fun RuleRow(
+    summary: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .clip(MaterialTheme.shapes.large)
+                .clickable(
+                    enabled = enabled,
+                    onClickLabel = stringResource(R.string.ringtone_rules_open),
+                    role = Role.Button,
+                    onClick = onClick,
+                ).padding(horizontal = 4.dp, vertical = 8.dp),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                stringResource(R.string.ringtone_picker_rule),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(summary, style = MaterialTheme.typography.bodyLarge)
+        }
+        Icon(
+            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -535,20 +561,11 @@ private fun relation(
 private fun VariantRow(
     variant: RingtoneVariantItem,
     preview: PreviewPlaying<*>?,
-    fixed: Boolean,
-    chosen: Boolean,
     onPlay: () -> Unit,
     onStop: () -> Unit,
-    onChoose: () -> Unit,
 ) {
     val label = variant.label
     val tags = variant.variant.tags.joinToString(" · ")
-    val choose =
-        if (fixed) {
-            Modifier.selectable(selected = chosen, role = Role.RadioButton, onClick = onChoose)
-        } else {
-            Modifier
-        }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -556,7 +573,6 @@ private fun VariantRow(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
-                .then(choose)
                 .padding(vertical = 4.dp),
     ) {
         RingtonePlayButton(
@@ -576,7 +592,6 @@ private fun VariantRow(
                 )
             }
         }
-        if (fixed) RadioButton(selected = chosen, onClick = null)
     }
 }
 
