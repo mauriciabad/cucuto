@@ -409,7 +409,7 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 
 > we should be towards the end of development, please do a boost to finish important stuff. now i have many agents working, but tomorrow i wont have any, only sporadic ones from time to time to do small features. if this is not feasable to finish let me know
 
-(The lead started the roadmap items that can finish without the owner in parallel: the sound flow rethink #298, pack rules #288, import speed #279, the review sample chat #285, the remaining Drive backup work #163, a handoff guide for sporadic agents, and fixes for the open PRs. Work that needs the owner's phone, a second phone or the Play account can't finish without them; the lead listed it in the reply.)
+(The lead started the roadmap items that can finish without the owner in parallel: the sound flow rethink #298, pack rules #288, import speed #279, the review sample chat #285, a handoff guide for sporadic agents, and fixes for the open PRs. Work that needs the owner's phone, a second phone or the Play account can't finish without them; the lead listed it in the reply.)
 
 ## 2026-10-24 — Comment on #284 (haptic previews in Discover: defaults to confirm)
 
@@ -443,3 +443,11 @@ GitHub, Obtainium and F-Droid APKs can't update each other.)
 > i preffer to give Play my own key, it is a small step i can do
 
 (Second answer on #287. Play's app signing key becomes the owner's existing release key, exported once with PEPK in Play Console before the first upload (#276). The release key stays the upload key, so `release.yml` and the secrets don't change. Play installs and the GitHub, Obtainium and F-Droid APKs share one certificate and update each other. ADR 0071 (owner update, second answer), docs/google-play.md, docs/releasing.md, docs/distribution.md, ADR 0046, ADR 0021 and #276's steps updated.)
+
+> i connected the phone
+
+(The lead released v0.2.0 without waiting for #314, which had conflicts, and installed it on the phone.)
+
+> there are fer agents running in paralel, i expect a bit more, so we can finish earlier
+
+(The lead added six agents: bug hunts on the ringtone flow and on contacts, sample chat, pickers and clip conditions; a UX coherence pass on the emulator; the website and user guide for the new features; creator and packer parity with the pack format; and accessibility for the new screens.)
