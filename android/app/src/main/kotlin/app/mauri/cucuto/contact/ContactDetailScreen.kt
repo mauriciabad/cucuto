@@ -82,6 +82,7 @@ import app.mauri.cucuto.core.data.db.DecisionOutcome
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.home.ChatAvatarKey
 import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
@@ -240,6 +241,7 @@ fun ContactDetailContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "header") { Header(state = state, onBitmap = { bitmap = it }) }
+                if (state.chat?.awaitingLink == true) item(key = "not-linked") { NotLinkedCard(state.chatName()) }
                 item(key = "sounds") {
                     SoundsCard(
                         state = state,
@@ -445,6 +447,24 @@ private fun SoundsCard(
     }
 }
 
+/** A chat added from contacts that has not messaged yet (ADR 0065): what happens on its first message. */
+@Composable
+private fun NotLinkedCard(name: String) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.contact_not_linked_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(stringResource(R.string.contact_not_linked_body, name), style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
 @Composable
 private fun SimulateCard(
     state: ContactDetailState,
@@ -597,10 +617,16 @@ private fun LazyListScope.clipSection(
         val lastOn = stringResource(R.string.contact_clip_last)
         val playing = state.playingClip == clip.path
         val playingLabel = stringResource(R.string.a11y_playing)
+        val momentLabel = momentLabel(clip.moment)
         ListItem(
             headlineContent = { Text(clip.name, maxLines = adaptiveMaxLines(1), overflow = TextOverflow.Ellipsis) },
-            // "Playing" in words, not only the button's color.
-            supportingContent = if (playing) ({ Text(playingLabel) }) else null,
+            // "Playing" in words, not only the button's color; otherwise why a special clip plays (ADR 0059).
+            supportingContent =
+                when {
+                    playing -> ({ Text(playingLabel) })
+                    momentLabel != null -> ({ Text(momentLabel) })
+                    else -> null
+                },
             leadingContent = {
                 val playLabel = stringResource(R.string.contact_clip_play, clip.name)
                 val playModifier = Modifier.semantics { if (playing) stateDescription = playingLabel }
@@ -631,6 +657,17 @@ private fun LazyListScope.clipSection(
                     ).semantics { if (!clip.canToggle) stateDescription = lastOn },
         )
     }
+}
+
+/** When a special clip plays ("First message of the day · Rare: about 1 in 25 messages"), or null for an ordinary one. */
+@Composable
+private fun momentLabel(moment: Moment): String? {
+    if (!moment.isSpecial) return null
+    val parts = mutableListOf<String>()
+    if (moment.firstOfDay) parts += stringResource(R.string.contact_clip_first_of_day)
+    if (moment.burst != 0) parts += stringResource(R.string.contact_clip_burst, moment.burst)
+    if (moment.oneIn != 0) parts += stringResource(R.string.contact_clip_rare, moment.oneIn)
+    return parts.joinToString(" · ")
 }
 
 /**
@@ -787,8 +824,8 @@ internal fun previewContactDetailState(): ContactDetailState {
         clips = clipRows(frog, settings.disabledClips),
         decisions =
             listOf(
-                DecisionRow(2, 0L, DecisionOutcome.SWAPPED, "ribbit", simulated = true, perSender = false),
-                DecisionRow(1, 0L, DecisionOutcome.SWAPPED, "croak", simulated = false, perSender = false),
+                DecisionRow(2, 0L, DecisionOutcome.SWAPPED, "Ribbit", simulated = true, perSender = false),
+                DecisionRow(1, 0L, DecisionOutcome.SWAPPED, "Croak", simulated = false, perSender = false),
             ),
         path = SimulatePath.InApp(InAppReason.RebootNeeded),
     )

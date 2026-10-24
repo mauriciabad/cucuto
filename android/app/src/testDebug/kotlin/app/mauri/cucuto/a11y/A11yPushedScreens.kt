@@ -6,9 +6,12 @@ import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.pack.InstallAction
 import app.mauri.cucuto.core.pack.PackCandidate
 import app.mauri.cucuto.core.pack.PackSelection
-import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.ContactLinkRestore
+import app.mauri.cucuto.core.ringtone.UnmatchedContact
 import app.mauri.cucuto.home.AssignVoiceContent
+import app.mauri.cucuto.home.HomeContent
 import app.mauri.cucuto.home.previewHomeState
+import app.mauri.cucuto.home.previewHomeStateWithQuestion
 import app.mauri.cucuto.packs.AssignedContact
 import app.mauri.cucuto.packs.ImportReview
 import app.mauri.cucuto.packs.ImportUi
@@ -20,6 +23,10 @@ import app.mauri.cucuto.packs.ui.PackDetailContent
 import app.mauri.cucuto.packspec.Character
 import app.mauri.cucuto.packspec.Clip
 import app.mauri.cucuto.packspec.PackManifest
+import app.mauri.cucuto.ui.contacts.AddFromContactsContent
+import app.mauri.cucuto.ui.contacts.AddFromContactsState
+import app.mauri.cucuto.ui.contacts.ConfirmLinkContent
+import app.mauri.cucuto.ui.contacts.previewContactsState
 import app.mauri.cucuto.ui.creator.CreatorFinishContent
 import app.mauri.cucuto.ui.creator.FinishUi
 import app.mauri.cucuto.ui.discover.DiscoverActions
@@ -54,6 +61,26 @@ internal object A11yPushedScreens {
             "repositories" to { RepositoriesScreen() },
             "creator-finish" to { CreatorFinishScreen() },
             "assign-voice" to { AssignVoiceContent(state = previewHomeState(), onBack = {}, onPick = {}) },
+            "add-from-contacts" to { AddFromContactsContent(AddFromContactsState(), {}, {}, {}, {}, {}, {}) },
+            "add-from-contacts-list" to { AddFromContactsContent(previewContactsState(), {}, {}, {}, {}, {}, {}) },
+            "confirm-link" to {
+                ConfirmLinkContent(
+                    previewHomeStateWithQuestion().questions.first(),
+                    onBack = {},
+                    onPick = {},
+                    onNone = {},
+                )
+            },
+            "home-from-contacts" to {
+                HomeContent(
+                    state = previewHomeStateWithQuestion(),
+                    onQueryChange = {},
+                    onTogglePack = {},
+                    onDismissRecent = {},
+                    onOpenChat = {},
+                    onOpenPacks = {},
+                )
+            },
             "ringtone-picker" to {
                 RingtonePickerContent(
                     state = previewRingtonePickerState(),
@@ -118,13 +145,15 @@ internal object A11yPushedScreens {
                             repositoriesAdded = 1,
                             credentialsRestored = 0,
                             packsMissing = 1,
-                            phoneRingtones =
-                                PhoneRingtoneRestore(
-                                    restored = 3,
-                                    linked = 2,
-                                    missing = listOf("Grandpa"),
-                                    waitingForPermission = true,
-                                    enabled = false,
+                            contactLinks =
+                                ContactLinkRestore(
+                                    restored = 4,
+                                    linked = 3,
+                                    unmatched = listOf(UnmatchedContact(7, "Grandpa", ringtone = true)),
+                                    ringtones = 3,
+                                    ringtonesLinked = 2,
+                                    waitingForPermission = false,
+                                    ringtonesEnabled = false,
                                 ),
                         ),
                     reusableSource = "content://backup",

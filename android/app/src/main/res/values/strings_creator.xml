@@ -187,6 +187,15 @@
     <string name="creator_message_mic_denied">Recording needs the microphone. You can allow it in the app\'s settings.</string>
     <string name="creator_message_clip_saved">Sound added</string>
     <string name="creator_message_duplicated">Your copy is ready to edit</string>
-    <string name="creator_message_duplicated_partly">Your copy is ready. Ringtones and animated pictures are not copied yet.</string>
+    <string name="creator_message_duplicated_kept">Your copy is ready. Its ringtones and animated pictures come along as they are; you can\'t edit them here yet.</string>
     <string name="creator_message_duplicate_failed">That pack could not be copied.</string>
+    <plurals name="creator_kept_ringtones">
+        <item quantity="one">%d ringtone comes from the original pack and stays as it is. You can\'t edit ringtones here yet.</item>
+        <item quantity="other">%d ringtones come from the original pack and stay as they are. You can\'t edit ringtones here yet.</item>
+    </plurals>
+    <plurals name="creator_kept_ringtones_and_animation">
+        <item quantity="one">%d ringtone and an animated picture come from the original pack and stay as they are. Choosing a new picture leaves the animated one out.</item>
+        <item quantity="other">%d ringtones and an animated picture come from the original pack and stay as they are. Choosing a new picture leaves the animated one out.</item>
+    </plurals>
+    <string name="creator_kept_animation">An animated picture comes from the original pack and stays as it is. Choosing a new picture leaves it out.</string>
 </resources>

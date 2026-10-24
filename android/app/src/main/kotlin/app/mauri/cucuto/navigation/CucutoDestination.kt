@@ -2,6 +2,7 @@ package app.mauri.cucuto.navigation
 
 import androidx.navigation3.runtime.NavKey
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import kotlinx.serialization.Serializable
 
 /**
@@ -61,10 +62,13 @@ sealed interface CucutoDestination : NavKey {
         val sourcePackId: String? = null,
     ) : CucutoDestination
 
-    /** Haptic editor (#32) for [chat]'s custom vibration (#33), or a scratch pad that only previews when null. */
+    /**
+     * Haptic editor (#32) for [target]: a chat's custom vibration (#33) or a creator character's pattern (#185), or a
+     * scratch pad that only previews when null.
+     */
     @Serializable
     data class HapticEditor(
-        val chat: ChatKey? = null,
+        val target: HapticTarget? = null,
     ) : CucutoDestination
 
     /** Day and night: the place sunrise and sunset are computed for (#118, ADR 0037). */
@@ -127,6 +131,20 @@ sealed interface CucutoDestination : NavKey {
     /** Home → Assign a voice: every chat without a voice, to pick one for the character picker. */
     @Serializable
     data object AssignVoice : CucutoDestination
+
+    /** "Add a chat from contacts" (ADR 0065): the explainer, then the WhatsApp entries of Android's contacts. */
+    @Serializable
+    data object AddFromContacts : CucutoDestination
+
+    /** Home → "Who is this?" (ADR 0065): which person added from contacts the recent sender [chat] is. */
+    @Serializable
+    data class ConfirmLink(
+        val chat: ChatKey,
+    ) : CucutoDestination
+
+    /** Home → Try a sample chat: a demo chat that plays a voice in the app, never reaching the module (ADR 0075). */
+    @Serializable
+    data object SampleChat : CucutoDestination
 
     /** Module status, the decision log and the self-test notification (#17). */
     @Serializable

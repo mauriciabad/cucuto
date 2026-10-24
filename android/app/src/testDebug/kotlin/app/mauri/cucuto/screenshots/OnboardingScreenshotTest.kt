@@ -25,7 +25,7 @@ class OnboardingScreenshotTest(
         step: OnboardingStep,
         web: String? = null,
         store: Int? = null,
-    ) = screenshot(name, web = web, store = store) {
+    ) = screenshot(name, web = web, store = store, animated = true) {
         OnboardingContent(
             step = step,
             report =

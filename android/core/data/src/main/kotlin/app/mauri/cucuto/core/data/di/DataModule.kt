@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatHapticOverrides
+import app.mauri.cucuto.core.data.chats.ChatLinker
+import app.mauri.cucuto.core.data.chats.ContactChats
 import app.mauri.cucuto.core.data.chats.InstalledRingtoneCapability
 import app.mauri.cucuto.core.data.chats.RingtoneCapability
 import app.mauri.cucuto.core.data.chats.RoomChatDirectory
@@ -28,6 +30,8 @@ import app.mauri.cucuto.core.data.routing.RoutingSink
 import app.mauri.cucuto.core.data.routing.SystemCalendar
 import app.mauri.cucuto.core.data.routing.XposedFramework
 import app.mauri.cucuto.core.data.routing.XposedRoutingSink
+import app.mauri.cucuto.core.data.settings.DataStorePickerFoldSettings
+import app.mauri.cucuto.core.data.settings.PickerFoldSettings
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.InstalledCharacterDirectory
 import dagger.Binds
@@ -114,9 +118,13 @@ interface DataBindings {
 
     @Binds fun chatDirectory(directory: RoomChatDirectory): ChatDirectory
 
+    @Binds fun contactChats(linker: ChatLinker): ContactChats
+
     @Binds fun chatHapticOverrides(overrides: RoomChatHapticOverrides): ChatHapticOverrides
 
     @Binds fun characterDirectory(directory: InstalledCharacterDirectory): CharacterDirectory
 
     @Binds fun ringtoneCapability(capability: InstalledRingtoneCapability): RingtoneCapability
+
+    @Binds fun pickerFoldSettings(settings: DataStorePickerFoldSettings): PickerFoldSettings
 }

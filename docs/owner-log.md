@@ -410,3 +410,36 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 > we should be towards the end of development, please do a boost to finish important stuff. now i have many agents working, but tomorrow i wont have any, only sporadic ones from time to time to do small features. if this is not feasable to finish let me know
 
 (The lead started the roadmap items that can finish without the owner in parallel: the sound flow rethink #298, pack rules #288, import speed #279, the review sample chat #285, the remaining Drive backup work #163, a handoff guide for sporadic agents, and fixes for the open PRs. Work that needs the owner's phone, a second phone or the Play account can't finish without them; the lead listed it in the reply.)
+
+## 2026-10-24 — Comment on #284 (haptic previews in Discover: defaults to confirm)
+
+> 6 at least show a visual preview of the haptic (also on the app would be nice)
+
+(Default 6 was "the website keeps sound-only previews". Filed as #301 (M5): draw the vibration on the website and in the app. The agent that builds it updates ADR 0069 and closes #284; defaults 1 to 5 stand.)
+
+## 2026-10-24 — Comment on #287 (Google Play defaults: upload key, category, audience, upload tool)
+
+> the app is not in any device yet, so changing the key now may not have any big impact and dont have to worry about userbase
+
+(Answer to default 1, about Play signing. With no installed base, Play App Signing keeps its Google-generated app signing key: no PEPK export of the release key. The release key becomes Play's upload key, so the owner creates no keystore and adds no secret; `release.yml` signs the bundle with the release secrets on every release and the `PLAY_UPLOAD_*` secrets are gone. Play installs and the APKs from GitHub, Obtainium and F-Droid can't update each other. ADR 0071, docs/google-play.md, docs/releasing.md and #276's steps updated. Defaults 2 to 6 stand.)
+
+## 2026-10-24 — Chat with the lead (Google Play signing, after #311 applied the #287 answer)
+
+(After the first answer on #287 was applied: Play keeps a Google-generated app signing key, and Play installs and the
+GitHub, Obtainium and F-Droid APKs can't update each other.)
+
+> why  someone with the GitHub, F-Droid or Obtainium APK has to uninstall before switching to Play? i dont understand the benefit. just asking
+
+(The lead explained that Android updates need the same signing certificate, and Play signs what it serves.)
+
+> i still dont get it. if the upload is automated, both are the same effort, so isnt the simpler to just build 1 apk?
+
+(The lead explained that Play only takes bundles and always re-signs them, so the only choice is whose key it signs with.)
+
+> and is it possible to publish in hb the play signed apk? i dont knwo what is the standard
+
+(The lead answered that publishing Play-signed APKs on GitHub is possible but unusual, and that giving Play your own key is the standard for open-source apps.)
+
+> i preffer to give Play my own key, it is a small step i can do
+
+(Second answer on #287. Play's app signing key becomes the owner's existing release key, exported once with PEPK in Play Console before the first upload (#276). The release key stays the upload key, so `release.yml` and the secrets don't change. Play installs and the GitHub, Obtainium and F-Droid APKs share one certificate and update each other. ADR 0071 (owner update, second answer), docs/google-play.md, docs/releasing.md, docs/distribution.md, ADR 0046, ADR 0021 and #276's steps updated.)

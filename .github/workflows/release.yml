@@ -18,10 +18,10 @@ name: release
 # never on a command line). The repository variable RELEASE_CERT_SHA256, when set, pins the signing certificate so a
 # replaced key fails the release instead of shipping an APK that cannot update existing installs.
 #
-# Google Play (ADR 0071): with the optional secrets PLAY_UPLOAD_KEYSTORE_BASE64, PLAY_UPLOAD_KEYSTORE_PASSWORD,
-# PLAY_UPLOAD_KEY_ALIAS and PLAY_UPLOAD_KEY_PASSWORD (the owner's upload key, #276), the run also builds the app bundle
-# from the same version and attaches cucuto-<version>.aab and its checksum. The optional variable
-# PLAY_UPLOAD_CERT_SHA256 pins the upload certificate. Nothing here uploads to Play: the owner does (docs/releasing.md).
+# Google Play (ADR 0071, owner update #287): the same build also makes the app bundle, signed with the same release
+# key, and attaches cucuto-<version>.aab and its checksum. For Play that key is the upload key, and Play App Signing
+# re-signs what it serves with the same release key, which the owner gave Play with PEPK. Nothing here uploads to
+# Play: the owner does (docs/releasing.md).
 #
 # Actions are pinned to full commit SHAs (this workflow handles the signing key); Dependabot keeps the pins and their
 # version comments current. To retry a failed run (for example after adding the secrets), re-run it from the
@@ -59,10 +59,6 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_BASE64 }}
-          PLAY_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEYSTORE_PASSWORD }}
-          PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
-          PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
         run: |
           if [[ ! "$TAG" =~ ^v(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
             echo "::error title=Bad release tag::Tags must look like v1.2.3 (each part 0-999, no leading zeros), got '$TAG'."
@@ -85,20 +81,6 @@ jobs:
               echo "The owner creates the release key and stores it as repository secrets with"
               echo "\`kotlin tools/release/setup-signing.main.kts\` (see \`docs/releasing.md\`), then re-runs this workflow."
             } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-
-          # The Play upload key is optional: all four secrets build the bundle, none skips it, some is a mistake.
-          play=()
-          for name in PLAY_UPLOAD_KEYSTORE_BASE64 PLAY_UPLOAD_KEYSTORE_PASSWORD PLAY_UPLOAD_KEY_ALIAS PLAY_UPLOAD_KEY_PASSWORD; do
-            [ -z "${!name}" ] || play+=("$name")
-          done
-          if (( ${#play[@]} == 4 )); then
-            echo "PLAY_BUNDLE=true" >> "$GITHUB_ENV"
-          elif (( ${#play[@]} == 0 )); then
-            echo "::notice title=No Play bundle::The PLAY_UPLOAD_* secrets are not set, so this release has no .aab for Google Play. The owner creates the upload key in #276 (docs/releasing.md)."
-          else
-            echo "::error title=Play upload key incomplete::Only ${play[*]} of the four PLAY_UPLOAD_* secrets are set. Set all four or none (docs/releasing.md)."
             exit 1
           fi
 
@@ -149,9 +131,11 @@ jobs:
           save-if: false
 
       # Tests, lint and ktlint already ran in ci.yml on the way to main; this builds the release variant only
-      # (R8, resource shrinking, lintVital). The keystore lives in RUNNER_TEMP for this step only. No configuration
-      # cache, so the passwords are never serialized into a cache entry.
-      - name: Build the signed release APK
+      # (R8, resource shrinking, lintVital): the APK and Google Play's app bundle (ADR 0071), from the same R8 output
+      # and version, both signed with the release key (ci.yml builds both in one run too). The keystore lives in
+      # RUNNER_TEMP for this step only. No configuration cache, so the passwords are never serialized into a cache
+      # entry.
+      - name: Build the signed release APK and Play bundle
         working-directory: android
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
@@ -162,7 +146,7 @@ jobs:
           export CUCUTO_RELEASE_KEYSTORE="$RUNNER_TEMP/cucuto-release.jks"
           trap 'rm -f "$CUCUTO_RELEASE_KEYSTORE"' EXIT
           printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$CUCUTO_RELEASE_KEYSTORE"
-          ./gradlew :app:assembleRelease -Pcucuto.version="$VERSION" --no-configuration-cache --stacktrace
+          ./gradlew :app:assembleRelease :app:bundleRelease -Pcucuto.version="$VERSION" --no-configuration-cache --stacktrace
           ./gradlew --stop
 
       - name: Verify the signature and the version
@@ -208,32 +192,13 @@ jobs:
           (cd dist && sha256sum "cucuto-$VERSION.apk" | tee "cucuto-$VERSION.apk.sha256")
           echo "CERT_SHA256=$cert" >> "$GITHUB_ENV"
 
-      # Google Play's app bundle (ADR 0071): the same build, version and R8 output as the APK, signed with the Play
-      # upload key instead of the release key. Play re-signs what it serves with the release key, which the owner
-      # gave Play with PEPK (#276), so Play installs and GitHub installs share one certificate. Same handling of the
-      # keystore as the APK step: RUNNER_TEMP, deleted when the step ends, no configuration cache.
-      - name: Build the signed Play bundle
-        if: env.PLAY_BUNDLE == 'true'
-        working-directory: android
-        env:
-          PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_BASE64 }}
-          CUCUTO_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEYSTORE_PASSWORD }}
-          CUCUTO_RELEASE_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
-          CUCUTO_RELEASE_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
-        run: |
-          export CUCUTO_RELEASE_KEYSTORE="$RUNNER_TEMP/cucuto-upload.jks"
-          trap 'rm -f "$CUCUTO_RELEASE_KEYSTORE"' EXIT
-          printf '%s' "$PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$CUCUTO_RELEASE_KEYSTORE"
-          ./gradlew :app:bundleRelease -Pcucuto.version="$VERSION" --no-configuration-cache --stacktrace
-          ./gradlew --stop
-
-      # bundletool reads the bundle's manifest and settings; pinned by version and checksum like the actions above.
+      # Google Play's app bundle (ADR 0071, owner updates #287). The release key is Play's upload key and, given to
+      # Play with PEPK, its app signing key too, so Play installs and these APKs share one certificate. bundletool
+      # reads the bundle's manifest and settings; pinned by version and checksum like the actions above.
       - name: Verify the Play bundle
-        if: env.PLAY_BUNDLE == 'true'
         env:
           BUNDLETOOL_VERSION: "1.18.3"
           BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
-          EXPECTED_UPLOAD_CERT_SHA256: ${{ vars.PLAY_UPLOAD_CERT_SHA256 }}
         run: |
           aab=android/app/build/outputs/bundle/release/app-release.aab
           if [ ! -f "$aab" ]; then
@@ -245,8 +210,9 @@ jobs:
             "https://github.com/google/bundletool/releases/download/$BUNDLETOOL_VERSION/bundletool-all-$BUNDLETOOL_VERSION.jar"
           echo "$BUNDLETOOL_SHA256  $bundletool" | sha256sum -c -
 
-          # Signed (a bundle carries a JAR signature), by exactly one key that is neither a debug key nor the release key.
-          # Output captured first: under pipefail, grep -q closing the pipe early would fail the pipeline.
+          # Signed (a bundle carries a JAR signature), by exactly one key: the release key that signed the APK, so the
+          # upload key Play registered on the first upload never changes. Output captured first: under pipefail,
+          # grep -q closing the pipe early would fail the pipeline.
           verified=$(jarsigner -verify "$aab")
           if [[ "$verified" != *"jar verified."* ]]; then
             echo "::error title=Unsigned bundle::$aab has no valid signature."
@@ -262,12 +228,8 @@ jobs:
             exit 1
           fi
           upload=$(grep -m1 'SHA256:' "$RUNNER_TEMP/upload-certs.txt" | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
-          expected=$(printf '%s' "$EXPECTED_UPLOAD_CERT_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')
-          if [ "$upload" = "$CERT_SHA256" ]; then
-            echo "::warning title=Upload key is the release key::The bundle is signed with the release key. Google recommends a separate upload key (#276, #287)."
-          fi
-          if [ -n "$expected" ] && [ "$upload" != "$expected" ]; then
-            echo "::error title=Upload key changed::The bundle is signed by $upload, but PLAY_UPLOAD_CERT_SHA256 is $expected. Play refuses bundles from another upload key."
+          if [ "$upload" != "$CERT_SHA256" ]; then
+            echo "::error title=Bundle signed by another key::The bundle is signed by $upload, but the APK by $CERT_SHA256. Both must use the release key, which is also Play's upload key (ADR 0071)."
             exit 1
           fi
 
@@ -292,10 +254,6 @@ jobs:
 
           cp "$aab" "dist/cucuto-$VERSION.aab"
           (cd dist && sha256sum "cucuto-$VERSION.aab" | tee "cucuto-$VERSION.aab.sha256")
-          echo "UPLOAD_CERT_SHA256=$upload" >> "$GITHUB_ENV"
-          if [ -z "$expected" ]; then
-            echo "::warning title=Upload certificate not pinned::Set the repository variable PLAY_UPLOAD_CERT_SHA256 to $upload so a replaced upload key fails here instead of at Play (docs/releasing.md)."
-          fi
 
       # Release notes from the Conventional Commits since the previous tag, grouped for users (ADR 0046). The same
       # run writes the store changelog for this versionCode (fastlane/metadata/android/en-US/changelogs/) and the
@@ -341,10 +299,8 @@ jobs:
             echo '| --- | --- |'
             echo "| \`$(basename "$apk")\` | $(numfmt --to=si --suffix=B "$(stat -c %s "$apk")") |"
             echo "| \`$(basename "$apk").sha256\` | SHA-256 checksum |"
-            if [ -f "dist/cucuto-$VERSION.aab" ]; then
-              echo "| \`cucuto-$VERSION.aab\` | Google Play bundle, signed with the upload key; not for installing |"
-              echo "| \`cucuto-$VERSION.aab.sha256\` | SHA-256 checksum |"
-            fi
+            echo "| \`cucuto-$VERSION.aab\` | Google Play bundle; not for installing |"
+            echo "| \`cucuto-$VERSION.aab.sha256\` | SHA-256 checksum |"
             echo
             echo 'Needs Android 17, root and LSPosed. Install guide: <https://cucuto.mauri.app/install/>.'
             echo 'After installing or updating, reboot: the module inside the system loads the new version at boot.'
@@ -357,8 +313,7 @@ jobs:
             echo
             cat dist/changes.md
           } > dist/notes.md
-          assets=("$apk" "$apk.sha256")
-          if [ -f "dist/cucuto-$VERSION.aab" ]; then assets+=("dist/cucuto-$VERSION.aab" "dist/cucuto-$VERSION.aab.sha256"); fi
+          assets=("$apk" "$apk.sha256" "dist/cucuto-$VERSION.aab" "dist/cucuto-$VERSION.aab.sha256")
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" "${assets[@]}" --clobber
           else
@@ -373,11 +328,7 @@ jobs:
             echo "- APK: \`$(basename "$apk")\`, versionCode $VERSION_CODE"
             echo "- SHA-256: \`$sha\`"
             echo "- Signing certificate SHA-256: \`$CERT_SHA256\`"
-            if [ -f "dist/cucuto-$VERSION.aab" ]; then
-              echo "- Play bundle: \`cucuto-$VERSION.aab\`, upload certificate SHA-256 \`$UPLOAD_CERT_SHA256\`. Upload it to Play Console (docs/releasing.md)."
-            else
-              echo "- No Play bundle: the PLAY_UPLOAD_* secrets are not set (#276)."
-            fi
+            echo "- Play bundle: \`cucuto-$VERSION.aab\`, signed with the same key (Play's upload key). Upload it to Play Console (docs/releasing.md)."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Releases created with GITHUB_TOKEN don't trigger other workflows (site-rebuild.yml), so start the website

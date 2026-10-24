@@ -14,7 +14,7 @@ import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.backup.RingtoneOutcome
 import app.mauri.cucuto.core.backup.ZipContentType
 import app.mauri.cucuto.core.data.db.GroupPolicy
-import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.UnmatchedContact
 import app.mauri.cucuto.testing.FakeCharacterDirectory
 import app.mauri.cucuto.ui.settings.FakeAutoBackup
 import kotlinx.coroutines.Dispatchers
@@ -252,13 +252,100 @@ class RestoreViewModelTest {
         }
 
     @Test
-    fun `a backup without phone ringtones never touches them`() =
+    fun `a backup without Android links or phone ringtones never touches contacts`() =
         runTest {
             gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
             gateway.reports += BackupTestData.report(applied = listOf("1", "2"))
             viewModel.open("content://backup")
-            assertNull(step<RestoreStep.Done>().summary.phoneRingtones)
-            assertTrue(gateway.phoneRingtoneReports.isEmpty())
+            assertNull(step<RestoreStep.Done>().summary.contactLinks)
+            assertTrue(gateway.contactLinkReports.isEmpty())
+        }
+
+    @Test
+    fun `Android links without phone ringtones are matched too, and unmatched ones are picked by hand`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document(contacts = 3)))
+            val report = BackupTestData.report(applied = listOf("1", "2", "3"), linked = setOf("1", "2"))
+            gateway.reports += report
+            gateway.contactLinks =
+                BackupTestData.links(
+                    restored = 2,
+                    linked = 1,
+                    unmatched = listOf(UnmatchedContact(2, "Contact 2", ringtone = false)),
+                )
+            viewModel.open("content://backup")
+
+            assertEquals(listOf(report), gateway.contactLinkReports)
+            val summary = step<RestoreStep.Done>().summary
+            assertFalse(summary.contactsWaiting)
+            assertFalse("no phone ringtones to turn on", summary.phoneRingtonesWaiting)
+
+            // A cancelled or unreadable pick changes nothing.
+            viewModel.linkContact(2, "content://com.android.contacts/contacts/lookup/unknown/9")
+            assertEquals(
+                1,
+                step<RestoreStep.Done>()
+                    .summary.contactLinks!!
+                    .unmatched.size,
+            )
+            // A contact that is not in the list is ignored.
+            viewModel.linkContact(7, "content://com.android.contacts/contacts/lookup/here/1")
+            assertEquals(1, gateway.picked.size)
+
+            gateway.pickable += "content://com.android.contacts/contacts/lookup/here/1"
+            viewModel.linkContact(2, "content://com.android.contacts/contacts/lookup/here/1")
+            val links = step<RestoreStep.Done>().summary.contactLinks!!
+            assertEquals(2L to "content://com.android.contacts/contacts/lookup/here/1", gateway.picked.last())
+            assertEquals(emptyList<UnmatchedContact>(), links.unmatched)
+            assertEquals(2, links.linked)
+            assertEquals(0, links.ringtonesLinked)
+        }
+
+    @Test
+    fun `without the contacts permission the summary waits, and Find contacts lists who is missing`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports += BackupTestData.report(applied = listOf("1", "2"), linked = setOf("1", "2"))
+            gateway.contactLinks = BackupTestData.links(restored = 2, waitingForPermission = true)
+            viewModel.open("content://backup")
+            assertTrue(step<RestoreStep.Done>().summary.contactsWaiting)
+
+            // The permission was refused: nothing changes.
+            viewModel.findContacts()
+            assertTrue(step<RestoreStep.Done>().summary.contactsWaiting)
+
+            gateway.findResult =
+                BackupTestData.links(
+                    restored = 2,
+                    linked = 1,
+                    unmatched = listOf(UnmatchedContact(1, "Contact 1", ringtone = true)),
+                    ringtones = 1,
+                )
+            viewModel.findContacts()
+            val summary = step<RestoreStep.Done>().summary
+            assertEquals(2, gateway.findCalls)
+            assertFalse(summary.contactsWaiting)
+            assertEquals(listOf(UnmatchedContact(1, "Contact 1", ringtone = true)), summary.contactLinks!!.unmatched)
+
+            // Picking the one with a phone ringtone counts it as a ringing contact too.
+            gateway.pickable += "content://picked"
+            viewModel.linkContact(1, "content://picked")
+            assertEquals(1, step<RestoreStep.Done>().summary.contactLinks!!.ringtonesLinked)
+        }
+
+    @Test
+    fun `granting the permission after the contacts were matched elsewhere only clears the wait`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports += BackupTestData.report(applied = listOf("1"), linked = setOf("1"))
+            gateway.contactLinks = BackupTestData.links(restored = 1, waitingForPermission = true)
+            viewModel.open("content://backup")
+            // App start matched the pending list in the meantime: nothing waits any more.
+            gateway.findResult = BackupTestData.links()
+            viewModel.findContacts()
+            val links = step<RestoreStep.Done>().summary.contactLinks!!
+            assertFalse(links.waitingForPermission)
+            assertEquals(1, links.restored)
         }
 
     @Test
@@ -276,14 +363,21 @@ class RestoreViewModelTest {
                         ),
                 )
             gateway.reports += report
-            gateway.phoneRingtones =
-                PhoneRingtoneRestore(2, 1, listOf("Contact 2"), waitingForPermission = false, enabled = true)
+            val missing = UnmatchedContact(2, "Contact 2", ringtone = true)
+            gateway.contactLinks =
+                BackupTestData.links(
+                    restored = 2,
+                    linked = 1,
+                    unmatched = listOf(missing),
+                    ringtones = 2,
+                    ringtonesLinked = 1,
+                )
             viewModel.open("content://backup")
 
             val summary = step<RestoreStep.Done>().summary
-            assertEquals(listOf(report), gateway.phoneRingtoneReports)
+            assertEquals(listOf(report), gateway.contactLinkReports)
             assertEquals(1, summary.ringtonesKept)
-            assertEquals(listOf("Contact 2"), summary.phoneRingtones!!.missing)
+            assertEquals(listOf(missing), summary.contactLinks!!.unmatched)
             assertFalse(summary.phoneRingtonesWaiting)
         }
 
@@ -293,8 +387,8 @@ class RestoreViewModelTest {
             gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
             gateway.reports +=
                 BackupTestData.report(applied = listOf("1"), ringtones = listOf(BackupTestData.ringtone("1")))
-            gateway.phoneRingtones =
-                PhoneRingtoneRestore(1, 0, emptyList(), waitingForPermission = true, enabled = false)
+            gateway.contactLinks =
+                BackupTestData.links(restored = 1, ringtones = 1, waitingForPermission = true, ringtonesEnabled = false)
             viewModel.open("content://backup")
             assertTrue(step<RestoreStep.Done>().summary.phoneRingtonesWaiting)
 
@@ -303,12 +397,13 @@ class RestoreViewModelTest {
             viewModel.enablePhoneRingtones()
             assertTrue(step<RestoreStep.Done>().summary.phoneRingtonesWaiting)
 
-            gateway.enableResult = PhoneRingtoneRestore(1, 1, emptyList(), waitingForPermission = false, enabled = true)
+            gateway.enableResult = BackupTestData.links(restored = 1, linked = 1, ringtones = 1, ringtonesLinked = 1)
             viewModel.enablePhoneRingtones()
             val summary = step<RestoreStep.Done>().summary
             assertEquals(2, gateway.enableCalls)
             assertFalse(summary.phoneRingtonesWaiting)
-            assertEquals(1, summary.phoneRingtones!!.linked)
+            assertFalse(summary.contactsWaiting)
+            assertEquals(1, summary.contactLinks!!.ringtonesLinked)
         }
 
     @Test
@@ -318,17 +413,23 @@ class RestoreViewModelTest {
             gateway.reports +=
                 BackupTestData.report(applied = listOf("1"), ringtones = listOf(BackupTestData.ringtone("1")))
             // The permission was there but the feature was off: the contacts were matched, nothing is written yet.
-            gateway.phoneRingtones =
-                PhoneRingtoneRestore(1, 1, emptyList(), waitingForPermission = false, enabled = false)
+            gateway.contactLinks =
+                BackupTestData.links(
+                    restored = 1,
+                    linked = 1,
+                    ringtones = 1,
+                    ringtonesLinked = 1,
+                    ringtonesEnabled = false,
+                )
             viewModel.open("content://backup")
             assertTrue(step<RestoreStep.Done>().summary.phoneRingtonesWaiting)
 
-            gateway.enableResult = PhoneRingtoneRestore(0, 0, emptyList(), waitingForPermission = false, enabled = true)
+            gateway.enableResult = BackupTestData.links()
             viewModel.enablePhoneRingtones()
-            val ringtones = step<RestoreStep.Done>().summary.phoneRingtones!!
+            val ringtones = step<RestoreStep.Done>().summary.contactLinks!!
             assertEquals(1, ringtones.restored)
-            assertEquals(1, ringtones.linked)
-            assertTrue(ringtones.enabled)
+            assertEquals(1, ringtones.ringtonesLinked)
+            assertTrue(ringtones.ringtonesEnabled)
         }
 
     @Test
@@ -351,11 +452,11 @@ class RestoreViewModelTest {
             gateway.reports += second
             viewModel.open("content://backup")
             step<RestoreStep.Conflicts>()
-            assertTrue("nothing is linked before the user answers", gateway.phoneRingtoneReports.isEmpty())
+            assertTrue("nothing is linked before the user answers", gateway.contactLinkReports.isEmpty())
 
             viewModel.toggleConflict("2")
             viewModel.applyConflicts()
-            assertEquals(listOf(first, second), gateway.phoneRingtoneReports)
+            assertEquals(listOf(first, second), gateway.contactLinkReports)
             assertEquals(0, step<RestoreStep.Done>().summary.ringtonesKept)
         }
 

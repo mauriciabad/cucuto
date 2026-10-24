@@ -52,6 +52,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -66,7 +67,8 @@ import app.mauri.cucuto.R
 import app.mauri.cucuto.backup.PackFailure
 import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.data.db.GroupPolicy
-import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.ContactLinkRestore
+import app.mauri.cucuto.core.ringtone.UnmatchedContact
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.PushedScreen
@@ -74,6 +76,7 @@ import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.ringtone.rememberContactsPermissionFlow
+import app.mauri.cucuto.ui.ringtone.rememberReadContactsPermissionFlow
 import app.mauri.cucuto.ui.settings.ZIP_TYPES
 import app.mauri.cucuto.ui.settings.launchSafely
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -109,6 +112,14 @@ fun RestoreScreen(
         }
     val feedback = LocalFeedback.current
     val turnOnRingtones = rememberContactsPermissionFlow(onGrant = viewModel::enablePhoneRingtones)
+    val findContacts = rememberReadContactsPermissionFlow(onGrant = viewModel::findContacts)
+    var linkingContact by rememberSaveable { mutableStateOf<Long?>(null) }
+    val pickContact =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickContact()) { uri ->
+            val id = linkingContact
+            linkingContact = null
+            if (uri != null && id != null) viewModel.linkContact(id, uri.toString())
+        }
     LaunchedEffect(step is RestoreStep.Done) {
         if (step is RestoreStep.Done) feedback.fire(Feedback.Success)
     }
@@ -133,6 +144,11 @@ fun RestoreScreen(
                 onOpenDiagnostics = { onLeave(CucutoDestination.Diagnostics) },
                 onKeepForBackups = viewModel::keepForBackups,
                 onTurnOnPhoneRingtones = turnOnRingtones,
+                onFindContacts = findContacts,
+                onPickContact = { id ->
+                    linkingContact = id
+                    launchSafely { pickContact.launch(null) }
+                },
             ),
         modifier = modifier,
     )
@@ -155,6 +171,10 @@ internal data class RestoreActions(
     val onKeepForBackups: () -> Unit = {},
     /** Asks for the contacts permission (explained first), then turns phone ringtones on. */
     val onTurnOnPhoneRingtones: () -> Unit = {},
+    /** Asks for the permission to read contacts (explained first), then finds the backup's linked contacts here. */
+    val onFindContacts: () -> Unit = {},
+    /** Opens Android's contact picker for an unmatched contact (its Cucuto contact ID). */
+    val onPickContact: (Long) -> Unit = {},
 )
 
 @Composable
@@ -572,8 +592,11 @@ private fun DoneStep(
                     }
                 }
             }
-            summary.phoneRingtones?.takeIf { it.restored > 0 }?.let { ringtones ->
-                item { PhoneRingtonesCard(ringtones, summary.phoneRingtonesWaiting, actions.onTurnOnPhoneRingtones) }
+            summary.contactLinks?.takeIf { it.restored > 0 }?.let { links ->
+                item { ContactsCard(links, actions.onFindContacts, actions.onPickContact) }
+                if (links.ringtones > 0) {
+                    item { PhoneRingtonesCard(links, summary.phoneRingtonesWaiting, actions.onTurnOnPhoneRingtones) }
+                }
             }
             step.reusableSource?.let { source ->
                 item { KeepForBackupsCard(kept = step.keptForBackups, onKeep = actions.onKeepForBackups) }
@@ -620,12 +643,82 @@ private fun DoneStep(
 }
 
 /**
- * The restored phone ringtones (ADR 0057): how many came back, which have no Android contact on this phone (linked by
- * hand from each chat), and the one tap that turns them on when they wait for it.
+ * The backup's linked contacts on this phone (ADR 0028's amendment for #43): lookup keys are per device, so they are
+ * found again here. Without the permission to read contacts, why it is needed and "Find contacts"; then how many were
+ * found, and a row with "Choose contact" (Android's contact picker) for each one that was not.
+ */
+@Composable
+private fun ContactsCard(
+    links: ContactLinkRestore,
+    onFind: () -> Unit,
+    onPick: (Long) -> Unit,
+) {
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.restore_contacts_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (links.waitingForPermission) {
+                Text(pluralStringResource(R.plurals.restore_contacts_waiting, links.restored, links.restored))
+                FilledTonalButton(onClick = onFind, shapes = ButtonDefaults.shapes()) {
+                    Text(stringResource(R.string.restore_contacts_find))
+                }
+                return@Column
+            }
+            if (links.linked > 0) {
+                Text(
+                    pluralStringResource(R.plurals.restore_contacts_found, links.linked, links.linked),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+            if (links.unmatched.isNotEmpty()) {
+                Text(
+                    pluralStringResource(
+                        R.plurals.restore_contacts_unmatched,
+                        links.unmatched.size,
+                        links.unmatched.size,
+                    ),
+                )
+                links.unmatched.forEach { contact -> UnmatchedRow(contact, onPick) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UnmatchedRow(
+    contact: UnmatchedContact,
+    onPick: (Long) -> Unit,
+) {
+    val name = contact.displayName ?: stringResource(R.string.chat_unnamed)
+    val chooseFor = stringResource(R.string.restore_contacts_choose_for, name)
+    // Stacked rather than a list item with a trailing button: at large font sizes the name keeps the full width.
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(name, style = MaterialTheme.typography.titleSmall)
+        if (contact.ringtone) {
+            Text(
+                stringResource(R.string.restore_contacts_ringtone_waits),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        OutlinedButton(
+            onClick = { onPick(contact.contactId) },
+            shapes = ButtonDefaults.shapes(),
+            modifier = Modifier.semantics { contentDescription = chooseFor },
+        ) { Text(stringResource(R.string.ringtone_pick_contact)) }
+    }
+}
+
+/**
+ * The restored phone ringtones (ADR 0057): how many came back, and the one tap that turns them on when they wait for
+ * it. The contacts they could not find are listed in [ContactsCard].
  */
 @Composable
 private fun PhoneRingtonesCard(
-    ringtones: PhoneRingtoneRestore,
+    links: ContactLinkRestore,
     waiting: Boolean,
     onTurnOn: () -> Unit,
 ) {
@@ -636,25 +729,19 @@ private fun PhoneRingtonesCard(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() },
             )
-            Text(pluralStringResource(R.plurals.restore_ringtones_back, ringtones.restored, ringtones.restored))
-            if (ringtones.missing.isNotEmpty()) {
-                val unnamed = stringResource(R.string.chat_unnamed)
-                Text(
-                    pluralStringResource(
-                        R.plurals.restore_ringtones_missing,
-                        ringtones.missing.size,
-                        ringtones.missing.joinToString { it ?: unnamed },
-                    ),
-                )
-            }
+            Text(pluralStringResource(R.plurals.restore_ringtones_back, links.ringtones, links.ringtones))
             if (waiting) {
                 Text(stringResource(R.string.restore_ringtones_off))
                 FilledTonalButton(onClick = onTurnOn, shapes = ButtonDefaults.shapes()) {
                     Text(stringResource(R.string.ringtone_turn_on))
                 }
-            } else if (ringtones.linked > 0) {
+            } else if (links.ringtonesLinked > 0) {
                 Text(
-                    pluralStringResource(R.plurals.restore_ringtones_written, ringtones.linked, ringtones.linked),
+                    pluralStringResource(
+                        R.plurals.restore_ringtones_written,
+                        links.ringtonesLinked,
+                        links.ringtonesLinked,
+                    ),
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
