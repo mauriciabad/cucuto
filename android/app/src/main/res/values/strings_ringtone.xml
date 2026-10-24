@@ -13,7 +13,6 @@
     <string name="ringtone_link_suggestion">Link %1$s</string>
     <string name="ringtone_pick_contact">Choose contact</string>
     <string name="ringtone_use">Ring with %1$s</string>
-    <string name="ringtone_stop">Stop using for calls</string>
     <string name="ringtone_rule_pack">Pack\'s rules</string>
     <string name="ringtone_rule_random">Random per call</string>
     <string name="ringtone_rule_time">Day and night</string>

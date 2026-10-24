@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
 import app.mauri.cucuto.packspec.LoopRange
@@ -102,6 +103,63 @@ class RingtonePickerViewModelTest {
     private fun viewModel(chat: ChatKey = ADA) = RingtonePickerViewModel(chat, source, preview) { noon }
 
     private fun TestScope.collect(vm: RingtonePickerViewModel) = backgroundScope.launch { vm.state.collect {} }
+
+    @Test
+    fun androidDefaultAndLeaveAsIsAreSavedAsTheirOwnChoice() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            collect(vm)
+            vm.select(frogItem)
+            assertEquals(1, preview.plays.size)
+
+            vm.chooseOther(RingtoneChoice.ANDROID_DEFAULT)
+            assertEquals(RingtoneChoice.ANDROID_DEFAULT, vm.state.value.choice)
+            assertNull("the preview stops", vm.state.value.playing)
+            assertFalse("no cover is chosen", vm.state.value.chosen(frog.voice))
+            assertTrue(vm.state.value.canSave)
+            assertTrue(vm.save())
+
+            assertEquals(listOf(RingtoneChoice.ANDROID_DEFAULT), source.others)
+            assertTrue(source.saved.isEmpty())
+            assertTrue(vm.state.value.done)
+            assertNull(vm.state.value.saved)
+            assertEquals(RingtoneChoice.ANDROID_DEFAULT, vm.state.value.savedChoice)
+        }
+
+    @Test
+    fun aStoredChoiceIsShownAndNotSavedAgainUntilACoverIsPicked() =
+        runTest(dispatcher) {
+            source.saved(PhoneRingtoneEntity(1, updatedAt = 1, followsVoice = false, choice = RingtoneChoice.UNCHANGED))
+            val vm = viewModel()
+            collect(vm)
+            assertEquals(RingtoneChoice.UNCHANGED, vm.state.value.choice)
+            assertFalse(vm.state.value.canSave)
+            assertFalse(vm.save())
+
+            vm.chooseOther(RingtoneChoice.ANDROID_DEFAULT)
+            assertTrue(vm.state.value.canSave)
+
+            // A cover goes back to a character: the message character's own ringtone, following the voice.
+            vm.select(frogItem)
+            assertEquals(RingtoneChoice.CHARACTER, vm.state.value.choice)
+            assertTrue(vm.state.value.chosen(frog.voice))
+            assertTrue(vm.save())
+            assertEquals(Saved(1, null, true, RingtoneMode.PACK, null), source.saved.single())
+        }
+
+    @Test
+    fun withoutRingtonePacksTheOtherChoicesStillSave() =
+        runTest(dispatcher) {
+            source.packs.value = emptyList()
+            val vm = viewModel()
+            collect(vm)
+            assertNull(vm.state.value.choice)
+            assertFalse(vm.state.value.canSave)
+
+            vm.chooseOther(RingtoneChoice.UNCHANGED)
+            assertTrue(vm.save())
+            assertEquals(listOf(RingtoneChoice.UNCHANGED), source.others)
+        }
 
     @Test
     fun withNothingStoredTheVoicesOwnRingtoneIsShownAndCanBeSaved() =
@@ -497,6 +555,7 @@ class RingtonePickerViewModelTest {
         val packs = MutableStateFlow<List<RingtonePackItem>>(emptyList())
         private val row = MutableStateFlow<PhoneRingtoneEntity?>(null)
         val saved = mutableListOf<Saved>()
+        val others = mutableListOf<RingtoneChoice>()
         var phoneState = true
         var fail = false
 
@@ -527,6 +586,16 @@ class RingtonePickerViewModelTest {
                     updatedAt = 2,
                     followsVoice = followsVoice,
                 )
+        }
+
+        override suspend fun saveOther(
+            chat: ChatKey,
+            contactId: Long?,
+            choice: RingtoneChoice,
+        ) {
+            if (fail) error("disk full")
+            others += choice
+            row.value = PhoneRingtoneEntity(contactId ?: 1, updatedAt = 2, followsVoice = false, choice = choice)
         }
 
         override fun canReadPhoneState() = phoneState

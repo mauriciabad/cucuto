@@ -5,6 +5,8 @@ import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
+import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
+import app.mauri.cucuto.ui.ringtone.ringtoneDisplay
 import java.text.Normalizer
 import java.util.Locale
 
@@ -13,12 +15,14 @@ import java.util.Locale
  *
  * @property character The assigned character, or null when the chat has no voice or its pack is gone.
  * @property packName Name of the character's pack.
+ * @property ringtone What the chat rings with for phone calls (ADR 0073), null when there is nothing to show.
  */
 @Immutable
 data class ChatRow(
     val chat: Chat,
     val character: VoiceCharacter?,
     val packName: String?,
+    val ringtone: RingtoneDisplay? = null,
 ) {
     val key: ChatKey get() = chat.key
 
@@ -88,7 +92,8 @@ fun buildHomeState(
     val rows =
         chats.map { chat ->
             val match = chat.voice?.let { characters[it.packId to it.characterId] }
-            ChatRow(chat, match?.first, match?.second)
+            val ringtone = ringtoneDisplay(chat) { characters[it.packId to it.characterId]?.first }
+            ChatRow(chat, match?.first, match?.second, ringtone)
         }
     val filter = packFilter?.takeIf { id -> packs.any { it.packId == id } }
     val needle = query.searchable()

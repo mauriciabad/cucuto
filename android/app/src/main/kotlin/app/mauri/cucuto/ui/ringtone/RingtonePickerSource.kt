@@ -7,6 +7,7 @@ import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
@@ -91,6 +92,16 @@ interface RingtonePickerSource {
         variant: String?,
     )
 
+    /**
+     * Stores "Android default" or "Leave as is" for [chat] (ADR 0073). A chat without a contact ([contactId] null)
+     * gets one.
+     */
+    suspend fun saveOther(
+        chat: ChatKey,
+        contactId: Long?,
+        choice: RingtoneChoice,
+    )
+
     /** Whether "Random per call" can re-roll (`READ_PHONE_STATE`). */
     fun canReadPhoneState(): Boolean
 }
@@ -147,6 +158,14 @@ class AppRingtonePickerSource
         ) {
             val id = contactId ?: chats.ensureContact(chat)
             ringtones.choose(id, character?.packId, character?.characterId, mode, variant, followsVoice)
+        }
+
+        override suspend fun saveOther(
+            chat: ChatKey,
+            contactId: Long?,
+            choice: RingtoneChoice,
+        ) {
+            ringtones.chooseOther(contactId ?: chats.ensureContact(chat), choice)
         }
 
         override fun canReadPhoneState(): Boolean = ringtones.canReadPhoneState()

@@ -53,7 +53,9 @@ class PhoneRingtoneDaoTest {
             contact(2, "bruno")
             db.assignmentDao().upsert(AssignmentEntity(1, "pack.a", "frog", updatedAt = 1))
             db.assignmentDao().upsert(AssignmentEntity(2, "pack.a", "frog", updatedAt = 1))
-            dao.upsert(PhoneRingtoneEntity(1, updatedAt = 1, followsVoice = false, choice = RingtoneChoice.ANDROID_DEFAULT))
+            dao.upsert(
+                PhoneRingtoneEntity(1, updatedAt = 1, followsVoice = false, choice = RingtoneChoice.ANDROID_DEFAULT),
+            )
             dao.upsert(PhoneRingtoneEntity(2, updatedAt = 1, followsVoice = false, choice = RingtoneChoice.UNCHANGED))
 
             val row = dao.syncRows().single()

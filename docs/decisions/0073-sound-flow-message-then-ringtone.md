@@ -47,7 +47,7 @@ nothing depends on it.
 ### What the ringtone can be
 
 The ringtone picker offers three kinds of choice. Below the chosen character, the first section is **Other choices**
-with two rows, then the album covers:
+with two chips, then the album covers. The chosen one explains itself in the header, where the record would be:
 
 1. **A Cucuto character**: any character with ringtones, with or without a message voice (ADR 0063).
 2. **Android default**: the contact rings with the phone's default ringtone.

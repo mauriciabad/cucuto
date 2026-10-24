@@ -6,7 +6,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import org.junit.Assert.assertEquals
@@ -34,6 +36,8 @@ class RingtonePickerContentTest {
             onOpenPacks = { events += "packs" },
             onOpenDiscover = { events += "discover" },
             onFilterPack = { events += "filter:$it" },
+            onChooseOther = { events += "other:$it" },
+            onSkip = { events += "skip" },
         )
 
     /** The preview state with playable files, so the play buttons are enabled. */
@@ -52,8 +56,54 @@ class RingtonePickerContentTest {
         )
     }
 
-    private fun show(state: RingtonePickerState) {
-        compose.setContent { CucutoTheme(dynamicColor = false) { RingtonePickerContent(state, null, actions) } }
+    private fun show(
+        state: RingtonePickerState,
+        step: Boolean = false,
+    ) {
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) { RingtonePickerContent(state, null, actions, step = step) }
+        }
+    }
+
+    @Test
+    fun androidDefaultAndLeaveAsIsSitAboveTheCovers() {
+        show(state())
+        compose.onNodeWithText("Other choices").assertIsDisplayed()
+        compose.onNodeWithText("Android default").performClick()
+        compose.onNodeWithText("Leave as is").performClick()
+        assertEquals(listOf("other:ANDROID_DEFAULT", "other:UNCHANGED"), events)
+    }
+
+    @Test
+    fun aChosenAndroidDefaultExplainsItselfAndSaves() {
+        show(state().copy(pending = RingtoneChoice.ANDROID_DEFAULT))
+        compose.onNodeWithText("Rings with your phone's default ringtone", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Use Android's default").performClick()
+        assertEquals(listOf("save"), events)
+    }
+
+    @Test
+    fun aStoredLeaveAsIsIsAlreadyChosen() {
+        show(state().copy(saved = null, savedChoice = RingtoneChoice.UNCHANGED))
+        compose.onNodeWithText("Cucuto doesn't touch this contact's ringtone", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Already chosen").assertIsNotEnabled()
+    }
+
+    @Test
+    fun asStepTwoItIsOptionalWithSkip() {
+        show(state(), step = true)
+        compose.onNodeWithText("Step 2 of 2 · optional").assertIsDisplayed()
+        compose.onNodeWithText("Messages are set", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Skip").performClick()
+        assertEquals(listOf("skip"), events)
+    }
+
+    @Test
+    fun withoutRingtonePacksTheOtherChoicesAreStillThere() {
+        show(state().copy(packs = emptyList(), saved = null, savedChoice = null))
+        compose.onNodeWithText("No ringtones yet").assertIsDisplayed()
+        compose.onNodeWithText("Android default").performScrollTo().performClick()
+        assertEquals(listOf("other:ANDROID_DEFAULT"), events)
     }
 
     @Test
@@ -71,6 +121,8 @@ class RingtonePickerContentTest {
     }
 
     @Test
+    // Tall enough that the chips clear the bottom bar under the header and the other choices.
+    @Config(qualifiers = "w411dp-h1200dp")
     fun packChipsOfferThePacksWithRingtonesAndTheirCount() {
         show(state())
         compose.onNodeWithText("All · 2").assertIsDisplayed()

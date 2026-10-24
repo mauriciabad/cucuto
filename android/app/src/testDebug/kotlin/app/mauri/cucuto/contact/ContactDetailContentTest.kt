@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.DecisionOutcome
+import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -78,6 +79,24 @@ class ContactDetailContentTest {
 
         assertEquals(1, simulations)
         assertEquals(1, changes)
+    }
+
+    @Test
+    fun theHeaderShowsTheRingtoneToo() {
+        show(previewContactDetailState())
+        compose.onNodeWithText("Rings with Bubblegum K.K.").assertIsDisplayed()
+    }
+
+    @Test
+    fun theHeaderSaysWhenTheDefaultRingsAndNothingForLeaveAsIs() {
+        show(previewContactDetailState().copy(ringtone = RingtoneDisplay.AndroidDefault))
+        compose.onNodeWithText("Rings with the phone's default ringtone").assertIsDisplayed()
+    }
+
+    @Test
+    fun withoutARingtoneTheHeaderSaysNothingAboutCalls() {
+        show(previewContactDetailState().copy(ringtone = null))
+        compose.onNodeWithText("Rings with", substring = true).assertDoesNotExist()
     }
 
     @Test

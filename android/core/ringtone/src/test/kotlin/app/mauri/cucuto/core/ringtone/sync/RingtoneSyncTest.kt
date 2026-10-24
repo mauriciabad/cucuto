@@ -236,7 +236,16 @@ class RingtoneSyncTest {
     private fun defaultRow(
         contactId: Long = 1,
         lookupKey: String = "ada",
-    ) = PhoneRingtoneRow(contactId, lookupKey, "Ada", null, null, RingtoneMode.PACK, null, RingtoneChoice.ANDROID_DEFAULT)
+    ) = PhoneRingtoneRow(
+        contactId,
+        lookupKey,
+        "Ada",
+        null,
+        null,
+        RingtoneMode.PACK,
+        null,
+        RingtoneChoice.ANDROID_DEFAULT,
+    )
 
     @Test
     fun androidDefaultClearsTheContactsOwnRingtoneAndLeaveAsIsGivesItBack() =

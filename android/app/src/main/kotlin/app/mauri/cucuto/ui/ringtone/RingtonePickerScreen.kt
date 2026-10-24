@@ -34,6 +34,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
@@ -103,12 +105,18 @@ data class RingtonePickerActions(
     val onOpenDiscover: () -> Unit = {},
     /** A pack chip: only that pack's characters (null: all). */
     val onFilterPack: (String?) -> Unit = {},
+    /** "Android default" or "Leave as is" (ADR 0073). */
+    val onChooseOther: (RingtoneChoice) -> Unit = {},
+    /** Step 2 of the first-assign flow: leave without a ringtone. */
+    val onSkip: () -> Unit = {},
 )
 
 /**
  * The ringtone picker (#53; brief, "Ringtones") for [chat], opened from the contact detail's Phone ringtone card: album
  * covers of every character with ringtones, a tap plays one with a spinning record, each version plays on its own,
  * then a rule and "Ring with …" saves it with the assign call and a burst in the character's colors ([onDone] closes).
+ * "Android default" and "Leave as is" sit above the covers (ADR 0073). With [step], it is step 2 of assigning a voice
+ * from Home: optional, with Skip ([onDone] too).
  */
 @Composable
 fun RingtonePickerScreen(
@@ -118,6 +126,7 @@ fun RingtonePickerScreen(
     onOpenPacks: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenDiscover: () -> Unit = {},
+    step: Boolean = false,
 ) {
     val viewModel =
         hiltViewModel<RingtonePickerViewModel, RingtonePickerViewModel.Factory>(
@@ -129,9 +138,9 @@ fun RingtonePickerScreen(
     val done by rememberUpdatedState(onDone)
     // A preview never plays on behind another app or a locked screen.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopPreview() }
-    LaunchedEffect(state.assigned) {
-        if (state.assigned == null) return@LaunchedEffect
-        delay(ASSIGN_LINGER_MS)
+    LaunchedEffect(state.done) {
+        if (!state.done) return@LaunchedEffect
+        delay(if (state.assigned != null) ASSIGN_LINGER_MS else OTHER_LINGER_MS)
         done()
     }
     LaunchedEffect(state.failed) {
@@ -139,8 +148,10 @@ fun RingtonePickerScreen(
     }
 
     fun save() {
+        val character = state.choice == RingtoneChoice.CHARACTER
         val characterId = state.selection?.voice?.characterId
-        if (viewModel.save()) beat = feedback.fire(Feedback.Assign(characterId))
+        if (!viewModel.save()) return
+        if (character) beat = feedback.fire(Feedback.Assign(characterId)) else feedback.fire(Feedback.Confirm)
     }
     // "Random per call" re-rolls when a call ends, which needs the phone permission: ask first, save either way.
     val askPhone = rememberPhonePermissionFlow { save() }
@@ -178,18 +189,31 @@ fun RingtonePickerScreen(
                     feedback.fire(Feedback.SegmentTick)
                     viewModel.filterPack(packId)
                 },
+                onChooseOther = { choice ->
+                    feedback.fire(Feedback.Tap)
+                    viewModel.chooseOther(choice)
+                },
+                onSkip = {
+                    viewModel.stopPreview()
+                    onDone()
+                },
             ),
         modifier = modifier,
+        step = step,
     )
 }
 
-/** Stateless ringtone picker, for previews, screenshots and UI tests. [beat] drives the burst after saving. */
+/**
+ * Stateless ringtone picker, for previews, screenshots and UI tests. [beat] drives the burst after saving; [step] shows
+ * it as the optional step 2 of assigning a voice, with Skip.
+ */
 @Composable
 fun RingtonePickerContent(
     state: RingtonePickerState,
     beat: FeedbackBeat?,
     actions: RingtonePickerActions,
     modifier: Modifier = Modifier,
+    step: Boolean = false,
 ) {
     val selected = state.selectedCharacter
     val snackbar = remember { SnackbarHostState() }
@@ -200,14 +224,22 @@ fun RingtonePickerContent(
     CharacterTheme(seed = selected?.character?.seedColor?.let { Color(it) }) {
         PushedScreen(
             title = stringResource(R.string.ringtone_picker_title),
-            subtitle = state.chatName()?.let { stringResource(R.string.ringtone_picker_subtitle, it) },
+            subtitle =
+                if (step) {
+                    stringResource(R.string.ringtone_picker_step)
+                } else {
+                    state.chatName()?.let { stringResource(R.string.ringtone_picker_subtitle, it) }
+                },
             onBack = actions.onBack,
             modifier = modifier,
+            actions = {
+                if (step && !state.done) {
+                    TextButton(onClick = actions.onSkip) { Text(stringResource(R.string.ringtone_picker_skip)) }
+                }
+            },
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                if (!state.loading && state.packs.isNotEmpty() && !state.isGroup) {
-                    SaveBar(state, actions.onSave)
-                }
+                if (!state.loading && !state.isGroup) SaveBar(state, actions.onSave)
             },
         ) { padding ->
             when {
@@ -232,6 +264,7 @@ fun RingtonePickerContent(
                     ) {
                         when {
                             state.packs.isEmpty() -> {
+                                if (step) fullWidth("step") { StepHint(state) }
                                 fullWidth("empty") {
                                     PickerEmptyState(
                                         title = stringResource(R.string.ringtone_picker_empty_title),
@@ -240,10 +273,13 @@ fun RingtonePickerContent(
                                         onOpenDiscover = actions.onOpenDiscover,
                                     )
                                 }
+                                if (!state.isGroup) fullWidth("choices") { OtherChoices(state, actions) }
                             }
 
                             else -> {
+                                if (step) fullWidth("step") { StepHint(state) }
                                 fullWidth("header") { Header(state, beat, actions) }
+                                if (!state.isGroup) fullWidth("choices") { OtherChoices(state, actions) }
                                 fullWidth("characters") { SectionTitle(R.string.ringtone_picker_characters) }
                                 if (state.chips.isNotEmpty()) {
                                     fullWidth("chips") {
@@ -263,7 +299,7 @@ fun RingtonePickerContent(
                                     ) {
                                         CoverCell(
                                             item = it,
-                                            selected = state.selection?.voice == it.voice,
+                                            selected = state.chosen(it.voice),
                                             playing = state.playing?.voice == it.voice && state.preview?.paused != true,
                                             isVoice = state.voice == it.voice,
                                             onTap = { actions.onSelect(it) },
@@ -284,6 +320,28 @@ private fun LazyGridScope.fullWidth(
     content: @Composable () -> Unit,
 ) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
 
+/** Step 2 of assigning a voice: the messages are set, the ringtone is optional. */
+@Composable
+private fun StepHint(state: RingtonePickerState) {
+    Text(
+        stringResource(R.string.ringtone_picker_step_hint, state.chatName().orEmpty()),
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+    )
+}
+
+/** "Android default" and "Leave as is" (ADR 0073). */
+@Composable
+private fun OtherChoices(
+    state: RingtonePickerState,
+    actions: RingtonePickerActions,
+) = RingtoneOtherChoices(
+    chosen = state.choice,
+    onChoose = actions.onChooseOther,
+    enabled = !state.done,
+    modifier = Modifier.padding(top = 4.dp),
+)
+
 @Composable
 private fun RingtonePickerState.chatName(): String? =
     chat?.displayName ?: chatKey?.let { stringResource(R.string.chat_unnamed) }
@@ -301,6 +359,11 @@ private fun Header(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        val choice = state.choice
+        if (choice != null && choice != RingtoneChoice.CHARACTER) {
+            RingtoneOtherHeader(choice)
+            return@Column
+        }
         if (selection == null || item == null) {
             Hint(stringResource(R.string.ringtone_picker_hint))
             return@Column
@@ -522,13 +585,34 @@ private fun SaveBar(
     onSave: () -> Unit,
 ) {
     val name = state.selectedCharacter?.character?.name
+    val choice = state.choice
     BottomActionBar {
         Button(onClick = onSave, enabled = state.canSave, shapes = ButtonDefaults.shapes()) {
             Text(
                 when {
-                    name == null -> stringResource(R.string.ringtone_picker_pick_first)
-                    !state.canSave && state.selection == state.saved -> stringResource(R.string.ringtone_picker_current)
-                    else -> stringResource(R.string.ringtone_use, name)
+                    choice == RingtoneChoice.ANDROID_DEFAULT && (state.canSave || state.done) -> {
+                        stringResource(R.string.ringtone_save_default)
+                    }
+
+                    choice == RingtoneChoice.UNCHANGED && (state.canSave || state.done) -> {
+                        stringResource(R.string.ringtone_save_unchanged)
+                    }
+
+                    choice != null && choice != RingtoneChoice.CHARACTER -> {
+                        stringResource(R.string.ringtone_picker_current)
+                    }
+
+                    name == null -> {
+                        stringResource(R.string.ringtone_picker_pick_first)
+                    }
+
+                    !state.canSave && state.selection == state.saved -> {
+                        stringResource(R.string.ringtone_picker_current)
+                    }
+
+                    else -> {
+                        stringResource(R.string.ringtone_use, name)
+                    }
                 },
             )
         }
@@ -566,6 +650,9 @@ private fun Hint(text: String) {
 
 /** How long the picker stays after saving: the burst (0.65 s) and the call play out before it closes. */
 private const val ASSIGN_LINGER_MS = 900L
+
+/** After saving "Android default" or "Leave as is": no burst, just long enough to see the choice land. */
+private const val OTHER_LINGER_MS = 300L
 private val CELL_MIN_WIDTH = 120.dp
 private val CELL_COVER = 76.dp
 private val HEADER_COVER = 104.dp
@@ -637,5 +724,6 @@ internal fun previewRingtonePickerState(): RingtonePickerState {
                 RingtonePackItem("app.mauri.demo.kitchen", "Kitchen orchestra", listOf(kettle)),
             ),
         saved = RingtoneSelection(frog.voice, followsVoice = true, mode = RingtoneMode.TIME),
+        savedChoice = RingtoneChoice.CHARACTER,
     )
 }

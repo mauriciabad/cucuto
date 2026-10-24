@@ -37,10 +37,14 @@ sealed interface CucutoDestination : NavKey {
     @Serializable
     data object Onboarding : CucutoDestination
 
-    /** Character picker assigning a voice to [chat], or only previewing characters when it is null. */
+    /**
+     * Character picker assigning a voice to [chat], or only previewing characters when it is null. With
+     * [ringtoneNext] (assigning from Home), a 1:1 chat goes on to the ringtone picker as step 2 (ADR 0073).
+     */
     @Serializable
     data class Picker(
         val chat: ChatKey? = null,
+        val ringtoneNext: Boolean = false,
     ) : CucutoDestination
 
     /** Detail of one chat, keyed by `package + conversation key` (#26). */
@@ -49,10 +53,14 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey,
     ) : CucutoDestination
 
-    /** The ringtone picker (#53) for [chat]'s phone ringtone, opened from its contact detail. */
+    /**
+     * The ringtone picker (#53) for [chat]'s phone ringtone, opened from its contact detail, or as the optional
+     * [step] 2 after assigning a voice from Home (ADR 0073).
+     */
     @Serializable
     data class RingtonePicker(
         val chat: ChatKey,
+        val step: Boolean = false,
     ) : CucutoDestination
 
     /** The pack creator (#47); with [sourcePackId], a copy of that installed pack to edit ("duplicate and edit"). */

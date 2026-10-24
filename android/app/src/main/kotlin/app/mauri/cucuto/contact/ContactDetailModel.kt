@@ -10,6 +10,7 @@ import app.mauri.cucuto.core.data.routing.HapticJson
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.ui.ringtone.RingtoneDisplay
 import app.mauri.cucuto.xposed.events.Outcome
 import app.mauri.cucuto.xposed.route.AlertRouter
 import app.mauri.cucuto.xposed.route.Targets
@@ -99,6 +100,7 @@ sealed interface SimulationStatus {
  * @property settings Per-contact settings, or null when the chat has no contact yet.
  * @property path How "Simulate message" will play, once known.
  * @property report The module's decision for the last simulation sent through it, once it arrives.
+ * @property ringtone What the chat rings with for phone calls, for the header (ADR 0073); null when nothing to show.
  */
 @Immutable
 data class ContactDetailState(
@@ -116,6 +118,7 @@ data class ContactDetailState(
     val speaking: Boolean = false,
     val playingClip: String? = null,
     val failed: Boolean = false,
+    val ringtone: RingtoneDisplay? = null,
 ) {
     val isGroup: Boolean get() = chat?.isGroup ?: chatKey.isGroupKey
 

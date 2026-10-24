@@ -2,8 +2,8 @@ package app.mauri.cucuto.core.backup
 
 import app.mauri.cucuto.core.data.db.AssignmentEntity
 import app.mauri.cucuto.core.data.db.ContactEntity
-import app.mauri.cucuto.core.data.db.ContactWithKeys
 import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
+import app.mauri.cucuto.core.data.db.ContactWithKeys
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
@@ -37,12 +37,18 @@ class BackupSnapshotRingtoneTest {
 
     @Test
     fun `android default and leave as is are written as a ringtone choice, without a character ringtone`() {
-        val ada = ContactWithKeys(ContactEntity(id = 1, displayName = "Ada", shuffleSeed = 1, createdAt = 1, updatedAt = 1), emptyList())
-        for ((choice, expected) in
-            listOf(
-                RingtoneChoice.ANDROID_DEFAULT to BackupRingtoneChoice.ANDROID_DEFAULT,
-                RingtoneChoice.UNCHANGED to BackupRingtoneChoice.UNCHANGED,
-            )) {
+        val ada =
+            ContactWithKeys(
+                ContactEntity(id = 1, displayName = "Ada", shuffleSeed = 1, createdAt = 1, updatedAt = 1),
+                emptyList(),
+            )
+        for (
+        (choice, expected) in
+        listOf(
+            RingtoneChoice.ANDROID_DEFAULT to BackupRingtoneChoice.ANDROID_DEFAULT,
+            RingtoneChoice.UNCHANGED to BackupRingtoneChoice.UNCHANGED,
+        )
+        ) {
             val row = PhoneRingtoneEntity(contactId = 1, updatedAt = 1, followsVoice = false, choice = choice)
             val contact = BackupSnapshot.contact(ada, voice, row, write)
             assertEquals(expected, contact.ringtoneChoice)

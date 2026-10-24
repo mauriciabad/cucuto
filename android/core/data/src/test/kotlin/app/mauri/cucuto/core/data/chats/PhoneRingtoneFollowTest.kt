@@ -199,8 +199,21 @@ class PhoneRingtoneFollowTest {
     fun chatsCarryTheirRingtoneChoice() =
         runTest {
             val id = assign(TWEET)
-            assertNull(directory.observeChats().first().single().ringtone)
-            assertEquals(TWEET, directory.observeChats().first().single().ringingVoice)
+            assertNull(
+                directory
+                    .observeChats()
+                    .first()
+                    .single()
+                    .ringtone,
+            )
+            assertEquals(
+                TWEET,
+                directory
+                    .observeChats()
+                    .first()
+                    .single()
+                    .ringingVoice,
+            )
 
             db.phoneRingtoneDao().upsert(PhoneRingtoneEntity(id, KK.packId, KK.characterId, updatedAt = 1))
             val picked = directory.observeChats().first().single()

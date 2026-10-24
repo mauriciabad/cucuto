@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
+import app.mauri.cucuto.ui.ringtone.ringtoneDisplay
 import app.mauri.cucuto.voice.VoicePreview
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -75,6 +76,13 @@ class ContactDetailViewModel
                     clips = clipRows(found?.first, settings?.disabledClips.orEmpty()),
                     decisions = decisions,
                     report = (local.simulation as? SimulationStatus.Sent)?.let { reportFor(decisions, it.atMillis) },
+                    ringtone =
+                        ringtoneDisplay(chat) { v ->
+                            packs.firstOrNull { it.packId == v.packId }?.characters?.firstOrNull {
+                                it.id ==
+                                    v.characterId
+                            }
+                        },
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), local.value)
 
