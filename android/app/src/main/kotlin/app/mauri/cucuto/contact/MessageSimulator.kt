@@ -132,13 +132,19 @@ internal fun clipFile(
         }
     val path = parsed.path ?: return null
     return when (parsed.scheme) {
-        "file" -> File(path).takeIf { it.isFile }
+        "file" -> {
+            File(path).takeIf { it.isFile }
+        }
+
         "content" -> {
             if (parsed.authority != RoutingContract.CLIP_AUTHORITY) return null
             val target = ClipPaths.parse(path.split('/').filter { it.isNotEmpty() }) as? ClipTarget.PackClip
             target?.let { ClipPaths.resolve(packsRoot, it) }
         }
-        else -> null
+
+        else -> {
+            null
+        }
     }
 }
 

@@ -90,8 +90,8 @@ data class ChatAvatarKey(
 
 /**
  * Home (brief, screen 2): every chat with its character's sprite as avatar, the "recent senders" strip of people who
- * messaged and have no voice yet, search, a pack filter and a FAB to assign. Tapping a chat opens the character
- * picker for it (the contact detail, #26, takes over that tap later).
+ * messaged and have no voice yet, search, a pack filter and a FAB to assign. Tapping a chat with a voice opens its
+ * contact detail ([onOpenDetail], #26); a chat without one goes straight to the character picker ([onOpenChat]).
  */
 @Composable
 fun HomeScreen(
@@ -99,6 +99,7 @@ fun HomeScreen(
     onOpenPacks: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenDetail: (ChatKey) -> Unit = onOpenChat,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -108,6 +109,7 @@ fun HomeScreen(
         onTogglePack = viewModel::togglePackFilter,
         onDismissRecent = viewModel::dismissRecent,
         onOpenChat = onOpenChat,
+        onOpenDetail = onOpenDetail,
         onOpenPacks = onOpenPacks,
         onBack = onBack,
         modifier = modifier,
@@ -126,6 +128,7 @@ fun HomeContent(
     onOpenPacks: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenDetail: (ChatKey) -> Unit = onOpenChat,
 ) {
     var query by rememberSaveable { mutableStateOf(state.query) }
     val latestOnQueryChange by rememberUpdatedState(onQueryChange)
@@ -137,6 +140,10 @@ fun HomeContent(
     val open: (ChatKey) -> Unit = { key ->
         feedback.fire(Feedback.Tap)
         onOpenChat(key)
+    }
+    val openDetail: (ChatKey) -> Unit = { key ->
+        feedback.fire(Feedback.Tap)
+        onOpenDetail(key)
     }
 
     Scaffold(
@@ -187,7 +194,11 @@ fun HomeContent(
                 state.chats.isNotEmpty() -> {
                     item(key = "chats-header") { SectionHeader(stringResource(R.string.home_chats_header)) }
                     items(state.chats, key = { "chat/${it.key.packageName}/${it.key.conversationKey}" }) { row ->
-                        ChatListItem(row, shared = row.key !in stripKeys, onClick = { open(row.key) })
+                        ChatListItem(
+                            row = row,
+                            shared = row.key !in stripKeys,
+                            onClick = { if (row.chat.voice != null) openDetail(row.key) else open(row.key) },
+                        )
                     }
                 }
 

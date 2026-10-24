@@ -22,6 +22,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import app.mauri.cucuto.contact.ContactDetailScreen
 import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
@@ -109,6 +110,7 @@ private fun entries(
                 onOpenChat = { chat -> navigate(CucutoDestination.Picker(chat)) },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onBack = goBack,
+                onOpenDetail = { chat -> navigate(CucutoDestination.ContactDetail(chat)) },
             )
         }
     }
@@ -123,7 +125,15 @@ private fun entries(
             )
         }
     }
-    entry<CucutoDestination.ContactDetail> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.ContactDetail> { key ->
+        SharedElementEntry {
+            ContactDetailScreen(
+                chat = key.chat,
+                onBack = goBack,
+                onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
+            )
+        }
+    }
     entry<CucutoDestination.Packs> {
         PacksScreen(onBack = goBack, onDiscover = { navigate(CucutoDestination.Discover) })
     }

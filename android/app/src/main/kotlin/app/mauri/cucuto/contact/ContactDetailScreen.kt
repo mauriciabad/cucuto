@@ -49,6 +49,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -127,7 +128,7 @@ fun ContactDetailScreen(
         },
         onPlayClip = viewModel::playClip,
         onToggleClip = viewModel::setClipEnabled,
-        onFailureShown = viewModel::clearFailure,
+        onConsumeFailure = viewModel::clearFailure,
         modifier = modifier,
     )
 }
@@ -143,7 +144,7 @@ fun ContactDetailContent(
     onSimulate: () -> Unit,
     onPlayClip: (ClipRow) -> Unit,
     onToggleClip: (ClipRow, Boolean) -> Unit,
-    onFailureShown: () -> Unit,
+    onConsumeFailure: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -153,11 +154,12 @@ fun ContactDetailContent(
     val failedMessage = stringResource(R.string.contact_failed)
     val feedback = LocalFeedback.current
     var confirmRemove by rememberSaveable { mutableStateOf(false) }
+    val consumeFailure by rememberUpdatedState(onConsumeFailure)
     LaunchedEffect(state.failed) {
         if (state.failed) {
             feedback.fire(Feedback.Error)
             snackbar.showSnackbar(failedMessage)
-            onFailureShown()
+            consumeFailure()
         }
     }
 
@@ -651,7 +653,7 @@ private fun ContactDetailPreview() {
             onSimulate = {},
             onPlayClip = {},
             onToggleClip = { _, _ -> },
-            onFailureShown = {},
+            onConsumeFailure = {},
         )
     }
 }

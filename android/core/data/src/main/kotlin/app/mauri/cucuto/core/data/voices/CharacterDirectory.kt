@@ -77,7 +77,12 @@ class InstalledCharacterDirectory
                     characters =
                         characters.map { (id, character) ->
                             val clips =
-                                character.clips.mapNotNull { clip -> root.resolveInside(clip.file)?.let { clip.file to it } }
+                                character.clips.mapNotNull { clip ->
+                                    root.resolveInside(clip.file)?.let {
+                                        clip.file to
+                                            it
+                                    }
+                                }
                             VoiceCharacter(
                                 packId = pack.packId,
                                 id = id,

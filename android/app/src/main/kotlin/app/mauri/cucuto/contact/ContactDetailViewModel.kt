@@ -110,7 +110,13 @@ class ContactDetailViewModel
                     } finally {
                         // Cancelled before a result (a clip tap took over): ready for the next tap.
                         local.update {
-                            if (it.simulation == SimulationStatus.Working) it.copy(simulation = SimulationStatus.Idle) else it
+                            if (it.simulation ==
+                                SimulationStatus.Working
+                            ) {
+                                it.copy(simulation = SimulationStatus.Idle)
+                            } else {
+                                it
+                            }
                         }
                     }
                 }
