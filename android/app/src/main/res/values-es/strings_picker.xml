@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Selectores de personaje y de tono: packs plegables, búsqueda y «Sorpréndeme» (ADR 0072, #289, #290) -->
+    <string name="picker_search_hint">Busca personajes</string>
+    <string name="picker_search_clear">Borrar búsqueda</string>
+    <string name="picker_search_empty">Ningún personaje coincide con «%1$s»</string>
+    <string name="picker_pack_fold">Plegar</string>
+    <string name="picker_pack_unfold">Desplegar</string>
+    <string name="picker_pack_folded">Plegado</string>
+    <string name="picker_pack_unfolded">Desplegado</string>
+    <plurals name="picker_pack_count">
+        <item quantity="one">%d personaje</item>
+        <item quantity="many">%d personajes</item>
+        <item quantity="other">%d personajes</item>
+    </plurals>
+    <string name="picker_surprise_all">Sorpréndeme con un personaje de cualquier pack</string>
+    <string name="picker_surprise_pack">Sorpréndeme con un personaje de %1$s</string>
+    <string name="picker_reroll">Otra vez</string>
+    <string name="picker_use">Usar %1$s</string>
+</resources>

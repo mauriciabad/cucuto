@@ -123,6 +123,27 @@ sealed interface Feedback {
             )
     }
 
+    /**
+     * "Surprise me" rolled a random character (ADR 0072): a short dice rattle of rising ticks and no UI sound. The
+     * character's own clip and haptic land [REVEAL_DELAY_MS] after the beat ([FeedbackBeat.revealAtNanos]).
+     */
+    data object Roll : Feedback {
+        /** When the pick's preview starts: just after the last tick of the rattle. */
+        const val REVEAL_DELAY_MS = 220L
+
+        override val sound = null
+        override val haptic =
+            UiHaptic.Rich(
+                listOf(
+                    HapticPrimitive(Composition.PRIMITIVE_LOW_TICK, scale = 0.4f, atMs = 0),
+                    HapticPrimitive(Composition.PRIMITIVE_TICK, scale = 0.3f, atMs = 50),
+                    HapticPrimitive(Composition.PRIMITIVE_TICK, scale = 0.45f, atMs = 100),
+                    HapticPrimitive(Composition.PRIMITIVE_TICK, scale = 0.6f, atMs = 150),
+                ),
+                fallback = HapticFeedbackType.SegmentTick,
+            )
+    }
+
     /** Long press on a contact or a sprite. */
     data object LongPress : Feedback {
         override val sound = null
@@ -207,6 +228,10 @@ data class FeedbackBeat(
     /** When the character's own clip should start (the assign call's second note). */
     val characterClipAtNanos: Long
         get() = startNanos + Feedback.Assign.CHARACTER_CLIP_DELAY_MS * NANOS_PER_MILLI
+
+    /** When a "Surprise me" pick's preview should start (after the roll's rattle). */
+    val revealAtNanos: Long
+        get() = startNanos + Feedback.Roll.REVEAL_DELAY_MS * NANOS_PER_MILLI
 
     /** Seconds since the beat at frame time [frameNanos]. */
     fun elapsedSeconds(frameNanos: Long): Float = (frameNanos - startNanos) / NANOS_PER_SECOND
