@@ -9,6 +9,9 @@
 //   - with --notes FILE, the Markdown body of the GitHub release (release.yml adds the banner, checksums and
 //     certificate around it).
 //
+// It also sets versionCode and versionName in android/app/build.gradle.kts, so the release PR carries the version
+// F-Droid's update check reads from the tag.
+//
 //   kotlin tools/release/release-notes.main.kts 0.2.0                 # before tagging: changelog + CHANGELOG.md
 //   kotlin tools/release/release-notes.main.kts 0.2.0 --to v0.2.0 --notes dist/changes.md   # release.yml
 //   ... --from v0.1.1        # previous tag (default: the newest v* tag before --to, other than v<version>)
@@ -324,6 +327,20 @@ if (force || heading !in existing) {
     println("Wrote $changelogFile ($heading)")
 } else {
     println("Kept $changelogFile ($heading exists; --force rewrites it)")
+}
+
+// 4. The version in android/app/build.gradle.kts, so the tagged source names its own version: F-Droid's update
+// check reads versionCode and versionName from it (fdroid/README.md). Releases still pass -Pcucuto.version.
+val appBuild = File("android/app/build.gradle.kts")
+if (appBuild.isFile) {
+    val before = appBuild.readText()
+    val after = before
+        .replace(Regex("""(?m)^(\s*versionCode = )\d+$"""), "$1$versionCode")
+        .replace(Regex("""(?m)^(\s*versionName = )"[^"]*"$"""), "$1\"$version\"")
+    if (after != before) {
+        appBuild.writeText(after)
+        println("Wrote $appBuild (versionCode $versionCode, versionName $version)")
+    }
 }
 
 println("Cucuto $version (versionCode $versionCode): ${changes.size} user-facing changes in $range")

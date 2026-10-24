@@ -1,0 +1,54 @@
+AntiFeatures:
+  NonFreeDep:
+    en-US: Only works with WhatsApp's notifications, and WhatsApp is not free software.
+Categories:
+  - Multimedia
+  - Notification
+License: GPL-3.0-or-later
+AuthorName: Maurici Abad
+WebSite: https://cucuto.mauri.app
+SourceCode: https://github.com/mauriciabad/cucuto
+IssueTracker: https://github.com/mauriciabad/cucuto/issues
+Changelog: https://github.com/mauriciabad/cucuto/blob/HEAD/CHANGELOG.md
+
+AutoName: Cucuto
+
+RepoType: git
+Repo: https://github.com/mauriciabad/cucuto.git
+Binaries: https://github.com/mauriciabad/cucuto/releases/download/v%v/cucuto-%v.apk
+
+Builds:
+  - versionName: 0.2.2
+    versionCode: 2002
+    commit: a799694a49ca76c574d6e99b79399e46b840629c
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y build-essential
+      - echo "deb https://deb.debian.org/debian trixie main" > /etc/apt/sources.list.d/trixie.list
+      - apt-get update
+      - apt-get install -y -t trixie openjdk-21-jdk-headless
+      - update-alternatives --auto java
+    gradle:
+      - yes
+    srclibs:
+      - rustup@1.28.2
+    prebuild:
+      - sed -i -e '/foojay/d' ../settings.gradle.kts
+      - echo "cucuto.version=$$VERSION$$" >> ../gradle.properties
+    scandelete:
+      - spec/fixtures
+    build:
+      - export RUST_VERSION=$(sed -n 's/^channel = "\(.*\)"/\1/p' ../core/jxl/rust/rust-toolchain.toml)
+      - $$rustup$$/rustup-init.sh -y --profile minimal --default-toolchain $RUST_VERSION
+        --target aarch64-linux-android
+      - source $HOME/.cargo/env
+      - cargo install --locked cargo-ndk@4.1.2
+    ndk: 30.0.16248370
+
+AllowedAPKSigningKeys: 6ded92bf5c2939abaad6958b7c998ffb1be692a8ef22b02cfc9beb6890a76bae
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v\d+\.\d+\.\d+$
+CurrentVersion: 0.2.2
+CurrentVersionCode: 2002

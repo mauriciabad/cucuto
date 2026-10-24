@@ -94,6 +94,16 @@ jobs:
             exit 1
           fi
 
+      # F-Droid's update check reads versionCode and versionName from the tagged source (fdroid/README.md). The
+      # release PR sets them (tools/release/release-notes.main.kts); a tag without them still ships, but F-Droid
+      # won't notice the release.
+      - name: Check the version in the source
+        run: |
+          gradle_file=android/app/build.gradle.kts
+          if ! grep -Eq "^ *versionCode = $VERSION_CODE\$" "$gradle_file" || ! grep -Eq "^ *versionName = \"$VERSION\"\$" "$gradle_file"; then
+            echo "::warning title=Version not in the source::$gradle_file doesn't say versionCode = $VERSION_CODE and versionName = \"$VERSION\". F-Droid won't pick up this release; run tools/release/release-notes.main.kts $VERSION in the next release PR (docs/releasing.md)."
+          fi
+
       - name: Set up JDK 21
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:

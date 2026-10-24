@@ -22,6 +22,12 @@ inside the APK with the published `cucuto-0.1.2.apk` (built on GitHub's Ubuntu r
 | `lib/arm64-v8a/libcucuto_jxl.so` (Rust, ADR 0006) | **no** | Panic messages embed the absolute paths of the dependencies' sources under `CARGO_HOME` (`/home/runner/.cargo/registry/…` vs `/Users/…/.cargo/registry/…`). |
 | `lib/arm64-v8a/libdatastore_shared_counter.so` (from AndroidX DataStore) | **no** | AGP strips native libraries with the `llvm-strip` of whatever NDK it finds when the app doesn't pin one. NDK 28 and the CI runner's NDK lay out `.shstrtab` differently (5 bytes). Stripping the same input with NDK 28 reproduced the Mac build byte for byte. |
 
+**v0.2.2 on macOS (2026-10-24, #275):** rebuilt on Apple silicon with Homebrew's OpenJDK 21 and the F-Droid recipe's
+source changes. Every file matched the published APK except `libcucuto_jxl.so`: same size, different code layout. The
+Linux rebuild in CI matched, so the cause depends on the host. Most likely cargo hashes `rustc -vV`, host triple
+included, into symbol names. Linux x86_64 builders (GitHub, F-Droid) aren't affected. Rebuilding on another OS gives
+a different Rust library until this is fixed.
+
 ## Fixes (from the release after v0.1.2)
 
 - **Rust paths.** `CargoNdkTask` passes `--remap-path-prefix` for `CARGO_HOME` (to `/cargo`) and the crate directory
@@ -42,6 +48,10 @@ release stays published) and the job summary lists the files.
 
 The check runs on the same OS and runner image as the release, so it catches path, timestamp and cache leaks, not
 differences between operating systems. A cross-OS rebuild (the v0.1.2 table above) is a manual check for now.
+
+Once Cucuto is on F-Droid (#275), F-Droid's build server rebuilds every tag on Debian with the recipe in
+[`fdroid/`](../fdroid/README.md) and compares it the same way (apksigcopier). A mismatch there means F-Droid skips
+that version, so it doubles as the cross-OS check.
 
 ## Check a release yourself
 
