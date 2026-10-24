@@ -17,7 +17,7 @@ Build **Cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each co
 - **It should feel like a game.** Every interaction gets sound, motion and haptics, built on the latest Material 3 Expressive guidelines.
 - **Common formats, JPEG XL preferred.** Packs accept the usual image and audio formats. JPEG XL (`.jxl`) is the recommended image format and gets first-class support where it costs little, to help it spread.
 
-Non-goals: ~~Play Store release~~ (owner update 2026-10-24, #211: "i thought we would publish it there too"; Google Play is now an extra channel next to GitHub Releases, from v1 on, with no guarantee of approval, see [distribution.md](distribution.md#google-play) and [ADR 0046](decisions/0046-distribution.md); F-Droid after v1), support for Android 16 or older, dependence on other apps (Tasker, MacroDroid, BuzzKill), any backend, accounts or analytics, and bundling copyrighted media in the public repo.
+Non-goals: Play Store release (owner, 2026-10-24: "I decided i wont publish to the Play store because of the closed testing requirement is too hard to meet"; [ADR 0080](decisions/0080-no-google-play.md), which reverts the same day's #211 plan for Play as an extra channel; F-Droid after v1, [ADR 0046](decisions/0046-distribution.md)), support for Android 16 or older, dependence on other apps (Tasker, MacroDroid, BuzzKill), any backend, accounts or analytics, and bundling copyrighted media in the public repo.
 
 ## Constraints and owner decisions
 
@@ -547,7 +547,7 @@ Development is near the end (owner, 2026-10-24). From now on, occasional single 
 | M4 Haptics | Everything: pack haptics, auto haptics, editor, per-contact override, AI-written patterns | — |
 | M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, drawn haptic previews on the website and in the app (#301), credentials, verification | Import speed (#279, #268); Drive folder source, v1.1 (#37, blocked on #188) |
 | M6 Website | Every page, release-driven builds, the default repository, JPEG XL, screenshots, GitHub Pages and DNS | Explainer video rework (#271); TypeScript 7 (#162, blocked upstream) |
-| M7 Open-source release | Public repo and docs, CI with the media guard, signed releases, backup and restore UI, Google Play bundle and listing | Contact re-linking (PR #266) and a wiped-phone restore (#43, owner); review sample chat (#285); Play account, video and defaults (#276, #286, #287, owner); clean-install end to end (#46, owner); F-Droid after v1 (#275) |
+| M7 Open-source release | Public repo and docs, CI with the media guard, signed releases, backup and restore UI, store listing metadata | Contact re-linking (PR #266) and a wiped-phone restore (#43, owner); sample chat (#285); developer verification (#358, owner); clean-install end to end (#46, owner); F-Droid after v1 (#275) |
 | M8 Pack creator (v1.1) | In-app creator, website Create page and its tools, golden packs through every validator | Creator vibrations, ringtones and animated sprites (#185, PR #225) |
 | M9 Ringtones | Ring files and auto-cut clips, phone ringtones with variants, ringtone picker, independent voice and ringtone, day and night, the ringtone rules screen and per-contact rules (#288) | Sound flow rethink (#298); supervised device runs (#143, #228, owner); automatic WhatsApp call ringtones (#273, blocked on #228); the owner's K.K. check |
 
@@ -617,7 +617,8 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] Backup and restore: manual export, automatic backups to a chosen folder, optional encryption, and a tested restore on a wiped phone.
 - [x] CI green, including the media allowlist guard.
 - [x] Signed release APK on GitHub Releases, linked from the website.
-- [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274, ready: [ADR 0071](decisions/0071-google-play-bundle-and-listing.md), [google-play.md](google-play.md)); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
+- ~~Google Play as an extra channel (#211, #274, #276, [ADR 0071](decisions/0071-google-play-bundle-and-listing.md))~~ Dropped by the owner on 2026-10-24: the closed testing requirement is too hard to meet ([ADR 0080](decisions/0080-no-google-play.md)).
+- [ ] Android developer verification through the Android Developer Console, so GitHub and F-Droid installs keep working on certified phones from 2027 (#358, owner).
 - [ ] After v1: F-Droid, reproducible and signed with Cucuto's key (#275).
 - [ ] The owner imports the private packs from Google Drive on a clean install and everything works end to end.
 
@@ -660,7 +661,6 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 | Google Drive and MEGA links are unreliable hosts | Failed downloads | Recommend static hosts for public repositories; use the Drive API (not public links) for Drive folders; treat MEGA as a later, SDK-based source. |
 | Losing the phone | All assignments gone | Automatic backups to a user-chosen folder (for example Google Drive), tested restore. |
 | Copyrighted media leaks into the public repo | Takedown risk | `.gitignore`, CI media allowlist, demo-pack-only screenshots and video. |
-| Google Play rejects or removes Cucuto (root and LSPosed, the optional WhatsApp hook read as interfering with other apps, the WhatsApp trademark) | Play listing lost; account strikes | Play is an extra channel only; GitHub Releases and Obtainium stay the main one. No "WhatsApp" in the name, icon or developer name; review notes explain the hook; rejections are answered, never resubmitted unchanged ([distribution.md](distribution.md#google-play), #276). |
 | Very rapid bursts of messages | Clips cut each other off | The system already plays one notification sound at a time; cooldown softens bursts. Optional per-contact minimum gap in settings. |
 
 Open questions for the owner (answer before M1 unless noted):
