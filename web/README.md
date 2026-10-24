@@ -12,7 +12,7 @@ bun run dev       # http://localhost:5173
 bun run check     # svelte-check (types, a11y warnings fail the run)
 bun run lint      # Prettier + ESLint (flat config)
 bun run build     # static site in build/
-bun run test      # Playwright smoke + axe tests against the built site (bun run playwright install chromium first)
+bun run test      # Playwright smoke, axe and no-sideways-overflow tests against the built site (bun run playwright install chromium first)
 bun run test:unit # every golden fixture in spec/fixtures through the pack validator (needs the module, below)
 SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in test-results/screenshots/
 ```
