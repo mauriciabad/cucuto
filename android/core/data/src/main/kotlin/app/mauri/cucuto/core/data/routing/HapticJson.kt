@@ -43,6 +43,68 @@ object HapticJson {
         }
     }
 
+    /**
+     * The pack format's `haptic` JSON for [haptic] (`{"mode":"custom","events":[…]}`), the inverse of
+     * [fromOverride]: thousandths become fractions (`800` → `0.8`), a scale of 1 and the default initial sharpness
+     * are left out. Used to store per-contact overrides and in backups.
+     */
+    fun toJson(haptic: Haptic.Custom): JsonObject =
+        JsonObject(
+            mapOf(
+                "mode" to JsonPrimitive("custom"),
+                "events" to JsonArray(haptic.events.map(::eventJson)),
+            ),
+        )
+
+    /** The pack format's `{"mode": …}` object for the modes without a timeline. */
+    fun modeJson(mode: String): JsonObject = JsonObject(mapOf("mode" to JsonPrimitive(mode)))
+
+    private fun eventJson(event: HapticEvent): JsonObject =
+        when (event) {
+            is HapticEvent.Preset -> {
+                buildMap {
+                    put("at", JsonPrimitive(event.atMs))
+                    put("preset", JsonPrimitive(event.preset.name))
+                    if (event.milliScale != MILLI_ONE) put("scale", fraction(event.milliScale))
+                }
+            }
+
+            is HapticEvent.Envelope -> {
+                buildMap {
+                    put("at", JsonPrimitive(event.atMs))
+                    if (event.milliInitialSharpness != HapticEvent.Envelope.DEFAULT_SHARPNESS) {
+                        put("initialSharpness", fraction(event.milliInitialSharpness))
+                    }
+                    put(
+                        "envelope",
+                        JsonArray(
+                            event.points.map { point ->
+                                JsonObject(
+                                    mapOf(
+                                        "intensity" to fraction(point.milliIntensity),
+                                        "sharpness" to fraction(point.milliSharpness),
+                                        "ms" to JsonPrimitive(point.durationMs),
+                                    ),
+                                )
+                            },
+                        ),
+                    )
+                }
+            }
+        }.let(::JsonObject)
+
+    /** Thousandths as a JSON fraction: whole numbers stay integers (`0`, `1`), the rest keep three decimals. */
+    private fun fraction(milli: Int): JsonPrimitive {
+        val clamped = milli.coerceIn(0, MILLI_ONE)
+        return if (clamped % MILLI_ONE == 0) {
+            JsonPrimitive(clamped / MILLI_ONE)
+        } else {
+            JsonPrimitive(clamped / MILLI_ONE.toDouble())
+        }
+    }
+
+    private const val MILLI_ONE = 1000
+
     private fun custom(obj: JsonObject): Haptic.Custom? {
         val events = (obj["events"] as? JsonArray)?.mapNotNull { event(it as? JsonObject ?: return@mapNotNull null) }
         return if (events.isNullOrEmpty()) null else Haptic.Custom(events)

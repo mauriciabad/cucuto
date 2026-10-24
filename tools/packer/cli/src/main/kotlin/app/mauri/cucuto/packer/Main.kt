@@ -8,7 +8,9 @@ import app.mauri.cucuto.packspec.FileKind
 import app.mauri.cucuto.packspec.Issue
 import app.mauri.cucuto.packspec.Limits
 import app.mauri.cucuto.packspec.PackContent
+import app.mauri.cucuto.packspec.PackPaths
 import app.mauri.cucuto.packspec.PackValidator
+import app.mauri.cucuto.packspec.Ringtone
 import app.mauri.cucuto.packspec.SpecJson
 import app.mauri.cucuto.packspec.ValidationReport
 import com.github.ajalt.clikt.core.CliktCommand
@@ -26,6 +28,8 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.choice
+import com.github.ajalt.clikt.parameters.types.int
+import com.github.ajalt.clikt.parameters.types.long
 import com.github.ajalt.clikt.parameters.types.path
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -44,7 +48,7 @@ import kotlin.io.path.isDirectory
 import kotlin.io.path.name
 import kotlin.io.path.readBytes
 
-fun main(args: Array<String>) = Packer().subcommands(Build(), Validate(), Bundle(), Index()).main(args)
+fun main(args: Array<String>) = Packer().subcommands(Build(), Validate(), Bundle(), Index(), Ring(), Cut()).main(args)
 
 class Packer : CliktCommand(name = "packer") {
     override fun help(context: Context) =
@@ -327,5 +331,97 @@ private object DeepCheck {
             tmp.toFile().deleteRecursively()
         }
         return issues
+    }
+}
+
+/** True for the Ogg file names packer writes ring files and cut clips to. */
+private fun isOggName(p: Path) = p.name.substringAfterLast('.', "").lowercase() in setOf("ogg", "opus", "oga")
+
+class Ring : CliktCommand(name = "ring") {
+    override fun help(context: Context) =
+        "Renders ring files: the audio the app exports for Android's per-contact ringtone. Telecom loops the whole file, " +
+            "so the intro plays once and the loop section repeats until the file lasts at least 90 s (docs/pack-format.md#ring-files). " +
+            "Writes Ogg Opus. Needs ffmpeg."
+
+    private val source by argument(help = "Pack or bundle: a folder with pack.yaml or pack.json, or a .zip").path(mustExist = true)
+    private val output by option("-o", "--output", help = "Folder for <pack id>-<character id>-<n>.ogg files, or one .ogg file with --character and --variant").path().required()
+    private val character by option("-c", "--character", help = "Only this character ID")
+    private val variant by option("-v", "--variant", help = "Only this ringtone of the character, counting from 1").int()
+    private val normalize by option("--normalize", help = "Normalize loudness (EBU R128, -16 LUFS)").flag()
+
+    override fun run() {
+        val loaded = try {
+            PackSources.load(source)
+        } catch (e: PackerException) {
+            echo("error: ${e.message}", err = true); throw ProgramResult(2)
+        }
+        val content = validateOrFail(source.toString(), loaded.pack)
+        val targets = content.packs.flatMap { pack ->
+            pack.manifest.characters.filter { character == null || it.id == character }.flatMap { c ->
+                c.ringtones.mapIndexed { i, r -> RingTarget(pack.root, pack.manifest.id, c.id, i + 1, r) }
+                    .filter { variant == null || it.number == variant }
+            }
+        }
+        if (targets.isEmpty()) {
+            echo("error: no ringtone matches", err = true); throw ProgramResult(1)
+        }
+        val single = isOggName(output)
+        if (single && targets.size > 1) {
+            echo("error: ${targets.size} ringtones match; pick one with --character and --variant, or pass a folder", err = true)
+            throw ProgramResult(2)
+        }
+        val tmp = createTempDirectory("packer-ring-src-")
+        try {
+            for (t in targets) {
+                val path = PackPaths.join(t.root, t.ringtone.file)
+                val src = when (val c = loaded.pack.files.getValue(path)) {
+                    is Content.OnDisk -> c.path
+                    is Content.InMemory -> tmp.resolve("${t.number}-${path.substringAfterLast('/')}").also { Files.write(it, c.bytes()) }
+                }
+                val out = if (single) output else output.resolve("${t.packId}-${t.characterId}-${t.number}.ogg")
+                val result = try {
+                    Ringtones.renderRingFile(src, t.ringtone.loopRange, t.ringtone.fadeInMs?.toLong() ?: 0L, out, normalize)
+                } catch (e: PackerException) {
+                    echo("error: ${e.message}", err = true); throw ProgramResult(2)
+                }
+                val p = result.plan
+                val layout = when {
+                    result.copied -> "the source, copied as is"
+                    p.playOnce -> "plays once, then ${p.silenceMs} ms of silence"
+                    else -> "intro ${p.loopStartMs} ms, loop ${p.loopStartMs}..${p.loopEndMs} ms x${p.loopCount}"
+                }
+                val fade = if (p.fadeInMs > 0 && !result.copied) ", fade-in ${p.fadeInMs} ms" else ""
+                echo("Wrote $out (${p.totalMs} ms: $layout$fade; ${out.fileSize()} bytes)")
+            }
+        } finally {
+            tmp.toFile().deleteRecursively()
+        }
+    }
+
+    private class RingTarget(val root: String, val packId: String, val characterId: String, val number: Int, val ringtone: Ringtone)
+}
+
+class Cut : CliktCommand(name = "cut") {
+    override fun help(context: Context) =
+        "Cuts a notification clip from a song or ringtone and writes it as Ogg Opus. Without --start-ms it finds the hook: " +
+            "the loudest stretch, moved back to its beat (docs/pack-format.md#auto-cut-clips). Needs ffmpeg."
+
+    private val source by argument(help = "Audio file").path(mustExist = true)
+    private val output by option("-o", "--output", help = "Clip to write (.ogg)").path().required()
+    private val startMs by option("--start-ms", help = "Start of the clip (default: the hook)").long()
+    private val lengthMs by option("--length-ms", help = "Length of the clip").long().default(Limits.CUT_CLIP_DEFAULT_MS)
+    private val fromMs by option("--from-ms", help = "Search for the hook from here").long().default(0)
+    private val toMs by option("--to-ms", help = "Search for the hook up to here (default: the end)").long()
+
+    override fun run() {
+        if (!isOggName(output)) {
+            echo("error: $output must end in .ogg", err = true); throw ProgramResult(2)
+        }
+        val cut = try {
+            Ringtones.cutClip(source, output, startMs, lengthMs, fromMs, toMs)
+        } catch (e: PackerException) {
+            echo("error: ${e.message}", err = true); throw ProgramResult(2)
+        }
+        echo("Wrote $output (${cut.startMs}..${cut.endMs} ms of ${source.name}; ${output.fileSize()} bytes)")
     }
 }

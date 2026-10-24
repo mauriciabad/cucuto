@@ -1,6 +1,7 @@
 #!/usr/bin/env kotlin
 /*
- * Regenerates the golden fixtures in spec/fixtures/ (valid/, invalid/ and fixtures.json).
+ * Regenerates the golden fixtures in spec/fixtures/ (valid/, invalid/ and fixtures.json) and the golden ring file
+ * plans (ring-files.json).
  *
  *   kotlin spec/fixtures/generate.main.kts        # from the repository root
  *
@@ -303,6 +304,22 @@ folder("valid/full-pack", "Every pack.json feature: cover, text files, animated 
     media("characters/song/ringtones/night.ogg", ringtoneOgg)
     media("characters/ringer/sprite.webp", spriteWebp)
     media("characters/ringer/ring.ogg", ringtoneOgg)
+}
+
+folder("valid/ringtone-song", "A song with only ringtones (no clips): an intro with a loop and an outro, an open loop ending 1 s before the end (the shortest allowed), and a play-once variant.") {
+    text("pack.json", pack("ringtone-song", "Ringtone song", characters = """
+    {
+      "id": "song",
+      "name": "Song",
+      "sprite": "characters/song/cover.png",
+      "ringtones": [
+        { "file": "characters/song/song.ogg", "label": "Intro and loop", "loop": { "startMs": 1000, "endMs": 5000 }, "fadeInMs": 10000 },
+        { "file": "characters/song/song.ogg", "label": "Last second", "loop": { "startMs": 5000 } },
+        { "file": "characters/song/song.ogg", "label": "Once", "loop": false }
+      ]
+    }""".trimStart('\n')))
+    media("characters/song/cover.png", spritePng)
+    media("characters/song/song.ogg", ringtoneOgg)
 }
 
 folder("valid/all-formats", "One character per supported image format, each with a clip in a different audio format.") {
@@ -639,6 +656,11 @@ folder("invalid/loop-reversed", "Loop points with the end before the start.", li
     beep()
     media("characters/beep/ring.ogg", ringtoneOgg)
 }
+folder("invalid/loop-too-short", "A loop section of 500 ms (the minimum is 1 s).", listOf("LOOP_POINTS_INVALID")) {
+    text("pack.json", pack("loop-short", character = ",\n  \"ringtones\": [{ \"file\": \"characters/beep/ring.ogg\", \"loop\": { \"startMs\": 2000, \"endMs\": 2500 } }]"))
+    beep()
+    media("characters/beep/ring.ogg", ringtoneOgg)
+}
 folder("invalid/bundle-pack-missing", "A bundle listing a folder without pack.json.", listOf("BUNDLE_PACK_MISSING")) {
     text("bundle.json", """
 {
@@ -707,6 +729,11 @@ folder("invalid/ringtone-too-short", "A 3 s ringtone.", listOf("RINGTONE_DURATIO
 }
 folder("invalid/loop-beyond-end", "Loop end after the end of a 6 s ringtone.", listOf("LOOP_POINTS_INVALID")) {
     text("pack.json", pack("loop-end", character = ",\n  \"ringtones\": [{ \"file\": \"characters/beep/ring.ogg\", \"loop\": { \"startMs\": 1000, \"endMs\": 9000 } }]"))
+    beep()
+    media("characters/beep/ring.ogg", ringtoneOgg)
+}
+folder("invalid/loop-start-beyond-end", "An open loop (no endMs) starting 500 ms before the end of a 6 s ringtone: shorter than 1 s.", listOf("LOOP_POINTS_INVALID")) {
+    text("pack.json", pack("loop-start", character = ",\n  \"ringtones\": [{ \"file\": \"characters/beep/ring.ogg\", \"loop\": { \"startMs\": 5500 } }]"))
     beep()
     media("characters/beep/ring.ogg", ringtoneOgg)
 }
@@ -833,5 +860,55 @@ val manifest = buildString {
     appendLine("}")
 }
 File(root, "fixtures.json").writeText(manifest)
+
+// ================================================================== ring files
+
+// Golden ring file plans (docs/pack-format.md#ring-files): how a ringtone's loop settings become the exported file.
+// Every renderer (packer, the app) must produce this layout; shared/pack-spec's RingFiles is tested against it.
+data class RingCase(
+    val description: String,
+    val sourceMs: Long,
+    val loop: String?,
+    val fadeInMs: Long,
+    val loopStartMs: Long,
+    val loopEndMs: Long,
+    val loopCount: Int,
+    val silenceMs: Long,
+    val totalMs: Long,
+    val passThrough: Boolean,
+)
+
+val ringCases = listOf(
+    RingCase("Whole-file loop (the default) of a 6 s ringtone: repeated to 90 s.", 6000, null, 0, 0, 6000, 15, 0, 90000, false),
+    RingCase("loop: true is the same as no loop key.", 6000, "true", 0, 0, 6000, 15, 0, 90000, false),
+    RingCase("Loop section from the start, the 1 s after it is an outro that never plays; the fade-in happens once.", 6000, "{ \"startMs\": 0, \"endMs\": 5000 }", 500, 0, 5000, 18, 0, 90000, false),
+    RingCase("Intro of 1 s, then the open loop to the end, repeated until the file reaches 90 s.", 6000, "{ \"startMs\": 1000 }", 0, 1000, 6000, 18, 0, 91000, false),
+    RingCase("Intro, loop and outro, as in the kitchen orchestra demo ringtone.", 14000, "{ \"startMs\": 4000, \"endMs\": 12000 }", 500, 4000, 12000, 11, 0, 92000, false),
+    RingCase("A loop end within the 50 ms tolerance past the end of the audio is clamped to the end.", 6000, "{ \"endMs\": 6030 }", 0, 0, 6000, 15, 0, 90000, false),
+    RingCase("Play once, padded with silence to 90 s so it does not restart right away.", 6000, "false", 0, 0, 6000, 1, 84000, 90000, false),
+    RingCase("Play once, longer than 90 s and without fade-in: the source file is the ring file.", 120000, "false", 0, 0, 120000, 1, 0, 120000, true),
+    RingCase("Whole-file loop longer than 90 s: the source file is the ring file.", 120000, null, 0, 0, 120000, 1, 0, 120000, true),
+    RingCase("The same with a fade-in: rendered once, as the fade must not repeat.", 120000, null, 1500, 0, 120000, 1, 0, 120000, false),
+    RingCase("A long loop that already passes 90 s plays once; the outro is cut.", 360000, "{ \"startMs\": 60000, \"endMs\": 300000 }", 0, 60000, 300000, 1, 0, 300000, false),
+    RingCase("An intro that almost reaches 90 s, then the 1.5 s loop once.", 100000, "{ \"startMs\": 89500, \"endMs\": 91000 }", 0, 89500, 91000, 1, 0, 91000, false),
+)
+
+val ringJson = buildString {
+    appendLine("{")
+    appendLine("  \"\$comment\": \"Generated by generate.main.kts. Golden ring file plans (docs/pack-format.md#ring-files): a ringtone measuring sourceMs with these loop and fadeInMs values renders as the intro [0, loopStartMs) once, the loop section [loopStartMs, loopEndMs) loopCount times, then silenceMs of silence, with a fade-in over the first fadeInMs. passThrough means the source file can be used as is. A missing loop is the default (true).\",")
+    appendLine("  \"ringFileMinMs\": 90000,")
+    appendLine("  \"cases\": [")
+    appendLine(
+        ringCases.joinToString(",\n") { c ->
+            "    { \"description\": ${jsonString(c.description)},\n      \"sourceMs\": ${c.sourceMs}, " +
+                (c.loop?.let { "\"loop\": $it, " } ?: "") + "\"fadeInMs\": ${c.fadeInMs},\n" +
+                "      \"expected\": { \"loopStartMs\": ${c.loopStartMs}, \"loopEndMs\": ${c.loopEndMs}, \"loopCount\": ${c.loopCount}, " +
+                "\"silenceMs\": ${c.silenceMs}, \"fadeInMs\": ${c.fadeInMs}, \"totalMs\": ${c.totalMs}, \"passThrough\": ${c.passThrough} } }"
+        },
+    )
+    appendLine("  ]")
+    appendLine("}")
+}
+File(root, "ring-files.json").writeText(ringJson)
 work.deleteRecursively()
 println("Wrote ${fixtures.size} fixtures to $root")

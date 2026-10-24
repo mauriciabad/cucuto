@@ -1,0 +1,20 @@
+{
+  "formatVersion": 1,
+  "id": "app.mauri.fixtures.ringtone-song",
+  "name": "Ringtone song",
+  "version": "1.0.0",
+  "author": "Cucuto fixtures",
+  "license": "CC0-1.0",
+  "characters": [
+    {
+      "id": "song",
+      "name": "Song",
+      "sprite": "characters/song/cover.png",
+      "ringtones": [
+        { "file": "characters/song/song.ogg", "label": "Intro and loop", "loop": { "startMs": 1000, "endMs": 5000 }, "fadeInMs": 10000 },
+        { "file": "characters/song/song.ogg", "label": "Last second", "loop": { "startMs": 5000 } },
+        { "file": "characters/song/song.ogg", "label": "Once", "loop": false }
+      ]
+    }
+  ]
+}
