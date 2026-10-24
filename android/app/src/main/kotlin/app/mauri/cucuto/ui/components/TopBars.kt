@@ -3,6 +3,7 @@ package app.mauri.cucuto.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,12 +18,15 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFlexibleTopAppBar
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -42,6 +46,7 @@ fun CucutoTopBar(
     onBack: (() -> Unit)? = null,
     subtitle: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    backEnabled: Boolean = true,
 ) {
     // The title is the screen's heading: TalkBack users jump to it with the headings navigation.
     val subtitleSlot: (@Composable () -> Unit)? = subtitle?.let { { Text(it) } }
@@ -57,7 +62,7 @@ fun CucutoTopBar(
         MediumFlexibleTopAppBar(
             title = { Text(title, Modifier.semantics { heading() }) },
             subtitle = subtitleSlot,
-            navigationIcon = { BackButton(onBack) },
+            navigationIcon = { BackButton(onBack, enabled = backEnabled) },
             actions = actions,
             scrollBehavior = scrollBehavior,
             modifier = modifier,
@@ -65,13 +70,51 @@ fun CucutoTopBar(
     }
 }
 
+/**
+ * A screen pushed above a tab root (ADR 0027, ADR 0055): [CucutoTopBar] with a back arrow over [content], collapsing
+ * as the content scrolls. [content] gets the scaffold's padding; lists apply it as content padding so they scroll
+ * under the bars.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PushedScreen(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
+    backEnabled: Boolean = true,
+    content: @Composable (PaddingValues) -> Unit,
+) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            CucutoTopBar(
+                title = title,
+                scrollBehavior = scrollBehavior,
+                onBack = onBack,
+                subtitle = subtitle,
+                actions = actions,
+                backEnabled = backEnabled,
+            )
+        },
+        bottomBar = bottomBar,
+        snackbarHost = snackbarHost,
+        content = content,
+    )
+}
+
 /** The back arrow of pushed screens. */
 @Composable
 fun BackButton(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
-    IconButton(onClick = onBack, modifier = modifier) {
+    IconButton(onClick = onBack, modifier = modifier, enabled = enabled) {
         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.navigate_back))
     }
 }

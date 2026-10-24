@@ -5,33 +5,22 @@ import app.mauri.cucuto.core.pack.PackCandidate
 import app.mauri.cucuto.core.pack.PackSelection
 import app.mauri.cucuto.packs.ImportReview
 import app.mauri.cucuto.packs.ImportUi
-import app.mauri.cucuto.packs.PacksUiState
 import app.mauri.cucuto.packs.ReviewPack
-import app.mauri.cucuto.packs.ui.ImportSheet
-import app.mauri.cucuto.packs.ui.PacksContent
+import app.mauri.cucuto.packs.ui.ImportReviewScreen
 import app.mauri.cucuto.packspec.Character
 import app.mauri.cucuto.packspec.Clip
 import app.mauri.cucuto.packspec.PackManifest
 import org.junit.Test
 
-/** The import review: Kitchen orchestra opened from a file, over Packs with Chiptune critters installed. */
+/** The import review screen (ADR 0055): Kitchen orchestra opened from a file. */
 class ImportReviewScreenshotTest(
     variant: Variant,
 ) : ScreenshotTest(variant) {
     @Test
     fun importReview() =
         screenshot("import-review") {
-            val installed = DemoContent.critters
             val imported = DemoContent.kitchen
-            PacksContent(
-                state = PacksUiState(packs = listOf(installed.libraryPack())),
-                onDiscover = {},
-                onAssignVoices = {},
-                onImport = {},
-                onRemove = {},
-                onConsumeMessage = {},
-            )
-            ImportSheet(
+            ImportReviewScreen(
                 import =
                     ImportUi.Review(
                         review =
@@ -47,7 +36,7 @@ class ImportReviewScreenshotTest(
                 onSelect = { _, _ -> },
                 onInstall = {},
                 onPickAnother = {},
-                onClose = {},
+                onBack = {},
             )
         }
 

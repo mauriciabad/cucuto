@@ -119,6 +119,24 @@ class AppNavigator(
         }
     }
 
+    /**
+     * Puts [new] where [old] is (anything above [old] goes too), in whichever stack holds it: a screen that hands over
+     * to another, like the restore of a newly picked file, so back skips the old one. Pushes [new] when [old] is gone.
+     */
+    fun replace(
+        old: NavKey,
+        new: NavKey,
+    ) {
+        val stack = stacks.values.firstOrNull { it.indexOf(old) > 0 }
+        if (stack == null) {
+            navigate(new)
+            return
+        }
+        val index = stack.indexOf(old)
+        while (stack.size > index) stack.removeAt(stack.lastIndex)
+        if (stack.last() != new) stack.add(new)
+    }
+
     private fun popToRoot(tab: TopLevelTab) {
         val stack = stacks.getValue(tab)
         while (stack.size > 1) stack.removeAt(stack.lastIndex)

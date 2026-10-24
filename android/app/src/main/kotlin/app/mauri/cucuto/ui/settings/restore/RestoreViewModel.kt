@@ -1,7 +1,9 @@
 package app.mauri.cucuto.ui.settings.restore
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.mauri.cucuto.backup.AutoBackupControl
 import app.mauri.cucuto.backup.BackupGateway
 import app.mauri.cucuto.backup.OpenOutcome
 import app.mauri.cucuto.backup.PackFailure
@@ -35,7 +37,7 @@ import javax.inject.Inject
  * it is encrypted, bring back the packs, restore contacts and voices, answer the conflicts, then the LSPosed checklist.
  */
 sealed interface RestoreStep {
-    /** The flow is not shown. */
+    /** Nothing opened yet (the screen opens its file right away), or the flow was closed. */
     data object Closed : RestoreStep
 
     /** Reading, decrypting or restoring: a progress indicator. */
@@ -158,6 +160,7 @@ class RestoreViewModel
     constructor(
         private val gateway: BackupGateway,
         private val characters: CharacterDirectory,
+        private val autoBackup: AutoBackupControl,
     ) : ViewModel() {
         private val _step = MutableStateFlow<RestoreStep>(RestoreStep.Closed)
         val step: StateFlow<RestoreStep> = _step.asStateFlow()
@@ -169,6 +172,14 @@ class RestoreViewModel
         private val packMutex = Mutex()
         private var job: Job? = null
         private val packJobs = mutableListOf<Job>()
+
+        /**
+         * Opens [uri] unless this restore already started: the Restore screen calls it each time it appears, and a
+         * screen restored after process death (a new view model) opens the file again.
+         */
+        fun start(uri: String) {
+            if (source == null && _step.value == RestoreStep.Closed) open(uri)
+        }
 
         /** Starts a restore from the document the user picked. */
         fun open(uri: String) {
@@ -467,10 +478,22 @@ class RestoreViewModel
         private fun done(summary: RestoreSummary): RestoreStep.Done =
             RestoreStep.Done(summary, reusableSource = source.takeIf { session?.encrypted == false })
 
-        /** The user keeps automatic backups in the restored file; the Settings screen turns them on. */
+        /**
+         * The user keeps automatic backups in the restored file (ADR 0040), from Settings or Home alike. A failure
+         * leaves automatic backups off; Settings → Backup and restore shows their state.
+         */
         fun keepForBackups() {
-            _step.update { step ->
-                if (step is RestoreStep.Done && step.reusableSource != null) step.copy(keptForBackups = true) else step
+            val done = _step.value as? RestoreStep.Done ?: return
+            val document = done.reusableSource ?: return
+            viewModelScope.launch {
+                try {
+                    autoBackup.chooseFile(document)
+                    _step.update { step -> if (step is RestoreStep.Done) step.copy(keptForBackups = true) else step }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not keep automatic backups in the restored file", e)
+                }
             }
         }
 
@@ -497,6 +520,8 @@ class RestoreViewModel
         }
 
         private companion object {
+            const val TAG = "Restore"
+
             /** Actions that run without asking: nothing to pick. */
             val AUTOMATIC =
                 setOf(

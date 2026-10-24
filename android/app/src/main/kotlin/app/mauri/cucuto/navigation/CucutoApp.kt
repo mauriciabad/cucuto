@@ -24,6 +24,7 @@ import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,7 +33,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
@@ -169,7 +169,8 @@ private val ImmersiveDestinations: Set<NavKey> = setOf(CucutoDestination.Onboard
 /**
  * Decorates each tab's stack on its own, so a tab's saved state and view models live as long as the entry is in its
  * stack, even while another tab is shown. Content keys are prefixed with the tab: the same screen may sit in two
- * stacks at once (Diagnostics from Home's setup card and from Settings).
+ * stacks at once (Diagnostics from Home's setup card and from Settings). A child screen ([childOf]) also gets its
+ * parent's view models (ADR 0055).
  */
 @Composable
 private fun rememberShellEntries(
@@ -178,15 +179,18 @@ private fun rememberShellEntries(
 ): List<NavEntry<NavKey>> {
     val perTab =
         TopLevelTab.entries.associateWith { tab ->
-            rememberDecoratedNavEntries(
-                backStack = navigator.stack(tab),
-                entryDecorators =
-                    listOf(
-                        rememberSaveableStateHolderNavEntryDecorator(),
-                        rememberViewModelStoreNavEntryDecorator(),
-                    ),
-                entryProvider = { key -> entryProvider(key).inTab(tab, key) },
-            )
+            // One group per tab, so each tab's decorators keep their own state.
+            key(tab) {
+                rememberDecoratedNavEntries(
+                    backStack = navigator.stack(tab),
+                    entryDecorators =
+                        listOf(
+                            rememberSaveableStateHolderNavEntryDecorator(),
+                            rememberEntryViewModelStoreDecorator(),
+                        ),
+                    entryProvider = { key -> entryProvider(key).inTab(tab, key, entryProvider) },
+                )
+            }
         }
     return navigator.visibleTabs.flatMap { perTab.getValue(it) }
 }
@@ -194,9 +198,17 @@ private fun rememberShellEntries(
 private fun NavEntry<NavKey>.inTab(
     tab: TopLevelTab,
     key: NavKey,
+    entryProvider: (NavKey) -> NavEntry<NavKey>,
 ): NavEntry<NavKey> {
     val inner = this
-    return NavEntry(key = key, contentKey = "${tab.name}/${inner.contentKey}", metadata = inner.metadata) {
+    val parent = parentOf(inner.metadata)
+    val metadata =
+        if (parent == null) {
+            inner.metadata
+        } else {
+            inner.metadata + (PARENT_CONTENT_KEY to "${tab.name}/${entryProvider(parent).contentKey}")
+        }
+    return NavEntry(key = key, contentKey = "${tab.name}/${inner.contentKey}", metadata = metadata) {
         SharedElementEntry { inner.Content() }
     }
 }

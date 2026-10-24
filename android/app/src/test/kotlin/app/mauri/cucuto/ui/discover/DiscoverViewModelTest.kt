@@ -339,6 +339,10 @@ class DiscoverViewModelTest {
             links.offer(RepositoryLinks.deepLinkFor(server.at("/shared/repository.json")))
             val form = vm.state.value.form!!
             assertTrue(form.fromLink)
+            // The link opens the form's screen; once open, closing the form does not open it again.
+            assertTrue(vm.showForm.value)
+            vm.formShown()
+            assertFalse(vm.showForm.value)
             assertEquals(server.at("/shared/repository.json").toString(), form.input)
             assertEquals(requests, routes.requests.size)
             assertNull(links.pending.value)
