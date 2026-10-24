@@ -11,6 +11,7 @@ import app.mauri.cucuto.picker.PickerScreen
 import app.mauri.cucuto.ui.developer.DeveloperScreen
 import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
+import app.mauri.cucuto.ui.haptics.HapticEditorScreen
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
 import app.mauri.cucuto.ui.settings.SettingsScreen
 import app.mauri.cucuto.ui.status.SetupScreen
@@ -27,7 +28,7 @@ fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
         // Tab roots: no back arrow; system back goes to Home (or leaves the app from Home).
         entry<CucutoDestination.Home>(metadata = TabRootMetadata) { HomeScreen(onNavigate = navigate) }
         entry<CucutoDestination.Packs>(metadata = TabRootMetadata) { PacksScreen(onNavigate = navigate) }
-        entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen(onNavigate = navigate) }
+        entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen() }
         entry<CucutoDestination.Settings>(metadata = TabRootMetadata) { SettingsScreen(onNavigate = navigate) }
 
         // ChatKey.toString() hides the JID (ADR 0017), so the default content key would be the same for every chat.
@@ -46,7 +47,12 @@ fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
         // The setup guide reopened from Setup: finishing or skipping just closes it.
         entry<CucutoDestination.Onboarding> { OnboardingScreen(onFinish = goBack, resume = false) }
         entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
-        // ContactDetail (#26) and HapticEditor (#32) get their entries with their screens; nothing links to them yet.
+        entry<CucutoDestination.HapticEditor>(
+            clazzContentKey = { "haptics/${it.chat?.packageName}/${it.chat?.conversationKey}" },
+        ) { key ->
+            HapticEditorScreen(chat = key.chat, onBack = goBack, onDone = { navigator.remove(key) })
+        }
+        // ContactDetail (#26) gets its entry with its screen; nothing links to it yet.
 
         // Debug builds only: R8 drops these screens from release builds.
         if (BuildConfig.DEBUG) {

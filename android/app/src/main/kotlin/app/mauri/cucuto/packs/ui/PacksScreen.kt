@@ -466,7 +466,7 @@ private fun packSubtitle(pack: LibraryPack): String {
 @Composable
 internal fun sizeText(bytes: Long): String = Formatter.formatShortFileSize(LocalContext.current, bytes)
 
-private fun installedText(
+internal fun installedText(
     resources: android.content.res.Resources,
     message: PacksMessage.Installed,
 ): String {

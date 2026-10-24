@@ -3,11 +3,11 @@
 # Regenerate: kotlin packs/generate.main.kts   (all sounds are synthesized with ffmpeg)
 id: app.mauri.demo.kitchen-orchestra
 name: Kitchen orchestra
-version: 1.0.0
+version: 1.1.0
 author: Cucuto contributors
 license: CC0-1.0
 homepage: https://cucuto.mauri.app
-description: The kitchen is warming up. A pot that bongs, a glass that tings, a whisk that shakes and a kettle that whistles.
+description: The kitchen is warming up. A pot that bongs, a glass that tings, a whisk that shakes and a kettle that whistles. When it calls, the kettle boils over into a jig.
 cover: cover.svg
 tags: [percussion, objects, demo]
 characters:
@@ -45,6 +45,17 @@ characters:
       - kettle/clips/whistle.ogg
       - file: kettle/clips/bubble.ogg
         label: Bubbling
+      # Cut from the ringtone's loop by `packer cut` (packs/generate.main.kts); at build time a clip can also be
+      # written as `- cut: kettle/ringtones/kettle-reel.ogg`.
+      - file: kettle/clips/reel-hook.ogg
+        label: Kettle reel (hook)
+    # The water heats up (intro, 0-4 s), then a jig loops (4-12 s); the closing ding (12-14 s) only plays in previews.
+    # The exported ring file is the intro once and the loop repeated to 90 s (docs/pack-format.md#ring-files).
+    ringtones:
+      - file: kettle/ringtones/kettle-reel.ogg
+        label: Kettle reel
+        loop: { startMs: 4000, endMs: 12000 }
+        fadeInMs: 500
     haptic:
       - { at: 0, preset: LOW_TICK, scale: 0.6 }
       - { at: 120, preset: LOW_TICK, scale: 0.6 }

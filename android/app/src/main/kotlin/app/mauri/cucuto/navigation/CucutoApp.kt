@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.filterNotNull
 fun CucutoApp(
     modifier: Modifier = Modifier,
     pendingImport: StateFlow<ImportSource?>? = null,
+    pendingRepoLink: StateFlow<String?>? = null,
     startViewModel: StartViewModel = hiltViewModel(),
 ) {
     val stage by startViewModel.stage.collectAsStateWithLifecycle()
@@ -63,20 +64,27 @@ fun CucutoApp(
         when (current) {
             AppStage.Loading -> Surface(Modifier.fillMaxSize()) {}
             AppStage.Onboarding -> OnboardingScreen(onFinish = startViewModel::finishOnboarding)
-            AppStage.Shell -> CucutoShell(pendingImport = pendingImport)
+            AppStage.Shell -> CucutoShell(pendingImport = pendingImport, pendingRepoLink = pendingRepoLink)
         }
     }
 }
 
-/** The shell with the real screens; a pack handed over by another app opens the Packs tab, which imports it. */
+/**
+ * The shell with the real screens. A pack handed over by another app opens the Packs tab, which imports it; an "Add
+ * to app" repository link opens the Discover tab, which shows the add sheet (#36).
+ */
 @Composable
 fun CucutoShell(
     modifier: Modifier = Modifier,
     pendingImport: StateFlow<ImportSource?>? = null,
+    pendingRepoLink: StateFlow<String?>? = null,
     navigator: AppNavigator = rememberAppNavigator(),
 ) {
     LaunchedEffect(navigator, pendingImport) {
         pendingImport?.filterNotNull()?.collect { navigator.showRoot(TopLevelTab.Packs) }
+    }
+    LaunchedEffect(navigator, pendingRepoLink) {
+        pendingRepoLink?.filterNotNull()?.collect { navigator.showRoot(TopLevelTab.Discover) }
     }
     val entries = remember(navigator) { cucutoEntries(navigator) }
     CucutoShellLayout(navigator = navigator, entryProvider = entries, modifier = modifier)
