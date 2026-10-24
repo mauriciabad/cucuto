@@ -78,12 +78,12 @@ export interface PackDraftInput {
 	description?: string | null;
 	cover?: DraftFileRef | null;
 	characters: CharacterDraftInput[];
-	/** Pass-through data from an opened pack: the creator keeps it but does not edit it yet. */
+	/** The pack's homepage (https) and tags. */
 	homepage?: string | null;
 	tags?: string[];
 }
 
-/** A character of a `PackDraftInput`. Fields after `haptic` are pass-through data from an opened pack. */
+/** A character of a `PackDraftInput`. `tags` and `spriteAnimated` are pass-through data from an opened pack. */
 export interface CharacterDraftInput {
 	/** Null to derive a unique slug from the name. */
 	id: string | null;
@@ -97,7 +97,7 @@ export interface CharacterDraftInput {
 	tags?: string[];
 	/** A GIF, animated WebP or animated JPEG XL, kept from the opened pack. */
 	spriteAnimated?: DraftFileRef | null;
-	/** Ringtone variants kept from the opened pack: `entry` is written as it was, with only its file replaced. */
+	/** Ringtone variants (`RingtoneForm`, or as an opened pack had them): written with only `file` replaced. */
 	ringtones?: { file: DraftFileRef; entry: Record<string, unknown> }[];
 }
 
@@ -105,9 +105,9 @@ export interface ClipDraftInput {
 	file: DraftFileRef;
 	label: string | null;
 	weight?: number | null;
-	/** The clip's condition (day and night clips, moments), kept from an opened pack. */
+	/** The clip's condition (day and night clips, moments), as `writeCondition` makes it. */
 	when?: Record<string, unknown> | null;
-	/** A rare clip's chance, one in `oneIn` (docs/pack-format.md#special-clips), kept from an opened pack. */
+	/** A rare clip's chance, one in `oneIn` (docs/pack-format.md#special-clips). */
 	oneIn?: number | null;
 }
 
@@ -686,9 +686,7 @@ function authoring(module: PackSpecModule): Authoring {
 			};
 		},
 		conditionForm: (when, oneIn) =>
-			JSON.parse(
-				module.conditionForm(when ? JSON.stringify(when) : null, oneIn)
-			) as ConditionFormJson,
+			conditionFormOf(JSON.parse(module.conditionForm(when ? JSON.stringify(when) : null, oneIn))),
 		writeCondition(form, clip) {
 			const r = module.writeCondition(JSON.stringify(form), clip);
 			return {
@@ -697,8 +695,14 @@ function authoring(module: PackSpecModule): Authoring {
 				problems: r.problems.map(formProblem)
 			};
 		},
-		ringtoneForm: (entry) =>
-			JSON.parse(module.ringtoneForm(JSON.stringify(entry))) as RingtoneFormJson,
+		ringtoneForm(entry) {
+			const form = JSON.parse(module.ringtoneForm(JSON.stringify(entry))) as RingtoneFormJson;
+			return {
+				...form,
+				loopEndMs: form.loopEndMs ?? null,
+				condition: conditionFormOf(form.condition)
+			};
+		},
 		writeRingtone(form, file, durationMs) {
 			const r = module.writeRingtone(JSON.stringify(form), file, durationMs ?? Number.NaN);
 			return {
@@ -708,6 +712,15 @@ function authoring(module: PackSpecModule): Authoring {
 		},
 		parseTags: (text) => [...module.parseTags(text)],
 		isHomepage: (url) => module.isHomepage(url)
+	};
+}
+
+/** A form from Kotlin, whose JSON leaves nulls out, with every optional field present as null. */
+function conditionFormOf(form: ConditionFormJson): ConditionFormJson {
+	return {
+		...form,
+		oneIn: form.oneIn ?? null,
+		dates: form.dates.map((d) => ({ from: d.from, to: d.to ?? null }))
 	};
 }
 

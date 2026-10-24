@@ -6,10 +6,17 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.scale
+import coil3.SingletonImageLoader
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.toBitmap
 import com.materialkolor.quantize.QuantizerCelebi
 import com.materialkolor.score.Score
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -37,6 +44,30 @@ fun rememberSeedColor(bitmap: Bitmap?): State<Color?> =
     produceState<Color?>(initialValue = null, bitmap) {
         value = bitmap?.let { extractSeedColor(it) }
     }
+
+/**
+ * Seed color of the sprite in [sprite] as Compose state, from a small software decode of its own ([SAMPLE_EDGE] px)
+ * through the app's ImageLoader. For screens that show many sprites but theme around one (the pickers): their cells
+ * keep Coil's hardware bitmaps, and only the character in focus is decoded again for its colors (#330).
+ */
+@Composable
+fun rememberSpriteSeedColor(sprite: File?): State<Color?> {
+    val context = LocalPlatformContext.current
+    return produceState<Color?>(initialValue = null, sprite) {
+        value =
+            sprite?.let { file ->
+                val request =
+                    ImageRequest
+                        .Builder(context)
+                        .data(file)
+                        .size(SAMPLE_EDGE)
+                        .allowHardware(false)
+                        .build()
+                val result = SingletonImageLoader.get(context).execute(request) as? SuccessResult
+                result?.image?.toBitmap()?.let { extractSeedColor(it) }
+            }
+    }
+}
 
 /** Downscales to at most [SAMPLE_EDGE] px on the long edge (quantizing every pixel of a big sprite is wasted work). */
 private fun Bitmap.samplePixels(): IntArray {

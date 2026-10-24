@@ -1,6 +1,5 @@
 package app.mauri.cucuto.picker
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +34,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -81,7 +79,7 @@ import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
-import app.mauri.cucuto.ui.theme.rememberSeedColor
+import app.mauri.cucuto.ui.theme.rememberSpriteSeedColor
 import kotlinx.coroutines.delay
 import java.io.File
 
@@ -172,10 +170,12 @@ fun PickerContent(
     onToggleFold: (String) -> Unit = {},
     onSurprise: (String?) -> Unit = {},
 ) {
-    val bitmaps = remember { mutableStateMapOf<ChatVoice, Bitmap>() }
     val focus = state.selected ?: state.currentVoice
     val focusCharacter = state.character(focus)
-    val extracted by rememberSeedColor(focus?.let { bitmaps[it] })
+    // Only the character in focus is read for its colors, on a small request of its own. Collecting every decoded
+    // sprite kept a software copy of each one alive (268 in a big pack) and recomposed the whole screen for every
+    // sprite decoded while scrolling (#330).
+    val extracted by rememberSpriteSeedColor(focusCharacter?.sprite?.takeIf { focusCharacter.seedColor == null })
     val seed = focusCharacter?.seedColor?.let { Color(it) } ?: extracted
     val snackbar = remember { SnackbarHostState() }
     val failedMessage = stringResource(R.string.picker_failed)
@@ -312,7 +312,6 @@ fun PickerContent(
                                     canAssign = state.canAssign && state.assigned == null,
                                     beat = assignBeat?.takeIf { state.assigned == voice },
                                     onTap = { onTap(character) },
-                                    onBitmap = { bitmaps[voice] = it },
                                     modifier = animateCellUnlessReduced(),
                                 )
                             }
@@ -403,7 +402,6 @@ private fun CharacterCell(
     canAssign: Boolean,
     beat: FeedbackBeat?,
     onTap: () -> Unit,
-    onBitmap: (Bitmap) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -443,7 +441,6 @@ private fun CharacterCell(
                             R.string.picker_preview_label
                         },
                     ),
-                onBitmap = onBitmap,
                 modifier =
                     Modifier.semantics {
                         this.selected = selected

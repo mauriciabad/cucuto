@@ -45,6 +45,8 @@
     <string name="contacts_denied_body">Without the contacts permission, Cucuto can\'t see the WhatsApp entries. People who message you still show up on Home. You can allow it in Android\'s settings at any time.</string>
     <string name="contacts_open_settings">Open settings</string>
     <string name="contacts_try_again">Try again</string>
+    <string name="contacts_blocked_title">The contacts permission is off</string>
+    <string name="contacts_blocked_body">Android won\'t ask again. Allow it in Android\'s settings, under Permissions, then Contacts. When you come back, the list opens.</string>
 
     <!-- Home -->
     <string name="home_waiting_header">Waiting for a first message</string>

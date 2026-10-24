@@ -84,7 +84,10 @@ export function hasContent(pack: PackState): boolean {
 		pack.description.trim() !== '' ||
 		pack.cover !== null ||
 		pack.origin !== null ||
-		pack.characters.some((c) => c.name.trim() !== '' || c.sprite !== null || c.clips.length > 0)
+		pack.characters.some(
+			(c) =>
+				c.name.trim() !== '' || c.sprite !== null || c.clips.length > 0 || c.ringtones.length > 0
+		)
 	);
 }
 

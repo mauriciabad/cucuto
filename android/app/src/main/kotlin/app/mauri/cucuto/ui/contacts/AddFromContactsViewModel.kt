@@ -8,6 +8,7 @@ import app.mauri.cucuto.core.data.chats.ContactChats
 import app.mauri.cucuto.core.data.chats.KnownContacts
 import app.mauri.cucuto.core.data.chats.WhatsAppContact
 import app.mauri.cucuto.core.data.chats.WhatsAppContactsSource
+import app.mauri.cucuto.core.data.settings.ContactsPromptStore
 import app.mauri.cucuto.home.searchable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -18,9 +19,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** The steps of "Add a chat from contacts" (ADR 0065): the explainer always comes first. */
+/**
+ * The steps of "Add a chat from contacts" (ADR 0065). The explainer comes first only while the contacts permission is
+ * missing (never granted, or revoked); with the permission, the screen opens on the list (#337).
+ */
 enum class AddStep {
-    /** What is read, what is never read, and why the contacts permission is needed. */
+    /**
+     * What is read, what is never read, and why the contacts permission is needed. With
+     * [AddFromContactsState.blocked], it also says that Android won't ask again, and its button opens Android's settings.
+     */
     Explainer,
 
     /** Reading the WhatsApp entries. */
@@ -56,10 +63,13 @@ data class EntryId(
  * @property total Every entry, before search (0: no WhatsApp entries at all).
  * @property selected How many new people are picked.
  * @property done The chats saved, once saving finished; the screen then closes.
+ * @property blocked Android stopped showing its prompt for the permission ("don't ask again"), so only its settings
+ *   can grant it.
  */
 @Immutable
 data class AddFromContactsState(
     val step: AddStep = AddStep.Explainer,
+    val blocked: Boolean = false,
     val rows: List<ContactRow> = emptyList(),
     val query: String = "",
     val total: Int = 0,
@@ -70,8 +80,9 @@ data class AddFromContactsState(
 )
 
 /**
- * "Add a chat from contacts" (ADR 0065). Nothing is read until the user continues past the explainer and the
- * permission is granted; the list lives only in this view model, and only the people picked are saved.
+ * "Add a chat from contacts" (ADR 0065). Nothing is read without the contacts permission: while it is missing, the
+ * explainer comes first and the user continues to Android's prompt. With the permission already granted, the entries
+ * are read as the screen opens (#337). The list lives only in this view model, and only the people picked are saved.
  */
 @HiltViewModel
 class AddFromContactsViewModel
@@ -79,6 +90,7 @@ class AddFromContactsViewModel
     constructor(
         private val source: WhatsAppContactsSource,
         private val contactChats: ContactChats,
+        private val prompt: ContactsPromptStore,
     ) : ViewModel() {
         private var entries: List<WhatsAppContact> = emptyList()
         private var known = KnownContacts()
@@ -86,11 +98,32 @@ class AddFromContactsViewModel
         private val _state = MutableStateFlow(AddFromContactsState())
         val state: StateFlow<AddFromContactsState> = _state.asStateFlow()
 
+        init {
+            if (source.canRead()) {
+                load()
+            } else {
+                viewModelScope.launch {
+                    val blocked = runCatching { prompt.blocked() }.getOrDefault(false)
+                    _state.update { it.copy(blocked = blocked) }
+                }
+            }
+        }
+
         /** Whether Android's prompt is needed before reading. */
         fun needsPermission(): Boolean = !source.canRead()
 
-        /** Reads the entries: after the explainer, once the permission is granted. */
+        /**
+         * The screen is back in front (from Android's settings, say): with the permission granted meanwhile, the
+         * explainer or the refusal gives way to the list.
+         */
+        fun refresh() {
+            val step = _state.value.step
+            if ((step == AddStep.Explainer || step == AddStep.Denied) && source.canRead()) load()
+        }
+
+        /** Reads the entries: at once with the permission, or after the explainer once it is granted. */
         fun load() {
+            if (_state.value.step == AddStep.Loading) return
             _state.update { it.copy(step = AddStep.Loading) }
             viewModelScope.launch {
                 val loaded =
@@ -107,14 +140,19 @@ class AddFromContactsViewModel
                 }
                 entries = loaded
                 known = contactChats.known()
-                _state.update { it.copy(step = AddStep.List) }
+                _state.update { it.copy(step = AddStep.List, blocked = false) }
                 publish()
+                runCatching { prompt.setBlocked(false) }
             }
         }
 
-        /** Android's prompt was refused. */
-        fun denied() {
-            _state.update { it.copy(step = AddStep.Denied) }
+        /**
+         * Android's prompt was refused. [blocked]: Android won't show it again ("don't ask again"), so the next visit's
+         * explainer points to Android's settings.
+         */
+        fun denied(blocked: Boolean = false) {
+            _state.update { it.copy(step = AddStep.Denied, blocked = blocked) }
+            viewModelScope.launch { runCatching { prompt.setBlocked(blocked) } }
         }
 
         fun setQuery(value: String) {

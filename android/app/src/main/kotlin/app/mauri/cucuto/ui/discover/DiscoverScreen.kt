@@ -472,7 +472,7 @@ private fun LazyListScope.discoverItems(
                         if (section.totalCards == 0) {
                             item(key = "repo-$id-empty") { EmptyRepository() }
                         }
-                        items(section.cards, key = { it.key }) { card ->
+                        items(section.cards, key = { it.key }, contentType = { "card" }) { card ->
                             if (card.isBundle) {
                                 RemoteBundleCard(
                                     card = card,
@@ -857,7 +857,7 @@ private fun CharacterRow(
         contentPadding = PaddingValues(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        items(characters, key = { it.key }) { character ->
+        items(characters, key = { it.key }, contentType = { "character" }) { character ->
             RemoteCharacterBadge(character, repositoryId, previews, player, size = avatarSize)
         }
     }
