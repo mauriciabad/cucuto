@@ -2,6 +2,7 @@ package app.mauri.cucuto.core.data.chats
 
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
@@ -82,11 +83,26 @@ class RoomChatDirectory
                 assignments.observeAll(),
                 seenSenders.observeRecent(SeenSenderDao.CAPACITY),
                 ringtones.observeAll(),
-            ) { contacts, assignments, seen, rows ->
+                ringtones.observeWrites(),
+            ) { contacts, assignments, seen, rows, writes ->
                 val byContact = rows.associateBy { it.contactId }
+                // Android contacts whose ringtone was changed in Contacts after Cucuto, which Cucuto respects (#372).
+                val changed = writes.filter { it.userChanged }.mapTo(HashSet()) { it.lookupKey }
+                val setInContacts =
+                    contacts
+                        .filter { it.contact.androidLookupKey in changed }
+                        .mapTo(HashSet()) { it.contact.id }
                 mergeChats(contacts, assignments, seen).map { chat ->
                     val row = chat.contactId?.let(byContact::get)
-                    if (row == null) chat else chat.copy(ringtone = ChatRingtone.of(row))
+                    if (row == null) {
+                        chat
+                    } else {
+                        chat.copy(
+                            ringtone = ChatRingtone.of(row),
+                            ringtoneSetInContacts =
+                                row.choice != RingtoneChoice.UNCHANGED && chat.contactId in setInContacts,
+                        )
+                    }
                 }
             }
 

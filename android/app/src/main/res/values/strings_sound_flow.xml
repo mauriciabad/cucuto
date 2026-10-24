@@ -23,6 +23,9 @@
     <string name="ringtone_row_unchanged_detail">Cucuto doesn\'t touch it</string>
     <string name="contact_rings_with">Rings with %1$s</string>
     <string name="contact_rings_default">Rings with the phone\'s default ringtone</string>
+    <string name="ringtone_row_contacts">Set in Contacts</string>
+    <string name="ringtone_row_contacts_detail">Changed in Contacts, so Cucuto leaves it alone</string>
+    <string name="contact_rings_contacts">Rings with the ringtone set in Contacts</string>
 
     <!-- Contact detail: the set-up card for Android default -->
     <string name="ringtone_default_off_body">To clear a ringtone this contact has of its own, Cucuto changes it in Android\'s Contacts.</string>
@@ -30,4 +33,5 @@
     <!-- Home: the ringtone on each row, for TalkBack -->
     <string name="home_chat_ringtone_a11y">Ringtone: %1$s</string>
     <string name="home_chat_ringtone_default_a11y">Ringtone: Android default</string>
+    <string name="home_chat_ringtone_contacts_a11y">Ringtone: set in Contacts</string>
 </resources>

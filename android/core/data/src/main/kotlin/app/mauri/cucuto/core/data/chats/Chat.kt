@@ -65,6 +65,8 @@ data class ChatVoice(
  *   with the same name apart.
  * @property ringtone The stored phone ringtone choice, or null when none is stored (ADR 0073); [ringingVoice] says
  *   which character rings.
+ * @property ringtoneSetInContacts The ringtone was changed in Contacts after Cucuto, and Cucuto respects it until the
+ *   user saves a new choice or takes it back (#372): the contact rings with that ringtone, not the stored choice.
  */
 data class Chat(
     val key: ChatKey,
@@ -80,6 +82,7 @@ data class Chat(
     val linkCandidates: List<LinkCandidate> = emptyList(),
     val phoneNumbers: List<String> = emptyList(),
     val ringtone: ChatRingtone? = null,
+    val ringtoneSetInContacts: Boolean = false,
 ) {
     /** Whether the chat lives in WhatsApp Business rather than WhatsApp; its keys and voices are its own (#21). */
     val isBusiness: Boolean get() = key.packageName == ChatKey.WHATSAPP_BUSINESS

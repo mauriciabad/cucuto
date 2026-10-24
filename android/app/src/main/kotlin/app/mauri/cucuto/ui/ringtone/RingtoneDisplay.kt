@@ -28,17 +28,22 @@ sealed interface RingtoneDisplay {
 
     /** The phone's default ringtone. */
     data object AndroidDefault : RingtoneDisplay
+
+    /** The ringtone set in Contacts after Cucuto, which Cucuto respects for now (#372). */
+    data object SetInContacts : RingtoneDisplay
 }
 
 /**
  * What [chat] rings with, or null when there is nothing to show: a group (no phone ringtone, #52), "Leave as is", or a
- * character without ringtones. [find] looks an installed character up.
+ * character without ringtones. A ringtone changed in Contacts that Cucuto respects is that one, never the stored
+ * choice (#372). [find] looks an installed character up.
  */
 fun ringtoneDisplay(
     chat: Chat?,
     find: (ChatVoice) -> VoiceCharacter?,
 ): RingtoneDisplay? {
     if (chat == null || chat.isGroup) return null
+    if (chat.ringtoneSetInContacts) return RingtoneDisplay.SetInContacts
     if (chat.ringtone == ChatRingtone.AndroidDefault) return RingtoneDisplay.AndroidDefault
     val character = chat.ringingVoice?.let(find)?.takeIf { it.forCalls } ?: return null
     return RingtoneDisplay.Character(character)
@@ -50,9 +55,10 @@ fun ringtoneDescription(display: RingtoneDisplay): String =
     when (display) {
         is RingtoneDisplay.Character -> stringResource(R.string.home_chat_ringtone_a11y, display.character.name)
         RingtoneDisplay.AndroidDefault -> stringResource(R.string.home_chat_ringtone_default_a11y)
+        RingtoneDisplay.SetInContacts -> stringResource(R.string.home_chat_ringtone_contacts_a11y)
     }
 
-/** A small picture of [display]: the album cover, or a call icon for the phone's default. Decorative. */
+/** A small picture of [display]: the album cover, or a call icon for the phone's default or Contacts'. Decorative. */
 @Composable
 fun RingtoneBadge(
     display: RingtoneDisplay,
@@ -64,7 +70,7 @@ fun RingtoneBadge(
             RecordCover(display.character, size = size, modifier = modifier)
         }
 
-        RingtoneDisplay.AndroidDefault -> {
+        RingtoneDisplay.AndroidDefault, RingtoneDisplay.SetInContacts -> {
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,

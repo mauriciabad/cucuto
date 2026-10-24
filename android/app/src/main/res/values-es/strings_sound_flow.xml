@@ -23,6 +23,9 @@
     <string name="ringtone_row_unchanged_detail">Cucuto no lo toca</string>
     <string name="contact_rings_with">Suena con %1$s</string>
     <string name="contact_rings_default">Suena con el tono predeterminado del móvil</string>
+    <string name="ringtone_row_contacts">Elegido en Contactos</string>
+    <string name="ringtone_row_contacts_detail">Se cambió en Contactos, así que Cucuto no lo toca</string>
+    <string name="contact_rings_contacts">Suena con el tono elegido en Contactos</string>
 
     <!-- Detalle del contacto: la tarjeta de configuración para el predeterminado de Android -->
     <string name="ringtone_default_off_body">Para quitar un tono propio de este contacto, Cucuto lo cambia en los Contactos de Android.</string>
@@ -30,4 +33,5 @@
     <!-- Inicio: el tono de cada fila, para TalkBack -->
     <string name="home_chat_ringtone_a11y">Tono: %1$s</string>
     <string name="home_chat_ringtone_default_a11y">Tono: predeterminado de Android</string>
+    <string name="home_chat_ringtone_contacts_a11y">Tono: elegido en Contactos</string>
 </resources>

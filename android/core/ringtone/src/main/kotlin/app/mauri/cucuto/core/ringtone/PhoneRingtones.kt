@@ -470,6 +470,7 @@ class PhoneRingtones
          * [characterId] null for its voice's), whether it keeps [followsVoice] (the user picked the voice's own
          * character, or left the kept one as it was) or is the user's own pick, how its variant is picked, the
          * variant for [RingtoneMode.FIXED], and the contact's own [rules] for [RingtoneMode.CUSTOM] (ADR 0074).
+         * Every caller is an explicit save, so it overrides an earlier change in Contacts ([decideAgain], #372).
          */
         suspend fun choose(
             contactId: Long,
@@ -493,12 +494,14 @@ class PhoneRingtones
                     rules = if (mode == RingtoneMode.CUSTOM) RingtoneRules.encode(rules) else null,
                 ),
             )
+            decideAgain(contactId)
         }
 
         /**
          * The ringtone picker's other choices (ADR 0073): [RingtoneChoice.ANDROID_DEFAULT] (the phone's default
          * ringtone) or [RingtoneChoice.UNCHANGED] (leave the Android contact's ringtone as it is). Neither stores a
-         * character nor follows the voice. [RingtoneChoice.CHARACTER] goes through [choose].
+         * character nor follows the voice. [RingtoneChoice.CHARACTER] goes through [choose]. An explicit save, like
+         * [choose] ([decideAgain], #372).
          */
         suspend fun chooseOther(
             contactId: Long,
@@ -513,10 +516,32 @@ class PhoneRingtones
                     choice = choice,
                 ),
             )
+            decideAgain(contactId)
         }
 
         /** Removes [contactId]'s phone ringtone; the sync restores the Android contact's own one. */
         suspend fun remove(contactId: Long) = dao.delete(contactId)
+
+        /**
+         * An explicit save in the ringtone picker or the rules screen is a fresh decision (#372, ADR 0039's amendment):
+         * an earlier change in Contacts no longer holds Cucuto back, and the contact's current ringtone (unless it is
+         * Cucuto's) becomes the one to give back later. Runs in the application scope after the choice is stored, so
+         * closing the picker never cancels it; the sync it starts applies the choice. Never throws.
+         */
+        private fun decideAgain(contactId: Long) {
+            scope.launch {
+                try {
+                    if (!settings.isEnabled() || !androidContacts.canReadAndWrite()) return@launch
+                    val key = contactRepository.get(contactId)?.contact?.androidLookupKey ?: return@launch
+                    mutex.withLock { withContext(Dispatchers.IO) { sync.decideAgain(key) } }
+                    syncNow(SyncReason.Changed)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Applying a new ringtone choice failed", e)
+                }
+            }
+        }
 
         /** Manages [contactId]'s Android contact again after its ringtone was changed in Contacts. */
         suspend fun takeOver(contactId: Long) {

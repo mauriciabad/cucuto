@@ -205,6 +205,24 @@ class PhoneRingtoneContentTest {
     }
 
     @Test
+    fun aRespectedChangeInContactsIsWhatTheRowSaysAndTheCardOffersToTakeItBack() {
+        // #372: the record says the user changed it in Contacts, even before a sync reports the problem.
+        val respected = base.copy(linked = true, using = true, setInContacts = true, ringingCharacter = null)
+        showRow(respected)
+        compose.onNodeWithText("Set in Contacts").assertIsDisplayed()
+        compose.onNodeWithText("Changed in Contacts, so Cucuto leaves it alone").assertIsDisplayed()
+        compose.onNodeWithText("K.K. Slider", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("WhatsApp calls ring on their own", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aRespectedChangeInContactsShowsTheCardWithoutASyncProblem() {
+        show(base.copy(linked = true, using = true, setInContacts = true))
+        compose.onNodeWithText("Use Cucuto's ringtone again").performClick()
+        assertEquals(listOf("takeover"), events)
+    }
+
+    @Test
     fun withNothingThatRingsTheRowOffersThePickerAndTheCardHidesItsSetUp() {
         // A message character without ringtones (Tweet the bird): the ringtone comes from another character.
         showRow(base.copy(characterName = "Tweet the bird", variants = emptyList()))

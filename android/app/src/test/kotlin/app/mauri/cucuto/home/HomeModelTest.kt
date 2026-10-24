@@ -177,5 +177,12 @@ class HomeModelTest {
         val leave =
             listOf(chat(ADA, "Ada", voice = ChatVoice(CRITTERS, "frog")).copy(ringtone = ChatRingtone.Unchanged))
         assertNull(buildHomeState(leave, singing, "", null, NOW).chats.single().ringtone)
+
+        // A ringtone changed in Contacts that Cucuto respects is what rings, not the stored character (#372).
+        val contacts = listOf(input.first().copy(ringtoneSetInContacts = true))
+        assertEquals(
+            RingtoneDisplay.SetInContacts,
+            buildHomeState(contacts, withSongs, "", null, NOW).chats.single().ringtone,
+        )
     }
 }
