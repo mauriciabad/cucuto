@@ -22,8 +22,11 @@ class RepositoryClientTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
+    @get:Rule
+    val clients = TestClients()
+
     private lateinit var server: MockWebServer
-    private val client = testClient()
+    private val client = clients.client()
     private val packBytes = minimalPack.readBytes()
     private val expected = ExpectedFile(packBytes.size.toLong(), sha256(packBytes))
     private val basic = RepositoryCredentials.Basic("ana", "s3cret")
@@ -346,7 +349,7 @@ class RepositoryClientTest {
         runTest {
             server.close()
             server = httpsServer(http1Only = true)
-            val small = testClient(RepoLimits(maxIndexBytes = 1024))
+            val small = clients.client(RepoLimits(maxIndexBytes = 1024))
             server.enqueue(ok(indexJson())) // Content-Length over the cap
             server.enqueue(
                 MockResponse
@@ -366,7 +369,7 @@ class RepositoryClientTest {
             val file = client.download(server.at("/one.soundpack.zip"), target()).success()
             assertEquals(expected.sha256, file.sha256)
 
-            val small = testClient(RepoLimits(maxDownloadBytes = 100))
+            val small = clients.client(RepoLimits(maxDownloadBytes = 100))
             server.enqueue(
                 MockResponse
                     .Builder()

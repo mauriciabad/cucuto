@@ -193,8 +193,8 @@
     <string name="picker_assign_label">Assign</string>
     <string name="picker_remove">Remove voice</string>
     <string name="picker_failed">Couldn\'t save the voice. Try again.</string>
-    <string name="picker_empty_title">No characters yet</string>
-    <string name="picker_empty_body">Import a sound pack to fill this grid.</string>
+    <string name="picker_empty_title">No message voices yet</string>
+    <string name="picker_empty_body">None of your packs has message clips. Import a pack in Packs, or download one in Discover.</string>
     <string name="picker_loading">Loading characters</string>
 
     <!-- Contact detail (#26) -->
@@ -588,16 +588,20 @@
     <string name="discover_sign_in">Sign in</string>
     <string name="discover_sign_in_to">Sign in to %1$s</string>
     <string name="discover_retry">Try again</string>
-    <plurals name="discover_bundle_packs">
-        <item quantity="one">Bundle with %1$d pack: %2$s</item>
-        <item quantity="other">Bundle with %1$d packs: %2$s</item>
+    <plurals name="discover_bundle_label">
+        <item quantity="one">Bundle · %1$d pack</item>
+        <item quantity="other">Bundle · %1$d packs</item>
     </plurals>
+    <string name="discover_bundle_installed_some">%1$d of %2$d installed</string>
     <string name="discover_version">version %1$s</string>
     <string name="discover_needs_newer">Needs a newer Cucuto</string>
     <string name="discover_update_available">Update available</string>
     <string name="discover_installed">Installed</string>
     <string name="discover_install">Install</string>
+    <string name="discover_install_all">Install all</string>
+    <string name="discover_install_member">Install %1$s</string>
     <string name="discover_update">Update</string>
+    <string name="discover_update_member">Update %1$s</string>
     <string name="discover_install_again">Install again</string>
     <string name="discover_repository_empty">This repository has no packs yet.</string>
     <string name="discover_no_matches">No packs match your search.</string>

@@ -238,5 +238,6 @@ specimen downloads Google Sans Flex into `brand/.work/` (ignored).
 | `build-motion.mjs` | `motion/door-open.svg` and the filmstrip |
 | `build-sounds.mjs` | `sounds/*.ogg` |
 | `build-preview.mjs` | `preview.png`, `web/og-image.*` |
+| `build-store.mjs` | `store/feature-graphic-{en,es}.*`, the Google Play feature graphic, and its 24-bit copies in `fastlane/metadata/android/*/images/featureGraphic.png` (ADR 0071) |
 
 `Type.kt` and `typography.css` are written by hand.

@@ -6,7 +6,6 @@
     <string name="ringtone_off_body">Cuando esta persona te llame, puede sonar su personaje en lugar de tu tono de siempre. Cucuto lo configura en los Contactos de Android.</string>
     <string name="ringtone_turn_on">Activar tonos de llamada</string>
     <string name="ringtone_no_ringtones">%1$s no tiene tono de llamada.</string>
-    <string name="ringtone_no_character">Primero dale una voz a este chat: su personaje trae el tono.</string>
     <string name="ringtone_linked">Contacto de Android: %1$s</string>
     <string name="ringtone_linked_unnamed">Contacto de Android vinculado</string>
     <string name="ringtone_change_contact">Cambiar</string>
@@ -37,6 +36,41 @@
     <string name="ringtone_phone_allow">Permitir</string>
     <string name="ringtone_whatsapp_hint">Las llamadas de WhatsApp suenan por su cuenta. Para oírlo también ahí, abre el chat en WhatsApp, luego Notificaciones, luego Tono de llamada, y elige «%1$s».</string>
     <string name="ringtone_whatsapp_hint_generic">Las llamadas de WhatsApp suenan por su cuenta. Para oírlo también ahí, abre el chat en WhatsApp, luego Notificaciones, luego Tono de llamada, y elígelo entre los tonos de Cucuto.</string>
+
+    <!-- Contact detail: what rings, opens the ringtone picker (#53) -->
+    <string name="ringtone_choose">elegir el tono</string>
+    <string name="ringtone_summary_none">Aún sin tono</string>
+    <string name="ringtone_summary_pick">Toca para elegir un personaje con tono</string>
+    <string name="ringtone_summary_not_used">No se usa en las llamadas</string>
+    <string name="ringtone_summary_fixed">Una versión: %1$s</string>
+    <string name="ringtone_summary_single">Un solo tono</string>
+    <string name="ringtone_summary_mixed">Distinto del personaje de los mensajes</string>
+
+    <!-- Ringtone picker (#53) -->
+    <string name="ringtone_picker_title">Tono de llamada</string>
+    <string name="ringtone_picker_subtitle">Cuando llame %1$s</string>
+    <string name="ringtone_picker_hint">Toca una portada para oírla y luego elige cómo suenan sus versiones.</string>
+    <string name="ringtone_picker_follows_voice">El mismo personaje que los mensajes</string>
+    <string name="ringtone_picker_mixed">Elegido para las llamadas. Los mensajes siguen con %1$s</string>
+    <string name="ringtone_picker_calls_only">Solo para llamadas: los mensajes aún no tienen voz</string>
+    <string name="ringtone_picker_assigned">Sonará cuando llame %1$s</string>
+    <string name="ringtone_picker_versions">Versiones</string>
+    <string name="ringtone_picker_rule">Qué versión suena</string>
+    <string name="ringtone_picker_characters">Personajes con tono</string>
+    <string name="ringtone_picker_voice_badge">Su voz</string>
+    <plurals name="ringtone_picker_versions_count">
+        <item quantity="one">%1$d versión</item>
+        <item quantity="many">%1$d versiones</item>
+        <item quantity="other">%1$d versiones</item>
+    </plurals>
+    <string name="ringtone_picker_play">Reproducir %1$s</string>
+    <string name="ringtone_picker_stop">Detener %1$s</string>
+    <string name="ringtone_picker_preview_label">escuchar y elegir</string>
+    <string name="ringtone_picker_current">Ya elegido</string>
+    <string name="ringtone_picker_pick_first">Elige un personaje</string>
+    <string name="ringtone_picker_empty_title">Aún no hay tonos</string>
+    <string name="ringtone_picker_empty_body">Ninguno de tus packs tiene tonos. Importa un pack con canciones en Packs o descarga uno en Descubrir.</string>
+    <string name="ringtone_picker_failed">No se ha podido guardar el tono. Vuelve a intentarlo.</string>
 
     <!-- Permission explanations -->
     <string name="ringtone_contacts_title">¿Dejas que Cucuto ponga tonos?</string>

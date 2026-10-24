@@ -166,6 +166,7 @@ class AppNavigatorTest {
                 ada,
                 CucutoDestination.Picker(),
                 CucutoDestination.ContactDetail(ada.chat!!),
+                CucutoDestination.RingtonePicker(ada.chat!!),
                 CucutoDestination.HapticEditor(),
                 CucutoDestination.HapticEditor(HapticTarget.Chat(ada.chat!!)),
                 CucutoDestination.HapticEditor(

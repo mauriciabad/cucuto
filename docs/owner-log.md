@@ -282,3 +282,131 @@ pattern" in the haptic editor and the creators, is #217; auto haptics from the w
 > when you finish this, run 2 agents that make the private packs about pokemon and kk i asked for initially (i think the plan file has more details)
 
 (Two agents build the private Pokémon and K.K. Slider packs under the gitignored `private/` folder, per the brief; nothing is committed or uploaded, and the zips go to the phone over adb.)
+
+## 2026-10-23 — Issue #135 (bug report form: "Website on mobile has margin on the right", part: website or PWA pack creator)
+
+> The main nav messes up with the body width and overflows making a visual glitch.
+> Besides fixing this specific case, would be nice to ensure that the body cannot have this typical overflow issue.
+
+(Fixed in the PR that closes #135. The header nav was already clipped by #192, but between 641 and about 675 px it
+still ran past the screen and hid its last link; it now shrinks and scrolls. Long inline code on
+`/authors/pack-format/` made that page 778 px wide on phones; it now wraps. `web/tests/overflow.e2e.ts` checks
+every page in both languages at 320, 360 and 656 px so the overflow cannot come back unnoticed.)
+
+> make sure agents are not blocked
+
+> i should be able to pick a diferent character for the ringtone than the notification. usually packs will be just one of them, so if tweet the bird has no ringtone, i can easily select one from the pther packs. an dif it had, i should be able to change it also. and when selecting pack there should be a filter based on this so i see the apropiate ones.
+>
+> on the kk pack, the sounds should be ringtones, not notifications. and when playing they should play longer and from the beginig.
+>
+> in discover the chiptune critters is duplicated as cucuto demo pack.
+
+(Three agents: independent message and ringtone characters with capability filters and full-length ringtone previews from the start; Discover shows bundles as bundles; the private K.K. pack is rebuilt as ringtone-only, version 1.1.0.)
+
+> when i tell you things dont skip the processes. the repo sas issues and docs, so maybe those need to be updated rather than jumping into coding and risking making contradictions
+
+(Lead opened #245, #246 and #247 for the feedback above, told the agents to update the brief and ADRs before coding, and made "issue first, docs before code" a standing rule.)
+
+> and also, i didnt expect you to do them now. the app has a roadmap for something
+
+(Lead stopped the two agents. #245, #246 and #247 stay in their milestones, to be done in roadmap order.)
+
+## 2026-10-24 — Answer on #175 (Discover defaults: when repositories are checked, QR codes, default repository, previews)
+
+> 7. it has to be done eventually, make sure this is not forgotten
+>
+> other lgtm
+
+Defaults 1 to 6 and 8 stand (ADR 0029). Item 7 (haptic previews in Discover, which need haptic data in
+`repository.json`) is now tracked in #272 (milestone M5), and the brief's M5 checklist and ADR 0029 point to it.
+
+## 2026-10-24 — Answer on #194 (explainer video defaults: voice, cuts, autoplay, test accounts, poster)
+
+> dont involve humans, AI voice.
+> Dont use the real app ui not phone recordings, you can make a simplified version for the video.
+> Only english video
+
+> just a note, the point of not using real screenshots is to make the video evergreen, so if i update the ui the video doesnt get outdated.
+> would be nice that the video project files were saved so if i want to add a new feature to the video it is doable, but this is NOT a priority, just a optional nice to have.
+
+Applied: one English cut with an AI voice-over, no people, and an illustrated, evergreen UI instead of real screens
+or phone recordings. Spanish captions stay for `/es/`. The video's scenes, timeline, voice script and cues live in
+the repository as its project files. Updated `docs/explainer-video.md`, the brief, ADR 0042 and ADR 0060. The draft
+pipeline from #195 renders real screens, so its rework is #271 (M6). Muted autoplay (item 3) and the poster (item 5)
+stand. Item 4 (WhatsApp test accounts) is moot.
+
+## 2026-10-24 — Answer on #211 (owner action: app store submissions)
+
+> Google Play Store is not an option? i thought we would publish it there too. I'll make a developer account if necesary
+> f-droid would be nice, we can do it after v1.
+
+Applied: Google Play is no longer a non-goal (brief). The honest assessment is in `docs/distribution.md` (Google
+Play) and ADR 0046. Play is possible but not guaranteed: no policy bans root, LSPosed modules or AI-written code,
+but the review risks are the optional WhatsApp hook, a reviewer who can't test it, and the WhatsApp trademark. The
+owner's steps (account, one signing key via PEPK, a 12-tester closed test for 14 days) are #276. Agent work (app
+bundle, listing, review notes) is #274. F-Droid after v1 is #275. Android developer verification (2027, GitHub
+installs too) is covered by the same account. IzzyOnDroid stays not submitted.
+
+## 2026-10-24 — Answer on #229 (WhatsApp call ringtones: 1:1 calls only, com.whatsapp only, match the caller by name?)
+
+> I expect WhatsApp Business  to also be fully compatible, unless there's a clear difficulty or downside.
+
+Applied: WhatsApp Business gets automatic call ringtones too. `scope.list` lists `com.whatsapp.w4b` as a second
+optional, opt-in entry, with callers matched only against Business contacts. The static spike found no clear
+difficulty, and the device run checks it. Updated ADR 0052, ADR 0051, `docs/whatsapp-ringtone-spike.md`, the brief and
+`CLAUDE.md`. The device run #228 now covers Business. The build is #273 (M9, blocked on #228). Defaults 1 (1:1
+calls only) and 3 (caller by name) stand.
+
+## 2026-10-24 — Answer on #242 (ringtone picker and ringtone backups: defaults to confirm)
+
+> 3. preview should use the same logic as the actuall ringtone when they call, so the stopping should be the same as that (wich i doubt is cut at 30s). we may need a way to pause.
+
+Applied: a ringtone preview plays exactly what a call would (the same ring file, from the beginning, looping like
+the call), with no 30 s cut, until the user pauses or stops it or leaves the screen. It has play/pause. Updated
+ADR 0057 and the brief. The work goes into #246, whose description now carries this answer (no PR for #245/#246 was
+open yet). The other defaults stand. The two later defaults from #266 on that issue are still open for the owner.
+
+> the kk pack should be updated to use the new ringtone packs
+
+(Already done: the private K.K. pack 1.1.0 is ringtone-only and in the phone's Download folder.)
+
+> and where is the pokemon pack? is it at least planed?
+
+(Already built: the private Pokémon pack, 268 characters and 1,541 clips, is in the phone's Download folder.)
+
+> testing sounds and pictures is taking more than i would expect. but dont fix it asap
+
+(Filed as roadmap issue #279. The speedups from #269 and #277 ship in v0.1.7.)
+
+> in the kk pack the radio should be the default.
+>
+> i should be able to view the pack'rules and to edit if i want
+> and when picking a character there should be some kind of folding on the packs because there are soo many that it is hard to get to the one i want. and i would also like a button to pick (select) a random sound from a pack, and a random from every pack
+
+(The private K.K. pack was rebuilt with Radio as the default, version 1.2.0, outside the repo. The app items went into the roadmap as issues: #288 view and edit the pack's rules (M9), #289 fold packs in the pickers (M3), #290 random character from a pack or from every pack (M3).)
+
+> how can i set characters or ringtones to people that hasnt messaged me yet?
+
+(Not possible yet; the lead explained the two options in #254.)
+
+> contacts
+
+(Owner answer on #254: ADR 0065's contacts-based option is accepted, and Cucuto never reads WhatsApp's files. Implementation is #292 in M2.)
+
+> Remove the live versions from the kk pack, i wont use them
+
+(The private K.K. pack is rebuilt as version 1.3.0 with only the Radio versions, outside the repo. The 3 hidden songs keep their only take.)
+
+> delete them. just keep the latest version of each pack
+
+(Old K.K. zips and a duplicate demo zip were removed from the phone's Download folder; one file per pack remains.)
+
+> but in the app when i chose a voice for a notification sound i still see the kk songs. i dont want that. they are only ringtones. i think this flow has to be revisited because the usual will be that a pack is either notifications or ringtones, it will be rare that a character has both to select only once. mos of the times user needs to pick the notification and then the ringtone (this also includes not using the pack ringtone and using the default android one. or also just picking a ringtone). and would be nice to also see the ringtone in the header part of the person chat details (and in the home list)
+
+(Seen on v0.1.7. #281, merged and shipping in v0.1.8, removes ringtone-only characters from the voice picker and separates the two rows. The rest went into the roadmap as #298 (M9): two picks as the main flow, "Android default" and "no change" ringtone options, and the ringtone shown in the contact header and the Home list.)
+
+## 2026-10-24: final boost before agents become sporadic
+
+> we should be towards the end of development, please do a boost to finish important stuff. now i have many agents working, but tomorrow i wont have any, only sporadic ones from time to time to do small features. if this is not feasable to finish let me know
+
+(The lead started the roadmap items that can finish without the owner in parallel: the sound flow rethink #298, pack rules #288, import speed #279, the review sample chat #285, the remaining Drive backup work #163, a handoff guide for sporadic agents, and fixes for the open PRs. Work that needs the owner's phone, a second phone or the Play account can't finish without them; the lead listed it in the reply.)

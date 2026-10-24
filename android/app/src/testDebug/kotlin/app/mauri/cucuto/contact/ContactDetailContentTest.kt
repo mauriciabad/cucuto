@@ -1,5 +1,7 @@
 package app.mauri.cucuto.contact
 
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasScrollAction
@@ -12,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.DecisionOutcome
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import org.junit.Assert.assertEquals
@@ -33,7 +36,10 @@ class ContactDetailContentTest {
     private var changes = 0
     private var removals = 0
 
-    private fun show(state: ContactDetailState) {
+    private fun show(
+        state: ContactDetailState,
+        phoneCalls: (@Composable () -> Unit)? = null,
+    ) {
         compose.setContent {
             CucutoTheme(dynamicColor = false) {
                 ContactDetailContent(
@@ -46,6 +52,7 @@ class ContactDetailContentTest {
                     onToggleClip = { clip, on -> toggles += clip.name to on },
                     onGroupPolicyChange = {},
                     onConsumeFailure = {},
+                    phoneCalls = phoneCalls,
                 )
             }
         }
@@ -65,10 +72,33 @@ class ContactDetailContentTest {
                 "Play what this chat's next message will do",
                 substring = true,
             ).performClick()
-        compose.onNodeWithText("Change character").performClick()
+        // The "Messages" row opens the character picker in one tap (ADR 0063).
+        compose.onNodeWithText("Bleep the frog · Chiptune critters").performClick()
 
         assertEquals(1, simulations)
         assertEquals(1, changes)
+    }
+
+    @Test
+    fun messagesAndPhoneCallsAreTwoRowsOfTheSoundsCard() {
+        show(previewContactDetailState(), phoneCalls = { Text("Calls row") })
+
+        compose.onNodeWithText("Sounds").assertIsDisplayed()
+        compose.onNodeWithText("Messages").assertIsDisplayed()
+        compose.onNodeWithText("Calls row").assertIsDisplayed()
+    }
+
+    @Test
+    fun aGroupHasNoPhoneCallsRow() {
+        val state = previewContactDetailState()
+        val key = ChatKey("com.whatsapp", "120300000000001@g.us")
+        show(
+            state.copy(chatKey = key, chat = state.chat?.copy(key = key, isGroup = true)),
+            phoneCalls = { Text("Calls row") },
+        )
+
+        compose.onNodeWithText("Messages").assertIsDisplayed()
+        compose.onNodeWithText("Calls row").assertDoesNotExist()
     }
 
     @Test
@@ -138,7 +168,8 @@ class ContactDetailContentTest {
         )
 
         compose.onNodeWithText("No voice yet: WhatsApp's tone plays.").assertIsDisplayed()
-        compose.onNodeWithText("Choose a character").assertIsDisplayed()
+        compose.onNodeWithText("No voice yet. Tap to choose one.").performClick()
+        assertEquals(1, changes)
         compose.onNodeWithText("Choose a character to simulate a message.").assertIsDisplayed()
         compose
             .onNodeWithContentDescription(

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Progreso de la importación: cuántos sonidos e imágenes del pack se han probado ya (#241). -->
+<resources>
+    <plurals name="import_testing_count">
+        <item quantity="one">Probando %1$d de %2$d archivo</item>
+        <item quantity="many">Probando %1$d de %2$d archivos</item>
+        <item quantity="other">Probando %1$d de %2$d archivos</item>
+    </plurals>
+</resources>

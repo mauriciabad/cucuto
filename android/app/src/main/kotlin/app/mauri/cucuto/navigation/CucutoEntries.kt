@@ -24,6 +24,7 @@ import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.haptics.HapticEditorScreen
 import app.mauri.cucuto.ui.haptics.HapticTarget
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
+import app.mauri.cucuto.ui.ringtone.RingtonePickerScreen
 import app.mauri.cucuto.ui.settings.BackupExportScreen
 import app.mauri.cucuto.ui.settings.LicensesScreen
 import app.mauri.cucuto.ui.settings.SettingsScreen
@@ -63,6 +64,7 @@ fun cucutoEntries(
                 // Only this picker, and only if the user has not left it already.
                 onDone = { navigator.remove(key) },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
+                onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
         }
         entry<CucutoDestination.Setup> { SetupScreen(onNavigate = navigate, onBack = goBack) }
@@ -101,6 +103,18 @@ fun cucutoEntries(
                 onBack = goBack,
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
                 onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
+                onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
+            )
+        }
+        entry<CucutoDestination.RingtonePicker>(
+            clazzContentKey = { "ringtone/${it.chat.packageName}/${it.chat.conversationKey}" },
+        ) { key ->
+            RingtonePickerScreen(
+                chat = key.chat,
+                onBack = goBack,
+                onDone = { navigator.remove(key) },
+                onOpenPacks = { navigate(CucutoDestination.Packs) },
+                onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
         }
 

@@ -61,7 +61,6 @@ import app.mauri.cucuto.xposed.events.ModuleStatus
  * Diagnostics (issue #17): is the framework connected, is the routing table published, what did the module last
  * report, and the newest 50 decisions. "Post test notification" exercises the whole path end to end.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiagnosticsScreen(
     onBack: () -> Unit,
@@ -74,6 +73,31 @@ fun DiagnosticsScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             viewModel.postTestNotification()
         }
+    DiagnosticsContent(
+        state = state,
+        message = message,
+        testVoiceAvailable = viewModel.testVoiceAvailable,
+        onBack = onBack,
+        onEnabledChange = viewModel::setEnabled,
+        onPostTest = { requestPermission.launch(Manifest.permission.POST_NOTIFICATIONS) },
+        onAssignTestVoice = viewModel::assignTestVoice,
+        modifier = modifier,
+    )
+}
+
+/** Stateless Diagnostics, for previews and the accessibility checks. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DiagnosticsContent(
+    state: DiagnosticsState,
+    message: DiagnosticsMessage,
+    testVoiceAvailable: Boolean,
+    onBack: () -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
+    onPostTest: () -> Unit,
+    onAssignTestVoice: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -125,20 +149,20 @@ fun DiagnosticsScreen(
                         Modifier.clip(MaterialTheme.shapes.large).toggleable(
                             value = state.enabled,
                             role = Role.Switch,
-                            onValueChange = viewModel::setEnabled,
+                            onValueChange = onEnabledChange,
                         ),
                 )
             }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        onClick = { requestPermission.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                        onClick = onPostTest,
                         shapes = ButtonDefaults.shapes(),
                     ) {
                         Text(stringResource(R.string.diag_post_test))
                     }
-                    if (viewModel.testVoiceAvailable) {
-                        OutlinedButton(onClick = viewModel::assignTestVoice, shapes = ButtonDefaults.shapes()) {
+                    if (testVoiceAvailable) {
+                        OutlinedButton(onClick = onAssignTestVoice, shapes = ButtonDefaults.shapes()) {
                             Text(stringResource(R.string.diag_test_voice))
                         }
                     }

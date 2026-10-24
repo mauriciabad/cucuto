@@ -7,7 +7,7 @@ Oct 23, 2026 · @Mauri
 Build **Cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each contact a voice. The name comes from *cucut*, Catalan for cuckoo: like a cuckoo clock, it announces who's there. When a contact messages, the phone plays a random clip from the character assigned to them and fires that character's custom vibration; when they call, their ringtone plays. Write the name as "Cucuto" in prose (owner update 2026-10-23; originally lowercase); identifiers stay lowercase. Identifiers: GitHub repo `cucuto`, application ID `app.mauri.cucuto`, website `cucuto.mauri.app` (the owner points DNS there once the repo exists).
 
 - **Content comes from sound packs, never from the code.** The app ships empty. Users import pack files, or browse and download them from pack repositories. Anyone can build and share packs of anything: animals, game SFX, a friend's voice, a game's songs.
-- **Notifications and ringtones.** The same packs can carry message sounds and call ringtones. A contact can get a K.K. Slider song with its album art as ringtone, Pikachu's cries for messages, or both from one character. Ringtones can have variants (day, night, seasons, sped-up, radio) of the same song, picked by rules.
+- **Notifications and ringtones.** The same packs can carry message sounds and call ringtones. A contact can get a K.K. Slider song with its album art as ringtone, Pikachu's cries for messages, or both from one character. The message character and the ringtone character are separate choices, and most packs offer only one of the two (owner update 2026-10-24 (#245), [ADR 0063](decisions/0063-independent-voice-and-ringtone.md)). Ringtones can have variants (day, night, seasons, sped-up, radio) of the same song, picked by rules.
 - **Anyone can make packs.** A pack creator in the app and in the website (an installable PWA) lets people build packs without tools: pick images, record or import clips and songs, trim them, set haptics, export.
 - **Packs travel alone or bundled.** One file can hold a single pack or a bundle of several.
 - **Pack repositories.** Users add a repository URL (a static website, a cloud folder, optionally password-protected), browse its packs, preview them, and download the ones they like. The project website is the default repository.
@@ -17,7 +17,7 @@ Build **Cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each co
 - **It should feel like a game.** Every interaction gets sound, motion and haptics, built on the latest Material 3 Expressive guidelines.
 - **Common formats, JPEG XL preferred.** Packs accept the usual image and audio formats. JPEG XL (`.jxl`) is the recommended image format and gets first-class support where it costs little, to help it spread.
 
-Non-goals: Play Store release, support for Android 16 or older, dependence on other apps (Tasker, MacroDroid, BuzzKill), any backend, accounts or analytics, and bundling copyrighted media in the public repo.
+Non-goals: ~~Play Store release~~ (owner update 2026-10-24, #211: "i thought we would publish it there too"; Google Play is now an extra channel next to GitHub Releases, from v1 on, with no guarantee of approval, see [distribution.md](distribution.md#google-play) and [ADR 0046](decisions/0046-distribution.md); F-Droid after v1), support for Android 16 or older, dependence on other apps (Tasker, MacroDroid, BuzzKill), any backend, accounts or analytics, and bundling copyrighted media in the public repo.
 
 ## Constraints and owner decisions
 
@@ -187,7 +187,7 @@ Packs can carry call ringtones too, so a contact gets one look and sound across 
 - **Variants** are ringtone entries of the same song: day and night versions, seasons, sped-up, underwater, "action", live versus radio. Each entry has free `tags` and an optional `when` condition (`time`: day, night or an hour range; `season`; `weekday`). Day and night follow local sunrise and sunset, computed on the phone for a place the user sets (a city, coordinates, or one approximate location fix they ask for; 07:00 to 19:00 until they set one), never tracked (owner update 2026-10-23, #75; #118, [ADR 0037](decisions/0037-day-and-night-clips.md)).
 - **Clips can carry the same `when`** (#118): a night-only or day-only clip joins the random pool only while its condition holds, so a character can hop by day and croak at night. The app compiles each condition into instants for the routing table; the module only compares the clock against them.
 - Per contact, the user picks the variant rule: one fixed variant, random per call, by time of day, by season, or follow the pack's `when` conditions.
-- **Linking:** assigning a character assigns both its notification clips and its ringtones. Users can also mix: messages from Pikachu, ringtone from K.K. Slider.
+- **Linking:** the message character and the ringtone character are independent choices (owner update 2026-10-24 (#245); originally "assigning a character assigns both its notification clips and its ringtones"). Users mix freely: messages from Tweet the bird, ringtone from K.K. Slider. Until the user picks a ringtone, it follows the message character when that character has ringtones; a message character without ringtones leaves the ringtone empty or keeps the one that rang before; changing the message character never changes a ringtone the user picked ([ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
 
 Where ringtones apply:
 
@@ -195,15 +195,15 @@ Where ringtones apply:
 | --- | --- | --- |
 | Phone calls, fixed or rule-based variant | Android's per-contact ringtone (`ContactsContract.Contacts.CUSTOM_RINGTONE`) | Native; Telecom plays it and the Contacts app shows it. Needs `READ_CONTACTS` and `WRITE_CONTACTS`. Ringtone files are copied into the shared `Ringtones/cucuto/` folder through MediaStore so the system can play them. For rule-based variants the app rewrites the contact's ringtone at each boundary (time-of-day change, new season) with an inexact alarm, which needs no exact-alarm permission ([ADR 0039](decisions/0039-phone-ringtones-on-the-device.md)). |
 | Phone calls, random per call | The app re-rolls the contact's ringtone after each call (no hook) | M9 spike (#50, [ADR 0023](decisions/0023-call-ringtones-native-first.md)): Telecom runs inside `system_server` (scope `system` covers it), but no hook is needed: the app rewrites `CUSTOM_RINGTONE` when a call ends, so the next call rings with a new variant. A per-contact call vibration rides on the ringtone URI's `vibration_uri` parameter (Android 17, enabled on Pixel). Telecom hooks (`Call.getRingtone()`, `Ringer.vibrateIfNeeded`) are prepared in `spikes/m9/` as a fallback only. |
-| WhatsApp calls | Guided per-chat ringtone by default; automatic with an optional WhatsApp scope | M9 spike (#50): WhatsApp's calls are self-managed (Telecom does not ring) and its call channel has no sound, so WhatsApp rings inside its own process. By default the app exports the ringtone to `Ringtones/cucuto/` and guides the user to WhatsApp's per-chat call ringtone (one file, no variants). Owner update 2026-10-24 (#145): automatic WhatsApp call ringtones matter, so this feature alone may hook WhatsApp through an optional, opt-in scope the user enables in LSPosed after a plain explanation ([ADR 0051](decisions/0051-optional-whatsapp-scope.md)); the least intrusive hook and the scope UX are spike #215. |
+| WhatsApp calls | Guided per-chat ringtone by default; automatic with an optional WhatsApp scope | M9 spike (#50): WhatsApp's calls are self-managed (Telecom does not ring) and its call channel has no sound, so WhatsApp rings inside its own process. By default the app exports the ringtone to `Ringtones/cucuto/` and guides the user to WhatsApp's per-chat call ringtone (one file, no variants). Owner update 2026-10-24 (#145): automatic WhatsApp call ringtones matter, so this feature alone may hook WhatsApp through an optional, opt-in scope the user enables in LSPosed after a plain explanation ([ADR 0051](decisions/0051-optional-whatsapp-scope.md)); the least intrusive hook and the scope UX are spike #215. Owner update 2026-10-24 (#229): WhatsApp Business gets the same automatic call ringtones, as a second optional scope entry (`com.whatsapp.w4b`), unless the device run (#228) finds a clear difficulty ([ADR 0052](decisions/0052-whatsapp-call-ringtones.md), #273). |
 
 Contacts: each app contact links to an Android contact for phone ringtones. Match WhatsApp senders to Android contacts by phone number, and let the user confirm or pick manually.
 
 Audio for ringtones: any supported format, 5 s to 6 min, looping by default with optional seamless loop points (`loop.startMs`, `loop.endMs`), an optional fade-in, and loudness normalized for ringtone volume. The creator and the packer can cut a 2 to 3 s notification clip from a song (for example its hook) automatically.
 
-In the UI: the ringtone picker is a grid or carousel of album covers; tapping one plays it with a spinning-record animation, variant chips switch versions, and the contact detail shows both the message sound and the ringtone.
+In the UI: the ringtone picker is a grid or carousel of album covers; tapping one plays it with a spinning-record animation, variant chips switch versions, and the contact detail shows the message sound and the ringtone as two rows, "Messages" and "Phone calls", each one tap from its picker. The character picker lists only characters with notification clips and the ringtone picker only characters with ringtones, with pack filters that offer only packs that have such characters (owner update 2026-10-24 (#245), [ADR 0063](decisions/0063-independent-voice-and-ringtone.md)). Owner update 2026-10-24 (#242): a ringtone preview plays exactly what a call would (the same ring file, from the beginning, looping like the call), with no time limit, and can be paused ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md), built in #246: also on contact detail and the Packs screens, never from a loop point or a cut clip). Notification previews stay short.
 
-**The owner's K.K. Slider pack (private).** The source is the [K.K. Slider Complete Songs Collection](https://downloads.khinsider.com/game-soundtracks/album/animal-crossing-k.k.-slider-complete-songs-collection) on KHInsider: 193 files, 98 songs plus 95 "(Radio)" versions, 502 MB as MP3 or 981 MB as FLAC. One character per song, with "live" and "radio" as variants, plus an auto-cut clip for messages. Album covers come from a fan wiki. Transcoding to Opus roughly halves the size. Like the Pokémon pack, it stays in the owner's private Google Drive.
+**The owner's K.K. Slider pack (private).** The source is the [K.K. Slider Complete Songs Collection](https://downloads.khinsider.com/game-soundtracks/album/animal-crossing-k.k.-slider-complete-songs-collection) on KHInsider: 193 files, 98 songs plus 95 "(Radio)" versions, 502 MB as MP3 or 981 MB as FLAC. One character per song, with "live" and "radio" as variants. Owner update 2026-10-24 (#246): the songs are ringtones only, with no auto-cut clip for messages ("the sounds should be ringtones, not notifications"); contacts take their message voice from another pack. Album covers come from a fan wiki. Transcoding to Opus roughly halves the size. Like the Pokémon pack, it stays in the owner's private Google Drive.
 
 ## Backup and restore
 
@@ -219,8 +219,10 @@ What a backup holds (a zip named `cucuto-backup-YYYY-MM-DD.zip`, owner update 20
 Where backups go:
 
 - **Manual export** through the Storage Access Framework, for example straight into Google Drive.
-- **Automatic backup** to a folder the user picks once (persistent folder permission). It is written shortly after any change, keeping the last 10 copies.
-- Android's built-in app backup is left on for the settings database (no packs, no secrets) as a bonus, but nothing depends on it.
+- **Automatic backup** to a folder the user picks once (persistent folder permission). It is written shortly after any change, keeping the last 10 copies. Or to one file the user picks, for example in Google Drive, replaced on each change ([ADR 0040](decisions/0040-google-drive-backups-and-pack-folders.md)). Automatic backups are never encrypted and never hold credentials ([ADR 0028](decisions/0028-settings-and-backup-ui.md)).
+- Cucuto itself uploads nothing: a backup goes only where the user chooses.
+- Android's built-in app backup and device-to-device transfer are off: `data_extraction_rules.xml` excludes every domain, so nothing reaches Google through them ([ADR 0001](decisions/0001-android-build-and-versions.md)). Correction 2026-10-24 (#256): this line used to say Android backup stayed on for the settings database; the app has shipped with it off since #69 (owner can override on #262).
+- Never in a backup: device-specific state, such as the automatic backup target, permissions and the location for day and night clips ([ADR 0037](decisions/0037-day-and-night-clips.md)). Settings travel only from an explicit list ([ADR 0013](decisions/0013-backup-and-restore.md)).
 
 Restore on a new phone:
 
@@ -295,7 +297,7 @@ Tech and deployment:
 Images and media:
 
 - JPEG XL preferred, never required. Serve images with a `<picture>` element: a `.jxl` source first, then AVIF or PNG fallbacks generated at build time. Chrome 155 and later decode JPEG XL by default (since October 2026), Safari since version 17; Firefox still needs a preference ([JPEG XL in Chrome](https://developer.chrome.com/blog/jpeg-xl-in-chrome)).
-- The explainer video is produced by a separate subagent from the brief in [`explainer-video.md`](explainer-video.md). The site expects `web/static/video/explainer.webm` and `.mp4`, a poster (served as JPEG XL with fallbacks, ADR 0042) and WebVTT captions. Lazy-loaded, never autoplays with sound.
+- The explainer video is produced by a separate subagent from the brief in [`explainer-video.md`](explainer-video.md). Owner update 2026-10-24 (#194): no humans, an AI voice, English only, and no real app UI or phone recordings: a simplified, illustrated version of the UI, so the video stays evergreen when the app changes; its project files are kept so new features can be added later (pipeline rework: #271). The site expects `web/static/video/explainer.webm` and `.mp4`, a poster (served as JPEG XL with fallbacks, ADR 0042) and WebVTT captions. Lazy-loaded, never autoplays with sound.
 - Screenshots come from the app running the demo packs, captured by a script so they can be regenerated on every release.
 
 Design: same visual language as the app (Material 3 Expressive color, shape and spring motion), light and dark themes, responsive, accessible, Lighthouse scores of 95 or more.
@@ -354,8 +356,8 @@ Authentication:
 In the app (Discover screen):
 
 1. **Repositories:** the default one plus user-added ones. Add by URL, QR code, or the deep link `cucuto://repo/add?url=…` from a website.
-2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges.
-3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched.
+2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges. A bundle is one card with its packs inside, each with its own badge, and a pack the repository also lists on its own shows only there, so nothing appears twice (owner report 2026-10-24, #247, [ADR 0064](decisions/0064-bundles-in-discover.md)).
+3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched. The index carries each character's haptic (`x-haptic`) and the phone computes auto envelopes from the sample (owner update 2026-10-24 (#272), [ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 4. **Download:** animated progress, then size and SHA-256 checks, then the standard importer (bundles show their pack checklist).
 5. **Updates:** repositories are checked when the app opens, with ETag caching. No background jobs.
 
@@ -385,8 +387,9 @@ In the website (PWA):
 - A **Create** page, installable as a PWA and usable offline (service worker, web app manifest). Where the browser supports file handling, the installed PWA opens pack files directly (`file_handlers` for `application/zip` / `.zip`; owner update 2026-10-23).
 - Audio is decoded and trimmed with the Web Audio API and recorded with MediaRecorder. Encode with WebCodecs where the browser supports the codec, otherwise fall back to WAV (a WebAssembly encoder would need `'wasm-unsafe-eval'` in the site's CSP; [ADR 0038](decisions/0038-web-pack-creator.md)). Layout, file names and clip processing are the shared Kotlin of both creators (`authoring` in `shared/pack-spec`).
 - Images are cropped on a canvas and written as JPEG XL where the browser can encode it, otherwise WebP, PNG or JPEG (ADR 0038).
-- Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews.
-- Haptic patterns are edited visually. Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
+- Packs are zipped in the browser and downloaded. A "host your own repository" helper takes several packs and produces a ready-to-upload folder with `repository.json` and previews, the same as `packer index` (shared `RepositoryIndexer`), with steps for GitHub Pages and other hosts (#191, [ADR 0058](decisions/0058-create-page-tools.md)). A bundle tool combines finished packs like `packer bundle`.
+- Drafts are saved in the browser (IndexedDB) after every change, and an existing `.soundpack.zip` opens as a draft with the same pass-through rules as the app's duplicate-and-edit (ADR 0058).
+- Haptic patterns are edited visually, with the app's "Copy for AI" and "Paste pattern" (shared Kotlin, ADR 0058). Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
 
 Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. One Kotlin implementation (`shared/pack-spec`) validates everywhere: in `packer`, in the app, and on the website compiled to JavaScript (owner, #60: option 1; Kotlin/JS rather than Wasm per ADR 0022, #116). It runs against the same fixtures in CI, so a pack made anywhere imports everywhere. Whether more of the PWA creator can be shared Kotlin (Kotlin/Wasm) is spike #117.
 
@@ -434,8 +437,8 @@ Screens:
 
 1. **Status and onboarding.** One card that turns green when everything works: module active in `system_server`, correct LSPosed scope, WhatsApp detected, at least one pack installed. Each failing check has a one-tap fix or a clear instruction.
 2. **Home (contacts).** A list of chats with their character's sprite as avatar. A "recent senders" strip shows people who messaged recently and have no character yet. Search, filter by pack, and a FAB to assign.
-3. **Character picker.** A grid of sprites or album covers grouped by pack. Tap previews (sprite bounces, clip plays, haptic fires). A second tap assigns.
-4. **Contact detail.** Assigned character, the clip pool with per-clip toggles, the ringtone with its variant rule and linked Android contact, haptic override, group policy (one character for the group, or per sender), and a "Simulate message" button that runs the real pipeline.
+3. **Character picker.** A grid of sprites or album covers grouped by pack, with only the characters that have notification clips (owner update 2026-10-24 (#245)). Tap previews (sprite bounces, clip plays, haptic fires). A second tap assigns.
+4. **Contact detail.** Two rows, "Messages" (the assigned character) and "Phone calls" (the ringtone), each one tap from its picker (owner update 2026-10-24 (#245)); the clip pool with per-clip toggles, the ringtone's variant rule and linked Android contact, haptic override, group policy (one character for the group, or per sender), and a "Simulate message" button that runs the real pipeline.
 5. **Packs.** Installed packs as a carousel, import from a file, create a new pack (see Pack creator), pack detail with all characters, update and remove.
 6. **Discover.** Browse pack repositories, preview and download packs, manage repositories and their credentials (see Pack repositories).
 7. **Haptic editor.** See the Haptics section.
@@ -477,7 +480,7 @@ The Android side is Kotlin, Jetpack Compose and the libxposed API 102 in one Gra
 | Audio in app | `SoundPool` for previews (the app is in the foreground, so Android 17's background limits do not apply) | Decoding with `MediaExtractor` and `MediaCodec` for the auto-haptic analysis |
 | Hooking | [libxposed API](https://github.com/libxposed/api) 102, `compileOnly` | `minApiVersion` and `targetApiVersion` 102; modules targeting 102 cannot call the legacy Xposed API, so don't |
 | Module scope | System Framework only: `system` in `scope.list`, which is `system_server` for modern modules ([ADR 0002](decisions/0002-xposed-scope-system.md); `android` would be wrong) | Never scope WhatsApp |
-| Root utilities | libsu | Optional: read WhatsApp's contact database, run diagnostics |
+| Root utilities | None for now (libsu was planned) | Cucuto reads none of WhatsApp's files, so the root import that needed libsu is not built. Default; the owner can override it on #254 ([ADR 0065](decisions/0065-chats-before-they-message.md)). |
 | Website | SvelteKit (Svelte 5) with the static adapter, TypeScript, service worker and web app manifest for the PWA; Bun for installs and scripts (owner, #63; #115) | Deployed by GitHub Actions to GitHub Pages (#55) |
 | Tests | JUnit and Turbine (unit), Compose UI tests, Playwright for the site, a device test checklist |  |
 | CI | GitHub Actions: Android build, lint and tests; web build; demo packs and repository index; media allowlist guard; release APK on tag |  |
@@ -506,7 +509,7 @@ How the app and the module talk:
 - **Clip files (system to app):** an exported read-only `ContentProvider` at `content://<appId>.clips/<pack>/<character>/<clip>`. It checks the calling UID and allows only the system and the process that actually opens notification sounds (historically SystemUI's ringtone player; confirm in M0). It refuses everyone else.
 - **Seen senders (module to app):** the module posts a lightweight event (package, conversation key, display name, group flag) that the app records. The event goes through the provider or a protected broadcast, so the home screen can offer "recent senders" for one-tap assignment.
 
-Contact identity: the stable key is `package + conversation key`. Prefer the notification's conversation shortcut ID if M0 shows it is the WhatsApp JID; otherwise fall back to the MessagingStyle conversation title. With root, the app can optionally read WhatsApp's local contact database to list all chats and groups with their JIDs; treat that schema as unstable and fail softly.
+Contact identity: the stable key is `package + conversation key`. Prefer the notification's conversation shortcut ID if M0 shows it is the WhatsApp JID; otherwise fall back to the MessagingStyle conversation title. Contacts who have not written yet can be added from Android's contacts: WhatsApp's own sync adapter keeps an entry with a phone JID for each WhatsApp contact saved on the phone. Cucuto reads those entries (`READ_CONTACTS`, already used for phone ringtones), never WhatsApp's database. The chat's `@lid` is linked by name on its first notification. Groups appear when they first notify. This is a default the owner can override on #254 ([ADR 0065](decisions/0065-chats-before-they-message.md)); the kickoff plan was a root read of WhatsApp's local database.
 
 ## Milestones and acceptance criteria
 
@@ -537,7 +540,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M2 — Contacts and senders
 
 - [ ] "Recent senders" feed from the module, with one-tap assignment.
-- [ ] Optional root import of all WhatsApp chats and groups.
+- [ ] Add chats before they message, from Android's contacts (WhatsApp's own entries there), not from WhatsApp's database. Groups come from notifications. Default; owner can override on #254 ([ADR 0065](decisions/0065-chats-before-they-message.md); was "optional root import of all WhatsApp chats and groups").
 - [ ] Group policy: one character per group, or per sender inside a group.
 - [ ] WhatsApp Business supported with the same flows.
 
@@ -556,7 +559,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M5 — Pack repositories and bundles
 
 - [ ] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
-- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges.
+- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 - [ ] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
 - [ ] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
 - [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.
@@ -575,14 +578,16 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] Backup and restore: manual export, automatic backups to a chosen folder, optional encryption, and a tested restore on a wiped phone.
 - [ ] CI green, including the media allowlist guard.
 - [ ] Signed release APK on GitHub Releases, linked from the website.
+- [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274, ready: [ADR 0071](decisions/0071-google-play-bundle-and-listing.md), [google-play.md](google-play.md)); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
+- [ ] After v1: F-Droid, reproducible and signed with Cucuto's key (#275).
 - [ ] The owner imports the private packs from Google Drive on a clean install and everything works end to end.
 
 ### M8 — Pack creator (v1.1; can move earlier)
 
 - [ ] In-app creator: pack details, characters, sprite crop, import or record clips, waveform trim, normalize, haptics, validate, export or install.
 - [ ] Duplicate-and-edit for installed packs.
-- [x] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser (#48, [ADR 0038](decisions/0038-web-pack-creator.md); covers, bundles and custom haptics follow).
-- [ ] "Host your own repository" helper that outputs a folder with `repository.json` and previews.
+- [x] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser (#48, [ADR 0038](decisions/0038-web-pack-creator.md); covers, bundles, custom haptics, drafts and editing existing packs in #191, [ADR 0058](decisions/0058-create-page-tools.md)).
+- [x] "Host your own repository" helper that outputs a folder with `repository.json` and previews (#191, ADR 0058).
 - [ ] Golden test packs run through `shared/pack-spec` on the JVM (packer), on Android and in the browser build used by the website, all green in CI (#116).
 
 ### M9 — Ringtones (v1, before the M7 release)
@@ -590,8 +595,9 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [x] Spike first: confirm Telecom's ringer hook point and scope for random-per-call, and find out how WhatsApp plays its call ringtone (static phase: [M9 report](m9-report.md), ADR 0023; device run pending).
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
 - [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
-- [ ] Album-cover ringtone picker with preview and variant chips; contact linking by phone number.
-- [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215: static phase in the [WhatsApp ringtone spike](whatsapp-ringtone-spike.md), ADR 0052; device run #228), compatible with WaEnhancer X. Without the scope, the guided per-chat ringtone.
+- [x] Album-cover ringtone picker with preview and variant chips; contact linking by phone number ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md)).
+- [x] Message character and ringtone chosen independently, pickers filtered by what each character offers, ringtone previews that play like the call from the start (owner, #245, #246 and #242; [ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
+- [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215: static phase in the [WhatsApp ringtone spike](whatsapp-ringtone-spike.md), ADR 0052; device run #228; build #273), compatible with WaEnhancer X, for WhatsApp and WhatsApp Business (owner update 2026-10-24, #229). Without the scope, the guided per-chat ringtone.
 - [ ] The owner's K.K. Slider pack assigned to several contacts, with day and night variants switching correctly.
 
 Later ideas, out of scope for v1: other messengers (Telegram, Signal, SMS), a home-screen widget, MEGA links as a pack source, community pack submissions to the official repository.
@@ -614,6 +620,7 @@ The biggest risk is framework internals shifting under the hook; the mitigations
 | Google Drive and MEGA links are unreliable hosts | Failed downloads | Recommend static hosts for public repositories; use the Drive API (not public links) for Drive folders; treat MEGA as a later, SDK-based source. |
 | Losing the phone | All assignments gone | Automatic backups to a user-chosen folder (for example Google Drive), tested restore. |
 | Copyrighted media leaks into the public repo | Takedown risk | `.gitignore`, CI media allowlist, demo-pack-only screenshots and video. |
+| Google Play rejects or removes Cucuto (root and LSPosed, the optional WhatsApp hook read as interfering with other apps, the WhatsApp trademark) | Play listing lost; account strikes | Play is an extra channel only; GitHub Releases and Obtainium stay the main one. No "WhatsApp" in the name, icon or developer name; review notes explain the hook; rejections are answered, never resubmitted unchanged ([distribution.md](distribution.md#google-play), #276). |
 | Very rapid bursts of messages | Clips cut each other off | The system already plays one notification sound at a time; cooldown softens bursts. Optional per-contact minimum gap in settings. |
 
 Open questions for the owner (answer before M1 unless noted):

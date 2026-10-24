@@ -43,14 +43,16 @@ class DiscoverViewModelTest {
     private val catalog = FakeCatalog()
     private val links = IncomingRepoLinks()
     private val demoRequests = DemoPacksRequests()
-    private val client = testClient()
+    private val dispatchers = DiscoverTestDispatchers()
+    private val http = testHttpClient()
+    private val client = testClient(http, dispatchers.io)
     private lateinit var indexCache: FileIndexCache
 
     private val defaultPath = "/repo/index.json"
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(dispatchers.main)
         server = repositoryServer()
         server.dispatcher = routes
         store = FakeDiscoverStore(server.at(defaultPath).toString())
@@ -60,6 +62,7 @@ class DiscoverViewModelTest {
     @After
     fun tearDown() {
         server.close()
+        http.shutDown()
         Dispatchers.resetMain()
     }
 
@@ -69,12 +72,13 @@ class DiscoverViewModelTest {
                 store = store,
                 client = client,
                 indexCache = indexCache,
-                previews = PreviewStore(client, tmp.newFolder()),
+                previews = PreviewStore(client, tmp.newFolder(), dispatchers.io),
                 downloader = PackDownloader(client, catalog, tmp.newFolder()),
                 catalog = catalog,
                 links = links,
                 demoRequests = demoRequests,
-            )
+                sampleHaptics = SampleHaptics.None,
+            ).also { it.ioDispatcher = dispatchers.io }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         return vm
     }
@@ -173,6 +177,45 @@ class DiscoverViewModelTest {
             )
             vm.clearFilters()
             assertFalse(vm.state.value.filtering)
+        }
+
+    @Test
+    fun `a bundle shows once with its packs inside, and a pack inside it installs alone`() =
+        runTest(timeout = 30.seconds) {
+            // The default repository's shape (#247): the bundle, then the packs it contains, each on its own too.
+            serveDefault(
+                demoBundleEntry(),
+                packEntry("app.mauri.demo.cats", "Cats", tags = listOf("animals"), character = "Tabby"),
+                packEntry("app.mauri.demo.bells", "Bells", tags = listOf("objects"), character = "Ding"),
+            )
+            routes["/repo/packs/app.mauri.demo.bells-1.0.0.soundpack.zip"] = ok(packBytes)
+            store.installed.value = listOf(InstalledRef("app.mauri.demo.cats", "1.0.0", null, null))
+            val vm = viewModel()
+
+            val section = vm.awaitState { it.sections?.firstOrNull()?.loaded == true }.section()
+            val bundle = section.cards.single()
+            assertEquals(DEMO_BUNDLE_ID, bundle.id)
+            assertEquals(1, section.totalCards)
+            assertEquals(listOf("Cats", "Bells"), bundle.members.map { it.name })
+            assertEquals(listOf(InstallState.INSTALLED, InstallState.NEW), bundle.members.map { it.state })
+            assertEquals(InstallState.NEW, bundle.state)
+            assertEquals(1, bundle.installedMembers)
+
+            // Searching for a character inside finds the bundle once; so does a pack's tag.
+            vm.setQuery("tabby")
+            val searched = vm.awaitState { it.query == "tabby" }
+            assertEquals(listOf(DEMO_BUNDLE_ID), searched.section().cards.map { it.id })
+            vm.setQuery("")
+            vm.toggleTag("objects")
+            val tagged = vm.awaitState { it.tag == "objects" }
+            assertEquals(listOf(DEMO_BUNDLE_ID), tagged.section().cards.map { it.id })
+            vm.clearFilters()
+
+            // Bells' row installs Bells alone, from its own entry.
+            vm.install(bundle.members[1].card!!)
+            vm.awaitState { it.import is ImportUi.Review }
+            assertTrue(routes.paths().contains("/repo/packs/app.mauri.demo.bells-1.0.0.soundpack.zip"))
+            assertTrue(routes.paths().none { it.contains(DEMO_BUNDLE_ID) })
         }
 
     @Test

@@ -14,6 +14,8 @@ export type PagePath =
 	| '/'
 	| '/packs/'
 	| '/create/'
+	| '/create/bundle/'
+	| '/create/repository/'
 	| '/install/'
 	| '/authors/'
 	| '/authors/pack-format/'
@@ -36,6 +38,8 @@ export function linkValues(locale: Locale): Record<string, string> {
 		home: pageHref('/', locale),
 		packs: pageHref('/packs/', locale),
 		create: pageHref('/create/', locale),
+		createBundle: pageHref('/create/bundle/', locale),
+		createRepository: pageHref('/create/repository/', locale),
 		install: pageHref('/install/', locale),
 		authors: pageHref('/authors/', locale),
 		packFormat: pageHref('/authors/pack-format/', locale),

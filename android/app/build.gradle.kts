@@ -17,6 +17,16 @@ val storeScreenshots: Directory = layout.projectDirectory.dir("../../fastlane/me
 val exportStoreScreenshots =
     gradle.startParameter.taskNames.any { it.substringAfterLast(':') == "exportStoreScreenshots" }
 
+// Where `renderExplainerFrames` writes the explainer video's frames (ADR 0060), and whether this build runs it.
+val explainerFrames: Provider<Directory> = layout.buildDirectory.dir("explainer/frames")
+val renderExplainer =
+    gradle.startParameter.taskNames.any {
+        it.substringAfterLast(
+            ':',
+        ) in setOf("renderExplainerFrames", "explainerDraft")
+    }
+val explainerLanguages: Provider<String> = providers.gradleProperty("explainer.languages").orElse("en")
+
 android {
     namespace = "app.mauri.cucuto"
 
@@ -34,6 +44,14 @@ android {
         generateLocaleConfig = true
         // Ship only the app's languages, so library strings never mix a third language into the UI.
         localeFilters += listOf("en", "es")
+    }
+
+    bundle {
+        // The Play bundle keeps both languages in the base APK (ADR 0071): the language is picked per app (ADR 0036),
+        // and Play clients that only fetch the phone language's split would leave the other one without strings.
+        language {
+            enableSplit = false
+        }
     }
 
     buildFeatures {
@@ -69,6 +87,19 @@ android {
                 it.systemProperty("cucuto.screenshots.store", storeScreenshots.asFile.absolutePath)
                 it.outputs.upToDateWhen { false }
             }
+            if (renderExplainer) {
+                // Only the video's frame tests, which skip themselves without these properties.
+                it.filter.includeTestsMatching("app.mauri.cucuto.video.*")
+                it.filter.isFailOnNoMatchingTests = false
+                it.systemProperty("cucuto.video.frames", explainerFrames.get().asFile.absolutePath)
+                it.systemProperty("cucuto.video.languages", explainerLanguages.get())
+                it.inputs
+                    .dir("../../brand")
+                    .withPropertyName("brand")
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
+                it.outputs.dir(explainerFrames)
+                it.outputs.upToDateWhen { false }
+            }
         }
     }
 
@@ -96,6 +127,36 @@ tasks.register("exportStoreScreenshots") {
     group = "verification"
     description = "Records the screenshot tests and writes the store listing's screenshots to fastlane/metadata/."
     dependsOn("recordRoborazziDebug")
+}
+
+// Explainer video draft (ADR 0060, docs/explainer-video.md): the frame tests render every shot from the app's real
+// screens on the test clock; tools/video/explainer.main.kts then adds the stage, the sound and the captions with
+// ffmpeg. `-Pexplainer.languages=en,es` renders the Spanish cut too.
+tasks.register("renderExplainerFrames") {
+    group = "explainer"
+    description = "Renders the explainer video's frames into build/explainer/frames/ (no device needed)."
+    dependsOn("testDebugUnitTest")
+}
+
+tasks.register<Exec>("explainerDraft") {
+    group = "explainer"
+    description =
+        "Renders the frames and assembles the explainer video draft in build/explainer/ (needs ffmpeg, kotlin)."
+    dependsOn("renderExplainerFrames")
+    workingDir = layout.projectDirectory.dir("../..").asFile
+    commandLine(
+        "kotlin",
+        "tools/video/explainer.main.kts",
+        "--frames",
+        explainerFrames.get().asFile.absolutePath,
+        "--out",
+        layout.buildDirectory
+            .dir("explainer")
+            .get()
+            .asFile.absolutePath,
+        "--languages",
+        explainerLanguages.get(),
+    )
 }
 
 // Brand UI sounds (brand/sounds/*.ogg) become R.raw.ui_* through a generated resource directory.
@@ -149,6 +210,10 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material.color.utilities)
+    // Compiles the Baseline Profile at install time outside Play (F-Droid, Obtainium, GitHub); :baselineprofile
+    // generates it on a device (#226, docs/baseline-profile.md).
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(projects.baselineprofile)
 
     // Compose UI tests on the JVM (Robolectric) live in src/testDebug: the test activity comes from the
     // debug-only ui-test-manifest.

@@ -6,6 +6,11 @@ import android from '@material-symbols/svg-500/rounded/android.svg?raw';
 import audioFile from '@material-symbols/svg-500/rounded/audio_file.svg?raw';
 import close from '@material-symbols/svg-500/rounded/close.svg?raw';
 import contentCut from '@material-symbols/svg-500/rounded/content_cut.svg?raw';
+import contentCopy from '@material-symbols/svg-500/rounded/content_copy.svg?raw';
+import contentPaste from '@material-symbols/svg-500/rounded/content_paste.svg?raw';
+import folderOpen from '@material-symbols/svg-500/rounded/folder_open.svg?raw';
+import noteAdd from '@material-symbols/svg-500/rounded/note_add.svg?raw';
+import undo from '@material-symbols/svg-500/rounded/undo.svg?raw';
 import deleteIcon from '@material-symbols/svg-500/rounded/delete.svg?raw';
 import graphicEq from '@material-symbols/svg-500/rounded/graphic_eq.svg?raw';
 import mic from '@material-symbols/svg-500/rounded/mic.svg?raw';
@@ -58,6 +63,11 @@ const sources = {
 	'audio-file': audioFile,
 	close,
 	'content-cut': contentCut,
+	'content-copy': contentCopy,
+	'content-paste': contentPaste,
+	'folder-open': folderOpen,
+	'note-add': noteAdd,
+	undo,
 	delete: deleteIcon,
 	'graphic-eq': graphicEq,
 	mic,

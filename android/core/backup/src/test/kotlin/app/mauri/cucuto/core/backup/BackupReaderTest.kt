@@ -10,6 +10,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -75,12 +76,23 @@ class BackupReaderTest {
         val text = File(fixturesDir, "valid/backup.json").readText()
         val document = BackupJson.decodeFromString(BackupDocument.serializer(), text)
         assertEquals("app.mauri.cucuto", document.app.id)
-        assertEquals(2, document.contacts.size)
+        assertEquals(5, document.contacts.size)
         val ada = document.contacts.first()
         assertEquals("frog", ada.message!!.characterId)
         assertEquals(listOf("characters/frog/clips/croak.ogg"), ada.message!!.disabledClips)
         assertEquals(BackupRingtoneMode.FIXED, ada.ringtone!!.rule.mode)
-        assertEquals(BackupGroupPolicy.PER_SENDER, document.contacts[1].groupPolicy)
+        val bruno = document.contacts[1].ringtone!!
+        assertEquals(true, bruno.followsVoice)
+        assertEquals(BackupRingtoneMode.TIME, bruno.rule.mode)
+        assertEquals("content://media/external/audio/media/1042", bruno.undo!!.writtenUri)
+        assertEquals("content://media/internal/audio/media/31", bruno.undo!!.originalRingtone)
+        val carla = document.contacts[2]
+        assertEquals("bird", carla.message!!.characterId)
+        assertEquals(true to "bubblegum", carla.ringtone!!.followsVoice to carla.ringtone!!.characterId)
+        val dani = document.contacts[3]
+        assertNull(dani.message)
+        assertEquals(BackupRingtoneMode.RANDOM, dani.ringtone!!.rule.mode)
+        assertEquals(BackupGroupPolicy.PER_SENDER, document.contacts[4].groupPolicy)
         assertEquals(listOf("com.example.private.songs.day"), document.packs[1].packIds)
         assertEquals(BackupAuthType.BASIC, document.repositories[1].auth.type)
 

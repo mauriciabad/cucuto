@@ -28,11 +28,24 @@ class FakeAuthorizer(
     }
 }
 
+/**
+ * One OkHttp client for every test, as OkHttp recommends (#261): a new one per call left its threads and connections
+ * behind. Each test has its own server, and [closeServer] drops its connections, so a later server on the same port
+ * never gets an old connection.
+ */
+private val testHttpClient = OkHttpClient()
+
+/** Stops [this] server and drops the client's connections to it. For `@After`. */
+fun MockWebServer.closeServer() {
+    close()
+    testHttpClient.connectionPool.evictAll()
+}
+
 /** A client against [server], plain HTTP (the production client is HTTPS only). */
 fun MockWebServer.driveClient(authorizer: DriveAuthorizer = FakeAuthorizer()): DriveClient =
     DriveClient(
         authorizer = authorizer,
-        httpClient = OkHttpClient(),
+        httpClient = testHttpClient,
         apiBase = url("/drive/v3/"),
         uploadBase = url("/upload/drive/v3/"),
     )

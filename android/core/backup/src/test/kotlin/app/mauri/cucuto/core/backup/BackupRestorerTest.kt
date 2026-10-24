@@ -8,6 +8,8 @@ import app.mauri.cucuto.core.data.db.ContactKeyKind
 import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.PackRepositoryEntity
+import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -15,6 +17,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -70,23 +73,47 @@ class BackupRestorerTest {
     fun `restoring twice changes nothing the second time`() =
         runTest {
             val first = restorer.restore(fixture, encrypted = false)
-            assertEquals(2, first.created)
-            assertEquals(listOf(VoiceOutcome.APPLIED, VoiceOutcome.NONE), first.contacts.map { it.voice })
-            assertEquals(1, first.ringtonesPending)
+            assertEquals(5, first.created)
+            assertEquals(
+                listOf(
+                    VoiceOutcome.APPLIED,
+                    VoiceOutcome.APPLIED,
+                    VoiceOutcome.APPLIED,
+                    VoiceOutcome.NONE,
+                    VoiceOutcome.NONE,
+                ),
+                first.contacts.map { it.voice },
+            )
+            assertEquals(4, first.ringtonesApplied)
             val contactsAfterFirst = db.contactDao().observeAll().first()
             val assignmentsAfterFirst = db.assignmentDao().observeAll().first()
+            val ringtonesAfterFirst = db.phoneRingtoneDao().observeAll().first()
 
             clock.time += 60_000
             val second = restorer.restore(fixture, encrypted = false)
             assertEquals(0, second.created)
             assertEquals(
-                listOf(ContactMatch.MESSENGER_KEY, ContactMatch.MESSENGER_KEY),
+                List(5) { ContactMatch.MESSENGER_KEY },
                 second.contacts.map { it.match },
             )
-            assertEquals(listOf(VoiceOutcome.UNCHANGED, VoiceOutcome.NONE), second.contacts.map { it.voice })
+            assertEquals(
+                listOf(
+                    VoiceOutcome.UNCHANGED,
+                    VoiceOutcome.UNCHANGED,
+                    VoiceOutcome.UNCHANGED,
+                    VoiceOutcome.NONE,
+                    VoiceOutcome.NONE,
+                ),
+                second.contacts.map { it.voice },
+            )
+            assertEquals(
+                List(4) { RingtoneOutcome.UNCHANGED },
+                second.ringtones.map { it.outcome },
+            )
             assertEquals(emptyList<String>(), second.repositoriesAdded)
             assertEquals(contactsAfterFirst, db.contactDao().observeAll().first())
             assertEquals(assignmentsAfterFirst, db.assignmentDao().observeAll().first())
+            assertEquals(ringtonesAfterFirst, db.phoneRingtoneDao().observeAll().first())
         }
 
     @Test
@@ -232,6 +259,75 @@ class BackupRestorerTest {
             credentials.entries.clear()
             val skipped = restorer.restore(invalid, encrypted = true)
             assertTrue(url in skipped.credentialsSkipped)
+        }
+
+    @Test
+    fun `phone ringtones come back with their character, rule and the old phone's Android contact`() =
+        runTest {
+            val report = restorer.restore(fixture, encrypted = false)
+            val ada = report.ringtones.single { it.backupId == "c1" }
+            assertEquals(RingtoneOutcome.APPLIED, ada.outcome)
+            assertEquals("0r1-ABC", ada.androidContact!!.lookupKey)
+            assertNull(ada.undo)
+            val adaRow = db.phoneRingtoneDao().get(ada.contactId)!!
+            // Mixed: the ringtone is another character than the voice (frog).
+            assertEquals("com.example.private.songs.day" to "bubblegum", adaRow.packId to adaRow.characterId)
+            assertEquals(RingtoneMode.FIXED, adaRow.mode)
+            assertEquals("characters/bubblegum/ringtones/live.ogg", adaRow.variant)
+
+            val bruno = report.ringtones.single { it.backupId == "c2" }
+            val brunoRow = db.phoneRingtoneDao().get(bruno.contactId)!!
+            // Follows the voice: no character of its own, so a later voice change changes the ringtone too.
+            assertNull(brunoRow.packId)
+            assertNull(brunoRow.characterId)
+            assertTrue(brunoRow.followsVoice)
+            assertEquals(RingtoneMode.TIME, brunoRow.mode)
+            assertNull(brunoRow.variant)
+            assertEquals("content://media/external/audio/media/1042", bruno.undo!!.writtenUri)
+            // The undo record is the app's to seed (it needs the contacts permission), never the restorer's.
+            assertEquals(emptyList<Any>(), db.phoneRingtoneDao().writes())
+            assertFalse("picked by the user", adaRow.followsVoice)
+
+            // Kept (ADR 0063): the voice (a bird) has no ringtones, so the song that rang stays and still follows.
+            val carla = db.phoneRingtoneDao().get(report.ringtones.single { it.backupId == "c3" }.contactId)!!
+            assertEquals("com.example.private.songs.day" to "bubblegum", carla.packId to carla.characterId)
+            assertTrue(carla.followsVoice)
+
+            // A ringtone and no message voice: the two are independent.
+            val dani = report.contacts.single { it.backupId == "c4" }
+            assertNull(db.assignmentDao().get(dani.contactId))
+            val daniRow = db.phoneRingtoneDao().get(dani.contactId)!!
+            assertEquals("bubblegum", daniRow.characterId)
+            assertFalse(daniRow.followsVoice)
+            assertEquals(RingtoneMode.RANDOM, daniRow.mode)
+        }
+
+    @Test
+    fun `a phone ringtone set on this phone is kept until the user overwrites the contact`() =
+        runTest {
+            val ada = contact("Ada", "com.whatsapp" to adaKey)
+            val mine = PhoneRingtoneEntity(ada, "com.example.other", "owl", RingtoneMode.RANDOM, updatedAt = 1)
+            db.phoneRingtoneDao().upsert(mine)
+
+            val kept = restorer.restore(fixture, encrypted = false)
+            assertEquals(RingtoneOutcome.KEPT, kept.ringtones.single { it.backupId == "c1" }.outcome)
+            assertEquals(1, kept.ringtonesKept)
+            assertEquals(mine, db.phoneRingtoneDao().get(ada))
+
+            val overwritten = restorer.restore(fixture, encrypted = false, RestoreOptions(overwrite = setOf("c1")))
+            assertEquals(RingtoneOutcome.APPLIED, overwritten.ringtones.single { it.backupId == "c1" }.outcome)
+            assertEquals("bubblegum", db.phoneRingtoneDao().get(ada)!!.characterId)
+        }
+
+    @Test
+    fun `a contact without phone ringtone on this phone gets the backup's, even when its voice is a conflict`() =
+        runTest {
+            val ada = contact("Ada", "com.whatsapp" to adaKey)
+            db.assignmentDao().upsert(AssignmentEntity(ada, "com.example.other", "owl", updatedAt = 1))
+            val report = restorer.restore(fixture, encrypted = false)
+            assertEquals("c1", report.conflicts.single().backupId)
+            assertEquals(RingtoneOutcome.APPLIED, report.ringtones.single { it.backupId == "c1" }.outcome)
+            assertEquals("bubblegum", db.phoneRingtoneDao().get(ada)!!.characterId)
         }
 
     @Test

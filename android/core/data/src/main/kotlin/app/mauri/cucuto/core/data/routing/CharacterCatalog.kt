@@ -32,6 +32,8 @@ import kotlin.math.roundToInt
  * @property sprite Path of the static sprite from `pack.json` (relative to the pack folder).
  * @property spriteAnimated Path of the optional animated sprite.
  * @property seedColor `#RRGGBB` seed of the character's color scheme, when the pack sets one.
+ * @property ringtoneCount How many call ringtones (variants) the character has; 0 for a clip-only character. The
+ *   pickers offer a character for calls only when it has some (ADR 0063).
  */
 data class CatalogCharacter(
     val clips: List<CatalogClip>,
@@ -40,6 +42,7 @@ data class CatalogCharacter(
     val sprite: String? = null,
     val spriteAnimated: String? = null,
     val seedColor: String? = null,
+    val ringtoneCount: Int = 0,
 )
 
 /**
@@ -153,6 +156,10 @@ class PackManifestCatalog
                             sprite = character.string("sprite"),
                             spriteAnimated = character.string("spriteAnimated"),
                             seedColor = character.string("seedColor"),
+                            ringtoneCount =
+                                (character["ringtones"] as? JsonArray).orEmpty().count { ringtone ->
+                                    (ringtone as? JsonObject)?.string("file") != null
+                                },
                         )
                 }
                 return result

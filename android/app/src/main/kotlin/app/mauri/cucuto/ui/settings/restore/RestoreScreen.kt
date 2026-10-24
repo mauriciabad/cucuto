@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,9 +49,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,11 +66,14 @@ import app.mauri.cucuto.R
 import app.mauri.cucuto.backup.PackFailure
 import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.PushedScreen
+import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.ringtone.rememberContactsPermissionFlow
 import app.mauri.cucuto.ui.settings.ZIP_TYPES
 import app.mauri.cucuto.ui.settings.launchSafely
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -102,6 +108,7 @@ fun RestoreScreen(
             if (uri != null) onPickAnother(uri.toString())
         }
     val feedback = LocalFeedback.current
+    val turnOnRingtones = rememberContactsPermissionFlow(onGrant = viewModel::enablePhoneRingtones)
     LaunchedEffect(step is RestoreStep.Done) {
         if (step is RestoreStep.Done) feedback.fire(Feedback.Success)
     }
@@ -125,6 +132,7 @@ fun RestoreScreen(
                 onOpenSetup = { onLeave(CucutoDestination.Onboarding) },
                 onOpenDiagnostics = { onLeave(CucutoDestination.Diagnostics) },
                 onKeepForBackups = viewModel::keepForBackups,
+                onTurnOnPhoneRingtones = turnOnRingtones,
             ),
         modifier = modifier,
     )
@@ -145,6 +153,8 @@ internal data class RestoreActions(
     val onOpenDiagnostics: () -> Unit = {},
     /** Turns automatic backups on into the restored file. */
     val onKeepForBackups: () -> Unit = {},
+    /** Asks for the contacts permission (explained first), then turns phone ringtones on. */
+    val onTurnOnPhoneRingtones: () -> Unit = {},
 )
 
 @Composable
@@ -314,46 +324,56 @@ private fun PackRowItem(
     actions: RestoreActions,
 ) {
     val status = row.status
+    val button: (@Composable () -> Unit)? =
+        when {
+            status is PackStatus.Done -> {
+                null
+            }
+
+            row.item.action == PackRestoreAction.PICK_FILE && status !is PackStatus.Working -> {
+                {
+                    FilledTonalButton(onClick = { actions.onPickPack(row.id) }, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(R.string.restore_pack_pick_button))
+                    }
+                }
+            }
+
+            status is PackStatus.Failed -> {
+                {
+                    OutlinedButton(onClick = { actions.onRetryPack(row.id) }, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(R.string.restore_pack_retry))
+                    }
+                }
+            }
+
+            else -> {
+                null
+            }
+        }
+    // With large fonts the button goes under the text, which would otherwise be squeezed a word per line (#226).
+    val buttonBelow = isLargeFont()
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
         Column {
             ListItem(
                 headlineContent = { Text(row.name) },
                 supportingContent = { Text(packStatusText(row), color = packStatusColor(status)) },
                 trailingContent = {
-                    when {
-                        status is PackStatus.Done -> {
-                            Icon(
-                                Icons.Rounded.CheckCircle,
-                                contentDescription = stringResource(R.string.restore_pack_installed),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-
-                        row.item.action == PackRestoreAction.PICK_FILE && status !is PackStatus.Working -> {
-                            FilledTonalButton(
-                                onClick = { actions.onPickPack(row.id) },
-                                shapes = ButtonDefaults.shapes(),
-                            ) {
-                                Text(stringResource(R.string.restore_pack_pick_button))
-                            }
-                        }
-
-                        status is PackStatus.Failed -> {
-                            OutlinedButton(
-                                onClick = { actions.onRetryPack(row.id) },
-                                shapes = ButtonDefaults.shapes(),
-                            ) {
-                                Text(stringResource(R.string.restore_pack_retry))
-                            }
-                        }
-
-                        else -> {
-                            Unit
-                        }
+                    if (status is PackStatus.Done) {
+                        // The status line already says "Installed" in words.
+                        Icon(
+                            Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    } else if (!buttonBelow) {
+                        button?.invoke()
                     }
                 },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             )
+            if (buttonBelow && button != null) {
+                Box(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) { button() }
+            }
             if (status is PackStatus.Working) {
                 val fraction = status.fraction
                 val bar = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
@@ -440,10 +460,14 @@ private fun ConflictsStep(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     StepTitle(R.string.restore_conflicts_title)
                     Text(pluralStringResource(R.plurals.restore_conflicts_body, step.rows.size, step.rows.size))
+                    // 48 dp tall: the checkbox alone is 24 dp, too small to tap next to the first row (#226).
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier =
-                            Modifier.fillMaxWidth().toggleable(step.allSelected, role = Role.Checkbox) {
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(
+                                step.allSelected,
+                                role = Role.Checkbox,
+                            ) {
                                 feedback.fire(if (it) Feedback.ToggleOn else Feedback.ToggleOff)
                                 actions.onSelectAll(it)
                             },
@@ -543,12 +567,13 @@ private fun DoneStep(
                     ) {
                         SummaryLine(R.plurals.restore_done_packs_missing, summary.packsMissing)
                     }
-                    if (summary.ringtonesPending >
-                        0
-                    ) {
-                        SummaryLine(R.plurals.restore_done_ringtones, summary.ringtonesPending)
+                    if (summary.ringtonesKept > 0) {
+                        SummaryLine(R.plurals.restore_done_ringtones_kept, summary.ringtonesKept)
                     }
                 }
+            }
+            summary.phoneRingtones?.takeIf { it.restored > 0 }?.let { ringtones ->
+                item { PhoneRingtonesCard(ringtones, summary.phoneRingtonesWaiting, actions.onTurnOnPhoneRingtones) }
             }
             step.reusableSource?.let { source ->
                 item { KeepForBackupsCard(kept = step.keptForBackups, onKeep = actions.onKeepForBackups) }
@@ -590,6 +615,49 @@ private fun DoneStep(
                 onClick = actions.onClose,
                 shapes = ButtonDefaults.shapes(),
             ) { Text(stringResource(R.string.restore_finish)) }
+        }
+    }
+}
+
+/**
+ * The restored phone ringtones (ADR 0057): how many came back, which have no Android contact on this phone (linked by
+ * hand from each chat), and the one tap that turns them on when they wait for it.
+ */
+@Composable
+private fun PhoneRingtonesCard(
+    ringtones: PhoneRingtoneRestore,
+    waiting: Boolean,
+    onTurnOn: () -> Unit,
+) {
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.restore_ringtones_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(pluralStringResource(R.plurals.restore_ringtones_back, ringtones.restored, ringtones.restored))
+            if (ringtones.missing.isNotEmpty()) {
+                val unnamed = stringResource(R.string.chat_unnamed)
+                Text(
+                    pluralStringResource(
+                        R.plurals.restore_ringtones_missing,
+                        ringtones.missing.size,
+                        ringtones.missing.joinToString { it ?: unnamed },
+                    ),
+                )
+            }
+            if (waiting) {
+                Text(stringResource(R.string.restore_ringtones_off))
+                FilledTonalButton(onClick = onTurnOn, shapes = ButtonDefaults.shapes()) {
+                    Text(stringResource(R.string.ringtone_turn_on))
+                }
+            } else if (ringtones.linked > 0) {
+                Text(
+                    pluralStringResource(R.plurals.restore_ringtones_written, ringtones.linked, ringtones.linked),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
         }
     }
 }

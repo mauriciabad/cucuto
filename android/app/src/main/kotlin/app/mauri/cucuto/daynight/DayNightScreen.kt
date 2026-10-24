@@ -70,7 +70,6 @@ import java.util.TimeZone
  * Day and night (#118, ADR 0037): where sunrise and sunset are computed for, so voices with day or night clips
  * switch at the right time. A city from the built-in list, typed coordinates, or one approximate location fix.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DayNightScreen(
     onBack: () -> Unit,
@@ -84,6 +83,31 @@ fun DayNightScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             viewModel.useDeviceLocation()
         }
+    DayNightContent(
+        state = state,
+        locate = locate,
+        onBack = onBack,
+        onForget = viewModel::forgetPlace,
+        onChoose = viewModel::choose,
+        onSaveCoordinates = viewModel::saveCoordinates,
+        onUseLocation = { requestLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
+        modifier = modifier,
+    )
+}
+
+/** Stateless Day and night, for previews and the accessibility checks. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DayNightContent(
+    state: DayNightUiState?,
+    locate: LocateStatus,
+    onBack: () -> Unit,
+    onForget: () -> Unit,
+    onChoose: (City) -> Unit,
+    onSaveCoordinates: (String, String) -> CoordinateError?,
+    onUseLocation: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var query by rememberSaveable { mutableStateOf("") }
     val region = remember { Locale.getDefault().country }
@@ -124,7 +148,7 @@ fun DayNightScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            state?.let { current -> item { NowCard(current, onForget = viewModel::forgetPlace) } }
+            state?.let { current -> item { NowCard(current, onForget = onForget) } }
             item { SectionTitle(stringResource(R.string.daynight_city_title)) }
             item {
                 OutlinedTextField(
@@ -154,18 +178,18 @@ fun DayNightScreen(
                         Modifier
                             .clip(MaterialTheme.shapes.large)
                             .clickable {
-                                viewModel.choose(city)
+                                onChoose(city)
                                 query = ""
                             },
                 )
             }
             item { SectionTitle(stringResource(R.string.daynight_coordinates_title)) }
-            item { CoordinatesForm(onSave = viewModel::saveCoordinates) }
+            item { CoordinatesForm(onSave = onSaveCoordinates) }
             item { SectionTitle(stringResource(R.string.daynight_location_title)) }
             item {
                 LocationSection(
                     status = locate,
-                    onUseLocation = { requestLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
+                    onUseLocation = onUseLocation,
                 )
             }
         }

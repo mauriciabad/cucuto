@@ -22,6 +22,8 @@ class AssignmentRepository
 
         fun observe(contactId: Long): Flow<AssignmentEntity?> = dao.observe(contactId)
 
+        suspend fun get(contactId: Long): AssignmentEntity? = dao.get(contactId)
+
         fun observeByPack(packId: String): Flow<List<AssignmentEntity>> = dao.observeByPack(packId)
 
         /**

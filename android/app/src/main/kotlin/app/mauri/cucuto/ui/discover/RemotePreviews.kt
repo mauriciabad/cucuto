@@ -36,25 +36,26 @@ import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
 import app.mauri.cucuto.packs.LibraryCharacter
 import app.mauri.cucuto.packs.ui.CharacterPicture
-import app.mauri.cucuto.packs.ui.ClipPlayer
 import app.mauri.cucuto.ui.components.CookieAvatar
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl
 import java.io.File
 
 /**
  * A repository character, like [app.mauri.cucuto.packs.ui.CharacterBadge] on the Packs screen: its picture in a
  * cookie avatar in its own colors, its name below, and a tap plays its sample clip. The picture is fetched when the
- * badge is shown, the clip only when tapped; the avatar morphs while the clip loads and plays.
+ * badge is shown, the clip only when tapped; the avatar morphs while the clip loads and plays. The character's
+ * vibration starts with the clip ([SamplePlayer], ADR 0069).
  */
 @Composable
 internal fun RemoteCharacterBadge(
     character: RemoteCharacter,
     repositoryId: Long,
     previews: PreviewLoader,
-    player: ClipPlayer,
+    player: SamplePlayer,
     modifier: Modifier = Modifier,
     size: Dp = 72.dp,
 ) {
@@ -70,9 +71,11 @@ internal fun RemoteCharacterBadge(
                 if (!fetching) {
                     fetching = true
                     scope.launch {
-                        val clip = previews.load(it, repositoryId)
-                        fetching = false
-                        if (clip != null) player.play(character.key, listOf(clip))
+                        try {
+                            previews.load(it, repositoryId)?.let { clip -> player.play(character, clip) }
+                        } finally {
+                            fetching = false
+                        }
                     }
                 }
             }
@@ -110,15 +113,17 @@ internal fun RemoteCharacterBadge(
     }
 }
 
-/** The entry's cover, fetched when shown, or its initial on a cookie while missing. */
+/** A cover ([url]) of repository [repositoryId], fetched when shown, or [name]'s initial on a cookie while missing. */
 @Composable
 internal fun RemoteCover(
-    card: PackCard,
+    url: HttpUrl?,
+    name: String,
+    repositoryId: Long,
     previews: PreviewLoader,
     modifier: Modifier = Modifier,
 ) {
-    val cover by produceState<File?>(null, card.cover, card.repositoryId) {
-        value = card.cover?.let { previews.load(it, card.repositoryId) }
+    val cover by produceState<File?>(null, url, repositoryId) {
+        value = url?.let { previews.load(it, repositoryId) }
     }
     val file = cover
     if (file != null) {
@@ -136,7 +141,7 @@ internal fun RemoteCover(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = card.name.take(1).uppercase(),
+                    text = name.take(1).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
                     // Decorative: the card's title says the name.
                     modifier = Modifier.clearAndSetSemantics {},

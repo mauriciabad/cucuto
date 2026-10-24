@@ -25,6 +25,9 @@ interface ChatDirectory {
      *
      * A group key assigns the whole group (default policy "one character per group", #56): its members' own voices
      * only apply when the group is switched to per sender.
+     *
+     * The voice and the phone ringtone are independent (ADR 0063): a ringtone the user never picked follows the new
+     * voice when it has ringtones, or keeps what rang before; a picked one stays ([PhoneRingtoneFollow]).
      */
     suspend fun assign(
         chat: ChatKey,
@@ -32,8 +35,17 @@ interface ChatDirectory {
         characterId: String,
     ): Long
 
-    /** Removes [chat]'s voice; it keeps WhatsApp's tone again. No-op for a chat without a contact. */
+    /**
+     * Removes [chat]'s voice; it keeps WhatsApp's tone again. No-op for a chat without a contact. Its phone ringtone
+     * stays (ADR 0063).
+     */
     suspend fun unassign(chat: ChatKey)
+
+    /**
+     * [chat]'s contact, created (named after its notification) when the conversation was only seen, so it can get a
+     * phone ringtone before it has a voice (ADR 0063). Returns the contact ID.
+     */
+    suspend fun ensureContact(chat: ChatKey): Long
 
     /**
      * Sets how the group [chat] picks its voice (#20): one voice for the whole group (the default), or each
@@ -60,6 +72,7 @@ class RoomChatDirectory
         private val contacts: ContactRepository,
         private val assignments: AssignmentRepository,
         private val seenSenders: SeenSenderRepository,
+        private val ringtoneFollow: PhoneRingtoneFollow,
     ) : ChatDirectory {
         override fun observeChats(): Flow<List<Chat>> =
             combine(
@@ -74,35 +87,35 @@ class RoomChatDirectory
             packId: String,
             characterId: String,
         ): Long {
-            val seen = seenSenders.get(chat.packageName, chat.conversationKey)
-            val contactId =
-                contacts.findOrCreate(
-                    packageName = chat.packageName,
-                    key = chat.conversationKey,
-                    displayName = seen?.displayName,
-                    isGroup = seen?.isGroup == true || chat.isGroupKey,
-                )
+            val contactId = ensureContact(chat)
+            val old = assignments.get(contactId)?.let { ChatVoice(it.packId, it.characterId) }
             assignments.assign(contactId, packId, characterId)
+            ringtoneFollow.voiceChanged(contactId, old, ChatVoice(packId, characterId))
             return contactId
         }
 
         override suspend fun unassign(chat: ChatKey) {
             val contact = contacts.findByKey(chat.packageName, chat.conversationKey) ?: return
+            val old = assignments.get(contact.id)?.let { ChatVoice(it.packId, it.characterId) }
             assignments.unassign(contact.id)
+            ringtoneFollow.voiceChanged(contact.id, old, null)
+        }
+
+        override suspend fun ensureContact(chat: ChatKey): Long {
+            val seen = seenSenders.get(chat.packageName, chat.conversationKey)
+            return contacts.findOrCreate(
+                packageName = chat.packageName,
+                key = chat.conversationKey,
+                displayName = seen?.displayName,
+                isGroup = seen?.isGroup == true || chat.isGroupKey,
+            )
         }
 
         override suspend fun setGroupPolicy(
             chat: ChatKey,
             policy: GroupPolicy,
         ): Long {
-            val seen = seenSenders.get(chat.packageName, chat.conversationKey)
-            val contactId =
-                contacts.findOrCreate(
-                    packageName = chat.packageName,
-                    key = chat.conversationKey,
-                    displayName = seen?.displayName,
-                    isGroup = seen?.isGroup == true || chat.isGroupKey,
-                )
+            val contactId = ensureContact(chat)
             contacts.setGroupPolicy(contactId, policy)
             return contactId
         }

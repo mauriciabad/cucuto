@@ -27,16 +27,26 @@ interface RoutingSink {
     /** Starts listening for the framework. Idempotent. */
     fun start()
 
-    /** The encoded table currently published, or null. */
+    /**
+     * The encoded table in Remote Preferences, or null. When the latest table was too large for them, this is a copy
+     * without clip envelopes or an older table: its generation is then below [publishedGeneration] (ADR 0054).
+     */
     suspend fun read(): String?
 
+    /** The generation of the latest publication through the service (whatever Remote Preferences hold), or null. */
+    suspend fun publishedGeneration(): Long?
+
     /**
-     * Publishes [encoded] through the framework service (Remote Preferences and the remote file); throws when the
-     * preferences could not be written. Does not nudge: the publisher calls [nudge] afterwards.
+     * Publishes [encoded], of [generation], through the framework service: the remote file gets it and Remote
+     * Preferences get [forPreferences] (the same text; a smaller copy with an older generation when [encoded] is over
+     * [RoutingContract.MAX_PREFERENCES_CHARS]; or null to leave their table as it is) with [generation] as the
+     * published generation. Throws when the preferences could not be written. Does not nudge: the publisher calls
+     * [nudge] afterwards.
      */
     suspend fun write(
         encoded: String,
         generation: Long,
+        forPreferences: String? = encoded,
     )
 
     /**
@@ -73,7 +83,8 @@ sealed interface SinkConnection {
  * (ADR 0024), so every write also mirrors the table to a remote file, and the publisher then sends `system_server` a
  * nudge broadcast ([nudge]); the module re-reads the file when nudged. The nudge also goes out without a service,
  * and the module then pulls the table from the app's event provider (ADR 0048). Mirror and nudge are best effort:
- * the preferences stay the source of truth.
+ * the preferences stay the source of truth, except for a table too large for them, which only the remote file and
+ * the app's provider carry in full (ADR 0054); a module that misses the file pulls it from the provider.
  */
 @Singleton
 class XposedRoutingSink
@@ -123,19 +134,24 @@ class XposedRoutingSink
                 preferences()?.getString(RoutingContract.KEY_TABLE, null)
             }
 
+        override suspend fun publishedGeneration(): Long? =
+            withContext(Dispatchers.IO) {
+                preferences()?.getLong(RoutingContract.KEY_GENERATION, 0L)?.takeIf { it > 0 }
+            }
+
         override suspend fun write(
             encoded: String,
             generation: Long,
+            forPreferences: String?,
         ) = withContext(Dispatchers.IO) {
             val service = checkNotNull(this@XposedRoutingSink.service) { "Xposed service not connected" }
-            val committed =
+            val editor =
                 service
                     .getRemotePreferences(RoutingContract.PREFERENCES_GROUP)
                     .edit()
-                    .putString(RoutingContract.KEY_TABLE, encoded)
                     .putLong(RoutingContract.KEY_GENERATION, generation)
-                    .commit()
-            check(committed) { "Remote Preferences commit failed" }
+            if (forPreferences != null) editor.putString(RoutingContract.KEY_TABLE, forPreferences)
+            check(editor.commit()) { "Remote Preferences commit failed" }
             mirror(service, encoded)
         }
 

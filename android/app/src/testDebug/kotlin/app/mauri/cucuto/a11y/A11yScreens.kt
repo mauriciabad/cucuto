@@ -3,6 +3,7 @@ package app.mauri.cucuto.a11y
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -74,8 +75,8 @@ import java.io.File
 
 /**
  * Every screen of the accessibility pass (#29) with made-up content, for the accessibility checks and the large-font
- * screenshots. Screens that only exist with a view model (Diagnostics) are not here. A new screen joins every check
- * with one line in [all].
+ * screenshots, plus [A11yMoreScreens] (#226). A new screen joins every check with one line in [all] (and one test in
+ * `LargeFontScreenshotTest` for its golden).
  */
 internal object A11yScreens {
     val all: List<Pair<String, @Composable () -> Unit>> =
@@ -96,7 +97,7 @@ internal object A11yScreens {
             "creator-character" to { CreatorCharacterScreen() },
             "creator-recorder" to { CreatorRecorderScreen() },
             "creator-clip-editor" to { CreatorClipEditorScreen() },
-        ) + A11yPushedScreens.all
+        ) + A11yPushedScreens.all + A11yMoreScreens.all
 
     /** The screen called [name] in [all]. */
     fun content(name: String): @Composable () -> Unit = all.first { it.first == name }.second
@@ -118,7 +119,13 @@ internal object A11yScreens {
     @Composable
     private fun PhoneRingtoneScreen() {
         // Inside the contact detail's scrolling column on the device.
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        ) {
             PhoneRingtoneContent(
                 state =
                     PhoneRingtoneUiState(
@@ -422,11 +429,25 @@ private fun entry(
     }
     """
 
-/** A repository index with two packs; the first one is installed in an older version. */
+/** A bundle with Dogs (also listed alone, so its row can install it) and Birds (only in the bundle), ADR 0064. */
+private val BUNDLE_ENTRY =
+    """
+    {
+      "id": "app.example.friends", "type": "bundle", "name": "Friends' bundle", "version": "1.0.0",
+      "author": "Test author", "license": "CC0-1.0",
+      "packs": [
+        { "id": "app.example.dogs", "name": "Dogs", "version": "1.0.0", "characters": [ { "id": "c1", "name": "Rex" } ] },
+        { "id": "app.example.birds", "name": "Birds", "version": "1.0.0", "characters": [ { "id": "c1", "name": "Kiwi" } ] }
+      ],
+      "download": { "url": "packs/friends-1.0.0.soundpack.zip", "size": 8192, "sha256": "${"0".repeat(SHA_CHARS)}" }
+    }
+    """
+
+/** A repository index with a pack installed in an older version, then a bundle and one of its packs on its own. */
 private val DISCOVER_INDEX =
     """{ "formatVersion": 1, "name": "Friends' packs", "packs": [${
         entry("app.example.cats", "Cats", "1.1.0", "Tabby")
-    }, ${entry("app.example.dogs", "Dogs", "1.0.0", "Rex")}] }"""
+    }, $BUNDLE_ENTRY, ${entry("app.example.dogs", "Dogs", "1.0.0", "Rex")}] }"""
 
 private const val SHA_CHARS = 64
 private const val SAMPLE_RATE = 8_000

@@ -50,6 +50,12 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey,
     ) : CucutoDestination
 
+    /** The ringtone picker (#53) for [chat]'s phone ringtone, opened from its contact detail. */
+    @Serializable
+    data class RingtonePicker(
+        val chat: ChatKey,
+    ) : CucutoDestination
+
     /** The pack creator (#47); with [sourcePackId], a copy of that installed pack to edit ("duplicate and edit"). */
     @Serializable
     data class Creator(

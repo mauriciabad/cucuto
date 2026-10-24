@@ -1,6 +1,8 @@
 # 0046. Distribution: store metadata, release notes, Obtainium and reproducible builds
 
-- Status: accepted (submissions are the owner's: #211)
+- Status: accepted; amended by the owner's answer on #211 (Google Play added, F-Droid after v1, see
+  [Owner update](#owner-update-2026-10-24-211-google-play-too-f-droid-after-v1)); the Play
+  bundle, listing format and Console answers are ADR 0071
 - Date: 2026-10-24
 - Issues: #206 (this work), #44 / ADR 0021 (signed release on tag), #41 / ADR 0032 (screenshot tests)
 
@@ -72,3 +74,40 @@ costs one release build (about 5 minutes) per release and never blocks one. Deta
   made from the link. A key change (ADR 0021) must update the site too.
 - A failing `reproducible` job turns a release run red after publishing; the APK stays. Cross-OS reproducibility is
   checked by hand only.
+
+## Owner update 2026-10-24 (#211): Google Play too, F-Droid after v1
+
+> Google Play Store is not an option? i thought we would publish it there too. I'll make a developer account if necesary
+> f-droid would be nice, we can do it after v1.
+
+**Google Play becomes an extra channel**, replacing the brief's "no Play Store" non-goal. The assessment
+([distribution.md → Google Play](../distribution.md#google-play)) found no policy that rules Cucuto out. Needing
+root, being an LSPosed module and AI-written code are not grounds for refusal; the AI-generated content policy
+covers apps that generate content. Three review risks remain:
+
+- the Device and Network Abuse policy ("interfere with … other apps on the device"), mostly because of the optional
+  hook inside WhatsApp (ADR 0052);
+- reviewers can't see the app work without root;
+- the WhatsApp trademark.
+
+Decisions:
+
+- **One signing identity.** Play App Signing uses Cucuto's existing release key (uploaded with PEPK), and CI signs
+  bundles with a separate upload key. Play, GitHub, Obtainium and F-Droid installs can update each other, and the
+  Obtainium pin keeps working.
+- **The listing never leads with WhatsApp.** The name stays Cucuto. "WhatsApp" stays out of the title, icon,
+  developer name and feature graphic, and out of the first words of the short description. The full description
+  says it works with WhatsApp's notifications and isn't affiliated with WhatsApp or Meta (Meta's brand guidelines,
+  Play's IP policy). The fastlane metadata changes for every store, so every listing says the same.
+- **No Play-only build.** One APK and one bundle from the same source. A Play flavor without the optional WhatsApp
+  hook is the fallback only if review demands it.
+- **GitHub Releases and Obtainium stay the main channel.** A rejection or a removal on Play changes nothing for them.
+- **Android developer verification** (worldwide from 2027, including APKs installed from outside Play) is handled by
+  the same Play Console account, which registers `app.mauri.cucuto` and the release certificate.
+- Work: agent side #274 (bundle, listing, review notes, Data safety answers; built in ADR 0071, with an owner-run
+  `fastlane supply` config instead of an upload from CI),
+  owner side #276 (account, signing, closed test with 12 testers for 14 days, submission).
+
+**F-Droid after v1** (#275), through F-Droid's reproducible-build route, so it ships the APK signed with Cucuto's
+key. **IzzyOnDroid** stays not submitted, and the optional Obtainium directory listing stays optional (the
+defaults in #211 the owner didn't change).

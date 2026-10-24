@@ -74,6 +74,7 @@ import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.PushedScreen
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.ringtone.RingtonePlayback
 import app.mauri.cucuto.ui.theme.LocalReducedMotion
 import kotlinx.coroutines.delay
 
@@ -252,10 +253,22 @@ private fun ProgressBar(
     modifier: Modifier = Modifier,
 ) {
     val fraction = progress?.fraction()
-    if (fraction != null) {
-        LinearWavyProgressIndicator(progress = { fraction }, modifier = modifier.fillMaxWidth())
-    } else {
-        LinearWavyProgressIndicator(modifier = modifier.fillMaxWidth())
+    Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (fraction != null) {
+            LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+        } else {
+            LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        // "Testing 120 of 389 files": large packs spend most of the import here (#241). Not a live region, so
+        // TalkBack reads the step above once instead of every file.
+        if (progress is ImportProgress.Decoding && progress.total > 0) {
+            Text(
+                pluralStringResource(R.plurals.import_testing_count, progress.total, progress.done, progress.total),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
     }
 }
 
@@ -267,6 +280,7 @@ private fun ReviewContent(
 ) {
     val review = state.review
     val player = rememberClipPlayer()
+    val ringtones = rememberRingtonePlayback()
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
@@ -303,6 +317,7 @@ private fun ReviewContent(
                 selected = state.selection.isSelected(pack.id),
                 enabled = !state.installing,
                 player = player,
+                ringtones = ringtones,
                 onSelectedChange = { onSelect(pack.id, it) },
             )
         }
@@ -339,6 +354,7 @@ private fun ReviewPackCard(
     selected: Boolean,
     enabled: Boolean,
     player: ClipPlayer,
+    ringtones: RingtonePlayback<String>,
     onSelectedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -378,7 +394,7 @@ private fun ReviewPackCard(
                     )
                 }
             }
-            RevealedCharacters(pack, player)
+            RevealedCharacters(pack, player, ringtones)
             if (pack.orphanedContacts > 0) {
                 Text(
                     pluralStringResource(R.plurals.import_orphaned, pack.orphanedContacts, pack.orphanedContacts),
@@ -396,6 +412,7 @@ private fun ReviewPackCard(
 private fun RevealedCharacters(
     pack: ReviewPack,
     player: ClipPlayer,
+    ringtones: RingtonePlayback<String>,
     modifier: Modifier = Modifier,
 ) {
     val reduced = LocalReducedMotion.current
@@ -417,7 +434,12 @@ private fun RevealedCharacters(
                 visible = index < revealed,
                 enter = scaleIn(motion.fastSpatialSpec()) + fadeIn(motion.fastEffectsSpec()),
             ) {
-                CharacterBadge(character, playerKey = "review/${pack.id}/${character.id}", player = player)
+                CharacterBadge(
+                    character,
+                    playerKey = "review/${pack.id}/${character.id}",
+                    player = player,
+                    ringtones = ringtones,
+                )
             }
         }
     }

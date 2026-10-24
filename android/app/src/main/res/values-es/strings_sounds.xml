@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Voz de los mensajes y tono de llamada como elecciones independientes (#245, #246, ADR 0063). -->
+<resources>
+    <!-- Detalle del contacto: las dos filas -->
+    <string name="contact_sounds_header">Sonidos</string>
+    <string name="contact_row_messages">Mensajes</string>
+    <string name="contact_row_calls">Llamadas</string>
+    <string name="contact_row_messages_value">%1$s · %2$s</string>
+    <string name="contact_row_messages_none">Aún sin voz. Toca para elegir una.</string>
+    <string name="contact_row_messages_missing">Su pack ya no está. Toca para elegir otro.</string>
+    <string name="ringtone_row_none">Aún sin tono. Toca para elegir uno.</string>
+    <string name="ringtone_row_follows">El mismo que los mensajes</string>
+    <string name="ringtone_row_kept">Se mantiene: %1$s no tiene tono</string>
+    <string name="ringtone_row_own">Elegido para las llamadas</string>
+    <string name="ringtone_row_value">%1$s · %2$s</string>
+
+    <!-- Selectores: filtros por pack y pantallas vacías -->
+    <string name="pack_filter_all">Todos</string>
+    <string name="pack_filter_count">%1$s · %2$d</string>
+    <plurals name="pack_filter_a11y">
+        <item quantity="one">%1$s, %2$d personaje</item>
+        <item quantity="many">%1$s, %2$d personajes</item>
+        <item quantity="other">%1$s, %2$d personajes</item>
+    </plurals>
+    <string name="picker_open_discover">Abrir Descubrir</string>
+
+    <!-- Packs: lo que ofrece cada personaje -->
+    <string name="packs_offers_messages">Mensajes</string>
+    <string name="packs_offers_ringtone">Tono</string>
+    <string name="packs_offers_both">Mensajes y tono</string>
+
+    <!-- Las vistas previas de tonos suenan como la llamada hasta que las paras (#242) -->
+    <string name="ringtone_picker_pause">Pausar %1$s</string>
+</resources>

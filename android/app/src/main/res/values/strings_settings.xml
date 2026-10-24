@@ -21,7 +21,7 @@
     <string name="settings_ui_sounds_quiet">Quiet</string>
     <string name="settings_ui_sounds_normal">Normal</string>
     <string name="settings_ui_haptics">App vibration</string>
-    <string name="settings_ui_haptics_body">Taps and ticks under your finger. Android\'s vibration settings still apply.</string>
+    <string name="settings_ui_haptics_body">Taps, ticks and previews in Discover. Android\'s vibration settings still apply.</string>
     <string name="settings_remove_animations">Remove animations</string>
     <string name="settings_remove_animations_body">No particles, bounces or swinging door in Cucuto. Sounds and vibration still play.</string>
     <string name="settings_remove_animations_system">On for every app in Android\'s accessibility settings.</string>
@@ -171,9 +171,23 @@
         <item quantity="one">%1$d pack is still missing. Its contacts hear WhatsApp\'s tone until you import it from Packs.</item>
         <item quantity="other">%1$d packs are still missing. Their contacts hear WhatsApp\'s tone until you import them from Packs.</item>
     </plurals>
-    <plurals name="restore_done_ringtones">
-        <item quantity="one">%1$d call ringtone is saved for a later version of Cucuto.</item>
-        <item quantity="other">%1$d call ringtones are saved for a later version of Cucuto.</item>
+    <plurals name="restore_done_ringtones_kept">
+        <item quantity="one">%1$d phone ringtone set on this phone was kept.</item>
+        <item quantity="other">%1$d phone ringtones set on this phone were kept.</item>
+    </plurals>
+    <string name="restore_ringtones_title">Phone ringtones</string>
+    <plurals name="restore_ringtones_back">
+        <item quantity="one">%1$d phone ringtone is back.</item>
+        <item quantity="other">%1$d phone ringtones are back.</item>
+    </plurals>
+    <plurals name="restore_ringtones_missing">
+        <item quantity="one">Not in this phone\'s contacts: %1$s. Link it from the chat\'s Phone ringtone card.</item>
+        <item quantity="other">Not in this phone\'s contacts: %1$s. Link them from each chat\'s Phone ringtone card.</item>
+    </plurals>
+    <string name="restore_ringtones_off">Phone ringtones are off on this phone. Turn them on to set them in your contacts.</string>
+    <plurals name="restore_ringtones_written">
+        <item quantity="one">%1$d contact rings with its character again.</item>
+        <item quantity="other">%1$d contacts ring with their character again.</item>
     </plurals>
     <string name="restore_checklist_title">What a backup can\'t do</string>
     <string name="restore_checklist_body">The module itself lives in LSPosed, outside Cucuto. On a new phone:</string>

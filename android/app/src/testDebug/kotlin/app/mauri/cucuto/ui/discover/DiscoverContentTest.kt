@@ -1,7 +1,9 @@
 package app.mauri.cucuto.ui.discover
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -95,6 +97,30 @@ class DiscoverContentTest {
         compose.onNodeWithText("Update").performClick()
         compose.onNodeWithText("Install").performScrollTo().performClick()
         assertEquals(listOf("app.example.cats", "app.example.dogs"), installed)
+    }
+
+    @Test
+    fun aBundleIsOneCardWithItsPacksAndTheirOwnStates() {
+        val load =
+            RepoLoad(
+                snapshot =
+                    snapshot(
+                        demoBundleEntry(),
+                        packEntry("app.mauri.demo.cats", "Cats", character = "Tabby"),
+                        packEntry("app.mauri.demo.bells", "Bells"),
+                    ),
+            )
+        show(state(load, listOf(InstalledRef("app.mauri.demo.cats", "1.0.0", null, null))))
+
+        compose.onNodeWithText("Bundle · 2 packs", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Cucuto demo packs", substring = true).assertIsDisplayed()
+        // Each pack once, inside the bundle, with its own state.
+        compose.onAllNodesWithText("Cats").assertCountEquals(1)
+        compose.onNodeWithText("Installed").assertIsDisplayed()
+        compose.onNodeWithText("1 of 2 installed").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Install Bells").performScrollTo().performClick()
+        compose.onNodeWithText("Install all").performScrollTo().performClick()
+        assertEquals(listOf("app.mauri.demo.bells", DEMO_BUNDLE_ID), installed)
     }
 
     @Test

@@ -1,6 +1,7 @@
 # 0039. Phone ringtones: ring files rendered on the phone, MediaStore, contact undo record, re-roll receiver
 
-- Status: accepted (defaults; the owner may override them in #196)
+- Status: accepted (defaults; the owner may override them in #196); the "follow the voice" data is amended by
+  [ADR 0063](0063-independent-voice-and-ringtone.md)
 - Date: 2026-10-24
 - Issue: #52 (picker UI: #53; device run: #143)
 
@@ -43,7 +44,9 @@ how every change can be undone.
    - Trade-off: they also show up in Android's own ringtone list, as any ringtone in `Ringtones/` does.
 3. **Data.** Database version 3 adds two tables:
    - `phone_ringtones`, one row per Cucuto contact: character (null means "follow the voice"), rule mode, fixed
-     variant. Modes are the backup schema's: `fixed`, `random`, `time`, `season`, `pack`. The default is `pack`, which
+     variant. Database version 4 adds `followsVoice`: the voice and the ringtone are independent choices, and a
+     following row keeps the character that rang last while the voice has no ringtones
+     ([ADR 0063](0063-independent-voice-and-ringtone.md), owner update 2026-10-24, #245). Modes are the backup schema's: `fixed`, `random`, `time`, `season`, `pack`. The default is `pack`, which
      with no `when` conditions is the first variant.
    - `contact_ringtone_writes`, the **undo record**, keyed by the Android contact's lookup key with no foreign key. It
      holds the contact's own ringtone before Cucuto, what Cucuto last wrote, and the current variant.
@@ -88,7 +91,8 @@ how every change can be undone.
      and that the code is open source at github.com/mauriciabad/cucuto (the owner, #145).
    - `READ_PHONE_STATE` is asked only when the user picks "Random per call".
    - Denial leaves everything as it was and offers Android's app settings.
-8. **UI** (the full picker is #53):
+8. **UI** (the full picker is #53; it landed in [ADR 0057](0057-ringtone-picker-and-ringtone-backups.md), which moved
+   the rule chips from the card into it):
    - A "Phone ringtone" card on contact detail (1:1 chats only). It offers: turn the feature on, link the Android
      contact (suggested by the WhatsApp phone JID's number, else by exact name, or picked with the system contact
      picker), the rule chips that make sense for the character's variant tags, version chips for "One version", the
@@ -97,7 +101,7 @@ how every change can be undone.
    - A switch in Settings.
 9. **Not in this change:**
    - `vibration_uri` per-contact call vibration waits for #143 V2 (whether `system_server` can read our file).
-   - Backup and restore of phone ringtones (#198): the restorer already counts them as pending.
+   - Backup and restore of phone ringtones (#198): the restorer already counts them as pending (done in ADR 0057).
 
 ## Consequences
 

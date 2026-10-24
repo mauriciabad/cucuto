@@ -2,13 +2,17 @@ package app.mauri.cucuto.a11y
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.ScrollAxisRange
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
-import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -28,10 +32,10 @@ internal fun ComposeContentTestRule.showScreen(
     waitForIdle()
 }
 
-/** Every node of the merged tree (what TalkBack focuses), or of the unmerged tree. */
+/** Every node of the merged tree (what TalkBack focuses), or of the unmerged tree, in every window (sheets too). */
 internal fun ComposeContentTestRule.nodes(merged: Boolean = true): List<SemanticsNode> {
     fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
-    return walk(onRoot(useUnmergedTree = !merged).fetchSemanticsNode())
+    return onAllNodes(isRoot(), useUnmergedTree = !merged).fetchSemanticsNodes().flatMap(::walk)
 }
 
 private fun SemanticsNode.isInteractive(): Boolean =
@@ -77,18 +81,116 @@ internal fun ComposeContentTestRule.assertNoDuplicateAnnouncements(screen: Strin
     assertTrue("$screen: duplicate announcements:\n" + duplicates.joinToString("\n"), duplicates.isEmpty())
 }
 
-/** Every interactive element on screen is at least 48 × 48 dp to touch (Material and Android guidance). */
+/**
+ * Every interactive element gets a 48 × 48 dp touch target (Material and Android guidance), on the whole screen.
+ *
+ * Compose stretches the touch area of any clickable smaller than 48 dp to 48 dp around it (and `touchBoundsInRoot`
+ * reports the stretched area, so measuring that alone never fails, #226). What can go wrong is a small control with
+ * no room to stretch: its 48 dp area overlaps another control's, and taps near the edge land on the neighbor. So a
+ * control under 48 dp fails when its 48 dp area overlaps the area of another control that moves with it (same window,
+ * same scrolling container: content scrolled under a top bar is covered by it, not crowding it), is not its parent or
+ * child, and is not a backdrop behind it (a sheet's scrim, a card it sits on).
+ *
+ * After the first screenful, each scrolling container is scrolled to its end, most of a viewport at a time
+ * ([scrollThrough]), and the controls that came into view are checked too.
+ */
 internal fun ComposeContentTestRule.assertTouchTargets(screen: String) {
     val minPx = with(density) { MIN_TOUCH_DP * this.density }
-    val small =
-        nodes()
-            .filter { it.isInteractive() && it.fullyShown() }
-            .filter { it.touchBoundsInRoot.width < minPx - 1 || it.touchBoundsInRoot.height < minPx - 1 }
-            .map {
-                "${it.describe()}: ${it.touchBoundsInRoot.width / density.density} × ${it.touchBoundsInRoot.height / density.density} dp"
-            }
-    assertTrue("$screen: touch targets under 48 dp:\n" + small.joinToString("\n"), small.isEmpty())
+    val crowded = linkedSetOf<String>()
+
+    fun checkVisible() {
+        val controls = nodes().filter { it.isInteractive() && it.fullyShown() }
+        for (small in controls.filter { it.size.width < minPx - 1 || it.size.height < minPx - 1 }) {
+            val area = small.touchArea(minPx)
+            val layer = small.layer()
+            val neighbor =
+                controls.firstOrNull { other ->
+                    other.id != small.id &&
+                        other.layer() == layer &&
+                        !other.isAncestorOf(small) &&
+                        !small.isAncestorOf(other) &&
+                        !other.boundsInRoot.contains(area) &&
+                        area.overlapsBeyondSlack(other.touchArea(minPx))
+                } ?: continue
+            val dp = density.density
+            crowded +=
+                "${small.describe()} (${small.size.width / dp} × ${small.size.height / dp} dp) has no room for " +
+                "48 dp: it touches ${neighbor.describe()}"
+        }
+    }
+    checkVisible()
+    scrollThrough(::checkVisible)
+    assertTrue("$screen: touch targets under 48 dp:\n" + crowded.joinToString("\n"), crowded.isEmpty())
 }
+
+/** The node's bounds, grown around their center to at least [minPx] on each side (Compose's touch area). */
+private fun SemanticsNode.touchArea(minPx: Float): Rect {
+    val bounds = boundsInRoot
+    val growX = ((minPx - bounds.width) / 2).coerceAtLeast(0f)
+    val growY = ((minPx - bounds.height) / 2).coerceAtLeast(0f)
+    return Rect(bounds.left - growX, bounds.top - growY, bounds.right + growX, bounds.bottom + growY)
+}
+
+private fun Rect.overlapsBeyondSlack(other: Rect): Boolean {
+    val overlap = intersect(other)
+    return overlap.width > SLACK_PX && overlap.height > SLACK_PX
+}
+
+private fun SemanticsNode.isAncestorOf(node: SemanticsNode): Boolean =
+    generateSequence(node.parent) { it.parent }.any { it.id == id }
+
+/** What the node moves with: its nearest scrolling ancestor, or else its window's root. */
+private fun SemanticsNode.layer(): Int {
+    val ancestors = generateSequence(parent) { it.parent }.toList()
+    return (ancestors.firstOrNull { it.config.getOrNull(SemanticsActions.ScrollBy) != null } ?: ancestors.lastOrNull())
+        ?.id ?: id
+}
+
+private fun Rect.contains(other: Rect): Boolean =
+    left <= other.left && top <= other.top && right >= other.right && bottom >= other.bottom
+
+/**
+ * Scrolls every scrolling container on screen (lists, scrolling columns, rows of chips) from where it is to its end,
+ * 80% of its viewport at a time, and calls [atEachStep] after each step. Containers that only appear while scrolling
+ * (a row of chips further down a list) are scrolled through too. Uses the containers' own scroll action, the one
+ * TalkBack and Switch Access use, so it works the same for lazy and plain scrolling.
+ */
+internal fun ComposeContentTestRule.scrollThrough(atEachStep: () -> Unit) {
+    val done = mutableSetOf<Int>()
+    while (true) {
+        val next =
+            nodes(merged = false).firstOrNull {
+                it.id !in done && it.config.getOrNull(SemanticsActions.ScrollBy) != null && it.axis() != null
+            } ?: return
+        done += next.id
+        val id = next.id
+        for (step in 1..MAX_SCROLL_STEPS) {
+            if (!scrollOnce(id)) break
+            atEachStep()
+        }
+    }
+}
+
+/** Scrolls container [id] by 80% of its viewport; false when it is gone or was already at its end. */
+private fun ComposeContentTestRule.scrollOnce(id: Int): Boolean {
+    fun range() = nodes(merged = false).firstOrNull { it.id == id }?.axis()
+    val node = nodes(merged = false).firstOrNull { it.id == id } ?: return false
+    val before = node.axis()?.value() ?: return false
+    val vertical = node.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange) != null
+    val viewport = if (vertical) node.size.height else node.size.width
+    onNode(SemanticsMatcher("node #$id") { it.id == id }, useUnmergedTree = true)
+        .performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy ->
+            val step = viewport * SCROLL_FRACTION
+            if (vertical) scrollBy(0f, step) else scrollBy(step, 0f)
+        }
+    waitForIdle()
+    val after = range()?.value() ?: return false
+    return after > before
+}
+
+private fun SemanticsNode.axis(): ScrollAxisRange? =
+    config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)
+        ?: config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange)
 
 /**
  * Text cut off without an ellipsis: lines dropped by `maxLines`, or glyphs wider or taller than the text's own box
@@ -127,3 +229,7 @@ internal fun ComposeContentTestRule.clippedTexts(): List<String> =
 private const val SLACK_PX = 2f
 
 private const val MIN_TOUCH_DP = 48f
+
+/** Far more steps than the longest screen needs; stops a list that keeps growing. */
+private const val MAX_SCROLL_STEPS = 60
+private const val SCROLL_FRACTION = 0.8f

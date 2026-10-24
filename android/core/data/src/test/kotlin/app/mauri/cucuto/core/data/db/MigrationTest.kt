@@ -95,6 +95,39 @@ class MigrationTest {
         }
 
     @Test
+    fun version4MarksPickedRingtonesAndKeepsTheOnesThatFollowTheVoice() =
+        runTest {
+            file.delete()
+            helper.createDatabase(3).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO contacts (id, displayName, isGroup, groupPolicy, shuffleSeed, createdAt, updatedAt) " +
+                        "VALUES (1, 'Ada', 0, 'GROUP', 7, 1, 1), (2, 'Bruno', 0, 'GROUP', 8, 1, 1)",
+                )
+                connection.execSQL(
+                    "INSERT INTO phone_ringtones (contactId, packId, characterId, mode, variant, updatedAt) " +
+                        "VALUES (1, NULL, NULL, 'TIME', NULL, 1), (2, 'com.example.songs', 'bubblegum', 'PACK', NULL, 1)",
+                )
+            }
+            helper.runMigrationsAndValidate(4, listOf(CucutoMigrations.MIGRATION_3_4)).close()
+            val db =
+                Room
+                    .databaseBuilder(ApplicationProvider.getApplicationContext(), CucutoDatabase::class.java, file.path)
+                    .setDriver(AndroidSQLiteDriver())
+                    .addMigrations(*CucutoMigrations.ALL)
+                    .build()
+            try {
+                val follows = db.phoneRingtoneDao().get(1)!!
+                assertTrue(follows.followsVoice)
+                assertEquals(RingtoneMode.TIME, follows.mode)
+                val picked = db.phoneRingtoneDao().get(2)!!
+                assertEquals(false, picked.followsVoice)
+                assertEquals("bubblegum", picked.characterId)
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
     fun dataWrittenAtVersion1SurvivesOpeningWithRoom() =
         runTest {
             file.delete()
