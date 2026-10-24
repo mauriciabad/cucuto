@@ -381,7 +381,7 @@ export const en = {
 		],
 		testTitle: 'Test it',
 		testHtml:
-			'In Cucuto, open <strong>Diagnostics</strong> and tap <strong>Post test notification</strong>. With the module active you hear a short two-tone chirp and feel a click instead of the default sound, and the decision shows up in the list below within a few seconds. Before the module is set up, <strong>Try a sample chat</strong> on Home plays a character’s sound, vibration and ringtone in the app.',
+			'In Cucuto, open <strong>Diagnostics</strong> and tap <strong>Post test notification</strong>. With the module active you hear a short two-tone chirp and feel a click instead of the default sound, and the decision shows up in the list below within a few seconds.',
 		updatesTitle: 'Updates',
 		updatesHtml:
 			'Cucuto never checks for updates and never goes online to look for them. New versions appear on the <a href="{releases}" rel="external">releases page</a>, and Cucuto keeps working when you skip one. To get them on your phone without checking by hand, use <a href="{obtainium}" rel="external">Obtainium</a>, a free app that installs apps straight from their GitHub releases. After every update, reboot: the module loads the new version at boot.',
