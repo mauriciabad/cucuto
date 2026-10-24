@@ -416,3 +416,9 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 > 6 at least show a visual preview of the haptic (also on the app would be nice)
 
 (Default 6 was "the website keeps sound-only previews". Filed as #301 (M5): draw the vibration on the website and in the app. The agent that builds it updates ADR 0069 and closes #284; defaults 1 to 5 stand.)
+
+## 2026-10-24 — Comment on #287 (Google Play defaults: upload key, category, audience, upload tool)
+
+> the app is not in any device yet, so changing the key now may not have any big impact and dont have to worry about userbase
+
+(Answer to default 1, about Play signing. With no installed base, Play App Signing keeps its Google-generated app signing key: no PEPK export of the release key. The release key becomes Play's upload key, so the owner creates no keystore and adds no secret; `release.yml` signs the bundle with the release secrets on every release and the `PLAY_UPLOAD_*` secrets are gone. Play installs and the APKs from GitHub, Obtainium and F-Droid can't update each other. ADR 0071, docs/google-play.md, docs/releasing.md and #276's steps updated. Defaults 2 to 6 stand.)

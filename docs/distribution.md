@@ -145,14 +145,14 @@ Releases and Obtainium stay the main channel either way.
 
 ### Technical requirements
 
-- **App bundle and Play App Signing.** New apps upload an `.aab`, and Google signs what it serves. To keep **one
-  signing identity** across Play, GitHub, Obtainium and F-Droid, the owner uploads Cucuto's existing release key as
-  Play's app-signing key (PEPK), and uses a separate upload key in CI (#276). With Google's own key, Play installs
-  and GitHub installs could never update each other, and the Obtainium certificate pin would refuse Play's APK.
-  Play builds split APKs from the bundle, so they aren't byte-identical to the reproducible GitHub APK. That's
-  expected. Play enrolls a new app in its own keys on the first upload, so the key goes in **before** that upload
-  ([google-play.md → Signing](google-play.md#signing)). `release.yml` attaches the signed bundle to every release
-  once the upload key exists (ADR 0071).
+- **App bundle and Play App Signing.** New apps upload an `.aab`, and Google signs what it serves. **Owner update
+  2026-10-24 (#287):** Play uses its own Google-generated app signing key, and the release key is the upload key
+  ("the app is not in any device yet, so changing the key now may not have any big impact"). So Play installs and
+  the APKs from GitHub, Obtainium and F-Droid can't update each other: switching channels means a backup, an
+  uninstall and a restore, and the Obtainium certificate pin refuses an app installed from Play. Play builds split
+  APKs from the bundle, so they aren't byte-identical to the reproducible GitHub APK either. `release.yml` attaches
+  the bundle, signed with the release key, to every release ([google-play.md → Signing](google-play.md#signing),
+  ADR 0071).
 - **Target API and 16 KB pages** (checked 2026-10-24, ADR 0071): Play needs API 36 since 31 August 2026, and Cucuto
   targets 37. The native libraries, including the Rust `libcucuto_jxl.so` linked by NDK r30, have 16 KB-aligned
   `LOAD` segments, and the bundle asks for 16 KB zip alignment (`PAGE_ALIGNMENT_16K`). CI checks all three on every
