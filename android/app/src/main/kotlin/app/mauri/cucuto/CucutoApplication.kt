@@ -1,6 +1,7 @@
 package app.mauri.cucuto
 
 import android.app.Application
+import app.mauri.cucuto.backup.AutoBackup
 import app.mauri.cucuto.core.data.routing.RoutingPublisher
 import app.mauri.cucuto.core.jxl.JxlCoilDecoder
 import app.mauri.cucuto.packs.AutoHapticsRunner
@@ -20,6 +21,8 @@ class CucutoApplication :
 
     @Inject lateinit var autoHaptics: AutoHapticsRunner
 
+    @Inject lateinit var autoBackup: AutoBackup
+
     override fun onCreate() {
         super.onCreate()
         // libxposed hands the framework service to the app at process start; from then on every database change
@@ -27,6 +30,8 @@ class CucutoApplication :
         routingPublisher.start()
         // Background: analyse clips of installed packs whose auto haptics are missing or stale (ADR 0020).
         autoHaptics.start()
+        // Automatic backups to the folder the user picked, shortly after each change (ADR 0028).
+        autoBackup.start()
     }
 
     /**

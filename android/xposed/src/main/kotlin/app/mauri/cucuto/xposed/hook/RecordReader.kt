@@ -6,7 +6,9 @@ import android.content.pm.ShortcutInfo
 import android.os.Bundle
 import android.os.Parcelable
 import android.service.notification.StatusBarNotification
+import app.mauri.cucuto.xposed.route.ConversationKeys
 import app.mauri.cucuto.xposed.route.NotificationSnapshot
+import app.mauri.cucuto.xposed.route.Targets
 import java.lang.reflect.Method
 
 /**
@@ -17,7 +19,8 @@ import java.lang.reflect.Method
  *
  * MessagingStyle extras are read key by key with the expected types (the M0 spike's reader went through the hidden
  * `extractMessagingStyleFromNotification` and a wrongly typed `EXTRA_PEOPLE_LIST` read, which logged Bundle type
- * warnings and came back empty). A type mismatch on one key loses that key only.
+ * warnings and came back empty). A type mismatch on one key loses that key only. Of a message, only the sender
+ * (`sender_person`, else the legacy `sender` name) is read, and only for groups.
  */
 internal class RecordReader(
     recordClass: Class<*>,
@@ -37,20 +40,32 @@ internal class RecordReader(
         val notification: Notification? = sbn.notification
         val shortcut = invoke(getShortcutInfo, record) as? ShortcutInfo
         val extras: Bundle? = safe { notification?.extras }
-        val lastMessage = extras?.let { lastMessage(it) }
+        val channelId = safe { notification?.channelId }
+        val shortcutId = safe { notification?.shortcutId }
+        val shortcutInfoId = safe { shortcut?.id }
+        val isGroupConversation =
+            extras?.let { safe { it.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false) } } ?: false
+        // Minimum intrusion (#20): only a group's newest message is opened, and only for its sender. 1:1 chats never
+        // need it (the shortcut ID is the person), and the message text is never read.
+        val group = ConversationKeys.isGroup(channelId, shortcutId ?: shortcutInfoId, isGroupConversation)
+        val lastMessage = if (group) extras?.let { lastMessage(it) } else null
         val person = lastMessage?.let { safe { it.getParcelable(KEY_SENDER_PERSON, Person::class.java) } }
+        // The simulate extras are read only from Cucuto's own simulate channel; the package is the one
+        // system_server attributes the notification to, which no other app can claim.
+        val simulate = pkg == Targets.SELF_PACKAGE && channelId == Targets.SIMULATE_CHANNEL
         return NotificationSnapshot(
             packageName = pkg,
-            channelId = safe { notification?.channelId },
-            shortcutId = safe { notification?.shortcutId },
-            shortcutInfoId = safe { shortcut?.id },
+            channelId = channelId,
+            shortcutId = shortcutId,
+            shortcutInfoId = shortcutInfoId,
             shortcutLabel = safe { (shortcut?.shortLabel ?: shortcut?.longLabel)?.toString() },
             title = extras?.let { text(it, Notification.EXTRA_TITLE) },
             conversationTitle = extras?.let { text(it, Notification.EXTRA_CONVERSATION_TITLE) },
-            isGroupConversation =
-                extras?.let { safe { it.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false) } } ?: false,
+            isGroupConversation = isGroupConversation,
             senderKey = safe { person?.key },
             senderName = safe { person?.name?.toString() } ?: lastMessage?.let { text(it, KEY_SENDER) },
+            simulatePackage = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_PACKAGE) } else null,
+            simulateKey = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_KEY) } else null,
         )
     }
 

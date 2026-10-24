@@ -48,10 +48,10 @@ sealed interface CucutoDestination : NavKey {
     @Serializable
     data object Discover : CucutoDestination
 
-    /** Haptic editor for a character or a per-contact override. */
+    /** Haptic editor (#32) for [chat]'s custom vibration (#33), or a scratch pad that only previews when null. */
     @Serializable
     data class HapticEditor(
-        val contactKey: String? = null,
+        val chat: ChatKey? = null,
     ) : CucutoDestination
 
     /** Settings and diagnostics. */

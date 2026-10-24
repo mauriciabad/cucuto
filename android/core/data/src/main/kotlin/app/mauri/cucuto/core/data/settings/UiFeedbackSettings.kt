@@ -22,8 +22,9 @@ enum class UiSoundLevel(
 }
 
 /**
- * In-app feedback settings: "UI sounds" (off, quiet, normal; default quiet) and "UI haptics" (default on; the system
- * "Vibration and haptics" / touch feedback settings still apply on top). Stored in the app's settings DataStore.
+ * In-app feedback settings: "UI sounds" (off, quiet, normal; default quiet), "UI haptics" (default on; the system
+ * "Vibration and haptics" / touch feedback settings still apply on top) and "Remove animations" (default off; the
+ * system's Remove animations turns it on too). Stored in the app's settings DataStore.
  */
 @Singleton
 class UiFeedbackSettings
@@ -39,6 +40,13 @@ class UiFeedbackSettings
 
         val hapticsEnabled: Flow<Boolean> = dataStore.data.map { it[HAPTICS] ?: true }.distinctUntilChanged()
 
+        /**
+         * Cucuto's own "Remove animations": drops decorative motion (particles, bounces, the door swing) like the
+         * system setting does, without slowing every other app. Sound and haptics still play.
+         */
+        val removeAnimations: Flow<Boolean> =
+            dataStore.data.map { it[REMOVE_ANIMATIONS] ?: false }.distinctUntilChanged()
+
         suspend fun setSoundLevel(level: UiSoundLevel) {
             dataStore.edit { it[SOUND_LEVEL] = level.name }
         }
@@ -47,7 +55,12 @@ class UiFeedbackSettings
             dataStore.edit { it[HAPTICS] = enabled }
         }
 
+        suspend fun setRemoveAnimations(remove: Boolean) {
+            dataStore.edit { it[REMOVE_ANIMATIONS] = remove }
+        }
+
         private companion object {
+            val REMOVE_ANIMATIONS = booleanPreferencesKey("ui_remove_animations")
             val SOUND_LEVEL = stringPreferencesKey("ui_sound_level")
             val HAPTICS = booleanPreferencesKey("ui_haptics")
         }

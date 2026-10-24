@@ -56,20 +56,24 @@ class AssignmentRepository
             current.copy(disabledClips = disabled.sorted())
         }
 
-        /** Sets the per-contact haptic (pack `haptic` JSON), or null to use the character's. */
+        /**
+         * Sets the per-contact haptic (pack `haptic` JSON, see `HapticOverride`), or null to use the character's.
+         * Returns false when [contactId] has no voice: the override belongs to the assignment.
+         */
         suspend fun setHapticOverride(
             contactId: Long,
             hapticJson: String?,
-        ) = edit(contactId) { it.copy(hapticOverride = hapticJson) }
+        ): Boolean = edit(contactId) { it.copy(hapticOverride = hapticJson) }
 
+        /** Applies [change] to [contactId]'s assignment. Returns false when there is none. */
         private suspend fun edit(
             contactId: Long,
             change: (AssignmentEntity) -> AssignmentEntity,
-        ) {
+        ): Boolean =
             db.withWriteTransaction {
-                val current = dao.get(contactId) ?: return@withWriteTransaction
+                val current = dao.get(contactId) ?: return@withWriteTransaction false
                 val updated = change(current)
                 if (updated != current) dao.upsert(updated.copy(updatedAt = clock.now()))
+                true
             }
-        }
     }

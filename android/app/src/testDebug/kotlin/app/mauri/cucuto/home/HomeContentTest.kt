@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -26,6 +27,7 @@ class HomeContentTest {
     val compose = createComposeRule()
 
     private val opened = mutableListOf<ChatKey>()
+    private val details = mutableListOf<ChatKey>()
     private val queries = mutableListOf<String>()
 
     private fun show(state: HomeState) {
@@ -39,6 +41,7 @@ class HomeContentTest {
                     onOpenChat = { opened += it },
                     onOpenPacks = {},
                     onBack = {},
+                    onOpenDetail = { details += it },
                 )
             }
         }
@@ -54,6 +57,19 @@ class HomeContentTest {
         compose.onAllNodesWithTextFirst("Ada").performClick()
 
         assertEquals(listOf(state.recent.first().key), opened)
+    }
+
+    @Test
+    fun aChatWithAVoiceOpensItsDetailAndOneWithoutOpensThePicker() {
+        val state = previewHomeState()
+        show(state)
+
+        compose.onNodeWithText("Bea").performClick()
+        assertEquals(listOf(ChatKey("com.whatsapp", "100000000000002@lid")), details)
+
+        // The list row (the strip shows the same chat first).
+        compose.onAllNodes(hasText("Book club")).onLast().performClick()
+        assertEquals(listOf(ChatKey("com.whatsapp", "120300000000001@g.us")), opened)
     }
 
     @Test
