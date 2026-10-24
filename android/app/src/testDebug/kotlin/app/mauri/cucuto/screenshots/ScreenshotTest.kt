@@ -67,8 +67,9 @@ import kotlin.math.roundToInt
  * - `./gradlew :app:exportWebScreenshots` also writes the website's images (the tests with a `web` name) to
  *   `web/src/lib/assets/images/screenshots/`, in English and, once the app is translated, in Spanish (`es/`).
  * - `./gradlew :app:exportStoreScreenshots` also writes the store listing's images (the tests with a `store`
- *   position) to `fastlane/metadata/android/<en-US|es-ES>/images/phoneScreenshots/`, light theme, full resolution
- *   (ADR 0046). F-Droid, IzzyOnDroid and Obtainium show them in that order.
+ *   position) to `fastlane/metadata/android/<en-US|es-ES>/images/phoneScreenshots/`, light theme, full resolution,
+ *   centered on a 1080 × 1920 px brand canvas for Google Play ([StoreFrame], ADR 0046, ADR 0071). Every store shows
+ *   them in that order.
  * - `fontScale = 2f` (Android's largest font size, #29) records `<name>-font200-light.png` in English and
  *   `<name>-font200-es-light.png` in Spanish (the longer strings), light theme only: [LargeFontScreenshotTest].
  *
@@ -185,7 +186,9 @@ abstract class ScreenshotTest(
         }
         if (storeExport) {
             val folder = File(storeDir, "${variant.storeLocale}/images/phoneScreenshots")
-            captureScreenRoboImage(File(folder, "$store-$name.png"), storeOptions)
+            val file = File(folder, "$store-$name.png")
+            captureScreenRoboImage(file, storeOptions)
+            StoreFrame.frame(file)
         }
     }
 
@@ -277,7 +280,7 @@ abstract class ScreenshotTest(
             )
         }
 
-        /** Store listing images: always written, at the full 822 × 1782 px. */
+        /** Store listing images: always written, at the full 822 × 1782 px, then framed by [StoreFrame]. */
         @OptIn(ExperimentalRoborazziApi::class)
         private val storeOptions by lazy {
             RoborazziOptions(taskType = RoborazziTaskType.Record)

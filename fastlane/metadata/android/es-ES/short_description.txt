@@ -1,1 +1,1 @@
-Una voz para cada contacto de WhatsApp: su sonido y su vibración. Requiere root.
+Una voz por contacto: su sonido y su vibración en WhatsApp. Requiere root.
