@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.repo
 
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -102,5 +103,48 @@ class RepositoryLinksTest {
             deepError("cucuto://repo/add?url=https%3A%2F%2Fa%3Ab%40example.com%2F"),
         )
         assertEquals(LinkError.NOT_A_URL, deepError("cucuto://repo/add?url=javascript%3Aalert(1)"))
+    }
+
+    @Test
+    fun googleDriveFileLinksBecomeDirectDownloads() {
+        val id = "1AbCdEfGhIjKlMnOpQrStUv-wx_yz"
+        val download = "https://drive.usercontent.google.com/download?id=$id&export=download&confirm=t"
+        for (shared in listOf(
+            "https://drive.google.com/file/d/$id/view?usp=sharing",
+            "drive.google.com/file/d/$id/view",
+            "https://drive.google.com/file/d/$id",
+            "https://drive.google.com/open?id=$id",
+            "https://drive.google.com/uc?export=download&id=$id",
+            "https://docs.google.com/uc?id=$id",
+            "https://drive.usercontent.google.com/download?id=$id&export=download",
+        )) {
+            val link = (RepositoryLinks.parse(shared) as LinkResult.Ok).link
+            assertEquals(shared, RepositoryLink.DirectPack::class, link::class)
+            assertEquals(shared, download, link.url.toString())
+            assertEquals("Google Drive", (link as RepositoryLink.DirectPack).fileName)
+        }
+        val deep = RepositoryLinks.parseDeepLink(RepositoryLinks.deepLinkFor(download.toHttpUrl())) as LinkResult.Ok
+        assertEquals(download, deep.link.url.toString())
+    }
+
+    @Test
+    fun googleDriveFolderLinksAreExplained() {
+        assertEquals(
+            LinkError.DRIVE_FOLDER,
+            error("https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp?usp=sharing"),
+        )
+        assertEquals(LinkError.DRIVE_FOLDER, error("https://drive.google.com/drive/u/0/folders/1AbCdEfGhIjKlMnOp"))
+        // Other Drive pages are not links to a file: the usual folder rule applies.
+        assertEquals(
+            "https://drive.google.com/drive/my-drive/repository.json",
+            index("https://drive.google.com/drive/my-drive"),
+        )
+        assertEquals("https://drive.google.com/open/repository.json?id=x", index("https://drive.google.com/open?id=x"))
+    }
+
+    @Test
+    fun directPacksAreNamedAfterTheirFile() {
+        val link = (RepositoryLinks.parse("https://example.com/dl/cats.soundpack.zip") as LinkResult.Ok).link
+        assertEquals("cats.soundpack.zip", (link as RepositoryLink.DirectPack).fileName)
     }
 }

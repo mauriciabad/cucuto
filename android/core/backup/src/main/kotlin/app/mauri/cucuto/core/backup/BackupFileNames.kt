@@ -14,6 +14,12 @@ object BackupFileNames {
     /** Number of automatic backups kept in the chosen folder (docs/project-brief.md, "Backup and restore"). */
     const val AUTOMATIC_KEEP = 10
 
+    /**
+     * The name suggested for the single automatic backup file that each backup replaces (Google Drive and other cloud
+     * apps, ADR 0040). It always holds the newest backup, so it has no date; the folder pruning never matches it.
+     */
+    const val AUTOMATIC_FILE = "cucuto-backup-latest.zip"
+
     private val pattern = Regex("""^cucuto-backup-(\d{4}-\d{2}-\d{2})(?: \((\d{1,4})\))?\.zip$""")
 
     /** The name for a backup made on [date]. */

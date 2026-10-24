@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copias en Google Drive y otras apps en la nube, enlaces de Drive en Descubrir (#163, #37, ADR 0040). -->
+<resources>
+    <!-- Ajustes: copias automáticas en un solo archivo -->
+    <string name="settings_auto_backup_cloud_hint">¿Usas Google Drive u otra app en la nube? Elige un archivo: Cucuto lo sustituye tras cada cambio, y la app lo sube y guarda las versiones anteriores.</string>
+    <string name="settings_auto_backup_choose_file">Elegir archivo</string>
+    <string name="settings_auto_backup_change_file">Cambiar archivo</string>
+    <string name="settings_auto_backup_on_file">En %1$s, sustituido poco después de cada cambio.</string>
+    <string name="settings_auto_backup_file_unknown">el archivo elegido</string>
+    <string name="backup_file_failed">Cucuto no puede mantener el acceso a ese archivo. Elige otro.</string>
+
+    <!-- Restaurar: seguir en el archivo restaurado -->
+    <string name="restore_keep_file_title">Seguir guardando copias en este archivo</string>
+    <string name="restore_keep_file_body">Cucuto lo sustituirá poco después de cada cambio, así tu próximo móvil también podrá restaurar desde él.</string>
+    <string name="restore_keep_file_action">Usar este archivo</string>
+    <string name="restore_keep_file_done">Ahora las copias automáticas se guardan en este archivo.</string>
+
+    <!-- Descubrir: enlaces de Google Drive -->
+    <string name="discover_link_drive_folder">Aún no se pueden añadir carpetas de Google Drive. Comparte cada archivo de pack con \"Cualquier persona con el enlace\" y pega ese enlace, o descarga los packs y ábrelos en Cucuto.</string>
+</resources>

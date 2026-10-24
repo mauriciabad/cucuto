@@ -372,6 +372,7 @@ internal fun linkMessage(error: LinkError): Int =
         LinkError.NOT_HTTPS -> R.string.discover_link_not_https
         LinkError.CREDENTIALS_IN_URL -> R.string.discover_link_credentials
         LinkError.NOT_A_DEEP_LINK, LinkError.MISSING_URL -> R.string.discover_bad_link
+        LinkError.DRIVE_FOLDER -> R.string.discover_link_drive_folder
     }
 
 /** A failed check while adding: a 401 or 403 asks for the sign-in below. */

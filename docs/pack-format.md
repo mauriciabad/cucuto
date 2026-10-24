@@ -548,6 +548,9 @@ Rules:
 ## Backups
 
 A backup is a zip archive named `cucuto-backup-YYYY-MM-DD.zip` (same [archive rules](#archive-rules) for paths and safety).
+Automatic backups into a single file that each backup replaces (for Google Drive and other cloud apps) suggest
+`cucuto-backup-latest.zip` ([ADR 0040](decisions/0040-google-drive-backups-and-pack-folders.md)). Names carry no
+authority: readers detect the type from the contents.
 
 - **Plain backup:** `backup.json` at the root, plus optional `packs/<id>-<version>.soundpack.zip` files for a "full
   backup" (each referenced by its pack entry's `included` path).

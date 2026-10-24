@@ -23,9 +23,13 @@ sealed interface RepositoryLink {
         override val url: HttpUrl,
     ) : RepositoryLink
 
-    /** A direct link to one `.soundpack.zip` (any `.zip`), downloaded once through the importer. */
+    /**
+     * A direct link to one `.soundpack.zip` (any `.zip`, or a public Google Drive file), downloaded once through the
+     * importer. [fileName] labels the download until the importer reads the pack's own name.
+     */
     data class DirectPack(
         override val url: HttpUrl,
+        val fileName: String = url.pathSegments.last(),
     ) : RepositoryLink
 }
 
@@ -45,6 +49,12 @@ enum class LinkError {
 
     /** A deep link without exactly one `url` parameter. */
     MISSING_URL,
+
+    /**
+     * A Google Drive folder link. Reading a folder needs Google sign-in, which waits for the owner's OAuth client
+     * (ADR 0040); file links work.
+     */
+    DRIVE_FOLDER,
 }
 
 sealed interface LinkResult {
@@ -107,6 +117,7 @@ object RepositoryLinks {
             return LinkResult.Error(LinkError.CREDENTIALS_IN_URL)
         }
         val url = parsed.newBuilder().fragment(null).build()
+        GoogleDriveLinks.classify(url)?.let { return it }
         val last = url.pathSegments.last()
         val lower = last.lowercase()
         val link =
@@ -171,4 +182,53 @@ object RepositoryLinks {
     fun deepLinkFor(url: HttpUrl): String =
         "$DEEP_LINK_SCHEME://$DEEP_LINK_HOST$DEEP_LINK_PATH?$DEEP_LINK_URL_PARAMETER=" +
             URLEncoder.encode(url.toString(), Charsets.UTF_8)
+}
+
+/**
+ * Google Drive share links (#37, ADR 0040). A public file ("Anyone with the link") downloads without signing in from
+ * `drive.usercontent.google.com`, so its share link becomes a [RepositoryLink.DirectPack]: `confirm=t` skips the
+ * "can't scan for viruses" page Drive shows for large files, and the importer still checks every byte. Folder links
+ * need the Drive API, so they get [LinkError.DRIVE_FOLDER] instead of a broken `…/repository.json` guess.
+ */
+internal object GoogleDriveLinks {
+    const val DOWNLOAD_HOST = "drive.usercontent.google.com"
+    const val FILE_NAME = "Google Drive"
+    private val ID = Regex("^[A-Za-z0-9_-]{10,}$")
+
+    fun classify(url: HttpUrl): LinkResult? {
+        val segments = url.pathSegments.filter { it.isNotEmpty() }
+        val id =
+            when (url.host) {
+                "drive.google.com" -> {
+                    val folder = segments.indexOf("folders")
+                    if (folder >= 0 && folder + 1 < segments.size) return LinkResult.Error(LinkError.DRIVE_FOLDER)
+                    val file = segments.indexOf("d")
+                    when {
+                        segments.firstOrNull() == "file" && file == 1 -> segments.getOrNull(2)
+                        segments.firstOrNull() in setOf("open", "uc") -> url.queryParameter("id")
+                        else -> null
+                    }
+                }
+
+                DOWNLOAD_HOST, "docs.google.com" -> {
+                    if (segments.firstOrNull() in setOf("download", "uc")) url.queryParameter("id") else null
+                }
+
+                else -> {
+                    null
+                }
+            } ?: return null
+        if (!ID.matches(id)) return null
+        val download =
+            HttpUrl
+                .Builder()
+                .scheme("https")
+                .host(DOWNLOAD_HOST)
+                .addPathSegment("download")
+                .addQueryParameter("id", id)
+                .addQueryParameter("export", "download")
+                .addQueryParameter("confirm", "t")
+                .build()
+        return LinkResult.Ok(RepositoryLink.DirectPack(download, FILE_NAME))
+    }
 }

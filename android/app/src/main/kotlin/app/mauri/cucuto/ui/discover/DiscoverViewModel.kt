@@ -203,7 +203,7 @@ class DiscoverViewModel
             credentials: RepositoryCredentials?,
         ) {
             form.value = null
-            val name = link.url.pathSegments.last()
+            val name = link.fileName
             val access = credentials?.let { RepositoryAccess(link.url, it) }
             imports.start { downloader.download(name, link.url, null, access, PackOrigin.Url(link.url.toString())) }
         }

@@ -77,6 +77,13 @@ sealed interface RestoreStep {
     /** Restored: what happened, and what a backup can't do (the LSPosed checklist). */
     data class Done(
         val summary: RestoreSummary,
+        /**
+         * The restored document, offered as the automatic backup file (a new phone carries on where the old one
+         * left off, ADR 0040). Null for encrypted backups: an automatic backup is plain and must not replace them.
+         */
+        val reusableSource: String? = null,
+        /** The user chose to keep automatic backups in [reusableSource]'s file. */
+        val keptForBackups: Boolean = false,
     ) : RestoreStep
 }
 
@@ -352,7 +359,7 @@ class RestoreViewModel
             firstReport = report
             _step.value =
                 if (report.conflicts.isEmpty()) {
-                    RestoreStep.Done(summary(report, second = null))
+                    done(summary(report, second = null))
                 } else {
                     RestoreStep.Conflicts(conflictRows(report.conflicts))
                 }
@@ -387,14 +394,14 @@ class RestoreViewModel
             val current = session ?: return
             val first = firstReport ?: return
             if (step.selected.isEmpty()) {
-                _step.value = RestoreStep.Done(summary(first, second = null))
+                _step.value = done(summary(first, second = null))
                 return
             }
             job =
                 viewModelScope.launch {
                     _step.value = RestoreStep.Working(RestoreStep.Phase.RESTORING)
                     val second = runRestore(current, step.selected) ?: return@launch
-                    _step.value = RestoreStep.Done(summary(first, second))
+                    _step.value = done(summary(first, second))
                 }
         }
 
@@ -456,6 +463,16 @@ class RestoreViewModel
                 packsMissing = packsMissing,
                 ringtonesPending = first.ringtonesPending,
             )
+
+        private fun done(summary: RestoreSummary): RestoreStep.Done =
+            RestoreStep.Done(summary, reusableSource = source.takeIf { session?.encrypted == false })
+
+        /** The user keeps automatic backups in the restored file; the Settings screen turns them on. */
+        fun keepForBackups() {
+            _step.update { step ->
+                if (step is RestoreStep.Done && step.reusableSource != null) step.copy(keptForBackups = true) else step
+            }
+        }
 
         /** Leaves the flow (back, close, or after the checklist) and deletes the scratch copies. */
         fun close() {
