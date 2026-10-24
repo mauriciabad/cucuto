@@ -25,7 +25,7 @@ class DriveBackupStoreTest {
 
     @After
     fun stop() {
-        server.close()
+        server.closeServer()
     }
 
     private val isBackup: (String) -> Boolean = { it.startsWith("cucuto-backup-") }
