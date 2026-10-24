@@ -11,6 +11,7 @@ package app.mauri.cucuto.xposed.events
  * - After a failed delivery (app not installed, provider refused, Binder error) the next attempt backs off,
  *   doubling from [initialBackoffMillis] up to [maxBackoffMillis]. Events wait in the queue meanwhile.
  * - The queue holds at most [capacity] events; the oldest are dropped first and counted in [dropped].
+ * - [requestStatus] asks for one delivery without events (a new routing table to report), on the same schedule.
  *
  * Thread-safe: every method synchronises on the queue.
  */
@@ -24,6 +25,7 @@ class EventQueue(
     private val events = ArrayDeque<DecisionEvent>()
     private var lastAttemptAt = Long.MIN_VALUE
     private var backoffMillis = 0L
+    private var statusRequested = false
 
     /** Events dropped since boot. */
     var dropped: Long = 0
@@ -43,6 +45,20 @@ class EventQueue(
             wasEmpty
         }
 
+    /**
+     * Asks for one delivery even if no event is queued, to carry a fresh status (a status-only delivery follows the
+     * same schedule). Returns true when the caller should schedule a delivery (nothing was pending).
+     */
+    fun requestStatus(): Boolean =
+        synchronized(events) {
+            val schedule = events.isEmpty() && !statusRequested
+            statusRequested = true
+            schedule
+        }
+
+    /** Whether a delivery is due: queued events or a status request. */
+    val hasWork: Boolean get() = synchronized(events) { events.isNotEmpty() || statusRequested }
+
     /** When the next delivery may run, given that something is queued and the time is [now]. */
     fun nextDeliveryAt(now: Long): Long =
         synchronized(events) {
@@ -57,13 +73,17 @@ class EventQueue(
             maxOf(now + debounceMillis, earliest)
         }
 
-    /** Takes up to [max] events, oldest first, for one delivery attempt at [now]. */
+    /**
+     * Takes up to [max] events, oldest first, for one delivery attempt at [now]. Empty with nothing to deliver, or
+     * when the attempt only carries a requested status (then it counts as an attempt and clears the request).
+     */
     fun take(
         now: Long,
         max: Int = EventContract.MAX_EVENTS_PER_CALL,
     ): List<DecisionEvent> =
         synchronized(events) {
-            if (events.isEmpty()) return@synchronized emptyList()
+            if (events.isEmpty() && !statusRequested) return@synchronized emptyList()
+            statusRequested = false
             lastAttemptAt = now
             val n = minOf(max, events.size)
             List(n) { events.removeFirst() }
@@ -79,6 +99,7 @@ class EventQueue(
             return@synchronized
         }
         backoffMillis = if (backoffMillis == 0L) initialBackoffMillis else minOf(backoffMillis * 2, maxBackoffMillis)
+        if (batch.isEmpty()) statusRequested = true
         for (i in batch.indices.reversed()) events.addFirst(batch[i])
         while (events.size > capacity) {
             events.removeFirst()
