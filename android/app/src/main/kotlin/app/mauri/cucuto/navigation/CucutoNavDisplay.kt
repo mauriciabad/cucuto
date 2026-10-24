@@ -23,6 +23,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import app.mauri.cucuto.core.pack.ImportSource
+import app.mauri.cucuto.daynight.DayNightScreen
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
@@ -131,6 +132,7 @@ private fun entries(
     entry<CucutoDestination.HapticEditor> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
+    entry<CucutoDestination.DayNight> { DayNightScreen(onBack = goBack) }
     entry<CucutoDestination.Gallery> { GalleryScreen(onBack = goBack) }
 }
 

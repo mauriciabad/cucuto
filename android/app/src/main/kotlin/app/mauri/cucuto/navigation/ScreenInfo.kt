@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.ChatKey
@@ -63,6 +64,10 @@ fun CucutoDestination.screenInfo(): ScreenInfo? =
         CucutoDestination.Settings -> {
             ScreenInfo(R.string.screen_settings, R.string.screen_settings_body, "M3", Icons.Rounded.Settings)
         }
+
+        CucutoDestination.DayNight -> {
+            ScreenInfo(R.string.screen_daynight, R.string.screen_daynight_body, "M9", Icons.Rounded.Star)
+        }
     }
 
 /** Destinations reachable from the Status screen while the app is a scaffold. */
@@ -75,4 +80,5 @@ val PreviewDestinations: List<CucutoDestination> =
         CucutoDestination.Discover,
         CucutoDestination.HapticEditor(),
         CucutoDestination.Settings,
+        CucutoDestination.DayNight,
     )

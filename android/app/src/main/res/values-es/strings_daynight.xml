@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clips de día y de noche (#118, ADR 0037). -->
+<resources>
+    <string name="screen_daynight">Día y noche</string>
+    <string name="screen_daynight_body">Dónde se calculan el amanecer y el atardecer, para las voces con clips de día y de noche.</string>
+    <string name="daynight_title">Día y noche</string>
+    <string name="daynight_intro">Algunas voces tienen clips para el día y otros para la noche. Cucuto calcula el amanecer y el atardecer en tu móvil para el lugar que elijas aquí. Tu ubicación nunca sale del móvil y nadie la sigue.</string>
+    <string name="daynight_now_day">Ahora es de día</string>
+    <string name="daynight_now_night">Ahora es de noche</string>
+    <string name="daynight_sun_times">Amanecer %1$s · Atardecer %2$s</string>
+    <string name="daynight_polar_day">Hoy el sol no se pone.</string>
+    <string name="daynight_polar_night">Hoy el sol no sale.</string>
+    <string name="daynight_place_named">Para %1$s</string>
+    <string name="daynight_place_coordinates">Para %1$s, %2$s</string>
+    <string name="daynight_place_none">Aún no has elegido un lugar, así que el día va de %1$s a %2$s.</string>
+    <string name="daynight_forget">Olvidar el lugar</string>
+    <string name="daynight_city_title">Elige una ciudad</string>
+    <string name="daynight_city_search">Buscar ciudades</string>
+    <string name="daynight_city_none">Ninguna ciudad coincide. Elige una cercana o escribe las coordenadas.</string>
+    <string name="daynight_coordinates_title">O escribe las coordenadas</string>
+    <string name="daynight_latitude">Latitud</string>
+    <string name="daynight_longitude">Longitud</string>
+    <string name="daynight_coordinates_hint">En grados, por ejemplo 41,39 y 2,17. El sur y el oeste son negativos.</string>
+    <string name="daynight_coordinates_saved">Coordenadas guardadas.</string>
+    <string name="daynight_latitude_error">La latitud va de -90 a 90.</string>
+    <string name="daynight_longitude_error">La longitud va de -180 a 180.</string>
+    <string name="daynight_coordinates_save">Guardar coordenadas</string>
+    <string name="daynight_location_title">O usa tu ubicación</string>
+    <string name="daynight_location_body">Pide a Android tu ubicación aproximada una sola vez. Cucuto solo guarda las coordenadas redondeadas y nunca te sigue.</string>
+    <string name="daynight_location_button">Usar mi ubicación una vez</string>
+    <string name="daynight_location_locating">Buscando dónde estás…</string>
+    <string name="daynight_location_found">Lugar guardado a partir de tu ubicación.</string>
+    <string name="daynight_location_denied">No se ha permitido la ubicación. Elige una ciudad o escribe las coordenadas.</string>
+    <string name="daynight_location_off">La ubicación está desactivada. Actívala en los ajustes del sistema o elige una ciudad.</string>
+    <string name="daynight_location_unavailable">No se ha podido obtener la ubicación. Elige una ciudad o escribe las coordenadas.</string>
+</resources>

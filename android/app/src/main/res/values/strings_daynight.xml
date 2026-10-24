@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Day and night clips (#118, ADR 0037). Kept apart from strings.xml so parallel UI work merges cleanly. -->
+<resources>
+    <string name="screen_daynight">Day and night</string>
+    <string name="screen_daynight_body">Where sunrise and sunset are worked out, for voices with day and night clips.</string>
+    <string name="daynight_title">Day and night</string>
+    <string name="daynight_intro">Some voices have clips for the day and others for the night. Cucuto works out sunrise and sunset on your phone for the place you choose here. Your location never leaves the phone and is never tracked.</string>
+    <string name="daynight_now_day">It\'s day now</string>
+    <string name="daynight_now_night">It\'s night now</string>
+    <string name="daynight_sun_times">Sunrise %1$s · Sunset %2$s</string>
+    <string name="daynight_polar_day">The sun doesn\'t set today.</string>
+    <string name="daynight_polar_night">The sun doesn\'t rise today.</string>
+    <string name="daynight_place_named">For %1$s</string>
+    <string name="daynight_place_coordinates">For %1$s, %2$s</string>
+    <string name="daynight_place_none">No place chosen yet, so day is %1$s to %2$s.</string>
+    <string name="daynight_forget">Forget the place</string>
+    <string name="daynight_city_title">Choose a city</string>
+    <string name="daynight_city_search">Search cities</string>
+    <string name="daynight_city_none">No city matches. Pick a nearby one or type coordinates.</string>
+    <string name="daynight_coordinates_title">Or type coordinates</string>
+    <string name="daynight_latitude">Latitude</string>
+    <string name="daynight_longitude">Longitude</string>
+    <string name="daynight_coordinates_hint">In degrees, for example 41.39 and 2.17. South and west are negative.</string>
+    <string name="daynight_coordinates_saved">Coordinates saved.</string>
+    <string name="daynight_latitude_error">Latitude goes from -90 to 90.</string>
+    <string name="daynight_longitude_error">Longitude goes from -180 to 180.</string>
+    <string name="daynight_coordinates_save">Save coordinates</string>
+    <string name="daynight_location_title">Or use your location</string>
+    <string name="daynight_location_body">Asks Android for your approximate location one time. Cucuto keeps only the rounded coordinates and never follows you around.</string>
+    <string name="daynight_location_button">Use my location once</string>
+    <string name="daynight_location_locating">Finding where you are…</string>
+    <string name="daynight_location_found">Place saved from your location.</string>
+    <string name="daynight_location_denied">Location wasn\'t allowed. Pick a city or type coordinates instead.</string>
+    <string name="daynight_location_off">Location is off. Turn it on in the system settings, or pick a city instead.</string>
+    <string name="daynight_location_unavailable">Couldn\'t get a location. Pick a city or type coordinates instead.</string>
+</resources>

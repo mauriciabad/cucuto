@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
+import app.mauri.cucuto.core.routing.Voice
 import app.mauri.cucuto.xposed.events.Outcome
 
 /** The packages Cucuto acts on, and the app's own self-test notification. */
@@ -59,12 +60,35 @@ data class Decision(
 }
 
 /**
- * Picks the clip and haptic for a notification from the in-memory routing table. Pure apart from the shuffle bags:
- * no IO, no reflection, no Android types, so it is cheap on the notification path and unit-tested on the JVM.
+ * Picks the clip and haptic for a notification from the in-memory routing table. Pure apart from the shuffle bags
+ * and the clock: no IO, no reflection, no Android types, so it is cheap on the notification path and unit-tested on
+ * the JVM.
+ *
+ * @param now Wall clock in epoch milliseconds, read only for voices with conditional clips.
  */
 class AlertRouter(
     private val bags: ShuffleBags = ShuffleBags(),
+    private val now: () -> Long = System::currentTimeMillis,
 ) {
+    /**
+     * Indices of [voice]'s clips that may play at [nowMs] ([RoutingTable.isPlayable]), or null to use them all:
+     * when every clip is playable, or when none is (a pack whose conditions leave a gap still plays something).
+     */
+    private fun playablePool(
+        table: RoutingTable,
+        voice: Voice,
+        nowMs: Long,
+    ): IntArray? {
+        val clips = voice.clips
+        var count = 0
+        for (clip in clips) if (table.isPlayable(clip, nowMs)) count++
+        if (count == 0 || count == clips.size) return null
+        val pool = IntArray(count)
+        var j = 0
+        clips.forEachIndexed { i, clip -> if (table.isPlayable(clip, nowMs)) pool[j++] = i }
+        return pool
+    }
+
     /** Returns null for packages Cucuto never touches; otherwise a [Decision], possibly "leave it alone". */
     fun decide(
         snapshot: NotificationSnapshot,
@@ -91,15 +115,19 @@ class AlertRouter(
                     detail = "voice has no clips",
                 )
             }
-            val uris = ArrayList<String>(voice.clips.size)
-            val weights = IntArray(voice.clips.size)
-            voice.clips.forEachIndexed { i, clip ->
+            // Day and night clips (ADR 0037): only the clips whose condition holds now join the draw.
+            val pool = if (voice.isConditional) playablePool(table, voice, now()) else null
+            val size = pool?.size ?: voice.clips.size
+            val uris = ArrayList<String>(size)
+            val weights = IntArray(size)
+            for (i in 0 until size) {
+                val clip = voice.clips[pool?.get(i) ?: i]
                 uris += clip.uri
                 weights[i] = clip.milliWeight
             }
             val speaker = match.speaker
-            val index = bags.next("$pkg\n${speaker.key}", uris, weights, speaker.seed)
-            val clip = voice.clips[index]
+            val drawn = bags.next("$pkg\n${speaker.key}", uris, weights, speaker.seed)
+            val clip = voice.clips[pool?.get(drawn) ?: drawn]
             // Resolved against the clip drawn for the sound, so an auto envelope matches what plays.
             val haptic = voice.haptic.forClip(clip.haptic)
             return Decision(
