@@ -154,6 +154,32 @@ class StreamingZipTest {
     }
 
     @Test
+    fun `an entry read again after its check has the same bytes`() {
+        // The second and later reads skip the CRC-32 and useFile's checking pass (#241); the bytes must not change.
+        val data = ByteArray(6 * Limits.MiB.toInt() + 321).also { Noise(11).fill(it, 0, it.size) }
+        val small = data.copyOf(10_000)
+        for (stored in listOf(true, false)) {
+            for (tuning in listOf(ZipTuning(), tiny)) {
+                val zip = tmp.resolve("again-$stored-${tuning.chunkBytes}.zip")
+                writeZip(zip, listOf(Triple("large.bin", Payload(data, 0), stored), Triple("small.bin", Payload(small, 0), stored)))
+                FileInput(zip).use { input ->
+                    val archive = ZipArchive.open(input, JvmPackIo.inflater, tuning).source!!
+                    for ((name, bytes) in listOf("large.bin" to data, "small.bin" to small)) {
+                        assertArrayEquals(bytes.copyOf(8), archive.readHead(name, 8), name)
+                        repeat(2) {
+                            assertArrayEquals(bytes, archive.useFile(name) { f -> ByteArray(f.size.toInt()).also { f.readFully(0, it) } }, name)
+                            val copied = java.io.ByteArrayOutputStream()
+                            archive.copyTo(name) { b, off, n -> copied.write(b, off, n) }
+                            assertArrayEquals(bytes, copied.toByteArray(), name)
+                            assertArrayEquals(bytes.copyOf(8), archive.readHead(name, 8), name)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     fun `a wrong CRC fails a streamed copy after the data`() {
         val payload = Payload(header = ByteArray(0), bodyBytes = 6L * Limits.MiB)
         for (stored in listOf(true, false)) {

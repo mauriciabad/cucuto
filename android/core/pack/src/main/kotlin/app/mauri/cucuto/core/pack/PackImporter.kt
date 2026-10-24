@@ -26,12 +26,15 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -41,6 +44,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.security.MessageDigest
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Imports packs and bundles (`<name>.soundpack.zip`) from any [ImportSource] (docs/decisions/0008-pack-importer.md).
@@ -49,8 +53,8 @@ import java.util.UUID
  *
  * 1. [prepare] copies the file into the app, validates it with the shared pack-spec rules (archive, layout, manifests,
  *    references, media headers), unpacks the files to install into a staging folder and test-decodes every clip,
- *    ringtone and image with the platform decoders. It ends with [ImportResult.Ready], [ImportResult.Invalid] or
- *    [ImportResult.Failed].
+ *    ringtone and image with the platform decoders, several at once. It ends with [ImportResult.Ready],
+ *    [ImportResult.Invalid] or [ImportResult.Failed].
  * 2. The UI shows the packs, warnings and what installing does ([PackCandidate.action]), and the user picks packs of a
  *    bundle and confirms replacements and downgrades ([PackSelection]).
  * 3. [install] runs the [analyzer] on the chosen packs (auto haptics), moves them into [PackStore] with renames and
@@ -68,7 +72,13 @@ class PackImporter(
     private val validator: PackValidator = PackValidator(),
     /** Extra work on each pack before it is installed; see [PackAnalyzer]. */
     private val analyzer: PackAnalyzer? = null,
+    /** How many media files [prepare] test-decodes at once. */
+    private val decodeParallelism: Int = DEFAULT_DECODE_PARALLELISM,
 ) {
+    init {
+        require(decodeParallelism >= 1) { "decodeParallelism must be at least 1" }
+    }
+
     /** Serializes changes to [store]. */
     private val installLock = Mutex()
 
@@ -451,7 +461,7 @@ class PackImporter(
             return emptyList()
         }
 
-        /** Test-decodes every media file of every pack from the staging folder. */
+        /** Test-decodes every media file of every pack from the staging folder, [decodeParallelism] at a time. */
         private suspend fun decode(plans: List<PackPlan>): List<Issue> {
             val jobs =
                 plans.flatMapIndexed { i, plan ->
@@ -461,15 +471,36 @@ class PackImporter(
                         DecodeJob(File(File(stagingDir!!, i.toString()), relative), archivePath, refs, manifestFile)
                     }
                 }
-            val issues = mutableListOf<Issue>()
-            jobs.forEachIndexed { i, job ->
-                currentCoroutineContext().ensureActive()
-                progress(ImportProgress.Decoding(i, jobs.size))
-                val format = FileFormat.of(job.archivePath) ?: return@forEachIndexed
-                issues += verifier.verify(job.file, job.archivePath, format, job.references, job.manifestFile)
+            progress(ImportProgress.Decoding(0, jobs.size))
+            // Platform decoders spend most of their time waiting for the codec process, one packet at a time, so
+            // several files at once go almost proportionally faster (ADR 0061). Issues keep the order of the jobs.
+            val results = arrayOfNulls<List<Issue>>(jobs.size)
+            coroutineScope {
+                val next = AtomicInteger()
+                val finished = Channel<Unit>(Channel.UNLIMITED)
+                repeat(minOf(decodeParallelism, jobs.size)) {
+                    launch {
+                        while (true) {
+                            val i = next.getAndIncrement()
+                            if (i >= jobs.size) break
+                            ensureActive()
+                            val job = jobs[i]
+                            val format = FileFormat.of(job.archivePath)
+                            results[i] =
+                                format?.let {
+                                    verifier.verify(job.file, job.archivePath, it, job.references, job.manifestFile)
+                                } ?: emptyList()
+                            finished.send(Unit)
+                        }
+                    }
+                }
+                // Progress comes from this coroutine: a flow may only emit from the one collecting it.
+                for (done in 1..jobs.size) {
+                    finished.receive()
+                    progress(ImportProgress.Decoding(done, jobs.size))
+                }
             }
-            progress(ImportProgress.Decoding(jobs.size, jobs.size))
-            return issues
+            return results.flatMap { it.orEmpty() }
         }
     }
 
@@ -489,6 +520,13 @@ class PackImporter(
         private const val FREE_SPACE_MARGIN_BYTES = 32 * Limits.MiB
         private const val COPY_BUFFER_BYTES = 256 * 1024
         private const val PROGRESS_STEP_BYTES = Limits.MiB
+
+        /**
+         * One decoder per CPU core, at least 2 and at most 8. The work is mostly waiting for the codec process, so
+         * even a 4-core emulator went 6x faster with 8 at once; the cap bounds the codec instances and threads one
+         * import holds (ADR 0061).
+         */
+        val DEFAULT_DECODE_PARALLELISM: Int = Runtime.getRuntime().availableProcessors().coerceIn(2, 8)
 
         /** The importer of the app: packs in `files/packs/`, scratch files in the cache, platform decoders. */
         fun create(
