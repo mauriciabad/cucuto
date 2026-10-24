@@ -1,6 +1,7 @@
 package app.mauri.cucuto.core.ringtone.variants
 
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import app.mauri.cucuto.packspec.When
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
@@ -130,6 +131,59 @@ class VariantRulesTest {
         val heavyPicks = (1..10_000).count { VariantRules.weighted(listOf(heavy, light), null, random) == heavy }
         assert(heavyPicks in 8_700..9_300) { "heavy picked $heavyPicks times" }
     }
+
+    @Test
+    fun ownRulesSwapTheVersionsAndUseTheFirstAsTheFallback() {
+        val variants = listOf(plain, day, night)
+        // Night by day, Day at night, Plain never: the pack's versions with other conditions (ADR 0074).
+        val rules =
+            listOf(
+                RingtoneRuleEntry("night.ogg", buildJsonObject { put("time", "day") }),
+                RingtoneRuleEntry("day.ogg", buildJsonObject { put("time", "night") }),
+            )
+        assertEquals("night.ogg", pickCustom(variants, rules, at(12))?.file)
+        assertEquals("day.ogg", pickCustom(variants, rules, at(22))?.file)
+        // Summer only: nothing matches in October, so the first entry rings.
+        val summer =
+            listOf(
+                RingtoneRuleEntry("night.ogg", buildJsonObject { put("season", "summer") }),
+                RingtoneRuleEntry("day.ogg", buildJsonObject { put("season", "winter") }),
+            )
+        assertEquals("night.ogg", pickCustom(variants, summer, at(12))?.file)
+        assertEquals("day.ogg", pickCustom(variants, summer, at(12, date = "2026-12-24"))?.file)
+    }
+
+    @Test
+    fun ownRulesSkipMissingVersionsAndFallBackToThePack() {
+        val variants = listOf(plain, day, night)
+        val gone = listOf(RingtoneRuleEntry("removed.ogg"), RingtoneRuleEntry("night.ogg"))
+        assertEquals("night.ogg", pickCustom(variants, gone, at(12))?.file)
+        assertEquals(day, pickCustom(variants, listOf(RingtoneRuleEntry("removed.ogg")), at(12)))
+        assertEquals(day, pickCustom(variants, emptyList(), at(12)))
+    }
+
+    @Test
+    fun ownRulesHaveTheirOwnBoundaries() {
+        val variants = listOf(plain, day, night)
+        val rules =
+            listOf(
+                RingtoneRuleEntry("plain.ogg"),
+                RingtoneRuleEntry("night.ogg", buildJsonObject { put("weekday", "sun") }),
+            )
+        assertEquals(
+            LocalDateTime.parse("2026-10-25T00:00"),
+            VariantRules.nextBoundary(variants, RingtoneMode.CUSTOM, at(8), rules),
+        )
+        assertNull(
+            VariantRules.nextBoundary(variants, RingtoneMode.CUSTOM, at(8), listOf(RingtoneRuleEntry("day.ogg"))),
+        )
+    }
+
+    private fun pickCustom(
+        variants: List<RingtoneVariant>,
+        rules: List<RingtoneRuleEntry>,
+        context: RuleContext,
+    ) = VariantRules.pick(variants, RingtoneMode.CUSTOM, null, context, null, false, Random(1), rules)
 
     @Test
     fun noVariantsPicksNothing() {

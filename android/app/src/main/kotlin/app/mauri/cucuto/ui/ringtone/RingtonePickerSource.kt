@@ -9,6 +9,7 @@ import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.ringtone.PhoneRingtones
@@ -82,6 +83,7 @@ interface RingtonePickerSource {
     /**
      * Stores [chat]'s choice (ADR 0063): [character] null rings with the message character; [followsVoice] says whether
      * it keeps following the voice (false: the user's own pick). A chat without a contact ([contactId] null) gets one.
+     * [rules] are the contact's own rules for [RingtoneMode.CUSTOM] (ADR 0074).
      */
     suspend fun save(
         chat: ChatKey,
@@ -90,6 +92,7 @@ interface RingtonePickerSource {
         followsVoice: Boolean,
         mode: RingtoneMode,
         variant: String?,
+        rules: List<RingtoneRuleEntry> = emptyList(),
     )
 
     /**
@@ -155,9 +158,10 @@ class AppRingtonePickerSource
             followsVoice: Boolean,
             mode: RingtoneMode,
             variant: String?,
+            rules: List<RingtoneRuleEntry>,
         ) {
             val id = contactId ?: chats.ensureContact(chat)
-            ringtones.choose(id, character?.packId, character?.characterId, mode, variant, followsVoice)
+            ringtones.choose(id, character?.packId, character?.characterId, mode, variant, followsVoice, rules)
         }
 
         override suspend fun saveOther(

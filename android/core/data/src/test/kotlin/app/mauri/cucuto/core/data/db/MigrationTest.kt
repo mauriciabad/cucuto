@@ -128,7 +128,7 @@ class MigrationTest {
         }
 
     @Test
-    fun version5KeepsEveryRingtoneACharacter() =
+    fun version5KeepsEveryRingtoneChoiceWithoutRulesOfItsOwn() =
         runTest {
             file.delete()
             helper.createDatabase(4).use { connection ->
@@ -138,10 +138,44 @@ class MigrationTest {
                 )
                 connection.execSQL(
                     "INSERT INTO phone_ringtones (contactId, packId, characterId, mode, variant, updatedAt, " +
-                        "followsVoice) VALUES (1, 'com.example.songs', 'bubblegum', 'PACK', NULL, 1, 0)",
+                        "followsVoice) VALUES (1, 'com.example.songs', 'bubblegum', 'FIXED', 'radio.ogg', 1, 0)",
                 )
             }
             helper.runMigrationsAndValidate(5, listOf(CucutoMigrations.MIGRATION_4_5)).close()
+            val db =
+                Room
+                    .databaseBuilder(ApplicationProvider.getApplicationContext(), CucutoDatabase::class.java, file.path)
+                    .setDriver(AndroidSQLiteDriver())
+                    .addMigrations(*CucutoMigrations.ALL)
+                    .build()
+            try {
+                val row = db.phoneRingtoneDao().get(1)!!
+                assertEquals(RingtoneMode.FIXED, row.mode)
+                assertEquals("radio.ogg", row.variant)
+                assertEquals(null, row.rules)
+                val rules = listOf(RingtoneRuleEntry("radio.ogg"))
+                db.phoneRingtoneDao().upsert(row.copy(mode = RingtoneMode.CUSTOM, rules = RingtoneRules.encode(rules)))
+                assertEquals(rules, RingtoneRules.decode(db.phoneRingtoneDao().get(1)!!.rules))
+            } finally {
+                db.close()
+            }
+        }
+
+    @Test
+    fun version6KeepsEveryRingtoneACharacter() =
+        runTest {
+            file.delete()
+            helper.createDatabase(5).use { connection ->
+                connection.execSQL(
+                    "INSERT INTO contacts (id, displayName, isGroup, groupPolicy, shuffleSeed, createdAt, updatedAt) " +
+                        "VALUES (1, 'Ada', 0, 'GROUP', 7, 1, 1)",
+                )
+                connection.execSQL(
+                    "INSERT INTO phone_ringtones (contactId, packId, characterId, mode, variant, updatedAt, " +
+                        "followsVoice, rules) VALUES (1, 'com.example.songs', 'bubblegum', 'PACK', NULL, 1, 0, NULL)",
+                )
+            }
+            helper.runMigrationsAndValidate(6, listOf(CucutoMigrations.MIGRATION_5_6)).close()
             val db =
                 Room
                     .databaseBuilder(ApplicationProvider.getApplicationContext(), CucutoDatabase::class.java, file.path)

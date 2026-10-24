@@ -244,7 +244,7 @@ class RingtoneSyncTest {
         null,
         RingtoneMode.PACK,
         null,
-        RingtoneChoice.ANDROID_DEFAULT,
+        choice = RingtoneChoice.ANDROID_DEFAULT,
     )
 
     @Test

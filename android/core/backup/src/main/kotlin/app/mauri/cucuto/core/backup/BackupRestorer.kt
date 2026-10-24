@@ -12,6 +12,7 @@ import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import app.mauri.cucuto.core.repo.credentials.CredentialStore
@@ -232,7 +233,11 @@ class BackupRestorer(
         val namesVoice =
             backup.message?.let { it.packId == ringtone.packId && it.characterId == ringtone.characterId } == true
         val own = !follows || !namesVoice
-        val mode = ringtone.rule.mode.toEntity()
+        // Own rules without entries are the pack's rules (the schema requires them; ADR 0074).
+        val mode =
+            ringtone.rule.mode
+                .toEntity()
+                .takeUnless { it == RingtoneMode.CUSTOM && ringtone.rule.rules.isNullOrEmpty() } ?: RingtoneMode.PACK
         val wanted =
             PhoneRingtoneEntity(
                 contactId = contact.contactId,
@@ -242,6 +247,10 @@ class BackupRestorer(
                 variant = if (mode == RingtoneMode.FIXED) ringtone.rule.variant else null,
                 updatedAt = clock.now(),
                 followsVoice = follows,
+                rules =
+                    ringtone.rule.rules
+                        .takeIf { mode == RingtoneMode.CUSTOM }
+                        ?.let(RingtoneRules::encode),
             )
         val outcome =
             when {
@@ -536,6 +545,7 @@ class BackupRestorer(
             BackupRingtoneMode.TIME -> RingtoneMode.TIME
             BackupRingtoneMode.SEASON -> RingtoneMode.SEASON
             BackupRingtoneMode.PACK -> RingtoneMode.PACK
+            BackupRingtoneMode.CUSTOM -> RingtoneMode.CUSTOM
         }
 
     private fun BackupGroupPolicy?.toEntity(): GroupPolicy =

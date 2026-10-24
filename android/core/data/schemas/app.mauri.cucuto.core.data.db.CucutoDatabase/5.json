@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "456aca9120fe005185ac317e77416742",
+    "identityHash": "0ca9fb3b0624b22e6233bae48b34aab9",
     "entities": [
       {
         "tableName": "contacts",
@@ -535,7 +535,7 @@
       },
       {
         "tableName": "phone_ringtones",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`contactId` INTEGER NOT NULL, `packId` TEXT, `characterId` TEXT, `mode` TEXT NOT NULL, `variant` TEXT, `updatedAt` INTEGER NOT NULL, `followsVoice` INTEGER NOT NULL DEFAULT 1, `choice` TEXT NOT NULL DEFAULT 'CHARACTER', PRIMARY KEY(`contactId`), FOREIGN KEY(`contactId`) REFERENCES `contacts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`contactId` INTEGER NOT NULL, `packId` TEXT, `characterId` TEXT, `mode` TEXT NOT NULL, `variant` TEXT, `updatedAt` INTEGER NOT NULL, `followsVoice` INTEGER NOT NULL DEFAULT 1, `rules` TEXT, PRIMARY KEY(`contactId`), FOREIGN KEY(`contactId`) REFERENCES `contacts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "contactId",
@@ -578,11 +578,9 @@
             "defaultValue": "1"
           },
           {
-            "fieldPath": "choice",
-            "columnName": "choice",
-            "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "'CHARACTER'"
+            "fieldPath": "rules",
+            "columnName": "rules",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -659,7 +657,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '456aca9120fe005185ac317e77416742')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0ca9fb3b0624b22e6233bae48b34aab9')"
     ]
   }
 }

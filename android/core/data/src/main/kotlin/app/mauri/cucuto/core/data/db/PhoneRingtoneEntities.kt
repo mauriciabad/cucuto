@@ -16,6 +16,8 @@ import androidx.room3.PrimaryKey
  * @property characterId The character, null together with [packId].
  * @property mode How the variant is chosen (backup schema `ringtone.rule.mode`).
  * @property variant Ringtone file (path from `pack.json`) for [RingtoneMode.FIXED]; null means the first variant.
+ * @property rules The contact's own rules for [RingtoneMode.CUSTOM] (ADR 0074): a JSON array of [RingtoneRuleEntry]
+ *   ([RingtoneRules] reads and writes it), null for every other mode.
  * @property followsVoice The user never picked a ringtone: it rings with the voice's character whenever that has
  *   ringtones, and the chat directory updates [packId] when the voice changes ([app.mauri.cucuto.core.data.chats.PhoneRingtoneFollow]). False once the
  *   user picks a character other than the voice's. Defaults to "no character of its own", the meaning before ADR 0063.
@@ -42,6 +44,7 @@ data class PhoneRingtoneEntity(
     val variant: String? = null,
     val updatedAt: Long,
     @ColumnInfo(defaultValue = "1") val followsVoice: Boolean = packId == null,
+    val rules: String? = null,
     @ColumnInfo(defaultValue = "CHARACTER") val choice: RingtoneChoice = RingtoneChoice.CHARACTER,
 )
 
@@ -76,6 +79,12 @@ enum class RingtoneMode {
 
     /** Follow the pack's `when` conditions (default). */
     PACK,
+
+    /**
+     * The contact's own rules ([PhoneRingtoneEntity.rules], ADR 0074): a copy of the pack's conditions the user edited,
+     * resolved like the pack's.
+     */
+    CUSTOM,
 }
 
 /**

@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +43,7 @@ import app.mauri.cucuto.ui.theme.CharacterTheme
  * One character of a pack's detail screen (ADR 0063, #246): its picture, its name and what it offers (messages, a
  * ringtone, or both). A tap on the picture plays a clip ([clips]), or rings the song of a ringtone-only character;
  * the buttons ring its ringtone like a call, from the start until stopped, with pause and progress ([ringtones]).
+ * With two or more ringtone versions, "Rules" opens their rules ([onOpenRules], ADR 0074).
  */
 @Composable
 fun CharacterRow(
@@ -49,6 +52,7 @@ fun CharacterRow(
     clips: ClipPlayer,
     ringtones: RingtonePlayback<String>,
     modifier: Modifier = Modifier,
+    onOpenRules: (() -> Unit)? = null,
 ) {
     val playing by ringtones.playing.collectAsStateWithLifecycle()
     CharacterRowContent(
@@ -65,6 +69,7 @@ fun CharacterRow(
         },
         onStopRingtone = ringtones::stop,
         modifier = modifier,
+        onOpenRules = onOpenRules,
     )
 }
 
@@ -78,6 +83,7 @@ fun CharacterRowContent(
     onToggleRingtone: () -> Unit,
     modifier: Modifier = Modifier,
     onStopRingtone: () -> Unit = {},
+    onOpenRules: (() -> Unit)? = null,
 ) {
     val song = character.ringtones.firstOrNull()
     val playing = ringtone != null && !ringtone.paused
@@ -112,6 +118,16 @@ fun CharacterRowContent(
             )
             offersLabel(character)?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (onOpenRules != null && character.ringtoneCount >= 2) {
+                val label = stringResource(R.string.packs_ringtone_rules_label, character.name)
+                TextButton(
+                    onClick = onOpenRules,
+                    shapes = ButtonDefaults.shapes(),
+                    modifier = Modifier.semantics { contentDescription = label },
+                ) {
+                    Text(stringResource(R.string.packs_ringtone_rules))
+                }
             }
         }
         if (song != null) {

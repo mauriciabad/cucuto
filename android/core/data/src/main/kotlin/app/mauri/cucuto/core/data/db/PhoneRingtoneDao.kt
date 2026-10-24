@@ -29,7 +29,7 @@ interface PhoneRingtoneDao {
         SELECT r.contactId AS contactId, c.androidLookupKey AS lookupKey, c.displayName AS displayName,
                CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.packId, a.packId) END AS packId,
                CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.characterId, a.characterId) END AS characterId,
-               r.mode AS mode, r.variant AS variant, r.choice AS choice
+               r.mode AS mode, r.variant AS variant, r.rules AS rules, r.choice AS choice
         FROM phone_ringtones AS r
         JOIN contacts AS c ON c.id = r.contactId
         LEFT JOIN assignments AS a ON a.contactId = r.contactId
@@ -45,7 +45,7 @@ interface PhoneRingtoneDao {
         SELECT r.contactId AS contactId, c.androidLookupKey AS lookupKey, c.displayName AS displayName,
                CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.packId, a.packId) END AS packId,
                CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.characterId, a.characterId) END AS characterId,
-               r.mode AS mode, r.variant AS variant, r.choice AS choice
+               r.mode AS mode, r.variant AS variant, r.rules AS rules, r.choice AS choice
         FROM phone_ringtones AS r
         JOIN contacts AS c ON c.id = r.contactId
         LEFT JOIN assignments AS a ON a.contactId = r.contactId
@@ -80,5 +80,7 @@ data class PhoneRingtoneRow(
     val characterId: String?,
     val mode: RingtoneMode,
     val variant: String?,
+    /** [RingtoneMode.CUSTOM]'s rules as stored ([RingtoneRules]). */
+    val rules: String? = null,
     val choice: RingtoneChoice = RingtoneChoice.CHARACTER,
 )

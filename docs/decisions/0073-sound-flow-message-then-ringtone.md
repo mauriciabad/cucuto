@@ -83,9 +83,9 @@ ringtone back, as for ring files (ADR 0039).
 
 ### Data
 
-- `phone_ringtones.choice` (database version 5): `CHARACTER` (the default; every existing row), `ANDROID_DEFAULT` or
-  `UNCHANGED`. The two new choices store no character, `followsVoice` false and the pack rule, so
-  `PhoneRingtoneFollow` leaves them alone.
+- `phone_ringtones.choice` (database version 6, after ADR 0074's `rules`): `CHARACTER` (the default; every existing
+  row), `ANDROID_DEFAULT` or `UNCHANGED`. The two new choices store no character, `followsVoice` false and the pack
+  rule, so `PhoneRingtoneFollow` leaves them alone.
 - The sync query leaves out `UNCHANGED` rows, so the sync restores those contacts exactly like contacts without a row.
   `ANDROID_DEFAULT` rows are synced with no character: the wanted ringtone is "none".
 - The undo record's `writtenUri` holds `cucuto:default` after Cucuto cleared a contact. "Changed elsewhere" means the
@@ -124,7 +124,7 @@ gains both cases, and an invalid fixture has both `ringtone` and `ringtoneChoice
 
 - The brief's Linking rule, the ringtone UI paragraph and Screens 2, 3 and 4 change (owner update 2026-10-24, #298).
   ADR 0063, 0057, 0039, 0017 and 0025 point here.
-- One migration (4 to 5) and a `MigrationTest` case. No new permission. The module doesn't change: Telecom plays the
+- One migration (5 to 6) and a `MigrationTest` case. No new permission. The module doesn't change: Telecom plays the
   contact's ringtone (none, for Android default).
 - Android default writes to the Android contact only when it has a ringtone of its own, and records it first, so
   every write can be undone (ADR 0039).

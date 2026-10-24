@@ -6,6 +6,8 @@ import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.data.settings.PickerKind
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
 import app.mauri.cucuto.packspec.LoopRange
@@ -181,6 +183,80 @@ class RingtonePickerViewModelTest {
                 state.modes,
             )
             assertTrue(state.canSave)
+        }
+
+    @Test
+    fun ownRulesShowAsTheirOwnChipAndComeBackWhenPickedAgain() =
+        runTest(dispatcher) {
+            // Night by day (ADR 0074): stored on the rules screen.
+            val rules = listOf(RingtoneRuleEntry("frog/night.ogg"))
+            source.saved(
+                PhoneRingtoneEntity(
+                    1,
+                    mode = RingtoneMode.CUSTOM,
+                    rules = RingtoneRules.encode(rules),
+                    updatedAt = 1,
+                ),
+            )
+            val vm = viewModel()
+            collect(vm)
+            val state = vm.state.value
+            assertEquals(
+                listOf(
+                    RingtoneMode.PACK,
+                    RingtoneMode.CUSTOM,
+                    RingtoneMode.RANDOM,
+                    RingtoneMode.TIME,
+                    RingtoneMode.FIXED,
+                ),
+                state.modes,
+            )
+            assertEquals(RingtoneMode.CUSTOM, state.selection?.mode)
+            assertEquals(rules, state.selection?.rules)
+            assertFalse(state.canSave)
+
+            vm.setMode(RingtoneMode.TIME)
+            assertEquals(
+                emptyList<RingtoneRuleEntry>(),
+                vm.state.value.selection
+                    ?.rules,
+            )
+            vm.setMode(RingtoneMode.CUSTOM)
+            assertEquals(
+                rules,
+                vm.state.value.selection
+                    ?.rules,
+            )
+            assertFalse(vm.state.value.canSave)
+
+            // Another character never offers them.
+            vm.select(kettleItem)
+            assertFalse(RingtoneMode.CUSTOM in vm.state.value.modes)
+        }
+
+    @Test
+    fun aSaveOnTheRulesScreenReplacesAnUnsavedChoice() =
+        runTest(dispatcher) {
+            source.saved(PhoneRingtoneEntity(1, updatedAt = 1))
+            val vm = viewModel()
+            collect(vm)
+            vm.setMode(RingtoneMode.RANDOM)
+            assertTrue(vm.state.value.canSave)
+            // The rules screen on top saves the user's own rules.
+            source.saved(
+                PhoneRingtoneEntity(
+                    1,
+                    mode = RingtoneMode.CUSTOM,
+                    rules = RingtoneRules.encode(listOf(RingtoneRuleEntry("frog/night.ogg"))),
+                    updatedAt = 2,
+                ),
+            )
+            assertNull(vm.state.value.edited)
+            assertEquals(
+                RingtoneMode.CUSTOM,
+                vm.state.value.selection
+                    ?.mode,
+            )
         }
 
     @Test
@@ -617,6 +693,7 @@ class RingtonePickerViewModelTest {
         val followsVoice: Boolean,
         val mode: RingtoneMode,
         val variant: String?,
+        val rules: List<RingtoneRuleEntry> = emptyList(),
     )
 
     private class FakeSource : RingtonePickerSource {
@@ -642,9 +719,10 @@ class RingtonePickerViewModelTest {
             followsVoice: Boolean,
             mode: RingtoneMode,
             variant: String?,
+            rules: List<RingtoneRuleEntry>,
         ) {
             if (fail) error("disk full")
-            saved += Saved(contactId, character, followsVoice, mode, variant)
+            saved += Saved(contactId, character, followsVoice, mode, variant, rules)
             row.value =
                 PhoneRingtoneEntity(
                     contactId ?: 1,
@@ -654,6 +732,7 @@ class RingtonePickerViewModelTest {
                     variant,
                     updatedAt = 2,
                     followsVoice = followsVoice,
+                    rules = RingtoneRules.encode(rules),
                 )
         }
 

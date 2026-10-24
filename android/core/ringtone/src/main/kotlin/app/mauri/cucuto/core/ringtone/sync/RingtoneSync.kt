@@ -5,6 +5,7 @@ import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneRow
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContacts
 import app.mauri.cucuto.core.ringtone.render.RingFileRenderer
 import app.mauri.cucuto.core.ringtone.store.CharacterRingtones
@@ -158,6 +159,7 @@ class RingtoneSync(
             used += uris.values
 
             val available = character.variants.filter { it.file in uris }
+            val rules = RingtoneRules.decode(row.rules)
             val pick =
                 VariantRules.pick(
                     variants = available,
@@ -167,6 +169,7 @@ class RingtoneSync(
                     current = write?.variant,
                     reroll = reason == SyncReason.CallEnded,
                     random = random,
+                    rules = rules,
                 )
             if (pick == null) {
                 problems[row.contactId] = RingtoneProblem.RenderFailed
@@ -175,7 +178,7 @@ class RingtoneSync(
             if (renderFailed) problems[row.contactId] = RingtoneProblem.RenderFailed
             val uri = uris.getValue(pick.file)
             if (row.mode != RingtoneMode.FIXED && row.mode != RingtoneMode.RANDOM) {
-                VariantRules.nextBoundary(character.variants, row.mode, context)?.let { next ->
+                VariantRules.nextBoundary(character.variants, row.mode, context, rules)?.let { next ->
                     if (boundary == null || next < boundary) boundary = next
                 }
             }

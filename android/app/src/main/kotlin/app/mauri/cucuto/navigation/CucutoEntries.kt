@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import app.mauri.cucuto.BuildConfig
 import app.mauri.cucuto.contact.ContactDetailScreen
+import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.daynight.DayNightScreen
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.AssignVoiceScreen
@@ -28,6 +29,7 @@ import app.mauri.cucuto.ui.haptics.HapticEditorScreen
 import app.mauri.cucuto.ui.haptics.HapticTarget
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
 import app.mauri.cucuto.ui.ringtone.RingtonePickerScreen
+import app.mauri.cucuto.ui.ringtone.rules.RingtoneRulesScreen
 import app.mauri.cucuto.ui.settings.BackupExportScreen
 import app.mauri.cucuto.ui.settings.LicensesScreen
 import app.mauri.cucuto.ui.settings.SettingsScreen
@@ -127,6 +129,21 @@ fun cucutoEntries(
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onOpenDiscover = { navigate(CucutoDestination.Discover) },
                 step = key.step,
+                onOpenRules = { voice ->
+                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
+                },
+            )
+        }
+        entry<CucutoDestination.RingtoneRules>(
+            clazzContentKey = {
+                "rules/${it.packId}/${it.characterId}/${it.chat?.packageName}/${it.chat?.conversationKey}"
+            },
+        ) { key ->
+            RingtoneRulesScreen(
+                voice = ChatVoice(key.packId, key.characterId),
+                chat = key.chat,
+                onBack = goBack,
+                onDone = { navigator.remove(key) },
             )
         }
 
@@ -164,6 +181,7 @@ fun cucutoEntries(
                 onBack = goBack,
                 onPackMissing = { navigator.remove(key) },
                 onDuplicate = { id -> navigate(CucutoDestination.Creator(id)) },
+                onOpenRules = { characterId -> navigate(CucutoDestination.RingtoneRules(key.packId, characterId)) },
             )
         }
         entry<CucutoDestination.RepositoryForm>(metadata = childOf(CucutoDestination.Discover)) { key ->

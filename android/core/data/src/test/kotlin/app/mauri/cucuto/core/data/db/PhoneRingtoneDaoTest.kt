@@ -60,7 +60,16 @@ class PhoneRingtoneDaoTest {
 
             val row = dao.syncRows().single()
             assertEquals(
-                PhoneRingtoneRow(1, "ada", "C1", null, null, RingtoneMode.PACK, null, RingtoneChoice.ANDROID_DEFAULT),
+                PhoneRingtoneRow(
+                    1,
+                    "ada",
+                    "C1",
+                    null,
+                    null,
+                    RingtoneMode.PACK,
+                    null,
+                    choice = RingtoneChoice.ANDROID_DEFAULT,
+                ),
                 row,
             )
         }

@@ -75,6 +75,8 @@ class LargeFontScreenshotTest(
 
     @Test fun ringtonePicker() = largeFont("ringtone-picker")
 
+    @Test fun ringtoneRules() = largeFont("ringtone-rules")
+
     @Test fun addFromContacts() = largeFont("add-from-contacts")
 
     @Test fun addFromContactsList() = largeFont("add-from-contacts-list")

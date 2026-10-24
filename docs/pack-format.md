@@ -260,6 +260,10 @@ the end of Friday night).
 without `when` always matches), keep those with the most condition keys (the most specific), and play the first of
 them in manifest order. If nothing matches, play the first entry. The other per-contact rules (one fixed variant,
 random per call by `weight`, by time of day, by season) ignore `when` and use `tags` and labels to present choices.
+A contact can also have **its own rules** ([ADR 0074](decisions/0074-ringtone-rules-screen.md)): a copy of the
+entries' conditions that the user edits in the app (versions turned off, other conditions, another fallback). They
+are resolved with the same algorithm, over the contact's list instead of the manifest; entries whose file the pack no
+longer has are skipped, and an empty list falls back to the pack's conditions.
 
 ### Ring files
 
@@ -664,6 +668,9 @@ authority: readers detect the type from the contents.
   ID, disabled clip paths, haptic override) and the phone ringtone (pack ID, character ID, variant rule, or a
   ringtone choice).
   Contact IDs are unique within a backup (`DUPLICATE_ID`).
+  - `ringtone.rule.mode` is `fixed` (with `variant`), `random`, `time`, `season`, `pack`, or `custom` with `rules`:
+    the contact's own rules, 1 to 50 entries of `{ "variant": <ringtone file>, "when"?: <condition> }` resolved like
+    the pack's `when` conditions, the first entry being the fallback ([ADR 0074](decisions/0074-ringtone-rules-screen.md)).
   - The message character and the ringtone character are independent; a contact can have either one, or both.
   - `ringtone.followsVoice: true` means the ringtone follows the message character whenever that character has
     ringtones. Its pack and character IDs name the character that rang at backup time: the voice's, or the one it

@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.backup
 
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -220,6 +221,8 @@ data class BackupRingtoneRule(
     val mode: BackupRingtoneMode,
     /** Ringtone file (path from `pack.json`) for [BackupRingtoneMode.FIXED]. */
     val variant: String? = null,
+    /** The contact's own rules for [BackupRingtoneMode.CUSTOM] (ADR 0074), the first entry being the fallback. */
+    val rules: List<RingtoneRuleEntry>? = null,
 )
 
 @Serializable
@@ -238,6 +241,9 @@ enum class BackupRingtoneMode {
 
     @SerialName("pack")
     PACK,
+
+    @SerialName("custom")
+    CUSTOM,
 }
 
 /** The JSON settings for backup documents: readable output, defaults written, nulls omitted. */

@@ -72,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
@@ -124,6 +125,8 @@ data class RingtonePickerActions(
     val onToggleFold: (String) -> Unit = {},
     /** "Surprise me" from a pack, or from every pack (null). */
     val onSurprise: (String?) -> Unit = {},
+    /** "See and edit the rules" of the chosen character (ADR 0074). */
+    val onOpenRules: (RingtoneCharacterItem) -> Unit = {},
 )
 
 /**
@@ -142,6 +145,7 @@ fun RingtonePickerScreen(
     modifier: Modifier = Modifier,
     onOpenDiscover: () -> Unit = {},
     step: Boolean = false,
+    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<RingtonePickerViewModel, RingtonePickerViewModel.Factory>(
@@ -220,6 +224,10 @@ fun RingtonePickerScreen(
                 onSurprise = { packId ->
                     feedback.fire(Feedback.Roll)
                     viewModel.surprise(packId)
+                },
+                onOpenRules = { item ->
+                    viewModel.stopPreview()
+                    onOpenRules(item.voice)
                 },
             ),
         modifier = modifier,
@@ -475,6 +483,9 @@ private fun Header(
                 }
             }
             Hint(stringResource(selection.mode.body))
+            TextButton(onClick = { actions.onOpenRules(item) }, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.ringtone_rules_open))
+            }
         }
     }
 }
@@ -712,6 +723,7 @@ internal val RingtoneMode.label: Int
             RingtoneMode.TIME -> R.string.ringtone_rule_time
             RingtoneMode.SEASON -> R.string.ringtone_rule_season
             RingtoneMode.FIXED -> R.string.ringtone_rule_fixed
+            RingtoneMode.CUSTOM -> R.string.ringtone_rule_custom
         }
 
 internal val RingtoneMode.body: Int
@@ -722,6 +734,7 @@ internal val RingtoneMode.body: Int
             RingtoneMode.TIME -> R.string.ringtone_rule_time_body
             RingtoneMode.SEASON -> R.string.ringtone_rule_season_body
             RingtoneMode.FIXED -> R.string.ringtone_rule_fixed_body
+            RingtoneMode.CUSTOM -> R.string.ringtone_rule_custom_body
         }
 
 @Preview(showBackground = true, heightDp = 900)

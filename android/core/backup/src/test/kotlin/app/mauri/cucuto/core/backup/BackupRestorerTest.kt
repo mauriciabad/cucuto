@@ -11,6 +11,7 @@ import app.mauri.cucuto.core.data.db.PackRepositoryEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -74,12 +75,13 @@ class BackupRestorerTest {
     fun `restoring twice changes nothing the second time`() =
         runTest {
             val first = restorer.restore(fixture, encrypted = false)
-            assertEquals(7, first.created)
+            assertEquals(8, first.created)
             assertEquals(
                 listOf(
                     VoiceOutcome.APPLIED,
                     VoiceOutcome.APPLIED,
                     VoiceOutcome.APPLIED,
+                    VoiceOutcome.NONE,
                     VoiceOutcome.NONE,
                     VoiceOutcome.APPLIED,
                     VoiceOutcome.APPLIED,
@@ -87,7 +89,7 @@ class BackupRestorerTest {
                 ),
                 first.contacts.map { it.voice },
             )
-            assertEquals(5, first.ringtonesApplied)
+            assertEquals(6, first.ringtonesApplied)
             val contactsAfterFirst = db.contactDao().observeAll().first()
             val assignmentsAfterFirst = db.assignmentDao().observeAll().first()
             val ringtonesAfterFirst = db.phoneRingtoneDao().observeAll().first()
@@ -96,7 +98,7 @@ class BackupRestorerTest {
             val second = restorer.restore(fixture, encrypted = false)
             assertEquals(0, second.created)
             assertEquals(
-                List(7) { ContactMatch.MESSENGER_KEY },
+                List(8) { ContactMatch.MESSENGER_KEY },
                 second.contacts.map { it.match },
             )
             assertEquals(
@@ -105,6 +107,7 @@ class BackupRestorerTest {
                     VoiceOutcome.UNCHANGED,
                     VoiceOutcome.UNCHANGED,
                     VoiceOutcome.NONE,
+                    VoiceOutcome.NONE,
                     VoiceOutcome.UNCHANGED,
                     VoiceOutcome.UNCHANGED,
                     VoiceOutcome.NONE,
@@ -112,7 +115,7 @@ class BackupRestorerTest {
                 second.contacts.map { it.voice },
             )
             assertEquals(
-                List(5) { RingtoneOutcome.UNCHANGED },
+                List(6) { RingtoneOutcome.UNCHANGED },
                 second.ringtones.map { it.outcome },
             )
             assertEquals(emptyList<String>(), second.repositoriesAdded)
@@ -340,6 +343,18 @@ class BackupRestorerTest {
             assertEquals("bubblegum", daniRow.characterId)
             assertFalse(daniRow.followsVoice)
             assertEquals(RingtoneMode.RANDOM, daniRow.mode)
+
+            // Her own rules (ADR 0074): Radio unless it is a spring or summer day, in the backup's order.
+            val eva = db.phoneRingtoneDao().get(report.contacts.single { it.backupId == "c5" }.contactId)!!
+            assertEquals(RingtoneMode.CUSTOM, eva.mode)
+            assertEquals(
+                listOf("characters/bubblegum/ringtones/radio.ogg", "characters/bubblegum/ringtones/live.ogg"),
+                RingtoneRules.decode(eva.rules).map { it.variant },
+            )
+            assertEquals(
+                """{"time":"day","season":["spring","summer"]}""",
+                RingtoneRules.decode(eva.rules)[1].condition.toString(),
+            )
         }
 
     @Test
@@ -347,20 +362,20 @@ class BackupRestorerTest {
         runTest {
             val report = restorer.restore(fixture, encrypted = false)
 
-            val elena = report.ringtones.single { it.backupId == "c5" }
+            val elena = report.ringtones.single { it.backupId == "c6" }
             assertEquals(RingtoneOutcome.APPLIED, elena.outcome)
-            assertEquals("0r5-MNO", elena.androidContact!!.lookupKey)
+            assertEquals("0r6-PQR", elena.androidContact!!.lookupKey)
             val elenaRow = db.phoneRingtoneDao().get(elena.contactId)!!
             assertEquals(RingtoneChoice.ANDROID_DEFAULT, elenaRow.choice)
             assertNull(elenaRow.packId)
             assertFalse(elenaRow.followsVoice)
 
-            assertTrue(report.ringtones.none { it.backupId == "c6" })
-            val fede = report.contacts.single { it.backupId == "c6" }
+            assertTrue(report.ringtones.none { it.backupId == "c7" })
+            val fede = report.contacts.single { it.backupId == "c7" }
             assertEquals(RingtoneChoice.UNCHANGED, db.phoneRingtoneDao().get(fede.contactId)!!.choice)
 
             val again = restorer.restore(fixture, encrypted = false)
-            assertEquals(RingtoneOutcome.UNCHANGED, again.ringtones.single { it.backupId == "c5" }.outcome)
+            assertEquals(RingtoneOutcome.UNCHANGED, again.ringtones.single { it.backupId == "c6" }.outcome)
         }
 
     @Test
