@@ -1,7 +1,8 @@
 # 0071. Google Play: app bundle, signing, listing and review notes
 
-- Status: accepted. Owner update 2026-10-24 (#287): Play signs with a Google-generated key, and the release key is
-  the upload key (decisions 1 and 2 amended, see the section at the end).
+- Status: accepted. Owner update 2026-10-24 (#287): the release key is the upload key (decision 1 amended). Second
+  owner answer the same day (#287): Play signs with the owner's release key, given to Play with PEPK, so decision 2
+  stands again with the release key as the upload key (see the sections at the end).
 - Date: 2026-10-24
 - Issues: #274 (this work), #276 (the owner's steps), #211 (the owner's answer: Play too), ADR 0046 (distribution),
   ADR 0021 (release signing)
@@ -70,14 +71,15 @@ skipped. A partial set of `PLAY_UPLOAD_*` secrets fails the run. bundletool come
 version and SHA-256. The APK, its name, the Obtainium filter and the reproducibility check don't change. The
 website and Obtainium only pick `.apk` assets.
 
-**2. One signing certificate on every channel.** *Superseded by the owner update (#287): Play uses a
-Google-generated app signing key, so Play installs and the owner-signed APKs can't update each other.* The owner gives Play a copy of Cucuto's existing release key with
+**2. One signing certificate on every channel.** *Superseded by the first owner update (#287), then restored by
+the second (#287, second answer): Play signs with the release key, and the release key is also the upload key.* The
+owner gives Play a copy of Cucuto's existing release key with
 PEPK, so Play signs its APKs with the same certificate as GitHub, Obtainium and (later) F-Droid. Users can move
 between channels without reinstalling. Obtainium's certificate pin, the module's certificate check (ADR 0010) and an
 OAuth client for Drive (ADR 0040) keep working. This must happen **before the first bundle is uploaded**: Play
 enrolls new apps in Google-generated keys on the first upload, and the change is only allowed until a release
 reaches open testing or production. Any closed-test install made with Google's key would then stop updating. The
-upload key is separate, as Google recommends (#287 offers the release key instead). The exact flow is in #276 and
+release key is also the upload key (owner update, #287), which Google allows. The exact flow is in #276 and
 [google-play.md](../google-play.md#signing).
 
 **3. No language splits.** `bundle { language { enableSplit = false } }`. Cucuto picks its language per app
@@ -138,11 +140,10 @@ language for tools. A later CI step would run `fastlane supply` on the release's
 
 - Each release has a Play-ready bundle (since #287 on every release, signed with the release key). Uploading it (Play Console, or
   `fastlane supply`) and promoting it stay manual.
-- ~~The owner must set Play App Signing to the release key **before the first upload**. Otherwise Play's own key
-  splits the user base for good.~~ Owner update (#287): Play's own key is accepted; see the section below.
-- Play installs come as split APKs. They are not byte-identical to the reproducible GitHub APK, ~~but they carry the
-  same certificate, so updates cross channels either way~~ and since #287 they carry Google's certificate, so updates
-  don't cross channels.
+- The owner must set Play App Signing to the release key **before the first upload** (second owner answer, #287).
+  Otherwise Play's own key splits the user base for good.
+- Play installs come as split APKs. They are not byte-identical to the reproducible GitHub APK, but they carry the
+  same certificate, so updates cross channels either way.
 - Store screenshots now have a peach border on F-Droid and Obtainium too.
 - The descriptions lose their HTML lists. F-Droid shows the same content with bullets.
 - A new permission or library permission fails CI until the privacy page and `docs/google-play.md` are updated.
@@ -152,6 +153,8 @@ language for tools. A later CI step would run `fastlane supply` on the release's
   the privacy page and the review notes must change in that PR. google-play.md has the prepared wording.
 
 ## Owner update 2026-10-24 (#287)
+
+*Its key choice (Google's app signing key) is replaced by the second answer below; the upload key part stands.*
 
 > the app is not in any device yet, so changing the key now may not have any big impact and dont have to worry about userbase
 
@@ -172,35 +175,77 @@ and app signing key should be different."
 
 **Decision.**
 
-- **Play App Signing uses the Google-generated app signing key**, Play's default. The owner exports nothing (no PEPK).
+- ~~**Play App Signing uses the Google-generated app signing key**, Play's default. The owner exports nothing (no
+  PEPK).~~ Replaced by the second answer: Play signs with the release key.
 - **The upload key is the existing release key.** `release.yml` builds the APK and the bundle in one Gradle run with
   the release secrets and attaches `cucuto-<version>.aab` to every release. The bundle check now requires the
   bundle's signer to be the APK's (pinned by `RELEASE_CERT_SHA256`), so the upload key Play registers on the first
   upload never changes by accident. The `PLAY_UPLOAD_*` secrets and the `PLAY_UPLOAD_CERT_SHA256` variable are
-  removed: the owner creates no keystore and adds no secret. Google's advice holds: the upload key (the release key)
-  differs from the app signing key (Google's). It isn't less safe than a separate upload key in practice, since a
-  separate one would sit in the same repository secrets; and a lost or leaked upload key can be reset in Play Console
-  without touching Play's signing key.
+  removed: the owner creates no keystore and adds no secret. ~~Google's advice holds: the upload key (the release
+  key) differs from the app signing key (Google's).~~ It isn't less safe than a separate upload key in practice,
+  since a separate one would sit in the same repository secrets. ~~A lost or leaked upload key can be reset in Play
+  Console without touching Play's signing key.~~ (Since the second answer both roles use the release key.)
 - Play's other route to one key everywhere, downloading Google-signed universal APKs from Play Console for other
   stores, isn't taken: GitHub, Obtainium and (later) F-Droid ship the reproducible APK the workflow signs.
 
 **Consequences.**
 
-- **Two certificates, two lineages.** APKs from GitHub, Obtainium and F-Droid carry the owner's certificate
-  (`RELEASE_CERT_SHA256`); Play installs carry Google's. Neither updates the other
-  (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), and Obtainium's certificate pin refuses an app installed from Play. To
-  switch, the user exports a backup, uninstalls, installs from the other channel, restores the backup, re-enables
-  the module in LSPosed and reboots (releasing.md, "If the signing key changes"). The Install page should say so once
-  the Play listing is live.
+- ~~**Two certificates, two lineages.** Play installs carry Google's certificate and don't update the APKs from
+  GitHub, Obtainium and F-Droid.~~ Replaced by the second answer: one certificate everywhere.
 - **No false warning in Play builds.** Nothing in the app pins the release certificate: there's no update checker,
   and Diagnostics doesn't compare certificates. The only certificate check is the module's (ADR 0010,
   `providerRefusal`): the installed app must hold every certificate of the APK the module was loaded from. On a
-  Play install both are the same package, signed by Google's key, so it passes; `ProviderRefusalTest` covers a
+  Play install both are the same package, signed by Play's key, so it passes; `ProviderRefusalTest` covers a
   module signed by a key other than the release key. The release certificate is pinned only on the website
-  (`web/src/lib/site.ts`, the Obtainium config), which is about GitHub APKs.
+  (`web/src/lib/site.ts`, the Obtainium config).
 - **Android developer verification:** Play Console registers the Play-signed app by itself. The owner also registers
   the release certificate there, for the APKs from GitHub, Obtainium and F-Droid (#276, step A4).
-- **An OAuth client for Drive** (ADR 0040) needs one Android client per signing certificate: the release key's, and
-  Play's app signing key's SHA-1 (shown in Play Console) if Drive backup ships on Play.
-- The key choice is final once a release reaches open testing or production. Before that, the owner could still
-  switch Play to the release key with PEPK if a user base appears.
+- ~~**An OAuth client for Drive** (ADR 0040) needs a second Android client for Play's app signing key.~~ Since the
+  second answer, the release key's client covers Play too.
+- The key choice is final once a release reaches open testing or production.
+
+## Owner update 2026-10-24 (#287, second answer)
+
+Asked in chat with the lead why someone with the GitHub, F-Droid or Obtainium APK would have to uninstall before
+switching to Play, and whether Play could serve the same APK, the owner chose:
+
+> i preffer to give Play my own key, it is a small step i can do
+
+This replaces the first update's key choice. The upload key part and its consequences for `release.yml` stand.
+
+Sources, read on 2026-10-24: Android Developers, [Sign your app](https://developer.android.com/studio/publish/app-signing).
+Configure a new app: "To provide your own signing key for Google to use when signing your app, select **Change app
+signing key** and select one of the **Export and upload** options that lets you securely upload a private key and its
+public certificate." And: "If you do not generate a new upload key, you continue to use your app signing key as your
+upload key to sign each release." "If you provide the app signing key to Google when opting in your new or existing
+app, then you have the option to generate a new upload key during or after opting in for increased security." A
+separate upload key is "an optional step" that Google recommends ("it's a good idea to make sure your app signing key
+and upload key are different"), so it can be reset if lost or compromised. Play Console Help,
+[Use Play App Signing](https://support.google.com/googleplay/android-developer/answer/9842756): a new app can provide
+its own key until a release reaches open testing or production, and custom keys must be RSA 2048 or larger (the
+release key is RSA 4096). Neither page requires the upload key to differ from an uploaded app signing key.
+
+**Decision.**
+
+- **Play's app signing key is the owner's existing release key.** The owner exports it once with Google's PEPK tool
+  in Play Console (Play app signing → Change app signing key, "Use a different key" → "Export and upload a key from
+  Java keystore"), before the first upload. This is a manual owner step in #276. Agents never touch the key.
+- **The upload key stays the release key.** `release.yml` keeps signing the bundle with the release secrets and
+  checks that its signer is the APK's (`RELEASE_CERT_SHA256`). No workflow change and no new secret. The owner can
+  still register a separate upload key later (Google's recommendation); `release.yml` would then need optional
+  upload secrets, falling back to the release key.
+
+**Consequences.**
+
+- **One certificate on every channel.** Play installs and the APKs from GitHub, Obtainium and F-Droid carry the same
+  certificate (`RELEASE_CERT_SHA256`, also shown on the website's Install page), so they update each other.
+  Obtainium's certificate pin accepts an app installed from Play, and Play can update an app installed from GitHub
+  (when the versionCode is higher). The "uninstall to switch channels" limit of the first update is gone.
+- **No reset for a leaked key.** With one key in both roles, Google can't reset the upload key without the app
+  signing key changing too. The release key was already irreplaceable for the GitHub APKs, so this adds no new
+  single point of failure; it stays as precious as before (releasing.md).
+- **Order matters.** The PEPK export must happen before the first bundle is uploaded. If a bundle was already
+  uploaded with Google's key, the owner can still change the key while no release has reached open testing or
+  production, but installs made from Play with Google's key would stop updating.
+- **Android developer verification** and **an OAuth client for Drive** (ADR 0040) need only the release certificate.
+- `web/src/lib/site.ts`'s pinned certificate now also describes Play installs.

@@ -144,21 +144,20 @@ but one of the other three missing, the build stops with a message naming them.
 
 Google Play takes an app bundle, not an APK ([google-play.md](google-play.md), ADR 0071). Every release also gets
 `cucuto-<version>.aab` and its `.sha256`: the same Gradle run, R8 output and version as the APK, signed with the same
-release key. Nothing to set up: no extra keystore or secret (owner update 2026-10-24, #287).
+release key. Nothing to set up in the repository: no extra keystore or secret (owner updates 2026-10-24, #287).
 
-For Play, the release key is only the **upload key**. Play App Signing re-signs the APKs it serves with a
-Google-generated app signing key, so **Play installs and GitHub, Obtainium or F-Droid installs can't update each
-other** ([google-play.md → Signing](google-play.md#signing)). The first bundle uploaded to Play Console registers the
-release key as the upload key ([Sign your app](https://developer.android.com/studio/publish/app-signing): "The key you
-use to sign your first release becomes your upload key").
+For Play, the release key is both the **app signing key** and the **upload key** (#287, second answer). The owner
+gives Play a copy of it once with PEPK, before the first upload ([google-play.md → Signing](google-play.md#signing)).
+Play App Signing re-signs what it serves with that same key, so **Play installs and GitHub, Obtainium or F-Droid
+installs update each other** ([Sign your app](https://developer.android.com/studio/publish/app-signing): "If you do
+not generate a new upload key, you continue to use your app signing key as your upload key to sign each release").
 
 What the workflow checks before attaching the bundle: exactly one signer, not a debug key, the same certificate as
 the APK (so the upload key never changes by accident), the version (bundletool), Play's 16 KB setting and the
 LSPosed metadata.
 
-If the release key ever leaked, Google can reset the upload key (Play Console → Play app signing → Request upload
-key reset), which doesn't touch Play's signing key. The GitHub APKs would still need a new key ([If the signing key
-changes](#if-the-signing-key-changes)).
+If the release key ever leaked or got lost, Play and the GitHub APKs would both need a new key ([If the signing key
+changes](#if-the-signing-key-changes)): with one key in both roles, an upload key reset alone doesn't help.
 
 A bundle on your machine: the same variables as [A signed build on your machine](#a-signed-build-on-your-machine),
 then `./gradlew :app:bundleRelease -Pcucuto.version=0.1.0 --no-configuration-cache`.
@@ -199,8 +198,9 @@ bad upload never reaches anyone.
 
 ## If the signing key changes
 
-This happens when moving from a debug build to the first release, if the release key is ever lost, or when a user
-switches between Google Play (signed with Google's key, ADR 0071) and the APK from GitHub, Obtainium or F-Droid.
+This happens when moving from a debug build to the first release, or if the release key is ever lost. Switching
+between Google Play and the APK from GitHub, Obtainium or F-Droid is not a key change: Play signs with the release key
+too (ADR 0071).
 
 **Android.** An APK signed by a different certificate is not an update: installing it fails with
 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. The old app has to be uninstalled first, which deletes its data: assignments,

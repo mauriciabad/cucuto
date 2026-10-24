@@ -29,38 +29,43 @@ end, and the image sizes, ratios and alpha.
 
 ## Signing
 
-Owner update 2026-10-24 (#287, ADR 0071): Play signs the APKs it serves with a **Google-generated app signing key**,
-Play's default for new apps. The **upload key is Cucuto's existing release key**: the release workflow already signs
-the bundle with it, from the secrets that sign the APK. Nothing to export, no new keystore, no new secret.
+Owner update 2026-10-24 (#287, second answer; ADR 0071): Play signs the APKs it serves with **Cucuto's existing
+release key**, which the owner gives Play once with Google's PEPK tool. The **upload key is the same release key**:
+the release workflow already signs the bundle with it, from the secrets that sign the APK. No new keystore, no new
+secret.
 
-Google's documentation ([Sign your app](https://developer.android.com/studio/publish/app-signing)): "To have Google
-Play generate an app signing key for you and use it to sign your app, you don't have to do anything. The key you use
-to sign your first release becomes your upload key, and you should use it to sign future releases." And "it's a good
-idea to make sure your app signing key and upload key are different": they are (Google's key and the release key).
+Google's documentation ([Sign your app](https://developer.android.com/studio/publish/app-signing)): "To provide your
+own signing key for Google to use when signing your app, select **Change app signing key** and select one of the
+**Export and upload** options". And "If you do not generate a new upload key, you continue to use your app signing
+key as your upload key to sign each release." A separate upload key is optional; Google recommends one so it can be
+reset if lost, but nothing requires it.
 
-1. Upload the first bundle (`cucuto-<version>.aab` from a GitHub release) to **Internal testing**. Play enrolls the
-   app in Play App Signing with its own key and registers the release key as the upload key.
-2. Check, in Play Console → Cucuto → **Protected with Play → Play Store distribution → Go to Play app signing**
-   (older menus: **Test and release → Setup → App signing**): the **upload key certificate** SHA-256 equals
-   `RELEASE_CERT_SHA256` (the repository variable, also on every GitHub release). The **app signing key
-   certificate** is Google's and differs. If the upload key doesn't match, stop and ask on #276.
+1. **Before the first upload**, in Play Console → Cucuto → **Protected with Play → Play Store distribution → Go to
+   Play app signing** (older menus: **Test and release → Setup → App signing**): **Change app signing key** ("Use a
+   different key") → **Export and upload a key from Java keystore**. Download the PEPK tool and the encryption key
+   shown there, run the command Play Console shows on `~/cucuto-release-key/cucuto-release.jks` (alias `cucuto`),
+   and upload the encrypted output. The owner does this on their own machine (#276); the key never leaves it
+   unencrypted. Skip the optional upload certificate: the release key stays the upload key.
+2. Upload the first bundle (`cucuto-<version>.aab` from a GitHub release) to **Internal testing**.
+3. Check on the same Play app signing page: the **app signing key certificate** and the **upload key certificate**
+   SHA-256 both equal `RELEASE_CERT_SHA256` (the repository variable, also on every GitHub release and on the
+   website's Install page). If either differs, stop and ask on #276.
 
-The release key now has two jobs, so it stays as precious as before (releasing.md). If it ever leaked, Google can
-reset the upload key in Play Console (Play app signing → Request upload key reset), but the GitHub APKs would still
-need a new key.
+The order matters: Play enrolls a new app in a Google-generated key on its first upload. The key can still be
+changed until a release reaches open testing or production, but installs made from Play with Google's key would then
+stop updating.
 
-What users see: **Play installs and the APKs from GitHub, Obtainium or F-Droid are signed by different
-certificates, so they can't update each other.** Installing the GitHub APK over a Play install (or the reverse) fails
-with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, and Obtainium's certificate pin refuses an app that came from Play. To
-switch channels: export a Cucuto backup, uninstall, install from the other channel, restore the backup, enable the
-module in LSPosed again and reboot ([releasing.md → If the signing key
-changes](releasing.md#if-the-signing-key-changes)). Nothing in the app pins the release certificate, so Play builds
-show no warning: the module's own check (ADR 0010) only compares the module with the installed app, and both come
-from the same Play install. Play installs arrive as split APKs (base, arm64, density); LSPosed loads the module from
-the base APK.
+The release key has every job now, so it stays as precious as before (releasing.md). With one key in both roles,
+Google can't reset the upload key on its own if it leaks: the GitHub APKs and Play would both need a new key.
 
-Android developer verification: Play Console registers the Play-signed app itself. Register the **release
-certificate** there too, for the APKs outside Play (#276, step A4).
+What users see: **Play installs and the APKs from GitHub, Obtainium or F-Droid carry the same certificate, so they
+update each other.** Obtainium's certificate pin accepts an app installed from Play, and Play updates an app
+installed from GitHub once it has a higher versionCode. Play installs arrive as split APKs (base, arm64, density),
+not byte-identical to the reproducible GitHub APK; LSPosed loads the module from the base APK. The module's own check
+(ADR 0010) only compares the module with the installed app, and both come from the same install.
+
+Android developer verification: Play Console registers the Play-signed app itself, with the release certificate.
+Check that the APKs outside Play are covered too (#276, step A4).
 
 ## Store listing
 
