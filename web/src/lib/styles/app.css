@@ -85,6 +85,8 @@ kbd {
 	border-radius: 0.4em;
 	background: var(--md-sys-color-surface-container-high);
 	color: var(--md-sys-color-on-surface);
+	/* Long inline code (regexes, URLs, error codes) breaks instead of widening the page on phones (#135). */
+	overflow-wrap: anywhere;
 }
 
 pre {
