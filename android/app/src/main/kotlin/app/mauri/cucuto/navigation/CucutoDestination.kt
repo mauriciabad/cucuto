@@ -49,6 +49,12 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey,
     ) : CucutoDestination
 
+    /** The pack creator (#47); with [sourcePackId], a copy of that installed pack to edit ("duplicate and edit"). */
+    @Serializable
+    data class Creator(
+        val sourcePackId: String? = null,
+    ) : CucutoDestination
+
     /** Haptic editor (#32) for [chat]'s custom vibration (#33), or a scratch pad that only previews when null. */
     @Serializable
     data class HapticEditor(

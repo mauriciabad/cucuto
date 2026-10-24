@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -38,7 +37,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.ChatKey
-import app.mauri.cucuto.packs.ui.PACKS_WEBSITE_URL
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.ParticleBurst
 import app.mauri.cucuto.ui.components.VoiceAvatar
@@ -52,6 +50,7 @@ import app.mauri.cucuto.ui.theme.CucutoTheme
 @Composable
 internal fun JourneyCard(
     step: JourneyStep,
+    onGetDemoPacks: () -> Unit,
     onImportDemoPacks: () -> Unit,
     onOpenChat: (ChatKey) -> Unit,
     onPreviewCharacters: () -> Unit,
@@ -60,20 +59,23 @@ internal fun JourneyCard(
 ) {
     when (step) {
         JourneyStep.None -> Unit
-        JourneyStep.ImportPacks -> ImportPacksCard(onImportDemoPacks, modifier)
+        JourneyStep.ImportPacks -> ImportPacksCard(onGetDemoPacks, onImportDemoPacks, modifier)
         JourneyStep.WaitForMessages -> WaitForMessagesCard(onPreviewCharacters, modifier)
         is JourneyStep.GiveFirstVoice -> GiveFirstVoiceCard(step.chat, onOpen = { onOpenChat(step.chat.key) }, modifier)
         is JourneyStep.FirstVoice -> FirstVoiceCard(step.chat, onDismissCelebration, modifier)
     }
 }
 
-/** Step 1: no packs yet. The demo packs are a file the user picks (Downloads), never bundled in release builds. */
+/**
+ * Step 1: no packs yet. "Get the demo packs" opens Discover, which installs the demo bundle from the default repository
+ * through the usual review (#214); offline, the user can pick a demo packs file they already have. Nothing is bundled.
+ */
 @Composable
 private fun ImportPacksCard(
+    onGetDemoPacks: () -> Unit,
     onImportDemoPacks: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uriHandler = LocalUriHandler.current
     JourneySurface(modifier) {
         CuckooDoor(
             beat = null,
@@ -83,12 +85,12 @@ private fun ImportPacksCard(
         JourneyTitle(stringResource(R.string.home_journey_import_title))
         JourneyBody(stringResource(R.string.home_journey_import_body))
         Button(
-            onClick = onImportDemoPacks,
+            onClick = onGetDemoPacks,
             shapes = ButtonDefaults.shapes(),
             modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.home_journey_import_button)) }
-        TextButton(onClick = { uriHandler.openUri(PACKS_WEBSITE_URL) }, shapes = ButtonDefaults.shapes()) {
-            Text(stringResource(R.string.home_journey_import_website))
+        ) { Text(stringResource(R.string.home_get_demo_packs)) }
+        TextButton(onClick = onImportDemoPacks, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.home_journey_import_button))
         }
     }
 }

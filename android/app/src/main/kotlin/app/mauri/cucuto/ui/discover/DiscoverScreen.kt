@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.discover
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -77,6 +79,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.packs.ImportUi
 import app.mauri.cucuto.packs.plainWords
 import app.mauri.cucuto.packs.ui.ClipPlayer
@@ -104,6 +107,10 @@ data class DiscoverActions(
     val onRemove: (SavedRepository) -> Unit = {},
     val onInstall: (PackCard) -> Unit = {},
     val onConsumeMessage: () -> Unit = {},
+    /** The demo packs' "Try again" (#179). */
+    val onGetDemoPacks: () -> Unit = {},
+    /** The demo packs' fallback: the file picker in Downloads. */
+    val onPickFile: () -> Unit = {},
 )
 
 /**
@@ -122,8 +129,13 @@ fun DiscoverScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val previews = remember(viewModel) { PreviewLoader(viewModel::preview) }
     var showRepositories by rememberSaveable { mutableStateOf(false) }
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val picker =
+        rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
+            if (uri != null) viewModel.importFile(ImportSource.of(resolver, uri))
+        }
     val actions =
-        remember(viewModel) {
+        remember(viewModel, picker) {
             DiscoverActions(
                 onRefresh = viewModel::refresh,
                 onRetry = viewModel::retry,
@@ -136,6 +148,8 @@ fun DiscoverScreen(
                 onRemove = viewModel::remove,
                 onInstall = viewModel::install,
                 onConsumeMessage = viewModel::messageShown,
+                onGetDemoPacks = viewModel::getDemoPacks,
+                onPickFile = { picker.launch(PackPickerTypes) },
             )
         }
 
@@ -154,7 +168,8 @@ fun DiscoverScreen(
             import = import,
             onSelect = viewModel::setSelected,
             onInstall = viewModel::confirmInstall,
-            onPickAnother = null,
+            // The demo packs fall back to the file picker; other Discover installs have no file to pick again.
+            onPickAnother = actions.onPickFile.takeIf { state.demo == DemoPacksUi.Importing },
             onClose = viewModel::closeImport,
         )
     }
@@ -288,6 +303,15 @@ internal fun DiscoverContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item(key = "search") { SearchField(state.query, actions.onQuery) }
+                if (state.focus == DEMO_BUNDLE_ID) {
+                    item(key = "demo-focus") { DemoFocusChip(onClear = actions.onClearFilters) }
+                }
+                val demo = state.demo
+                if (demo == DemoPacksUi.Finding || demo is DemoPacksUi.Failed) {
+                    item(key = "demo") {
+                        DemoPacksCard(demo, onRetry = actions.onGetDemoPacks, onPickFile = actions.onPickFile)
+                    }
+                }
                 if (state.tags.isNotEmpty()) {
                     item(key = "tags") { TagFilters(state.tags, state.tag, actions.onTag) }
                 }
@@ -316,7 +340,9 @@ private fun LazyListScope.discoverItems(
         }
 
         else -> {
-            val noMatches = state.filtering && sections.all { it.loaded && it.cards.isEmpty() }
+            // The demo packs' card already says what went wrong (and the section's own problem would repeat it).
+            val demoFailed = state.demo is DemoPacksUi.Failed
+            val noMatches = !demoFailed && state.filtering && sections.all { it.loaded && it.cards.isEmpty() }
             if (noMatches) {
                 item(key = "no-matches") { NoMatches(onClear = actions.onClearFilters) }
             }
@@ -333,11 +359,15 @@ private fun LazyListScope.discoverItems(
                     }
 
                     !section.loaded -> {
-                        item(key = "repo-$id-error") { SectionProblem(section, actions) }
+                        if (!(demoFailed && section.repository.isDefault)) {
+                            item(key = "repo-$id-error") { SectionProblem(section, actions) }
+                        }
                     }
 
                     else -> {
-                        if (section.stale) item(key = "repo-$id-stale") { SectionProblem(section, actions) }
+                        if (section.stale && !(demoFailed && section.repository.isDefault)) {
+                            item(key = "repo-$id-stale") { SectionProblem(section, actions) }
+                        }
                         if (section.totalCards == 0) {
                             item(key = "repo-$id-empty") { EmptyRepository() }
                         }

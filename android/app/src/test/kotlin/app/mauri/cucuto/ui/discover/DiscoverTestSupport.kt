@@ -122,6 +122,25 @@ fun packEntry(
     }
     """.trimIndent()
 
+/** The demo bundle entry (`app.mauri.demo.all`) with two packs, schema-valid. */
+fun demoBundleEntry(
+    version: String = "1.0.0",
+    packFormatVersion: Int = 1,
+): String =
+    """
+    {
+      "id": "$DEMO_BUNDLE_ID", "type": "bundle", "packFormatVersion": $packFormatVersion,
+      "name": "Cucuto demo packs", "version": "$version", "author": "Cucuto contributors", "license": "CC0-1.0",
+      "packs": [
+        { "id": "app.mauri.demo.cats", "name": "Cats", "version": "1.0.0", "characters": [ { "id": "c1", "name": "Tabby" } ] },
+        { "id": "app.mauri.demo.bells", "name": "Bells", "version": "1.0.0" }
+      ],
+      "download": { "url": "packs/$DEMO_BUNDLE_ID-$version.soundpack.zip", "size": ${packBytes.size}, "sha256": "${sha256(
+        packBytes,
+    )}" }
+    }
+    """.trimIndent()
+
 fun indexJson(
     name: String,
     vararg entries: String,

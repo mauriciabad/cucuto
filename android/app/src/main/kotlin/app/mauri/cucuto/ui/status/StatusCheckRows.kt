@@ -87,8 +87,9 @@ fun ModuleCheck.actions(): List<CheckAction> =
 
         ModuleCheck.AwaitingSelfTest -> listOf(CheckAction.PostSelfTest)
 
-        // The self-test also settles a wrong "not loaded" reading: a report from this boot makes the check pass.
-        is ModuleCheck.NeedsReboot -> listOf(CheckAction.PostSelfTest)
+        // The self-test also settles a wrong "not loaded" reading: a report from this boot makes the check pass. A
+        // lost framework service comes back only with a reboot, so then the instruction is all there is.
+        is ModuleCheck.NeedsReboot -> if (frameworkLost) emptyList() else listOf(CheckAction.PostSelfTest)
 
         is ModuleCheck.FrameworkUnsupported -> listOf(CheckAction.OpenInstallGuide)
 
@@ -138,7 +139,11 @@ fun moduleRow(check: ModuleCheck?): CheckRowModel =
 
                 is ModuleCheck.NeedsReboot -> {
                     stringResource(
-                        if (check.afterUpdate) R.string.status_module_reboot_update else R.string.status_module_reboot,
+                        when {
+                            check.frameworkLost -> R.string.status_module_reboot_reconnect
+                            check.afterUpdate -> R.string.status_module_reboot_update
+                            else -> R.string.status_module_reboot
+                        },
                     )
                 }
 

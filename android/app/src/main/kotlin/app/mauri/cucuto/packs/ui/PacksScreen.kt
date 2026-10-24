@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Create
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -27,6 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -116,6 +118,7 @@ fun PacksScreen(
         onRemove = viewModel::requestRemove,
         onConsumeMessage = viewModel::messageShown,
         modifier = modifier,
+        onCreate = { source -> onNavigate(CucutoDestination.Creator(source)) },
     )
 
     val import = state.import
@@ -152,6 +155,7 @@ internal fun PacksContent(
     onRemove: (LibraryPack) -> Unit,
     onConsumeMessage: () -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (sourcePackId: String?) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val listState = rememberLazyListState()
@@ -203,6 +207,11 @@ internal fun PacksContent(
             CucutoTopBar(
                 title = stringResource(R.string.tab_packs),
                 subtitle = packs?.takeIf { it.isNotEmpty() }?.let { summaryText(it) },
+                actions = {
+                    IconButton(onClick = { onCreate(null) }) {
+                        Icon(Icons.Rounded.Create, contentDescription = stringResource(R.string.packs_create))
+                    }
+                },
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -241,7 +250,9 @@ internal fun PacksContent(
                     }
 
                     packs.isEmpty() -> {
-                        item(key = "empty") { EmptyPacks(onImport = onImport, onWebsite = openWebsite) }
+                        item(key = "empty") {
+                            EmptyPacks(onImport = onImport, onWebsite = openWebsite, onCreate = { onCreate(null) })
+                        }
                     }
 
                     else -> {
@@ -274,6 +285,10 @@ internal fun PacksContent(
                 onRemove(detail)
             },
             onDismiss = { detailId = null },
+            onDuplicate = {
+                detailId = null
+                onCreate(detail.id)
+            },
         )
     }
 }
@@ -370,6 +385,7 @@ fun PackCover(
 private fun EmptyPacks(
     onImport: () -> Unit,
     onWebsite: () -> Unit,
+    onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -403,6 +419,9 @@ private fun EmptyPacks(
         }
         OutlinedButton(onClick = onWebsite, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.packs_get_free))
+        }
+        OutlinedButton(onClick = onCreate, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.packs_create))
         }
     }
 }

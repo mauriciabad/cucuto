@@ -108,6 +108,18 @@ object Authoring {
     }
 
     /**
+     * The file name creators suggest for a pack: `<name slug>.soundpack.zip`, or the last label of [id] when the name
+     * has no usable letters (ADR 0007: pack files always end in `.zip`).
+     */
+    fun packFileName(
+        name: String,
+        id: String,
+    ): String = slug(name).ifEmpty { id.substringAfterLast('.') } + PACK_FILE_SUFFIX
+
+    /** What every pack file name ends with. */
+    const val PACK_FILE_SUFFIX = ".soundpack.zip"
+
+    /**
      * The version to write when [current] would not install over [installed] as an update: one patch above the
      * installed version (or the release of an installed pre-release). [current] otherwise, or when either version is unreadable.
      */

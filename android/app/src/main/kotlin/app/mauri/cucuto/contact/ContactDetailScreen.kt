@@ -85,6 +85,7 @@ import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.haptics.HapticOverrideSection
 import app.mauri.cucuto.ui.motion.SharedElement
+import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSection
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import app.mauri.cucuto.ui.theme.rememberSeedColor
@@ -122,6 +123,7 @@ fun ContactDetailScreen(
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
         hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
+        phoneRingtone = { PhoneRingtoneSection(chat, Modifier.padding(top = 16.dp)) },
         onUnassign = viewModel::unassign,
         onSimulate = {
             if (state.path is SimulatePath.InApp) {
@@ -153,6 +155,7 @@ fun ContactDetailContent(
     onConsumeFailure: () -> Unit,
     modifier: Modifier = Modifier,
     hapticOverride: (@Composable () -> Unit)? = null,
+    phoneRingtone: (@Composable () -> Unit)? = null,
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     val extracted by rememberSeedColor(bitmap)
@@ -237,6 +240,10 @@ fun ContactDetailContent(
                     item(key = "haptic") {
                         if (hapticOverride != null) hapticOverride() else HapticSection(state.hapticSource)
                     }
+                }
+                // Phone calls come from people: groups have no phone ringtone (#52).
+                if (phoneRingtone != null && state.chat?.isGroup == false) {
+                    item(key = "phone-ringtone") { phoneRingtone() }
                 }
                 state.groupPolicy?.let { policy ->
                     item(key = "group") {

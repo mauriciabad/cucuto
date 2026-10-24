@@ -47,6 +47,11 @@ sealed interface ModuleCheck {
     /** Enabled in LSPosed but not loaded into `system_server` yet, or loaded with older code: reboot. */
     data class NeedsReboot(
         val afterUpdate: Boolean,
+        /**
+         * The app was updated since boot and LSPosed has not given it the framework service. LSPosed 2.2.1 hands it
+         * over again only after a reboot (ADR 0043), so voice changes cannot reach the module until then.
+         */
+        val frameworkLost: Boolean = false,
     ) : ModuleCheck {
         override val outcome = CheckOutcome.Fail
     }
@@ -150,6 +155,8 @@ data class StatusInputs(
     val messengers: Map<String, Boolean>,
     /** Installed packs that count (the debug test voice does not). */
     val packCount: Int,
+    /** The installed app replaced an earlier install after this boot ([StatusChecks.updatedSinceBoot]). */
+    val appUpdatedSinceBoot: Boolean = false,
 )
 
 /** The four checks of the status card. */
@@ -204,23 +211,40 @@ object StatusChecks {
         b: Long,
     ): Boolean = abs(a - b) <= SAME_BOOT_TOLERANCE_MILLIS
 
+    /**
+     * Whether an install that replaced an earlier one happened after this boot (`PackageInfo` wall-clock times). A
+     * fresh install after boot does not count: its module was never enabled, so "not enabled" is still the answer.
+     */
+    fun updatedSinceBoot(
+        firstInstallMillis: Long,
+        lastUpdateMillis: Long,
+        bootTimeMillis: Long,
+    ): Boolean = lastUpdateMillis > firstInstallMillis && lastUpdateMillis > bootTimeMillis
+
     private fun module(
         inputs: StatusInputs,
         reportedThisBoot: Boolean,
     ): ModuleCheck {
         val systemTarget = inputs.framework?.targets?.let(::systemServerTarget)
         val stale = systemTarget?.state == TargetState.STALE || systemTarget?.state == TargetState.FAILED
+        // No framework service after an update: LSPosed only hands it over again after a reboot (ADR 0043). The
+        // module may still run and report, but no voice change can reach it, so this is not "active".
+        val frameworkLost = inputs.connection == SinkConnection.Disconnected && inputs.appUpdatedSinceBoot
         if (reportedThisBoot) {
             val status = checkNotNull(inputs.moduleStatus).status
-            return if (status.missingHooks.isNotEmpty()) {
-                ModuleCheck.HooksMissing(status.missingHooks)
-            } else {
-                ModuleCheck.Active(status.hooks, updatePending = stale)
+            return when {
+                status.missingHooks.isNotEmpty() -> ModuleCheck.HooksMissing(status.missingHooks)
+                frameworkLost -> ModuleCheck.NeedsReboot(afterUpdate = true, frameworkLost = true)
+                else -> ModuleCheck.Active(status.hooks, updatePending = stale)
             }
         }
         return when (val connection = inputs.connection) {
             SinkConnection.Disconnected -> {
-                ModuleCheck.NotEnabled
+                if (frameworkLost) {
+                    ModuleCheck.NeedsReboot(afterUpdate = true, frameworkLost = true)
+                } else {
+                    ModuleCheck.NotEnabled
+                }
             }
 
             is SinkConnection.Unsupported -> {

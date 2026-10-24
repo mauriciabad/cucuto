@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +28,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +47,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -128,6 +133,12 @@ fun HomeScreen(
         modifier = modifier,
         onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
         journey = journey,
+        // Discover installs the demo bundle from the default repository, through the usual review (#179, #214).
+        onGetDemoPacks = {
+            viewModel.requestDemoPacks()
+            onNavigate(CucutoDestination.Discover)
+        },
+        // Offline fallback: a demo packs file the user already has in Downloads.
         onImportDemoPacks = { demoPicker.launch(PackPickerTypes) },
         onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
         onDismissCelebration = journeyViewModel::dismissCelebration,
@@ -148,6 +159,7 @@ fun HomeContent(
     modifier: Modifier = Modifier,
     onOpenDetail: (ChatKey) -> Unit = onOpenChat,
     journey: JourneyStep = JourneyStep.None,
+    onGetDemoPacks: () -> Unit = {},
     onImportDemoPacks: () -> Unit = {},
     onPreviewCharacters: () -> Unit = {},
     onDismissCelebration: () -> Unit = {},
@@ -212,6 +224,7 @@ fun HomeContent(
                 item(key = "journey", contentType = "journey") {
                     JourneyCard(
                         step = journey,
+                        onGetDemoPacks = onGetDemoPacks,
                         onImportDemoPacks = onImportDemoPacks,
                         onOpenChat = open,
                         onPreviewCharacters = onPreviewCharacters,

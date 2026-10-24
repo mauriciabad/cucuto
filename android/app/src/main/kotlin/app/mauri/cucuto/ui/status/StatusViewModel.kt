@@ -1,6 +1,5 @@
 package app.mauri.cucuto.ui.status
 
-import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
@@ -16,6 +15,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -72,6 +73,7 @@ class StatusViewModel
         private val messengers: MessengerDetector,
         private val onboarding: OnboardingSettings,
         private val notifier: SelfTestNotifier,
+        private val appUpdate: AppUpdateDetector,
     ) : ViewModel() {
         private val refreshes = MutableStateFlow(0)
 
@@ -79,15 +81,31 @@ class StatusViewModel
             val connection: SinkConnection,
             val framework: FrameworkReport?,
             val messengers: Map<String, Boolean>,
+            val appUpdatedSinceBoot: Boolean,
         )
 
+        /**
+         * The framework link, except that "no service" right after the process started is held back until LSPosed
+         * had time to hand the service over: otherwise the card would flash a failure (and celebrate when it turns
+         * green a moment later) on every launch. The card shows "Checking" meanwhile.
+         */
+        private val connection: Flow<SinkConnection> =
+            sink.connection.transformLatest { connection ->
+                if (connection == SinkConnection.Disconnected) {
+                    val wait = AppUpdateDetector.serviceGraceLeftMillis()
+                    if (wait > 0) delay(wait)
+                }
+                emit(connection)
+            }
+
         private val probes: Flow<Probe> =
-            combine(sink.connection, refreshes) { connection, _ -> connection }
+            combine(connection, refreshes) { connection, _ -> connection }
                 .mapLatest { connection ->
                     Probe(
                         connection = connection,
                         framework = if (connection is SinkConnection.Connected) framework.report() else null,
                         messengers = messengers.installed(),
+                        appUpdatedSinceBoot = appUpdate.updatedSinceBoot(),
                     )
                 }
 
@@ -102,9 +120,10 @@ class StatusViewModel
                             connection = probe.connection,
                             framework = probe.framework,
                             moduleStatus = status,
-                            bootTimeMillis = System.currentTimeMillis() - SystemClock.elapsedRealtime(),
+                            bootTimeMillis = AppUpdateDetector.bootTimeMillis(),
                             messengers = probe.messengers,
                             packCount = packs,
+                            appUpdatedSinceBoot = probe.appUpdatedSinceBoot,
                         ),
                     ),
                 )

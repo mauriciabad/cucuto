@@ -18,9 +18,8 @@
     <string name="home_attention_title">Cucuto needs a hand</string>
     <string name="home_attention_body">Something stopped working. Tap to see what and fix it.</string>
     <string name="home_journey_import_title">Give your chats a voice</string>
-    <string name="home_journey_import_body">Start with the free demo packs: little characters made for Cucuto. Pick the demo packs file in Downloads.</string>
-    <string name="home_journey_import_button">Import the demo packs</string>
-    <string name="home_journey_import_website">Download them from cucuto.mauri.app</string>
+    <string name="home_journey_import_body">Start with the free demo packs: little characters made for Cucuto. Discover gets them from the Cucuto repository, or pick a demo packs file you already downloaded.</string>
+    <string name="home_journey_import_button">Pick a file from Downloads</string>
     <string name="home_journey_wait_title">Your characters are ready</string>
     <string name="home_journey_wait_body">When someone messages you on WhatsApp, they show up here. Then give them a voice.</string>
     <string name="home_journey_preview">Hear the characters</string>

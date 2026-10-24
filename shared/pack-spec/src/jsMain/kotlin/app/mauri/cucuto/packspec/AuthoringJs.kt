@@ -130,7 +130,7 @@ fun assemblePack(draft: String): AssemblyJs {
 fun packFileName(
     name: String,
     id: String,
-): String = Authoring.slug(name).ifEmpty { id.substringAfterLast('.') } + ".soundpack.zip"
+): String = Authoring.packFileName(name, id)
 
 /** The ID a creator suggests for a new pack: `local.<author>.<name>-<suffix>`. */
 @JsExport

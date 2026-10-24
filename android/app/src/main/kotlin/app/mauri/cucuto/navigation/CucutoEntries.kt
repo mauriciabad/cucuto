@@ -10,6 +10,7 @@ import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.developer.DeveloperScreen
 import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
@@ -50,6 +51,7 @@ fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
         entry<CucutoDestination.Onboarding> { OnboardingScreen(onFinish = goBack, resume = false) }
         entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
         entry<CucutoDestination.DayNight> { DayNightScreen(onBack = goBack) }
+        entry<CucutoDestination.Creator> { key -> CreatorScreen(sourcePackId = key.sourcePackId, onBack = goBack) }
         entry<CucutoDestination.HapticEditor>(
             clazzContentKey = { "haptics/${it.chat?.packageName}/${it.chat?.conversationKey}" },
         ) { key ->

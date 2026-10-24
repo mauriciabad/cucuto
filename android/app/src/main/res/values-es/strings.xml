@@ -16,6 +16,7 @@
     <string name="screen_diagnostics">Diagnóstico</string>
     <string name="diag_framework">Framework de Xposed</string>
     <string name="diag_framework_disconnected">Sin conexión. Activa Cucuto en LSPosed (ámbito: System Framework) y reinicia.</string>
+    <string name="diag_framework_disconnected_update">Sin conexión: Cucuto se ha actualizado desde el último arranque y LSPosed solo vuelve a conectarse a él tras reiniciar. Reinicia el móvil para publicar los cambios de voz.</string>
     <string name="diag_framework_connected">Conectado: %1$s, API %2$d</string>
     <string name="diag_framework_unsupported">%1$s no admite Remote Preferences</string>
     <string name="diag_routing">Tabla de enrutamiento</string>
@@ -81,6 +82,7 @@
     <string name="status_module_awaiting">Activado, pero el módulo no ha informado en este arranque. Envía una notificación de prueba: con el módulo activo oirás un gorjeo de dos tonos en lugar del sonido predeterminado.</string>
     <string name="status_module_reboot">Activado en LSPosed, pero aún no se ha cargado en el sistema. Reinicia el móvil.</string>
     <string name="status_module_reboot_update">Cucuto se ha actualizado desde el último arranque y el sistema aún ejecuta el módulo antiguo. Reinicia el móvil.</string>
+    <string name="status_module_reboot_reconnect">Cucuto se ha actualizado desde el último arranque y LSPosed solo vuelve a conectarse a él tras reiniciar. Hasta entonces, los cambios de voz no llegan al módulo. Reinicia el móvil.</string>
     <string name="status_module_unsupported">%1$s no puede ejecutar Cucuto: no ofrece Remote Preferences. Cucuto necesita LSPosed con libxposed API 102.</string>
     <string name="status_module_not_enabled">No está activado. En el gestor de LSPosed, activa Cucuto con System Framework como ámbito y reinicia.</string>
     <string name="status_scope_ok">LSPosed indica System Framework y nada más.</string>
