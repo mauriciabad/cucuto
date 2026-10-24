@@ -40,6 +40,10 @@ export interface BundleMeta {
 	author: string;
 	license: string;
 	description: string;
+	/** Optional: blank for none. */
+	homepage?: string;
+	/** Already in the format's form (`authoring.parseTags`). */
+	tags?: string[];
 }
 
 export type BundleOutcome =
@@ -62,6 +66,8 @@ export function buildBundle(
 		author: blank(meta.author),
 		license: blank(meta.license),
 		description: blank(meta.description),
+		homepage: blank(meta.homepage ?? '')?.trim() ?? null,
+		tags: meta.tags ?? [],
 		cover: cover ? { key: 'cover', extension: cover.extension } : null,
 		packIds: packs.map((p) => p.summary.id)
 	};

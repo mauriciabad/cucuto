@@ -276,6 +276,7 @@ fun HomeContent(
                 items(
                     state.questions,
                     key = { "question/${it.key.packageName}/${it.key.conversationKey}" },
+                    contentType = { "question" },
                 ) { question ->
                     QuestionItem(question) {
                         feedback.fire(Feedback.Tap)
@@ -299,14 +300,22 @@ fun HomeContent(
                     }
                 }
                 // Waiting chats open their contact detail: the voice and the phone ringtone are both one tap away.
-                items(state.waiting, key = { "waiting/${it.key.packageName}/${it.key.conversationKey}" }) { row ->
+                items(
+                    state.waiting,
+                    key = { "waiting/${it.key.packageName}/${it.key.conversationKey}" },
+                    contentType = { "chat" },
+                ) { row ->
                     ChatListItem(row = row, shared = row.key !in stripKeys, onClick = { openDetail(row.key) })
                 }
             }
             when {
                 state.chats.isNotEmpty() -> {
                     item(key = "chats-header") { SectionHeader(stringResource(R.string.home_chats_header)) }
-                    items(state.chats, key = { "chat/${it.key.packageName}/${it.key.conversationKey}" }) { row ->
+                    items(
+                        state.chats,
+                        key = { "chat/${it.key.packageName}/${it.key.conversationKey}" },
+                        contentType = { "chat" },
+                    ) { row ->
                         ChatListItem(
                             row = row,
                             shared = row.key !in stripKeys,

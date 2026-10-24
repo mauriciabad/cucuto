@@ -296,7 +296,7 @@ internal fun PacksContent(
                     }
 
                     else -> {
-                        items(packs, key = { it.id }) { pack ->
+                        items(packs, key = { it.id }, contentType = { "pack" }) { pack ->
                             PackCard(
                                 pack = pack,
                                 player = player,
@@ -367,7 +367,7 @@ private fun PackCard(
                     contentPadding = PaddingValues(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    items(pack.characters, key = { it.id }) { character ->
+                    items(pack.characters, key = { it.id }, contentType = { "character" }) { character ->
                         CharacterBadge(
                             character,
                             playerKey = "${pack.id}/${character.id}",

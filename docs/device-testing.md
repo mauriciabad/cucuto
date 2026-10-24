@@ -9,6 +9,65 @@ Privacy: the module's log never contains a JID, name, number or message text (ke
 `@lid`, `@g.us`). The app's Diagnostics screen shows raw keys from its private database: do not screenshot it into
 GitHub. Anything pulled off the device goes to the gitignored `private/`.
 
+## v0.2.0 checklist (for the owner)
+
+What only your phone can confirm in 0.2.0. About 20 minutes, plus waiting for sunset and for one message. Report on
+#329 (no names, numbers or Diagnostics screenshots). If anything goes wrong, use the recovery ladder below.
+
+**Before you start:** update to 0.2.0 and reboot (the module changed for special clips). Settings › Phone ringtones is
+on. You need a test contact in the phone's Contacts with a ringtone of its own (set one in the Contacts app) and a chat
+in Cucuto linked to it ("Cucuto Test" below). To read a contact's ringtone:
+
+```
+adb shell content query --uri content://com.android.contacts/contacts --projection display_name:custom_ringtone \
+  --where "display_name='Cucuto Test'"
+```
+
+**1. Sound flow: Android default and Leave as is** (#318, ADR 0073)
+
+- [ ] Note the test contact's `custom_ringtone` (its own ringtone).
+- [ ] If the chat has no voice yet, assign one from Home: after the character, the ringtone picker opens as "Step 2 of
+      2 · optional". Otherwise open the chat → **Phone calls**. Pick **Android default** and save.
+      `custom_ringtone` is now `NULL`; the header says "Rings with the phone's default ringtone"; the Home row shows a
+      call icon on the avatar. A call from another phone rings with the default ringtone.
+- [ ] Phone calls → **Leave as is** → save. `custom_ringtone` is the original again, the Contacts app shows the
+      ringtone you set, and the header has no "Rings with" line.
+
+**2. Your own rules switch at sunset** (#317, ADR 0074)
+
+- [ ] Settings › Day and night shows today's sunset for your place.
+- [ ] Give the test contact **Bleep the frog** (Chiptune critters) as its ringtone. In the ringtone picker, **See and
+      edit the rules** → **Your own rules**. Swap them: "Pond song (day)" rings **At night**, "Pond song (night)"
+      rings **By day**. Save.
+- [ ] Before sunset the Contacts app shows "Bleep the frog · Pond song (night)" for the contact;
+      `adb shell dumpsys alarm | grep -A3 app.mauri.cucuto` lists a `RINGTONE_BOUNDARY` alarm at sunset.
+- [ ] Within a minute after sunset it shows "Pond song (day)". **Reset to the pack's rules** puts the night song back.
+
+**3. A real first message from a contact added from contacts** (#313, ADR 0065)
+
+- [ ] Pick someone who will write to you soon and is not in Cucuto yet. Home → **Assign a voice** → **Add a chat from
+      contacts**: the explainer comes first, then Android's contacts prompt (only if not granted yet), then the list.
+      Tick the person and add them.
+- [ ] They show on Home under "Waiting for a first message". Give them a voice.
+- [ ] Their first message plays WhatsApp's tone (expected). Within seconds they move from "Waiting for a first message"
+      to the chats. If Home asks "Who is this?" instead, a namesake exists: answer it and say so on #329.
+- [ ] Their second message plays their voice.
+
+**4. Import speed with a large pack** (#316)
+
+- [ ] Packs → import your largest private pack (the 268-character one) from a file. Time it: from picking the file to
+      the review screen, and from **Install** to done. Post both times on #329 (and 0.1.8's, if you remember them).
+
+**5. The sample chat** (#310, ADR 0075)
+
+It shows only with packs and no chats, so use a second phone or an Android 17 emulator, no root needed (the Play
+reviewer's path).
+
+- [ ] Install the APK, **Skip** the onboarding, **Get the demo packs**, then **Try a sample chat** on Home.
+- [ ] The Demo banner shows. Tap a character: it previews and becomes the voice. **Play a sample message** plays a
+      clip with its vibration; **Play a sample call** rings until **Stop**.
+- [ ] Nothing appears in the notification shade. More checks: [Sample chat](#sample-chat-285-adr-0075-the-play-reviewers-path).
+
 ## 0. Recovery ladder (read first)
 
 1. Phone usable: `adb uninstall app.mauri.cucuto`, then reboot. LSPosed drops a module whose APK is gone.
@@ -431,8 +490,8 @@ failed`.
 
 1. Change the test contact's ringtone in the Contacts app. Reopen the card: it says "This ringtone was changed in
    Contacts", and Cucuto no longer writes it. **Use Cucuto's ringtone again** takes it back.
-2. **Stop using for calls** gives the contact the ringtone it had before (or the default), and the unused files
-   disappear from `Ringtones/cucuto/`.
+2. **Leave as is** in the ringtone picker (it replaced "Stop using for calls", ADR 0073) gives the contact the ringtone
+   it had before (or the default), and the unused files disappear from `Ringtones/cucuto/`.
 3. Settings › Phone ringtones › off: every linked contact gets its old ringtone back, `Ringtones/cucuto/` is empty,
    and both receivers are disabled again.
 

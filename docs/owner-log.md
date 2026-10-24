@@ -452,6 +452,14 @@ GitHub, Obtainium and F-Droid APKs can't update each other.)
 
 (The lead added six agents: bug hunts on the ringtone flow and on contacts, sample chat, pickers and clip conditions; a UX coherence pass on the emulator; the website and user guide for the new features; creator and packer parity with the pack format; and accessibility for the new screens.)
 
+## 2026-10-24 — Chat with the lead (testing v0.2.0 on the phone: "Add a chat from contacts")
+
+(The owner tested v0.2.0 on the phone. "Add a chat from contacts" (#292, ADR 0065) showed its explainer on every
+visit. The lead opened #337: the explainer now shows only while the contacts permission is missing, and points to
+Android's settings once Android stops asking. ADR 0065's design details updated.)
+
+> add from contact shoudl not show the warning every time, just the first time
+
 ## 2026-10-24 — Testing v0.2.0 on the phone (ringtone badge in the Home → contact detail transition, #339)
 
 > the animation that moves the character from the list to the contact detail is smooth but the image of the ringtone has an issue with the zposition, while moving charavter is avobe but when stops (begining and end) the ringtone pops avobe the character. i think it should move along with the character as a group
