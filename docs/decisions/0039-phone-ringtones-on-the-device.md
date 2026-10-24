@@ -1,6 +1,7 @@
 # 0039. Phone ringtones: ring files rendered on the phone, MediaStore, contact undo record, re-roll receiver
 
-- Status: accepted (defaults; the owner may override them in #196)
+- Status: accepted (defaults; the owner may override them in #196); the "follow the voice" data is amended by
+  [ADR 0063](0063-independent-voice-and-ringtone.md)
 - Date: 2026-10-24
 - Issue: #52 (picker UI: #53; device run: #143)
 
@@ -43,7 +44,9 @@ how every change can be undone.
    - Trade-off: they also show up in Android's own ringtone list, as any ringtone in `Ringtones/` does.
 3. **Data.** Database version 3 adds two tables:
    - `phone_ringtones`, one row per Cucuto contact: character (null means "follow the voice"), rule mode, fixed
-     variant. Modes are the backup schema's: `fixed`, `random`, `time`, `season`, `pack`. The default is `pack`, which
+     variant. Database version 4 adds `followsVoice`: the voice and the ringtone are independent choices, and a
+     following row keeps the character that rang last while the voice has no ringtones
+     ([ADR 0063](0063-independent-voice-and-ringtone.md), owner update 2026-10-24, #245). Modes are the backup schema's: `fixed`, `random`, `time`, `season`, `pack`. The default is `pack`, which
      with no `when` conditions is the first variant.
    - `contact_ringtone_writes`, the **undo record**, keyed by the Android contact's lookup key with no foreign key. It
      holds the contact's own ringtone before Cucuto, what Cucuto last wrote, and the current variant.

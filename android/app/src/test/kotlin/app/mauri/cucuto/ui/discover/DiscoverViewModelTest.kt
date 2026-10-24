@@ -77,6 +77,7 @@ class DiscoverViewModelTest {
                 catalog = catalog,
                 links = links,
                 demoRequests = demoRequests,
+                sampleHaptics = SampleHaptics.None,
             ).also { it.ioDispatcher = dispatchers.io }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         return vm

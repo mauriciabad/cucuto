@@ -215,7 +215,8 @@ class BackupRestorer(
     /**
      * The phone ringtone, with the voice's rule: applied when this phone has none for the contact (or the user chose
      * to overwrite the contact), left alone when equal, kept otherwise. One that follows the voice keeps following
-     * whatever voice the contact ends up with.
+     * whatever voice the contact ends up with; when it names another character than the backup's voice, that is the
+     * character it kept while the voice had no ringtones, and it stays (ADR 0063).
      */
     private suspend fun restoreRingtone(
         backup: BackupContact,
@@ -226,15 +227,19 @@ class BackupRestorer(
         val dao = db.phoneRingtoneDao()
         val current = dao.get(contact.contactId)
         val follows = ringtone.followsVoice == true
+        val namesVoice =
+            backup.message?.let { it.packId == ringtone.packId && it.characterId == ringtone.characterId } == true
+        val own = !follows || !namesVoice
         val mode = ringtone.rule.mode.toEntity()
         val wanted =
             PhoneRingtoneEntity(
                 contactId = contact.contactId,
-                packId = if (follows) null else ringtone.packId,
-                characterId = if (follows) null else ringtone.characterId,
+                packId = if (own) ringtone.packId else null,
+                characterId = if (own) ringtone.characterId else null,
                 mode = mode,
                 variant = if (mode == RingtoneMode.FIXED) ringtone.rule.variant else null,
                 updatedAt = clock.now(),
+                followsVoice = follows,
             )
         val outcome =
             when {

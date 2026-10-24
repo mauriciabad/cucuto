@@ -12,8 +12,48 @@ public object RoutingFile {
     private const val MAGIC = "cucuto-routing-file"
     private const val VERSION = 1
 
-    /** Largest file the module accepts: a table at [RoutingContract.MAX_ENCODED_CHARS] in UTF-8, plus the header. */
-    public const val MAX_BYTES: Int = RoutingContract.MAX_ENCODED_CHARS * 4 + 64
+    /**
+     * Largest file the module accepts: a table of [RoutingContract.MAX_TABLE_BYTES], plus the header. Every released
+     * module enforces this same value (1,048,640 bytes), so it must not shrink.
+     */
+    public const val MAX_BYTES: Int = RoutingContract.MAX_TABLE_BYTES + 64
+
+    /** Whether [encoded] (the output of [RoutingCodec.encode]) is at most [RoutingContract.MAX_TABLE_BYTES] in UTF-8. */
+    public fun fits(encoded: String): Boolean = utf8Length(encoded) <= RoutingContract.MAX_TABLE_BYTES
+
+    /** Length of [text] in UTF-8 as [frame] writes it (a lone surrogate becomes `?`), without encoding it. */
+    public fun utf8Length(text: String): Int {
+        var bytes = 0
+        var i = 0
+        while (i < text.length) {
+            val c = text[i]
+            bytes +=
+                when {
+                    c.code < 0x80 -> {
+                        1
+                    }
+
+                    c.code < 0x800 -> {
+                        2
+                    }
+
+                    Character.isHighSurrogate(c) && i + 1 < text.length && Character.isLowSurrogate(text[i + 1]) -> {
+                        i++
+                        4
+                    }
+
+                    Character.isSurrogate(c) -> {
+                        1
+                    }
+
+                    else -> {
+                        3
+                    }
+                }
+            i++
+        }
+        return bytes
+    }
 
     /** The file content for [encoded] (the output of [RoutingCodec.encode]). */
     public fun frame(encoded: String): ByteArray {

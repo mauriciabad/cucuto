@@ -1,6 +1,8 @@
 # 0029. Discover screen: browsing repositories, previews, installs and adding repositories
 
-- Status: accepted (defaults open for the owner in #175); bundles amended by [ADR 0064](0064-bundles-in-discover.md)
+- Status: accepted (defaults settled by the owner in #175: all stand, and haptic previews must be built eventually,
+  #272); bundles amended by [ADR 0064](0064-bundles-in-discover.md), haptic previews by
+  [ADR 0069](0069-haptic-previews-in-discover.md)
 - Date: 2026-10-24
 - Issue: #36
 
@@ -41,8 +43,11 @@ most four fetches at once, failures not retried until the next app start). A pre
 before it is written: an image or audio extension from pack-spec's allowlist, a readable header (pack-spec's
 `ImageProbe` and `AudioProbe`), bitmaps at most 512 px per side, and SVGs that pass `SvgSafety`. Coil only ever
 decodes local files, so no network fetcher is added to the image loader. Character badges look and behave like the
-Packs screen's: tap to hear, the cookie avatar morphs while the clip loads and plays. Haptic previews need data the
-index does not have yet; they are left for later.
+Packs screen's: tap to hear, the cookie avatar morphs while the clip loads and plays. Haptic previews needed data the
+index did not have, so they were left for later. Owner update 2026-10-24 (#175, item 7): "it has to be done
+eventually, make sure this is not forgotten". Built in #272 ([ADR 0069](0069-haptic-previews-in-discover.md)): the
+index carries each character's haptic as `x-haptic`, auto envelopes are computed on the phone from the sample, and
+the vibration starts with the clip.
 
 **Installs go through the existing review.** The import state machine moved out of `PacksViewModel` into
 `ImportController`, shared by both screens, so Discover shows the same `ImportSheet`: download progress (eased, with
@@ -84,4 +89,5 @@ packs stay). Sections show each repository's name and host, with a lock when it 
 - `ImportSheet.onPickAnother` is optional (Discover has no file to pick again), and `ImportUi.Working` carries an
   optional download.
 - Previews in the cache folder can be cleared by Android at any time; that only costs another fetch.
-- Haptic previews, an in-app QR scanner and Google Drive folders (v1.1) are not built.
+- An in-app QR scanner and Google Drive folders (v1.1) are not built. Haptic previews came later (#272,
+  [ADR 0069](0069-haptic-previews-in-discover.md)).

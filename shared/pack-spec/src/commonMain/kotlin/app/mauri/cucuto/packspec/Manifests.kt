@@ -1,5 +1,6 @@
 package app.mauri.cucuto.packspec
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -160,6 +161,10 @@ data class RepositoryEntry(
     val download: Download,
 )
 
+/**
+ * One character of a repository entry. [haptic] is the character's `haptic` from `pack.json` (`x-haptic` in the index,
+ * an extension key so that older apps accept it): null when the index does not say, which apps treat as "sound only".
+ */
 @Serializable
 data class CharacterPreview(
     val id: String,
@@ -167,6 +172,7 @@ data class CharacterPreview(
     val sprite: String? = null,
     val sample: String? = null,
     val seedColor: String? = null,
+    @SerialName("x-haptic") val haptic: Haptic? = null,
 )
 
 @Serializable

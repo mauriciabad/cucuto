@@ -21,7 +21,7 @@
     <string name="settings_ui_sounds_quiet">Quiet</string>
     <string name="settings_ui_sounds_normal">Normal</string>
     <string name="settings_ui_haptics">App vibration</string>
-    <string name="settings_ui_haptics_body">Taps and ticks under your finger. Android\'s vibration settings still apply.</string>
+    <string name="settings_ui_haptics_body">Taps, ticks and previews in Discover. Android\'s vibration settings still apply.</string>
     <string name="settings_remove_animations">Remove animations</string>
     <string name="settings_remove_animations_body">No particles, bounces or swinging door in Cucuto. Sounds and vibration still play.</string>
     <string name="settings_remove_animations_system">On for every app in Android\'s accessibility settings.</string>

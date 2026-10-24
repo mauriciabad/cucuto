@@ -11,13 +11,14 @@ import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.ringtone.variants.RuleContext
 import app.mauri.cucuto.core.ringtone.variants.VariantRules
+import app.mauri.cucuto.ui.components.PackChip
+import app.mauri.cucuto.ui.components.packChips
+import app.mauri.cucuto.ui.components.selectedChip
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,8 +32,9 @@ import java.time.ZoneId
 import kotlin.random.Random
 
 /**
- * A phone ringtone as the picker edits it: the character that rings ([voice]), whether that is because it
- * [followsVoice] (the message character), how the version is chosen, and the version for [RingtoneMode.FIXED].
+ * A phone ringtone as the picker edits it: the character that rings ([voice]), whether it [followsVoice] (the user
+ * never picked one: the message character, or the one kept while the message character has no ringtones, ADR 0063),
+ * how the version is chosen, and the version for [RingtoneMode.FIXED].
  */
 @Immutable
 data class RingtoneSelection(
@@ -42,7 +44,7 @@ data class RingtoneSelection(
     val variant: String? = null,
 )
 
-/** The version being previewed. */
+/** The version being previewed (ringing like the call, from its start, until stopped: [RingTimeline]). */
 @Immutable
 data class PlayingVariant(
     val voice: ChatVoice,
@@ -55,6 +57,9 @@ data class PlayingVariant(
  * @property saved The phone ringtone stored for the chat, null when it has none.
  * @property edited The user's choice on this screen, null until they change something.
  * @property assigned Set once the choice is saved: the screen celebrates, then closes.
+ * @property packs Installed packs with characters that have ringtones (only those: ADR 0063).
+ * @property packFilter The pack chip chosen, or null for all packs.
+ * @property playing The version ringing or paused; [preview] has its progress and whether it is paused.
  */
 @Immutable
 data class RingtonePickerState(
@@ -65,10 +70,22 @@ data class RingtonePickerState(
     val saved: RingtoneSelection? = null,
     val edited: RingtoneSelection? = null,
     val playing: PlayingVariant? = null,
+    val preview: PreviewPlaying<PlayingVariant>? = null,
     val assigned: RingtoneSelection? = null,
     val failed: Boolean = false,
+    val packFilter: String? = null,
 ) {
     val contactId: Long? get() = chat?.contactId
+
+    /** Phone calls come from people: a group has no phone ringtone (#52). */
+    val isGroup: Boolean get() = chat?.isGroup ?: (chatKey?.isGroupKey == true)
+
+    /** One chip per pack with ringtone characters, with their count; empty with fewer than two such packs. */
+    val chips: List<PackChip> get() = packChips(packs, { it.packId }, { it.name }, { it.characters.size })
+
+    /** The packs the grid shows: the chosen chip's, or all. */
+    val visiblePacks: List<RingtonePackItem>
+        get() = selectedChip(chips, packFilter)?.let { id -> packs.filter { it.packId == id } } ?: packs
 
     /** The chat's message character. */
     val voice: ChatVoice? get() = chat?.voice
@@ -89,9 +106,12 @@ data class RingtonePickerState(
                     PhoneRingtoneViewModel.modesFor(item.variants.map { it.variant })
                 }.orEmpty()
 
-    /** Something to save: a selected character with ringtones, different from what is stored. */
+    /**
+     * Something to save: a selected character with ringtones, different from what is stored. A chat without a contact
+     * gets one when it saves (ADR 0063), so a ringtone can come before a voice.
+     */
     val canSave: Boolean
-        get() = contactId != null && selectedCharacter != null && assigned == null && selection != saved
+        get() = chatKey != null && !isGroup && selectedCharacter != null && assigned == null && selection != saved
 
     fun character(voice: ChatVoice?): RingtoneCharacterItem? =
         voice?.let { v ->
@@ -100,10 +120,11 @@ data class RingtonePickerState(
 }
 
 /**
- * The ringtone picker (#53, brief "Ringtones"): every installed character with ringtones as an album cover. A tap picks
- * it and plays the version its rule would ring with now (the record spins); each version plays on its own too. The
- * user picks a character (the message character follows the voice; any other one mixes, "messages from Pikachu,
- * ringtone from K.K. Slider") and a rule, and saves.
+ * The ringtone picker (#53, brief "Ringtones"): every installed character with ringtones as an album cover, filtered by
+ * pack. A tap picks it and plays the version its rule would ring with now (the record spins); each version plays on
+ * its own too, from the start (#246). The user picks a character and a rule, and saves. The message voice and the
+ * ringtone are independent (ADR 0063): the message character keeps following the voice, the character kept while the
+ * voice has no ringtones keeps following too, and any other character is the user's own pick.
  */
 @HiltViewModel(assistedFactory = RingtonePickerViewModel.Factory::class)
 class RingtonePickerViewModel
@@ -115,17 +136,24 @@ class RingtonePickerViewModel
         private val clock: WallClock,
     ) : ViewModel() {
         private val interaction = MutableStateFlow(RingtonePickerState(chatKey = chatKey))
-        private var previewJob: Job? = null
+        private val playback = RingtonePlayback<PlayingVariant>(viewModelScope, preview)
 
         val state: StateFlow<RingtonePickerState> =
-            combine(source.observe(chatKey), interaction) { data, local ->
+            combine(source.observe(chatKey), interaction, playback.playing) { data, local, playing ->
                 local.copy(
                     loading = false,
                     chat = data.chat,
                     packs = data.packs,
                     saved = saved(data.saved, data.chat?.voice),
+                    playing = playing?.key,
+                    preview = playing,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), interaction.value)
+
+        /** Shows only [packId]'s characters, or every pack for null. */
+        fun filterPack(packId: String?) {
+            interaction.update { it.copy(packFilter = packId) }
+        }
 
         /**
          * A tap on [item]'s cover: picks it (keeping the rule when it still applies) and previews the version that rule
@@ -147,17 +175,18 @@ class RingtonePickerViewModel
                 } else {
                     null
                 }
-            val selection = RingtoneSelection(item.voice, followsVoice = item.voice == current.voice, mode, variant)
+            val selection = RingtoneSelection(item.voice, followsVoice = follows(current, item.voice), mode, variant)
             interaction.update { it.copy(edited = selection, failed = false) }
             play(item, previewVariant(item, mode, variant))
         }
 
-        /** Plays [file] of [item], or stops it when it is the one playing. */
+        /** Rings [file] of [item] like the call, or pauses and resumes it when it is the one ringing. */
         fun togglePreview(
             item: RingtoneCharacterItem,
             file: String,
         ) {
-            if (state.value.playing == PlayingVariant(item.voice, file)) stopPreview() else play(item, file)
+            val sound = item.variant(file)?.sound() ?: return
+            playback.toggle(PlayingVariant(item.voice, file), sound)
         }
 
         fun setMode(mode: RingtoneMode) {
@@ -190,7 +219,6 @@ class RingtonePickerViewModel
         fun save(): Boolean {
             val current = state.value
             val selection = current.selection ?: return false
-            val contactId = current.contactId ?: return false
             if (!current.canSave) return false
             val single = current.modes.isEmpty()
             val mode = if (single) RingtoneMode.PACK else selection.mode
@@ -199,7 +227,9 @@ class RingtonePickerViewModel
             interaction.update { it.copy(assigned = selection, failed = false) }
             viewModelScope.launch {
                 try {
-                    source.save(contactId, if (selection.followsVoice) null else selection.voice, mode, variant)
+                    // Following the voice stores no character; a kept one (the voice has no ringtones) is stored.
+                    val character = selection.voice.takeUnless { selection.followsVoice && it == current.voice }
+                    source.save(chatKey, current.contactId, character, selection.followsVoice, mode, variant)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -209,33 +239,25 @@ class RingtonePickerViewModel
             return true
         }
 
-        fun stopPreview() {
-            previewJob?.cancel()
-            previewJob = null
-            preview.stop()
-            interaction.update { it.copy(playing = null) }
-        }
+        fun stopPreview() = playback.stop()
 
         private fun play(
             item: RingtoneCharacterItem,
             file: String,
         ) {
-            val variant = item.variant(file) ?: return
-            val audio = variant.audio ?: return
-            val playing = PlayingVariant(item.voice, file)
-            previewJob?.cancel()
-            previewJob =
-                viewModelScope.launch {
-                    interaction.update { it.copy(playing = playing) }
-                    try {
-                        val duration = preview.play(audio) ?: return@launch
-                        delay(duration.coerceIn(MIN_PREVIEW_MS, MAX_PREVIEW_MS))
-                        preview.stop()
-                    } finally {
-                        interaction.update { if (it.playing == playing) it.copy(playing = null) else it }
-                    }
-                }
+            val sound = item.variant(file)?.sound() ?: return
+            playback.play(PlayingVariant(item.voice, file), sound)
         }
+
+        /**
+         * Whether picking [voice] keeps the ringtone following the message voice: it is the voice's own character,
+         * or the one stored while following (kept because the voice has no ringtones). Anything else is the user's
+         * own pick, which a later voice change leaves alone (ADR 0063).
+         */
+        private fun follows(
+            current: RingtonePickerState,
+            voice: ChatVoice,
+        ): Boolean = voice == current.voice || (current.saved?.followsVoice == true && current.saved.voice == voice)
 
         /** The version [mode] would ring with now (day from 07:00 to 19:00 here; the sync uses the chosen place). */
         private fun previewVariant(
@@ -252,7 +274,7 @@ class RingtonePickerViewModel
         }
 
         override fun onCleared() {
-            preview.stop()
+            playback.stop()
         }
 
         @AssistedFactory
@@ -263,11 +285,7 @@ class RingtonePickerViewModel
         internal companion object {
             private const val STOP_TIMEOUT_MS = 5_000L
 
-            /** A preview stops after 30 s: enough to hear the loop, short of a 6 minute song. */
-            const val MAX_PREVIEW_MS = 30_000L
-            private const val MIN_PREVIEW_MS = 300L
-
-            /** The stored row as a selection: no character of its own follows [voice]. */
+            /** The stored row as a selection: no character of its own means [voice]'s (ADR 0063). */
             fun saved(
                 row: PhoneRingtoneEntity?,
                 voice: ChatVoice?,
@@ -284,7 +302,7 @@ class RingtonePickerViewModel
                 val character = own ?: voice ?: return null
                 return RingtoneSelection(
                     voice = character,
-                    followsVoice = own == null,
+                    followsVoice = row.followsVoice || own == null,
                     mode = row.mode,
                     variant = row.variant.takeIf { row.mode == RingtoneMode.FIXED },
                 )

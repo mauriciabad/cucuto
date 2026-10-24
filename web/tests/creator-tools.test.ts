@@ -232,6 +232,28 @@ describe('repository helper', () => {
 		expect(Object.keys(folder).some((p) => p.startsWith('previews/'))).toBe(true);
 	});
 
+	test('characters with a sample carry the pack haptic as x-haptic, as packer writes it', async () => {
+		const full = await file('full.soundpack.zip', zipFolder('full-pack'));
+		const outcome = buildRepository(
+			spec,
+			{ name: 'Haptics', description: '', homepage: '', baseUrl: null },
+			[full, await file('minimal.soundpack.zip', pack)]
+		);
+		if (outcome.kind !== 'built') throw new Error(JSON.stringify(outcome.result.issues));
+		const index = json(unzipSync(outcome.zip)['repository.json']) as {
+			packs: { id: string; characters: { id: string; 'x-haptic'?: { mode: string } }[] }[];
+		};
+		const modes = Object.fromEntries(
+			index.packs.flatMap((p) => p.characters.map((c) => [`${p.id}/${c.id}`, c['x-haptic']?.mode]))
+		);
+		expect(modes).toEqual({
+			'app.mauri.fixtures.full/robin': 'custom',
+			'app.mauri.fixtures.full/song': 'none',
+			'app.mauri.fixtures.full/ringer': undefined,
+			'app.mauri.fixtures.minimal/beep': 'auto'
+		});
+	});
+
 	test('packs hosted elsewhere are listed by their address and left out of the folder', async () => {
 		const outcome = buildRepository(
 			spec,

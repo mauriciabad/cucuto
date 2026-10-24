@@ -1,0 +1,33 @@
+{
+  "formatVersion": 1,
+  "name": "Fixture repository with haptic previews",
+  "packs": [
+    {
+      "id": "app.mauri.fixtures.full",
+      "type": "pack",
+      "name": "Full pack",
+      "version": "1.0.0",
+      "characters": [
+        { "id": "robin", "name": "Robin", "sample": "previews/app.mauri.fixtures.full/robin-sample.ogg",
+          "x-haptic": { "mode": "custom", "events": [
+            { "at": 0, "preset": "CLICK", "scale": 0.8 },
+            { "at": 220, "initialSharpness": 0.3, "envelope": [{ "intensity": 1.0, "sharpness": 0.8, "ms": 120 }, { "intensity": 0.0, "sharpness": 0.4, "ms": 180 }] }
+          ] } },
+        { "id": "song", "name": "Song", "sample": "previews/app.mauri.fixtures.full/song-sample.flac", "x-haptic": { "mode": "none" } },
+        { "id": "beep", "name": "Beep", "sample": "previews/app.mauri.fixtures.full/beep-sample.ogg", "x-haptic": { "mode": "auto" } },
+        { "id": "old", "name": "Old", "sample": "previews/app.mauri.fixtures.full/old-sample.ogg" }
+      ],
+      "download": { "url": "packs/full.soundpack.zip", "size": 4096, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
+    },
+    {
+      "id": "app.mauri.fixtures.bundle",
+      "type": "bundle",
+      "name": "Fixture bundle",
+      "version": "1.0.0",
+      "packs": [
+        { "id": "app.mauri.fixtures.bundle.first", "name": "Bundle first", "version": "1.0.0", "characters": [{ "id": "beep", "name": "Beep", "sample": "previews/b/beep.ogg", "x-haptic": { "mode": "auto" } }] }
+      ],
+      "download": { "url": "packs/bundle.soundpack.zip", "size": 4096, "sha256": "1111111111111111111111111111111111111111111111111111111111111111" }
+    }
+  ]
+}

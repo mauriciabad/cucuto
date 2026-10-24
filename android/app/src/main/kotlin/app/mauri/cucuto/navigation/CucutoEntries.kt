@@ -63,6 +63,7 @@ fun cucutoEntries(
                 // Only this picker, and only if the user has not left it already.
                 onDone = { navigator.remove(key) },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
+                onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
         }
         entry<CucutoDestination.Setup> { SetupScreen(onNavigate = navigate, onBack = goBack) }
@@ -111,6 +112,7 @@ fun cucutoEntries(
                 onBack = goBack,
                 onDone = { navigator.remove(key) },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
+                onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
         }
 

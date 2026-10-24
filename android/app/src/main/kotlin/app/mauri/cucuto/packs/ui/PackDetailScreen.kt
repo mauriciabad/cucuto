@@ -43,8 +43,8 @@ import app.mauri.cucuto.packs.PacksViewModel
 import app.mauri.cucuto.ui.components.PushedScreen
 
 /**
- * Everything about one installed pack (#27, ADR 0055): all its characters, where it came from, who uses it, "Duplicate
- * and edit" and Remove. A screen on the Packs tab, on the Packs screen's view model ([parentViewModel]). Remove asks on
+ * Everything about one installed pack (#27, ADR 0055): all its characters with what each offers and its previews (ADR
+ * 0063), where it came from, who uses it, "Duplicate and edit" and Remove. A screen on the Packs tab, on the Packs screen's view model ([parentViewModel]). Remove asks on
  * Packs, as before; when the pack is gone (removed, or missing after process death) the screen leaves ([onPackMissing]).
  */
 @Composable
@@ -87,6 +87,7 @@ internal fun PackDetailContent(
     onDuplicate: (() -> Unit)? = null,
 ) {
     val player = rememberClipPlayer()
+    val ringtones = rememberRingtonePlayback()
     PushedScreen(title = pack?.name.orEmpty(), onBack = onBack, modifier = modifier) { padding ->
         if (pack == null) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
@@ -131,12 +132,15 @@ internal fun PackDetailContent(
                     color = MaterialTheme.colorScheme.error,
                 )
             } else {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+                // Each character with what it offers (messages, ringtone, or both) and its previews (ADR 0063).
+                Column {
                     pack.characters.forEach { character ->
-                        CharacterBadge(character, playerKey = "${pack.id}/${character.id}", player = player)
+                        CharacterRow(
+                            character,
+                            key = "${pack.id}/${character.id}",
+                            clips = player,
+                            ringtones = ringtones,
+                        )
                     }
                 }
             }

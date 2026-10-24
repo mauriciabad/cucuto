@@ -12,6 +12,7 @@ import app.mauri.cucuto.core.haptics.auto.AutoHapticFile
 import app.mauri.cucuto.core.haptics.auto.AutoHapticSet
 import app.mauri.cucuto.core.haptics.auto.AutoHaptics
 import app.mauri.cucuto.core.pack.PackAnalyzer
+import app.mauri.cucuto.core.pack.PackImporter
 import app.mauri.cucuto.core.pack.PackStore
 import app.mauri.cucuto.packspec.PackManifest
 import app.mauri.cucuto.packspec.SpecJson
@@ -37,7 +38,8 @@ import javax.inject.Singleton
  *   analysis that failed at import. The routing table picks the new envelopes up through [PackManifestCatalog].
  *
  * Every clip is analysed whatever its character's pack haptic, because a per-contact `auto` override can apply to
- * any character. Only the first 2 s of each clip are decoded, so long clips cost no more than short ones.
+ * any character. Only the first 2 s of each clip are decoded, so long clips cost no more than short ones, and several
+ * clips are decoded at once (#267).
  */
 @Singleton
 class AutoHapticsRunner
@@ -49,7 +51,11 @@ class AutoHapticsRunner
     ) {
         private val autoHaptics: AutoHaptics by lazy {
             val vibrator = context.getSystemService(VibratorManager::class.java)?.defaultVibrator
-            AutoHaptics(vibrator?.let(PublicHapticEffects::capabilities) ?: HapticCapabilities())
+            AutoHaptics(
+                capabilities = vibrator?.let(PublicHapticEffects::capabilities) ?: HapticCapabilities(),
+                // Several clips at once, bounded like the import test-decodes (ADR 0020 and 0061).
+                parallelism = PackImporter.DEFAULT_DECODE_PARALLELISM,
+            )
         }
 
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

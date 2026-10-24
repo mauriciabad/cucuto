@@ -1,6 +1,7 @@
 # 0042. Explainer video: brief, files and the Home player
 
-- Status: accepted
+- Status: accepted; amended by the owner's answer on #194 (illustrated UI, AI voice, English only, see
+  [Owner update](#owner-update-2026-10-24-194-illustrated-ai-voiced-english-only))
 - Date: 2026-10-24
 - Issues: #42 (this work), #58 (brief after M3, demo packs only), #38/#110 (Home slot), #41 (scripted screenshots),
   #194 (owner question: defaults below), #195 (automated draft, follow-up)
@@ -81,3 +82,30 @@ are in #194.
 - Muted autoplay costs bandwidth for visitors who scroll past. The 50 % visibility threshold, the Data Saver check and
   pausing offscreen limit that.
 - The captions double as the transcript, so they must stay complete (every sound, not only the speech).
+
+## Owner update 2026-10-24 (#194): illustrated, AI-voiced, English only
+
+> dont involve humans, AI voice.
+> Dont use the real app ui not phone recordings, you can make a simplified version for the video.
+> Only english video
+
+> just a note, the point of not using real screenshots is to make the video evergreen, so if i update the ui the
+> video doesnt get outdated.
+> would be nice that the video project files were saved so if i want to add a new feature to the video it is
+> doable, but this is NOT a priority, just a optional nice to have.
+
+What changes in the decision above:
+
+- **Brief:** ~~ten shots on the app's real flows, a voice-over in English and Spanish~~. The ten shots show the
+  app's real flows as a **simplified, illustrated UI** drawn for the video, never real screens or phone recordings.
+  The video stays true when the app's UI changes. The voice-over is **AI-generated, in English**, and no human takes
+  part.
+- **Files:** **one English cut** (`explainer.{webm,mp4}`). No Spanish cut is planned. `/es/` plays the English cut
+  with the Spanish captions, which the player already does when no Spanish cut exists. Both caption files stay.
+  The player keeps its optional support for `explainer.es.*`; it costs nothing.
+- **Project files:** the video is kept as source in the repository (scenes, timeline, voice script and settings,
+  sound cues) so a feature can be added later. This is a nice-to-have, not a priority. Renders and masters stay out.
+- **Defaults that stand** (the owner didn't change them): muted autoplay with captions when in view, never with
+  reduced motion or Data Saver (item 3); the `?picture` poster (item 5). Item 4 (WhatsApp test accounts) is moot:
+  nothing is filmed.
+- The draft pipeline (ADR 0060) renders the real screens, so it is reworked in #271.

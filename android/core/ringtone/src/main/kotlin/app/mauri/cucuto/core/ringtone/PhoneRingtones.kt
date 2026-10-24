@@ -436,9 +436,10 @@ class PhoneRingtones
         }
 
         /**
-         * The ringtone picker's choice (#53): the character that rings for [contactId] ([packId] and [characterId]
-         * null to follow its voice, which mixing undoes), how its variant is picked, and the variant for
-         * [RingtoneMode.FIXED].
+         * The ringtone picker's choice (#53, ADR 0063): the character that rings for [contactId] ([packId] and
+         * [characterId] null for its voice's), whether it keeps [followsVoice] (the user picked the voice's own
+         * character, or left the kept one as it was) or is the user's own pick, how its variant is picked, and the
+         * variant for [RingtoneMode.FIXED].
          */
         suspend fun choose(
             contactId: Long,
@@ -446,16 +447,18 @@ class PhoneRingtones
             characterId: String?,
             mode: RingtoneMode,
             variant: String?,
+            followsVoice: Boolean = packId == null || characterId == null,
         ) {
-            val follows = packId == null || characterId == null
+            val own = packId != null && characterId != null
             dao.upsert(
                 PhoneRingtoneEntity(
                     contactId = contactId,
-                    packId = if (follows) null else packId,
-                    characterId = if (follows) null else characterId,
+                    packId = if (own) packId else null,
+                    characterId = if (own) characterId else null,
                     mode = mode,
                     variant = if (mode == RingtoneMode.FIXED) variant else null,
                     updatedAt = clock.now(),
+                    followsVoice = followsVoice || !own,
                 ),
             )
         }

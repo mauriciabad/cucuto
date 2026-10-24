@@ -18,7 +18,7 @@
     <string name="settings_ui_sounds_quiet">Bajos</string>
     <string name="settings_ui_sounds_normal">Normales</string>
     <string name="settings_ui_haptics">Vibración de la app</string>
-    <string name="settings_ui_haptics_body">Toques y tics bajo el dedo. Los ajustes de vibración de Android siguen aplicándose.</string>
+    <string name="settings_ui_haptics_body">Toques, tics y muestras de Descubrir. Los ajustes de Android siguen aplicándose.</string>
     <string name="settings_remove_animations">Quitar animaciones</string>
     <string name="settings_remove_animations_body">Sin partículas, rebotes ni puerta que se balancea en Cucuto. Los sonidos y la vibración siguen sonando.</string>
     <string name="settings_remove_animations_system">Activado para todas las apps en los ajustes de accesibilidad de Android.</string>
