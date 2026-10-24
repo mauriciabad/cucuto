@@ -4,12 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.SystemClock
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.core.backup.BackupPackReference
 import app.mauri.cucuto.core.backup.BackupPackSource
 import app.mauri.cucuto.core.backup.BackupPackSourceType
@@ -29,14 +25,9 @@ import app.mauri.cucuto.daynight.LocateStatus
 import app.mauri.cucuto.diagnostics.DiagnosticsContent
 import app.mauri.cucuto.diagnostics.DiagnosticsMessage
 import app.mauri.cucuto.diagnostics.DiagnosticsState
-import app.mauri.cucuto.packspec.Character
-import app.mauri.cucuto.packspec.Clip
-import app.mauri.cucuto.packspec.PackManifest
 import app.mauri.cucuto.provider.ReceivedStatus
 import app.mauri.cucuto.ui.creator.CropperPage
 import app.mauri.cucuto.ui.creator.CropperUi
-import app.mauri.cucuto.ui.creator.FinishContent
-import app.mauri.cucuto.ui.creator.FinishUi
 import app.mauri.cucuto.ui.creator.PictureTarget
 import app.mauri.cucuto.ui.settings.restore.ConflictRow
 import app.mauri.cucuto.ui.settings.restore.PackRow
@@ -44,16 +35,15 @@ import app.mauri.cucuto.ui.settings.restore.PackStatus
 import app.mauri.cucuto.ui.settings.restore.RestoreActions
 import app.mauri.cucuto.ui.settings.restore.RestoreContent
 import app.mauri.cucuto.ui.settings.restore.RestoreStep
-import app.mauri.cucuto.ui.settings.restore.RestoreSummary
 import app.mauri.cucuto.ui.settings.restore.VoiceLabel
 import app.mauri.cucuto.xposed.events.ModuleStatus
-import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 
 /**
  * The screens added to the accessibility checks in #226, with made-up content: Diagnostics, Day and night, the
- * creator's cropper and "Check and finish", and the restore steps. [A11yScreens.all] lists them with the others.
+ * creator's cropper, and the restore steps before the summary ([A11yPushedScreens] has the summary). [A11yScreens.all]
+ * lists them with the others.
  */
 internal object A11yMoreScreens {
     val all: List<Pair<String, @Composable () -> Unit>> =
@@ -61,11 +51,9 @@ internal object A11yMoreScreens {
             "diagnostics" to { Diagnostics() },
             "day-night" to { DayNight() },
             "creator-cropper" to { CreatorCropper() },
-            "creator-finish" to { CreatorFinish() },
             "restore-passphrase" to { Restore(RestoreStep.Passphrase(wrong = true)) },
             "restore-packs" to { Restore(restorePacks) },
             "restore-conflicts" to { Restore(restoreConflicts) },
-            "restore-done" to { Restore(restoreDone) },
         )
 
     @Composable
@@ -161,47 +149,6 @@ internal object A11yMoreScreens {
         )
     }
 
-    /**
-     * "Check and finish", built and ready to install. Its content only: a sheet opens its own window, which does not
-     * get the tests' font size and language on Robolectric.
-     */
-    @Composable
-    private fun CreatorFinish() {
-        val manifest =
-            PackManifest(
-                formatVersion = 1,
-                id = "app.example.critters",
-                name = "Chiptune critters",
-                version = "1.0.0",
-                author = "Cucuto",
-                license = "CC0-1.0",
-                characters =
-                    listOf(
-                        Character(
-                            id = "frog",
-                            name = "Bleep the frog",
-                            sprite = "frog/sprite.webp",
-                            clips = listOf(Clip("frog/clips/a.ogg"), Clip("frog/clips/b.ogg")),
-                        ),
-                        Character(
-                            id = "bee",
-                            name = "Buzz the bee",
-                            sprite = "bee/sprite.webp",
-                            clips = listOf(Clip("bee/clips/a.ogg")),
-                        ),
-                    ),
-            )
-        FinishContent(
-            finish = FinishUi.Ready(file = File("critters.soundpack.zip"), manifest = manifest, warnings = emptyList()),
-            onInstall = {},
-            onExport = {},
-            onShare = {},
-            onDone = {},
-            onDismiss = {},
-            modifier = Modifier.systemBarsPadding().padding(top = 24.dp),
-        )
-    }
-
     @Composable
     private fun Restore(step: RestoreStep) {
         RestoreContent(step = step, actions = RestoreActions())
@@ -271,23 +218,6 @@ internal object A11yMoreScreens {
                     ),
                 ),
             selected = setOf("1"),
-        )
-
-    private val restoreDone =
-        RestoreStep.Done(
-            summary =
-                RestoreSummary(
-                    contacts = 12,
-                    created = 3,
-                    voicesApplied = 11,
-                    conflictsKept = 1,
-                    keysLeftAlone = 0,
-                    repositoriesAdded = 1,
-                    credentialsRestored = 0,
-                    packsMissing = 1,
-                    ringtonesPending = 2,
-                ),
-            reusableSource = "content://com.android.externalstorage.documents/document/primary%3Acucuto-backup.zip",
         )
 
     /** A made-up picture to frame: green and yellow stripes. */

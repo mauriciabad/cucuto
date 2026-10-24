@@ -428,7 +428,7 @@ In-app haptics: use Compose `LocalHapticFeedback` types for standard touches (to
 
 The app should feel like a small game: every action answers with synchronized motion, sound and haptics, on a Material 3 Expressive foundation. Juice never gets in the way of getting a contact set up in under 10 seconds.
 
-Screens over dialogs (owner, #166): a flow or a body of content gets a real screen with predictive back; dialogs and bottom sheets are only for very minimal, temporary content (a confirmation, a short choice, a blocking progress card). Conversions: #218.
+Screens over dialogs (owner, #166): a flow or a body of content gets a real screen with predictive back; dialogs and bottom sheets are only for very minimal, temporary content (a confirmation, a short choice, a blocking progress card). Conversions: #218 (ADR 0055).
 
 Screens:
 

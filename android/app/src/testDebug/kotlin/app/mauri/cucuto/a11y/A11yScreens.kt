@@ -96,7 +96,7 @@ internal object A11yScreens {
             "creator-character" to { CreatorCharacterScreen() },
             "creator-recorder" to { CreatorRecorderScreen() },
             "creator-clip-editor" to { CreatorClipEditorScreen() },
-        ) + A11yMoreScreens.all
+        ) + A11yPushedScreens.all + A11yMoreScreens.all
 
     /** The screen called [name] in [all]. */
     fun content(name: String): @Composable () -> Unit = all.first { it.first == name }.second

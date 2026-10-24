@@ -83,10 +83,12 @@ test). They are verified on every build like the other goldens, so a layout that
   end, through the containers' own scroll action, and checks each screenful. `A11yAssertionsTest` proves it catches
   crowded controls far down lazy lists, columns and rows. It found the restore flow's "select all" row (a 24 dp
   checkbox row next to the first contact, now 48 dp).
-- *More screens.* Diagnostics and Day and night now have stateless `DiagnosticsContent` and `DayNightContent`. With
-  the creator's cropper, "Check and finish" and four restore steps, they joined `A11yScreens` (`A11yMoreScreens`)
-  and the 200% goldens. A bottom sheet opens its own window, which on Robolectric gets neither the test's font scale
-  nor its language. So the checks render the sheet's content (`FinishContent`) in the main window.
+- *More screens.* Diagnostics and Day and night now have stateless `DiagnosticsContent` and `DayNightContent`.
+  Together with the creator's cropper and the restore steps before the summary (passphrase, packs, conflicts), they
+  joined `A11yScreens` (`A11yMoreScreens`) and the 200% goldens. They sit next to the screens that ADR 0055 made out
+  of dialogs and sheets (`A11yPushedScreens`, which has the restore summary and "Check and finish"). A dialog or a
+  sheet opens its own window, which on Robolectric gets neither the test's font scale nor its language, so checked
+  content belongs in the main window.
 - Fixes found by the new checks: in the restore flow, the installed pack's check icon no longer repeats "Installed",
   and with large fonts the "Choose file" and "Try again" buttons sit under the pack's text instead of squeezing it to a
   word per line. The haptic editor uses `CucutoTopBar` (a medium flexible top bar), so its title shows in full at

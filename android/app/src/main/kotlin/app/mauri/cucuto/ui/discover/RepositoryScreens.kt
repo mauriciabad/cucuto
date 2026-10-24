@@ -3,12 +3,15 @@ package app.mauri.cucuto.ui.discover
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -21,26 +24,26 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -54,85 +57,42 @@ import app.mauri.cucuto.core.repo.LinkError
 import app.mauri.cucuto.core.repo.RepoError
 import app.mauri.cucuto.core.repo.RepositoryLink
 import app.mauri.cucuto.packs.plainWords
+import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.ChoiceButtonGroup
+import app.mauri.cucuto.ui.components.PushedScreen
 
 /**
- * Adds a repository (or a direct pack link), or signs in to a saved one. The host is always shown, and anything but
- * the project website gets a short warning before the user confirms (brief: "Adding a repository from an unknown
- * source shows a short warning"). Nothing is fetched until the user presses the button.
+ * Adds a repository (or a direct pack link), or signs in to a saved one: a screen on the Discover tab (ADR 0055). The
+ * host is always shown, and anything but the project website gets a short warning before the user confirms (brief:
+ * "Adding a repository from an unknown source shows a short warning"). Nothing is fetched until the user presses the
+ * button.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-internal fun RepositoryFormSheet(
+internal fun RepositoryFormScreen(
     form: RepositoryForm,
     onChange: ((RepositoryForm) -> RepositoryForm) -> Unit,
     onSubmit: () -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val signingIn = form.repositoryId != null
     val link = form.link
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
+    PushedScreen(
+        title =
+            when {
+                signingIn -> stringResource(R.string.discover_form_sign_in_title, form.host.orEmpty())
+                form.fromLink -> stringResource(R.string.discover_form_link_title)
+                else -> stringResource(R.string.discover_form_add_title)
+            },
+        onBack = onBack,
         modifier = modifier,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text =
-                    when {
-                        signingIn -> stringResource(R.string.discover_form_sign_in_title, form.host.orEmpty())
-                        form.fromLink -> stringResource(R.string.discover_form_link_title)
-                        else -> stringResource(R.string.discover_form_add_title)
-                    },
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.semantics { heading() },
-            )
-            if (!signingIn) {
-                Text(
-                    stringResource(
-                        if (form.fromLink) R.string.discover_form_link_body else R.string.discover_form_add_body,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = form.input,
-                    onValueChange = { text -> onChange { it.copy(input = text) } },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.discover_form_url)) },
-                    placeholder = { Text(stringResource(R.string.discover_form_url_hint)) },
-                    singleLine = true,
-                    enabled = !form.checking,
-                    isError = form.error is FormError.Link,
-                    supportingText = linkSupportingText(form),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
-                )
-            }
-            form.host?.let { host ->
-                HostCard(host = host, trusted = form.trusted, directPack = link is RepositoryLink.DirectPack)
-            }
-            SignInFields(form, onChange)
-            (form.error as? FormError.Fetch)?.let { ErrorText(fetchMessage(it.error)) }
-            if (form.error == FormError.InvalidCredentials) ErrorText(R.string.discover_form_invalid_credentials)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                itemVerticalAlignment = Alignment.CenterVertically,
-            ) {
+        bottomBar = {
+            BottomActionBar(Modifier.imePadding()) {
                 if (form.checking) {
                     val checking = stringResource(R.string.a11y_checking)
                     LoadingIndicator(Modifier.size(40.dp).semantics { contentDescription = checking })
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.import_cancel)) }
+                TextButton(onClick = onBack) { Text(stringResource(R.string.import_cancel)) }
                 Button(
                     onClick = onSubmit,
                     enabled = !form.checking && form.input.isNotBlank(),
@@ -149,6 +109,46 @@ internal fun RepositoryFormSheet(
                     )
                 }
             }
+        },
+    ) { padding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .consumeWindowInsets(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(padding)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (!signingIn) {
+                Text(
+                    stringResource(
+                        if (form.fromLink) R.string.discover_form_link_body else R.string.discover_form_add_body,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = form.input,
+                    onValueChange = { text -> onChange { it.copy(input = text) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.discover_form_url)) },
+                    placeholder = { Text(stringResource(R.string.discover_form_url_hint)) },
+                    // A long link wraps instead of scrolling out of sight, also with large fonts.
+                    maxLines = 4,
+                    enabled = !form.checking,
+                    isError = form.error is FormError.Link,
+                    supportingText = linkSupportingText(form),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+                )
+            }
+            form.host?.let { host ->
+                HostCard(host = host, trusted = form.trusted, directPack = link is RepositoryLink.DirectPack)
+            }
+            SignInFields(form, onChange)
+            (form.error as? FormError.Fetch)?.let { ErrorText(fetchMessage(it.error)) }
+            if (form.error == FormError.InvalidCredentials) ErrorText(R.string.discover_form_invalid_credentials)
         }
     }
 }
@@ -276,39 +276,63 @@ private fun ErrorText(
     )
 }
 
-/** The saved repositories: turn them on or off, sign in, remove (all but the default one). */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Discover → Repositories (ADR 0055): turn them on or off, sign in, remove (all but the default one), add one. */
 @Composable
-internal fun RepositoriesSheet(
+internal fun RepositoriesScreen(
     repositories: List<SavedRepository>,
     actions: DiscoverActions,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    snackbar: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
-        Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                stringResource(R.string.discover_repositories),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(horizontal = 24.dp).semantics { heading() },
-            )
-            repositories.forEachIndexed { index, repository ->
-                if (index > 0) HorizontalDivider(Modifier.padding(horizontal = 24.dp))
-                RepositoryRow(repository, actions)
+    PushedScreen(
+        title = stringResource(R.string.discover_repositories),
+        onBack = onBack,
+        modifier = modifier,
+        actions = {
+            IconButton(onClick = actions.onAdd) {
+                Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.discover_add))
             }
-            OutlinedButton(
-                onClick = {
-                    onDismiss()
-                    actions.onAdd()
-                },
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                shapes = ButtonDefaults.shapes(),
-            ) {
-                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-                Text(stringResource(R.string.discover_add), Modifier.padding(start = ButtonDefaults.IconSpacing))
+        },
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = padding.calculateTopPadding() + 8.dp,
+                    bottom = padding.calculateBottomPadding() + 24.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item(key = "list") {
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(vertical = 8.dp)) {
+                        repositories.forEachIndexed { index, repository ->
+                            if (index > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                            RepositoryRow(repository, actions)
+                        }
+                    }
+                }
+            }
+            item(key = "add") {
+                OutlinedButton(
+                    onClick = actions.onAdd,
+                    shapes = ButtonDefaults.shapes(),
+                ) {
+                    Icon(
+                        Icons.Rounded.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(ButtonDefaults.IconSize),
+                    )
+                    Text(stringResource(R.string.discover_add), Modifier.padding(start = ButtonDefaults.IconSpacing))
+                }
             }
         }
     }
@@ -323,7 +347,7 @@ private fun RepositoryRow(
     val host = hostOf(repository.url)
     val name = repository.name ?: host
     Row(
-        modifier = modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+        modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {

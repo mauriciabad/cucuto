@@ -1,10 +1,17 @@
 package app.mauri.cucuto.ui.creator
 
+import android.content.ClipData
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,100 +24,176 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.pack.ImportProgress
+import app.mauri.cucuto.core.pack.PackImporter
+import app.mauri.cucuto.navigation.OnEntryPopped
+import app.mauri.cucuto.navigation.parentViewModel
 import app.mauri.cucuto.packs.ImportProblem
 import app.mauri.cucuto.packs.ProblemItem
 import app.mauri.cucuto.packspec.authoring.DraftProblem
-import app.mauri.cucuto.ui.components.isLargeFont
+import app.mauri.cucuto.ui.components.PushedScreen
+import app.mauri.cucuto.ui.feedback.LocalFeedback
+import kotlinx.coroutines.launch
 
 /**
- * "Check and finish": the pack is built and run through the same checks as the importer, packer and the website.
- * Then install it into the library (the importer's own pipeline), save it as a file or share it.
+ * "Check and finish" (#47, ADR 0055): a screen above the creator, on the creator's view model ([parentViewModel]). The
+ * pack is built and run through the same checks as the importer, packer and the website, then installed into the
+ * library (the importer's own pipeline), saved as a file or shared. Leaving the screen closes the check; Done leaves
+ * the creator too ([onLeaveCreator]). Back is blocked while the pack installs. After process death the check is gone
+ * (the draft is not: it is saved after every change), so the screen leaves ([onCheckMissing]) and "Check and finish" starts
+ * it again.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun FinishSheet(
-    finish: FinishUi,
-    onInstall: () -> Unit,
-    onExport: (fileName: String) -> Unit,
-    onShare: () -> Unit,
-    onDone: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
+fun CreatorFinishScreen(
+    onBack: () -> Unit,
+    onCheckMissing: () -> Unit,
+    onLeaveCreator: () -> Unit,
+    viewModel: CreatorViewModel = parentViewModel(),
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
-        FinishContent(finish, onInstall, onExport, onShare, onDone, onDismiss)
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val resources = LocalResources.current
+    val context = LocalContext.current
+    val feedback = LocalFeedback.current
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+    val exporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PackImporter.MIME_TYPE)) { uri ->
+            if (uri != null) viewModel.export(uri)
+        }
+    val share: () -> Unit = {
+        scope.launch {
+            val uri = viewModel.shareUri() ?: return@launch
+            val send =
+                Intent(Intent.ACTION_SEND)
+                    .setType(PackImporter.MIME_TYPE)
+                    .putExtra(Intent.EXTRA_STREAM, uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            send.clipData = ClipData.newRawUri(null, uri)
+            context.startActivity(Intent.createChooser(send, resources.getString(R.string.creator_share_title)))
+        }
     }
+    OnEntryPopped(viewModel::closeFinish)
+    val finish = state.finish
+    val currentOnGone by rememberUpdatedState(onCheckMissing)
+    LaunchedEffect(finish == null) { if (finish == null) currentOnGone() }
+    val installing = (finish as? FinishUi.Ready)?.installing == true
+    val backState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+    NavigationBackHandler(state = backState, isBackEnabled = installing, onBackCompleted = {})
+    LaunchedEffect(state.message) {
+        val message = state.message ?: return@LaunchedEffect
+        feedback.fire(feedbackFor(message))
+        val text = messageText(resources, message)
+        viewModel.messageShown()
+        snackbar.showSnackbar(text)
+    }
+    // While it slides out, the screen keeps showing the last check instead of going blank.
+    var shown by remember { mutableStateOf(finish) }
+    if (finish != null) shown = finish
+    shown?.let {
+        CreatorFinishContent(
+            finish = it,
+            onInstall = viewModel::install,
+            onExport = { name -> exporter.launch(name) },
+            onShare = share,
+            onDone = onLeaveCreator,
+            onBack = onBack,
+            snackbar = snackbar,
+        )
+    }
+    state.busy?.takeIf { it.kind == Busy.Kind.COPYING_PACK }?.let { BusyDialog(it) }
 }
 
-/**
- * What the "Check and finish" sheet shows, without the sheet: the accessibility checks and large-font goldens render
- * it in the main window, which has their font size and language (a sheet's own window does not, on Robolectric).
- */
+/** Stateless "Check and finish". */
 @Composable
-internal fun FinishContent(
+internal fun CreatorFinishContent(
     finish: FinishUi,
     onInstall: () -> Unit,
     onExport: (fileName: String) -> Unit,
     onShare: () -> Unit,
     onDone: () -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    snackbar: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    Column(
-        modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        when (finish) {
-            FinishUi.Checking -> {
-                Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                    LoadingIndicator(Modifier.size(56.dp))
+    val installing = (finish as? FinishUi.Ready)?.installing == true
+    PushedScreen(
+        title = stringResource(R.string.creator_check),
+        onBack = onBack,
+        modifier = modifier,
+        backEnabled = !installing,
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { padding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .consumeWindowInsets(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(padding)
+                .padding(horizontal = 24.dp)
+                .padding(top = 8.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            when (finish) {
+                FinishUi.Checking -> {
+                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        LoadingIndicator(Modifier.size(56.dp))
+                    }
+                    Text(stringResource(R.string.creator_checking), style = MaterialTheme.typography.titleMedium)
                 }
-                Text(stringResource(R.string.creator_checking), style = MaterialTheme.typography.titleMedium)
-            }
 
-            is FinishUi.Incomplete -> {
-                Text(
-                    stringResource(R.string.creator_incomplete_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                finish.problems.forEach { Line(draftProblemText(it), warning = true) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.creator_keep_editing)) }
-            }
+                is FinishUi.Incomplete -> {
+                    Text(
+                        stringResource(R.string.creator_incomplete_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    finish.problems.forEach { Line(draftProblemText(it), warning = true) }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.creator_keep_editing)) }
+                }
 
-            is FinishUi.Invalid -> {
-                InvalidContent(finish.problem)
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.creator_keep_editing)) }
-            }
+                is FinishUi.Invalid -> {
+                    InvalidContent(finish.problem)
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.creator_keep_editing)) }
+                }
 
-            is FinishUi.Ready -> {
-                ReadyContent(finish, onInstall, onExport, onShare, onDone)
+                is FinishUi.Ready -> {
+                    ReadyContent(finish, onInstall, onExport, onShare, onDone)
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReadyContent(
     ready: FinishUi.Ready,
@@ -181,16 +264,15 @@ private fun ReadyContent(
             }
         }
         if (!ready.installing) {
-            // Side by side, or one under the other with large fonts, so "Share" is never cut mid-word (#226).
+            // Wraps instead of splitting "Compartir" across lines with large fonts.
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                maxItemsInEachRow = if (isLargeFont()) 1 else 2,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 OutlinedButton(onClick = {
                     onExport(ready.fileName)
-                }, shapes = ButtonDefaults.shapes(), modifier = Modifier.weight(1f)) {
+                }, shapes = ButtonDefaults.shapes()) {
                     Icon(
                         painterResource(R.drawable.ic_creator_download),
                         contentDescription = null,
@@ -198,7 +280,7 @@ private fun ReadyContent(
                     )
                     Text(stringResource(R.string.creator_export), Modifier.padding(start = ButtonDefaults.IconSpacing))
                 }
-                OutlinedButton(onClick = onShare, shapes = ButtonDefaults.shapes(), modifier = Modifier.weight(1f)) {
+                OutlinedButton(onClick = onShare, shapes = ButtonDefaults.shapes()) {
                     Icon(
                         Icons.Rounded.Share,
                         contentDescription = null,

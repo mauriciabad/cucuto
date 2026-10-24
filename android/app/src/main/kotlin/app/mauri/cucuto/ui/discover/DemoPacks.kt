@@ -38,7 +38,7 @@ sealed interface DemoPacksUi {
     /** Fetching the default repository's index to find the bundle. */
     data object Finding : DemoPacksUi
 
-    /** The import sheet has the bundle (download, review, install); a problem there offers to pick the file. */
+    /** The import review has the bundle (download, review, install); a problem there offers to pick the file. */
     data object Importing : DemoPacksUi
 
     /** The bundle could not be found: say why, offer to try again or to pick the file from Downloads. */
