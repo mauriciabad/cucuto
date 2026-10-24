@@ -264,23 +264,26 @@ private fun DateRow(
     onRemove: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // The day and the last day one above the other: two fields side by side cut their labels at large font sizes.
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = date.from,
-                onValueChange = { onChange(date.copy(from = it.take(DATE_LENGTH))) },
-                label = { Text(stringResource(R.string.creator_when_date_from)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-            )
-            OutlinedTextField(
-                value = date.to.orEmpty(),
-                onValueChange = { onChange(date.copy(to = it.take(DATE_LENGTH).ifEmpty { null })) },
-                label = { Text(stringResource(R.string.creator_when_date_to)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                OutlinedTextField(
+                    value = date.from,
+                    onValueChange = { onChange(date.copy(from = it.take(DATE_LENGTH))) },
+                    label = { Text(stringResource(R.string.creator_when_date_from)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = date.to.orEmpty(),
+                    onValueChange = { onChange(date.copy(to = it.take(DATE_LENGTH).ifEmpty { null })) },
+                    label = { Text(stringResource(R.string.creator_when_date_to)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             IconButton(onClick = onRemove) {
                 Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.creator_when_date_remove))
             }

@@ -79,8 +79,11 @@ The editors (each in the style of its creator: dialogs on the website, pages in 
 - **Ringtones**: a "Ringtones" section on the character. "Add a ringtone" picks an audio file of 5 s to 6 min, kept in
   its own format (the format never forces one, and re-encoding a song would lose quality); each version has play,
   label, its condition summary, edit (label, "When it rings", loop, fade-in, how often it is picked for "random per
-  call"), "Add a version" (another entry for the same file, for example a night version with a fade-in) and remove.
-  A character needs a clip or a ringtone, so ringtone-only characters (songs) can be made from scratch.
+  call"), "Add a version" (another entry for the same file, for example a night version with a fade-in; it starts
+  as a copy without the condition, right after the original) and remove. A character needs a clip or a ringtone, so
+  ringtone-only characters (songs) can be made from scratch. In the app, the section-loop editor is a range slider
+  over the song (the length is probed when the song is added), and a version plays with ringtone audio attributes.
+  A homepage that is not an https URL is shown as an error and left out of the pack, so the pack still builds.
 - **More details**: the pack's homepage and tags, and a character's description. A character's tags stay
   pass-through (no app feature reads them yet).
 - The website's bundle tool gains homepage and tags, like `packer bundle`.
