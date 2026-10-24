@@ -86,6 +86,13 @@ class BackupExporter(
                 .observeAll()
                 .first()
                 .associateBy { it.contactId }
+        val ringtones =
+            db
+                .phoneRingtoneDao()
+                .observeAll()
+                .first()
+                .associateBy { it.contactId }
+        val ringtoneWrites = db.phoneRingtoneDao().writes().associateBy { it.lookupKey }
         val repositories = db.packRepositoryDao().observeAll().first()
         val installed = db.installedPackDao().getAll()
         return BackupDocument(
@@ -101,7 +108,15 @@ class BackupExporter(
             contacts =
                 contacts
                     .sortedBy { it.contact.id }
-                    .map { BackupSnapshot.contact(it, assignments[it.contact.id]) },
+                    .map { row ->
+                        BackupSnapshot.contact(
+                            row = row,
+                            assignment = assignments[row.contact.id],
+                            ringtone = ringtones[row.contact.id],
+                            // The undo record belongs to the Android contact the ringtone rings through.
+                            ringtoneWrite = row.contact.androidLookupKey?.let(ringtoneWrites::get),
+                        )
+                    },
         )
     }
 

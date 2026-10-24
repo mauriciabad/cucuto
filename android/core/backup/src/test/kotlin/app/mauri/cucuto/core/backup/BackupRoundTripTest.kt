@@ -5,12 +5,15 @@ import app.mauri.cucuto.core.data.db.AssignmentEntity
 import app.mauri.cucuto.core.data.db.ContactEntity
 import app.mauri.cucuto.core.data.db.ContactKeyEntity
 import app.mauri.cucuto.core.data.db.ContactKeyKind
+import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
 import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.data.db.PackRepositoryEntity
 import app.mauri.cucuto.core.data.db.PackSource
+import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.pack.PackStore
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import app.mauri.cucuto.packspec.FileInput
@@ -112,6 +115,44 @@ class BackupRoundTripTest {
                 ),
             )
         contacts.insertKey(key(family, "com.whatsapp.w4b", "120363000000000000@g.us"))
+
+        // Phone ringtones: Ada's follows her voice by day and night, and Cucuto already wrote her Android contact;
+        // Bruno has no voice, only a ringtone (mixing), always the night version.
+        val ringtones = oldPhone.phoneRingtoneDao()
+        ringtones.upsert(PhoneRingtoneEntity(contactId = ada, mode = RingtoneMode.TIME, updatedAt = 1))
+        ringtones.upsertWrite(
+            ContactRingtoneWriteEntity(
+                lookupKey = "0r1-ABC",
+                contactId = ada,
+                originalRingtone = ORIGINAL,
+                writtenUri = WRITTEN,
+                variant = "characters/beep/ringtones/day.ogg",
+                writtenAt = 1,
+            ),
+        )
+        val bruno =
+            contacts.insert(
+                ContactEntity(
+                    displayName = "Bruno",
+                    shuffleSeed = 3,
+                    createdAt = 1,
+                    updatedAt = 1,
+                    androidLookupKey = "0r2-DEF",
+                    androidDisplayName = "Bruno B.",
+                ),
+            )
+        contacts.insertKey(key(bruno, "com.whatsapp", "222222222@lid"))
+        contacts.insertKey(key(bruno, ContactKeyEntity.NO_PACKAGE, "+34600333444"))
+        ringtones.upsert(
+            PhoneRingtoneEntity(
+                contactId = bruno,
+                packId = critters,
+                characterId = "beep",
+                mode = RingtoneMode.FIXED,
+                variant = "characters/beep/ringtones/night.ogg",
+                updatedAt = 1,
+            ),
+        )
 
         oldPhone.packRepositoryDao().insert(
             PackRepositoryEntity(url = official, name = "Official", isDefault = true, addedAt = 1),
@@ -215,7 +256,8 @@ class BackupRoundTripTest {
                         newCredentials,
                         clock,
                     ).restore(backup.document, backup.encrypted)
-                assertEquals(2, report.created)
+                assertEquals(3, report.created)
+                assertEquals(2, report.ringtonesApplied)
                 assertEquals(listOf(official, private), report.repositoriesAdded)
                 assertEquals(listOf(AppSettingsBackup.ENABLED), report.settings.applied)
                 assertFalse(target.enabled)
@@ -237,13 +279,32 @@ class BackupRoundTripTest {
             assertEquals(GroupPolicy.PER_SENDER, family.contact.groupPolicy)
             assertEquals(RepositoryAuthType.BASIC, newPhone.packRepositoryDao().getByUrl(private)!!.authType)
 
-            // Exporting the restored phone gives the same backup, apart from the local IDs.
+            val adaInBackup = document.contacts.single { it.displayName == "Ada" }.ringtone!!
+            assertEquals(true, adaInBackup.followsVoice)
+            assertEquals(critters to "beep", adaInBackup.packId to adaInBackup.characterId)
+            assertEquals(BackupRingtoneUndo(ORIGINAL, WRITTEN), adaInBackup.undo)
+            val adaRingtone = newPhone.phoneRingtoneDao().get(ada.contact.id)!!
+            assertNull(adaRingtone.packId)
+            assertEquals(RingtoneMode.TIME, adaRingtone.mode)
+            val bruno = restored.single { it.contact.displayName == "Bruno" }
+            assertEquals("0r2-DEF", bruno.contact.androidLookupKey)
+            assertNull(newPhone.assignmentDao().get(bruno.contact.id))
+            val brunoRingtone = newPhone.phoneRingtoneDao().get(bruno.contact.id)!!
+            assertEquals(critters to "beep", brunoRingtone.packId to brunoRingtone.characterId)
+            assertEquals(RingtoneMode.FIXED, brunoRingtone.mode)
+            assertEquals("characters/beep/ringtones/night.ogg", brunoRingtone.variant)
+            // Device-local: nothing of the undo record is written on the new phone by the restore itself.
+            assertTrue(newPhone.phoneRingtoneDao().writes().isEmpty())
+
+            // Exporting the restored phone gives the same backup, apart from the local IDs and the undo record.
             val again = exporter(newPhone).snapshot()
             assertEquals(
-                document.contacts.map { it.copy(id = "") }.toSet(),
-                again.contacts.map { it.copy(id = "") }.toSet(),
+                document.contacts.map { it.withoutLocalState() }.toSet(),
+                again.contacts.map { it.withoutLocalState() }.toSet(),
             )
         }
+
+    private fun BackupContact.withoutLocalState() = copy(id = "", ringtone = ringtone?.copy(undo = null))
 
     @Test
     fun `an encrypted backup needs its passphrase and carries credentials when asked`() =
@@ -376,4 +437,9 @@ class BackupRoundTripTest {
                 assertTrue(plan.all { it.action == PackRestoreAction.FROM_BACKUP })
             }
         }
+
+    private companion object {
+        const val ORIGINAL = "content://media/internal/audio/media/31"
+        const val WRITTEN = "content://media/external/audio/media/1042"
+    }
 }

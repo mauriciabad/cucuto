@@ -5,6 +5,7 @@ import app.mauri.cucuto.core.backup.BackupPackReference
 import app.mauri.cucuto.core.backup.PackRestoreItem
 import app.mauri.cucuto.core.backup.RestoreReport
 import app.mauri.cucuto.core.backup.ZipContentType
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
 import kotlinx.coroutines.flow.Flow
 import java.io.Closeable
 
@@ -37,6 +38,18 @@ interface BackupGateway {
         session: RestoreSession,
         overwrite: Set<String> = emptySet(),
     ): RestoreReport
+
+    /**
+     * After [restore] (both runs when the user overwrote conflicts): finds the restored phone ringtones' Android
+     * contacts on this phone and writes them when phone ringtones are on (ADR 0057).
+     */
+    suspend fun restorePhoneRingtones(reports: List<RestoreReport>): PhoneRingtoneRestore
+
+    /**
+     * Turns phone ringtones on once the contacts permission is granted (the restore summary's button), then finishes
+     * the restored ones. Null when it could not (the permission is still missing).
+     */
+    suspend fun enablePhoneRingtones(): PhoneRingtoneRestore?
 
     /** Brings back one pack without asking for a file: from the backup itself, its repository or its download link. */
     fun restorePack(

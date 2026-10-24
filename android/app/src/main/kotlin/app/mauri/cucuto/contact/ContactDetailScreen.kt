@@ -109,6 +109,7 @@ fun ContactDetailScreen(
     onChangeCharacter: () -> Unit,
     onEditPattern: () -> Unit,
     modifier: Modifier = Modifier,
+    onChooseRingtone: () -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<ContactDetailViewModel, ContactDetailViewModel.Factory>(
@@ -129,7 +130,7 @@ fun ContactDetailScreen(
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
         hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
-        phoneRingtone = { PhoneRingtoneSection(chat, Modifier.padding(top = 16.dp)) },
+        phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone, Modifier.padding(top = 16.dp)) },
         onUnassign = viewModel::unassign,
         onSimulate = {
             if (state.path is SimulatePath.InApp) {
