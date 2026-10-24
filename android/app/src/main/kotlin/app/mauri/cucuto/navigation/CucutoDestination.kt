@@ -161,10 +161,6 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey,
     ) : CucutoDestination
 
-    /** Home → Try a sample chat: a demo chat that plays a voice in the app, never reaching the module (ADR 0075). */
-    @Serializable
-    data object SampleChat : CucutoDestination
-
     /** Module status, the decision log and the self-test notification (#17). */
     @Serializable
     data object Diagnostics : CucutoDestination

@@ -17,7 +17,6 @@ character's own vibration. Like a cuckoo clock, it announces who's there.
   eggs and play night or holiday clips, all decided on the phone with no battery cost.
 - **Chats before they write.** Add people from your contacts; their voice plays from their second message.
 - **Easy to pick.** Big packs fold into sections, with search and a "Surprise me" dice in both pickers.
-- **Try it without root.** The sample chat plays a character's sound, vibration and ringtone in the app.
 - **Make your own.** Build packs in the app or on the website, no tools needed, or with the `packer` CLI.
 - **Feels like a game.** Sound, motion and haptics on every interaction, built on Material 3 Expressive.
 

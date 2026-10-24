@@ -51,9 +51,6 @@ instead of the default sound. The decision shows up in Diagnostics, and the modu
 Right after a reboot the module check reads "Enabled, but the module has not reported since this boot" until the first
 alert: the module only reports when it handles a notification, so post the test notification once.
 
-Before the module is set up (or on a phone without root), **Try a sample chat** on Home plays a character's message
-sound, vibration and ringtone in the app. It shows while you have packs and no chats yet.
-
 ## Updates
 
 Cucuto never checks for updates and never goes online to look for them. New versions appear on

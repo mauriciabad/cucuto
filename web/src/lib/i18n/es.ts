@@ -116,11 +116,6 @@ export const es: Messages = {
 				text: 'Añade personas desde tus contactos y dales voz desde ya. Su primer mensaje vincula el chat, y su voz suena a partir del siguiente.'
 			},
 			{
-				icon: 'play-circle',
-				title: 'Pruébalo sin root',
-				text: 'El chat de ejemplo reproduce en la app el sonido de mensaje, la vibración y el tono de llamada de un personaje, para que oigas lo que hace Cucuto antes de configurar el módulo.'
-			},
-			{
 				icon: 'edit',
 				title: 'Crea tus propios packs',
 				text: 'Graba o elige sonidos e imágenes en la app, o en la página Crear de esta web. No se sube nada.'
@@ -255,7 +250,7 @@ export const es: Messages = {
 			{
 				q: '¿Puedo probarlo sin root?',
 				aHtml:
-					'En parte. Sin el módulo, Cucuto no puede cambiar los sonidos de WhatsApp, pero en cuanto tienes un pack, Inicio te ofrece <strong>Prueba un chat de ejemplo</strong>: reproduce en la app el sonido de mensaje, la vibración y el tono de llamada de un personaje, para que oigas y notes lo que haría un chat.'
+					'No. Cucuto cambia los sonidos de WhatsApp con un módulo de LSPosed, y LSPosed necesita root. Sin él puedes importar packs y escuchar los personajes, pero WhatsApp sigue con sus propios sonidos.'
 			},
 			{
 				q: '¿Puedo crear mis propios packs?',

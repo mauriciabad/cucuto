@@ -81,7 +81,6 @@ class ContrastTest {
                 "onPrimaryContainer on primaryContainer" to (s.onPrimaryContainer to s.primaryContainer),
                 "onSecondaryContainer on secondaryContainer" to (s.onSecondaryContainer to s.secondaryContainer),
                 "onTertiaryContainer on tertiaryContainer" to (s.onTertiaryContainer to s.tertiaryContainer),
-                // The sample chat's "Demo" label (#226).
                 "onTertiary on tertiary" to (s.onTertiary to s.tertiary),
                 "onErrorContainer on errorContainer" to (s.onErrorContainer to s.errorContainer),
                 "inverseOnSurface on inverseSurface" to (s.inverseOnSurface to s.inverseSurface),

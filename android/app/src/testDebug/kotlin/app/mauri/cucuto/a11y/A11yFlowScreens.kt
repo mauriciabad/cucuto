@@ -11,8 +11,6 @@ import app.mauri.cucuto.picker.PackFolds
 import app.mauri.cucuto.picker.PickerContent
 import app.mauri.cucuto.picker.SurpriseRoll
 import app.mauri.cucuto.picker.previewPickerState
-import app.mauri.cucuto.sample.SampleChatContent
-import app.mauri.cucuto.sample.SampleChatState
 import app.mauri.cucuto.ui.discover.DiscoverActions
 import app.mauri.cucuto.ui.discover.DiscoverContent
 import app.mauri.cucuto.ui.discover.DiscoverUiState
@@ -32,8 +30,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 /**
  * The states of the screens added on 2026-10-24 that the base list leaves out (#226), with made-up content: the pickers
  * with a folded pack, a search and a "Surprise me" pick (ADR 0072), the ringtone picker as step 2 of the sound flow and
- * with "Android default" chosen (ADR 0073), the rules screen without a chat (ADR 0074), the sample chat before any
- * pack (ADR 0075), and Discover with drawn vibrations (#301, ADR 0069). [A11yScreens.all] lists them with the others.
+ * with "Android default" chosen (ADR 0073), the rules screen without a chat (ADR 0074), and Discover with drawn
+ * vibrations (#301, ADR 0069). [A11yScreens.all] lists them with the others.
  */
 internal object A11yFlowScreens {
     val all: List<Pair<String, @Composable () -> Unit>> =
@@ -49,18 +47,6 @@ internal object A11yFlowScreens {
                 RingtoneRulesContent(
                     state = previewRingtoneRulesState().copy(chatKey = null, chat = null),
                     actions = RingtoneRulesActions(),
-                )
-            },
-            "sample-chat-empty" to {
-                SampleChatContent(
-                    state = SampleChatState(loading = false),
-                    ringing = null,
-                    onBack = {},
-                    onChooseVoice = {},
-                    onChooseRingtone = {},
-                    onPlayMessage = {},
-                    onToggleCall = {},
-                    onGetDemoPacks = {},
                 )
             },
             "discover-haptics" to { DiscoverHaptics() },

@@ -1,8 +1,10 @@
 # 0075. A sample chat to try a voice without root
 
-- Status: accepted. The defaults the owner may override are in #308. Amended 2026-10-24: Cucuto won't be on Google
-  Play ([ADR 0080](0080-no-google-play.md)); the sample chat stays, for anyone trying a character before setting up
-  the module.
+- Status: **withdrawn 2026-10-24; the sample chat was removed** (owner: "if it is just a demo is a completely useless
+  feature that is a waste of time to develop and a burden to mantain!", "i want it completely removed"). Cucuto isn't
+  on Google Play either ([ADR 0080](0080-no-google-play.md)), so the reviewers it was for are gone. Home's "Your
+  characters are ready" card keeps "Hear the characters" as its main action. #308, #346 and PR #364 closed. Before
+  that: accepted.
 - Date: 2026-10-24
 - Issues: #285 (this work), #274 and ADR 0071 (Google Play review notes), ADR 0025 (Simulate message), ADR 0063
   (independent voice and ringtone)
