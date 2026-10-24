@@ -69,7 +69,13 @@ class ContactDetailScreenshotTest(
                                 variants = listOf(VariantChip("day.ogg", "Day"), VariantChip("night.ogg", "Night")),
                                 using = true,
                                 mode = RingtoneMode.TIME,
-                                modes = listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.TIME, RingtoneMode.FIXED),
+                                modes =
+                                    listOf(
+                                        RingtoneMode.PACK,
+                                        RingtoneMode.RANDOM,
+                                        RingtoneMode.TIME,
+                                        RingtoneMode.FIXED,
+                                    ),
                                 ringingCharacter = frog,
                                 previewSound = RingSound(File("/demo/frog/ringtones/day.ogg")),
                             ),
