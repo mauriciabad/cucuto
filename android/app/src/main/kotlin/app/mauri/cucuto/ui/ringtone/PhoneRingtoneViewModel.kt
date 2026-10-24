@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
@@ -168,7 +169,10 @@ class PhoneRingtoneViewModel
             val follows = contact.ringtone?.followsVoice ?: true
             val previewVariant =
                 current
-                    ?: variants.takeIf { it.isNotEmpty() }?.let { previewVariant(it, mode, contact.ringtone?.variant) }
+                    ?: variants
+                        .takeIf {
+                            it.isNotEmpty()
+                        }?.let { previewVariant(it, mode, contact.ringtone?.variant, contact.ringtone?.rules) }
             return PhoneRingtoneUiState(
                 loading = false,
                 enabled = contact.enabled,
@@ -212,6 +216,7 @@ class PhoneRingtoneViewModel
             variants: List<RingtoneVariant>,
             mode: RingtoneMode,
             fixed: String?,
+            rules: String? = null,
         ): RingtoneVariant {
             if (mode == RingtoneMode.RANDOM) return variants.first()
             val now = LocalDateTime.ofInstant(Instant.ofEpochMilli(clock.now()), ZoneId.systemDefault())
@@ -223,6 +228,7 @@ class PhoneRingtoneViewModel
                 current = null,
                 reroll = false,
                 random = Random(0),
+                rules = RingtoneRules.decode(rules),
             )
                 ?: variants.first()
         }

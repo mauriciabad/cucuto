@@ -10,6 +10,7 @@ import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.PackRepositoryEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -73,7 +74,7 @@ class BackupRestorerTest {
     fun `restoring twice changes nothing the second time`() =
         runTest {
             val first = restorer.restore(fixture, encrypted = false)
-            assertEquals(5, first.created)
+            assertEquals(6, first.created)
             assertEquals(
                 listOf(
                     VoiceOutcome.APPLIED,
@@ -81,10 +82,11 @@ class BackupRestorerTest {
                     VoiceOutcome.APPLIED,
                     VoiceOutcome.NONE,
                     VoiceOutcome.NONE,
+                    VoiceOutcome.NONE,
                 ),
                 first.contacts.map { it.voice },
             )
-            assertEquals(4, first.ringtonesApplied)
+            assertEquals(5, first.ringtonesApplied)
             val contactsAfterFirst = db.contactDao().observeAll().first()
             val assignmentsAfterFirst = db.assignmentDao().observeAll().first()
             val ringtonesAfterFirst = db.phoneRingtoneDao().observeAll().first()
@@ -93,7 +95,7 @@ class BackupRestorerTest {
             val second = restorer.restore(fixture, encrypted = false)
             assertEquals(0, second.created)
             assertEquals(
-                List(5) { ContactMatch.MESSENGER_KEY },
+                List(6) { ContactMatch.MESSENGER_KEY },
                 second.contacts.map { it.match },
             )
             assertEquals(
@@ -103,11 +105,12 @@ class BackupRestorerTest {
                     VoiceOutcome.UNCHANGED,
                     VoiceOutcome.NONE,
                     VoiceOutcome.NONE,
+                    VoiceOutcome.NONE,
                 ),
                 second.contacts.map { it.voice },
             )
             assertEquals(
-                List(4) { RingtoneOutcome.UNCHANGED },
+                List(5) { RingtoneOutcome.UNCHANGED },
                 second.ringtones.map { it.outcome },
             )
             assertEquals(emptyList<String>(), second.repositoriesAdded)
@@ -335,6 +338,18 @@ class BackupRestorerTest {
             assertEquals("bubblegum", daniRow.characterId)
             assertFalse(daniRow.followsVoice)
             assertEquals(RingtoneMode.RANDOM, daniRow.mode)
+
+            // Her own rules (ADR 0074): Radio unless it is a spring or summer day, in the backup's order.
+            val eva = db.phoneRingtoneDao().get(report.contacts.single { it.backupId == "c5" }.contactId)!!
+            assertEquals(RingtoneMode.CUSTOM, eva.mode)
+            assertEquals(
+                listOf("characters/bubblegum/ringtones/radio.ogg", "characters/bubblegum/ringtones/live.ogg"),
+                RingtoneRules.decode(eva.rules).map { it.variant },
+            )
+            assertEquals(
+                """{"time":"day","season":["spring","summer"]}""",
+                RingtoneRules.decode(eva.rules)[1].condition.toString(),
+            )
         }
 
     @Test

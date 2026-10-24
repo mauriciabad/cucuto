@@ -216,11 +216,28 @@
               "type": "object",
               "required": ["mode"],
               "properties": {
-                "mode": { "description": "fixed: one variant. random: per call. time / season: by time of day or season tags. pack: follow the pack's 'when' conditions.", "enum": ["fixed", "random", "time", "season", "pack"] },
-                "variant": { "description": "Ringtone file (path from pack.json) for mode fixed.", "$ref": "common.schema.json#/$defs/path" }
+                "mode": { "description": "fixed: one variant. random: per call. time / season: by time of day or season tags. pack: follow the pack's 'when' conditions. custom: the contact's own rules (ADR 0074).", "enum": ["fixed", "random", "time", "season", "pack", "custom"] },
+                "variant": { "description": "Ringtone file (path from pack.json) for mode fixed.", "$ref": "common.schema.json#/$defs/path" },
+                "rules": {
+                  "description": "Mode custom: the contact's own rules, resolved like the pack's 'when' conditions (docs/pack-format.md, Variant resolution) over this list. The first entry is the fallback when nothing matches. Versions not listed never ring; entries whose file the pack lacks are skipped.",
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 50,
+                  "items": {
+                    "type": "object",
+                    "required": ["variant"],
+                    "properties": {
+                      "variant": { "description": "Ringtone file (path from pack.json).", "$ref": "common.schema.json#/$defs/path" },
+                      "when": { "$ref": "pack.schema.json#/$defs/when" }
+                    },
+                    "additionalProperties": false
+                  }
+                }
               },
-              "if": { "properties": { "mode": { "const": "fixed" } } },
-              "then": { "required": ["variant"] },
+              "allOf": [
+                { "if": { "properties": { "mode": { "const": "fixed" } } }, "then": { "required": ["variant"] } },
+                { "if": { "properties": { "mode": { "const": "custom" } } }, "then": { "required": ["rules"] } }
+              ],
               "additionalProperties": false
             }
           },

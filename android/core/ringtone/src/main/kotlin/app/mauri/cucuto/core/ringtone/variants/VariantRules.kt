@@ -4,7 +4,9 @@ import app.mauri.cucuto.core.conditions.Place
 import app.mauri.cucuto.core.conditions.SolarCalculator
 import app.mauri.cucuto.core.conditions.SunTimes
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import app.mauri.cucuto.packspec.LoopRange
+import app.mauri.cucuto.packspec.SpecJson
 import app.mauri.cucuto.packspec.When
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -147,6 +149,7 @@ object VariantRules {
     /**
      * The variant [mode] picks now. [current] is the variant the contact rings with at the moment: the random rule
      * keeps it unless [reroll] is set, and a re-roll never picks it again when there is another one.
+     * [rules] are the contact's own rules for [RingtoneMode.CUSTOM] (ADR 0074).
      */
     fun pick(
         variants: List<RingtoneVariant>,
@@ -156,6 +159,7 @@ object VariantRules {
         current: String?,
         reroll: Boolean,
         random: Random,
+        rules: List<RingtoneRuleEntry> = emptyList(),
     ): RingtoneVariant? {
         if (variants.isEmpty()) return null
         return when (mode) {
@@ -179,6 +183,10 @@ object VariantRules {
             RingtoneMode.PACK -> {
                 followPack(variants, context)
             }
+
+            RingtoneMode.CUSTOM -> {
+                followPack(custom(variants, rules), context)
+            }
         }
     }
 
@@ -194,6 +202,28 @@ object VariantRules {
         if (matching.isEmpty()) return variants.first()
         val most = matching.maxOf { keyCount(it.condition) }
         return matching.first { keyCount(it.condition) == most }
+    }
+
+    /**
+     * A contact's own rules (ADR 0074) as variants for [followPack]: each entry's version with the entry's condition, in
+     * the entries' order. Entries whose file is not among [variants] (a pack update removed it) or whose condition
+     * cannot be read are skipped; with none left, the pack's own entries apply.
+     */
+    fun custom(
+        variants: List<RingtoneVariant>,
+        rules: List<RingtoneRuleEntry>,
+    ): List<RingtoneVariant> {
+        val list =
+            rules.mapNotNull { rule ->
+                val variant = variants.firstOrNull { it.file == rule.variant } ?: return@mapNotNull null
+                val condition =
+                    rule.condition?.let { json ->
+                        runCatching { SpecJson.decodeFromJsonElement(When.serializer(), json) }.getOrNull()
+                            ?: return@mapNotNull null
+                    }
+                variant.copy(condition = condition)
+            }
+        return list.ifEmpty { variants }
     }
 
     /** Whether [condition] holds at [context]: every present key matches (AND), a list matches any value (OR). */
@@ -246,6 +276,7 @@ object VariantRules {
         variants: List<RingtoneVariant>,
         mode: RingtoneMode,
         context: RuleContext,
+        rules: List<RingtoneRuleEntry> = emptyList(),
     ): LocalDateTime? {
         val times = mutableSetOf<LocalTime>()
         var seasons = false
@@ -263,9 +294,10 @@ object VariantRules {
                 seasons = true
             }
 
-            RingtoneMode.PACK -> {
-                if (variants.size < 2) return null
-                for (variant in variants) {
+            RingtoneMode.PACK, RingtoneMode.CUSTOM -> {
+                val list = if (mode == RingtoneMode.CUSTOM) custom(variants, rules) else variants
+                if (list.size < 2) return null
+                for (variant in list) {
                     val condition = variant.condition ?: continue
                     val keyword = (condition.time as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
                     if (keyword == "day" || keyword == "night") {

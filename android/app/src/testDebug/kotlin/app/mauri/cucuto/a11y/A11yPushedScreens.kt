@@ -37,6 +37,9 @@ import app.mauri.cucuto.ui.discover.SavedRepository
 import app.mauri.cucuto.ui.ringtone.RingtonePickerActions
 import app.mauri.cucuto.ui.ringtone.RingtonePickerContent
 import app.mauri.cucuto.ui.ringtone.previewRingtonePickerState
+import app.mauri.cucuto.ui.ringtone.rules.RingtoneRulesActions
+import app.mauri.cucuto.ui.ringtone.rules.RingtoneRulesContent
+import app.mauri.cucuto.ui.ringtone.rules.previewRingtoneRulesState
 import app.mauri.cucuto.ui.settings.BackupExportContent
 import app.mauri.cucuto.ui.settings.LicensesScreen
 import app.mauri.cucuto.ui.settings.restore.RestoreActions
@@ -87,6 +90,9 @@ internal object A11yPushedScreens {
                     beat = null,
                     actions = RingtonePickerActions(),
                 )
+            },
+            "ringtone-rules" to {
+                RingtoneRulesContent(state = previewRingtoneRulesState(), actions = RingtoneRulesActions())
             },
         )
 

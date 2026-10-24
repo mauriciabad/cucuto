@@ -4,6 +4,10 @@ import app.mauri.cucuto.core.data.db.AssignmentEntity
 import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
+import app.mauri.cucuto.core.data.db.RingtoneRules
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -30,6 +34,30 @@ class BackupSnapshotRingtoneTest {
         assertEquals(BackupRingtoneRule(BackupRingtoneMode.PACK), entry.rule)
         // The default ringtone before Cucuto: no originalRingtone.
         assertEquals(BackupRingtoneUndo(null, "content://media/external/audio/media/7"), entry.undo)
+    }
+
+    @Test
+    fun `own rules go along in order, and without entries they are the pack's rules`() {
+        val rules =
+            listOf(
+                RingtoneRuleEntry("frog/ringtones/night.ogg"),
+                RingtoneRuleEntry("frog/ringtones/day.ogg", buildJsonObject { put("time", "day") }),
+            )
+        val row =
+            PhoneRingtoneEntity(
+                contactId = 1,
+                mode = RingtoneMode.CUSTOM,
+                rules = RingtoneRules.encode(rules),
+                updatedAt = 1,
+            )
+        assertEquals(
+            BackupRingtoneRule(BackupRingtoneMode.CUSTOM, rules = rules),
+            BackupSnapshot.ringtone(row, voice, null)!!.rule,
+        )
+        assertEquals(
+            BackupRingtoneRule(BackupRingtoneMode.PACK),
+            BackupSnapshot.ringtone(row.copy(rules = null), voice, null)!!.rule,
+        )
     }
 
     @Test
