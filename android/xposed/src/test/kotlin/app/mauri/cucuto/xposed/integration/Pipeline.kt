@@ -19,6 +19,7 @@ import app.mauri.cucuto.core.data.routing.LocalDay
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
 import app.mauri.cucuto.core.data.routing.ProviderClips
 import app.mauri.cucuto.core.data.routing.PublishState
+import app.mauri.cucuto.core.data.routing.PublishedTableFile
 import app.mauri.cucuto.core.data.routing.RoutingPublisher
 import app.mauri.cucuto.core.data.routing.RoutingSink
 import app.mauri.cucuto.core.data.routing.RoutingTableBuilder
@@ -110,6 +111,9 @@ internal class Pipeline(
         }
     val catalog = PackManifestCatalog()
     val service = FakeXposedService()
+
+    /** The app's own copy of the table, which its event provider serves to the module (ADR 0048). */
+    val store = PublishedTableFile(File(root, "files/routing/published.table"))
     val publisher =
         RoutingPublisher(
             RoutingTableSource(
@@ -121,6 +125,7 @@ internal class Pipeline(
                 { flowOf(LocalDay(DAY, ZONE)) },
             ),
             service,
+            store,
             clipMirror,
             appClock,
             scope,
@@ -137,6 +142,7 @@ internal class Pipeline(
             preferences = { service.preferences },
             log = { message, _ -> moduleLog += message },
             remoteFile = { service.remoteFile },
+            providerTable = { store.file.takeIf { it.isFile }?.readBytes() },
             onReload = { held.value = it },
         )
     val vibrations = HapticVibrations<VibrationEffect>(HapticEffects::create)
@@ -156,7 +162,7 @@ internal class Pipeline(
         chirp.writeBytes(ByteArray(64) { it.toByte() })
         hooks.install(framework.classLoader)
         capabilities?.let(vibrations::useCapabilities)
-        service.onNudge = { holder.refresh() }
+        service.onNudge = { generation -> holder.refresh(generation) }
     }
 
     /** Boots the module (attaches to Remote Preferences) and starts the app's publisher. */
@@ -251,7 +257,7 @@ internal class Pipeline(
 /**
  * LSPosed, as the app and the module see it: Remote Preferences (the app's writes reach the module's change
  * listener unless [deliverPreferenceChanges] is off, as after an app update, ADR 0024), the routing remote file, and
- * the nudge broadcast, which reaches the module as [onNudge].
+ * the nudge broadcast, which reaches the module as [onNudge] with the published generation.
  */
 internal class FakeXposedService : RoutingSink {
     override val connection = MutableStateFlow<SinkConnection>(SinkConnection.Connected("LSPosed", 102))
@@ -262,7 +268,7 @@ internal class FakeXposedService : RoutingSink {
 
     @Volatile var deliverPreferenceChanges = true
 
-    @Volatile var onNudge: () -> Unit = {}
+    @Volatile var onNudge: (generation: Long) -> Unit = {}
 
     override fun start() = Unit
 
@@ -275,8 +281,9 @@ internal class FakeXposedService : RoutingSink {
         writes += encoded
         preferences.put(encoded, notify = deliverPreferenceChanges)
         remoteFile = RoutingFile.frame(encoded)
-        onNudge()
     }
+
+    override fun nudge(generation: Long) = onNudge(generation)
 
     /** Remote Preferences as the module reads them: one string value, change listeners. */
     class RemotePreferences : SharedPreferences {

@@ -644,6 +644,28 @@ class RoutingIntegrationTest {
         }
 
     @Test
+    fun withoutTheFrameworkServiceTheModulePullsFromTheApp() =
+        runBlocking<Unit> {
+            // LSPosed dropped the app's service after an update (ADR 0048): no Remote Preferences, no remote file.
+            val p = pipeline()
+            p.service.connection.value = app.mauri.cucuto.core.data.routing.SinkConnection.Disconnected
+            val world = p.started()
+            assertTrue("nothing went through the service", p.service.writes.isEmpty())
+            val (alert, event) = p.alert(Notifications.oneToOne(ana, "Ana"))
+            assertSwapped(alert, event, WHATSAPP, ana, world.ana)
+
+            p.assignments.assign(world.ana, KITCHEN, "glass")
+            p.awaitModule { it.resolve(WHATSAPP, ana)?.voice?.characterId == "glass" }
+            assertTrue(
+                p
+                    .alert(Notifications.oneToOne(ana, "Ana"))
+                    .second!!
+                    .clipUri!!
+                    .contains("/glass/"),
+            )
+        }
+
+    @Test
     fun theModuleReadsExactlyWhatTheAppPublished() =
         runBlocking<Unit> {
             val p = pipeline()

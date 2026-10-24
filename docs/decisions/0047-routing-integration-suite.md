@@ -20,7 +20,8 @@ all of them on, nor whether the module that shipped in a release still reads wha
 
 - App: Room in memory, the real repositories and settings, `RoutingTableSource`, `RoutingTableBuilder` with the real
   `PackManifestCatalog` and `ClipMirrorStore`, and `RoutingPublisher`.
-- Edge: `FakeXposedService` (Remote Preferences, the remote file, the nudge), `FakeFramework` (a libxposed
+- Edge: `FakeXposedService` (Remote Preferences, the remote file, the nudge; the app's provider is the real
+  `PublishedTableFile`, pulled when the service is missing, ADR 0048), `FakeFramework` (a libxposed
   `XposedInterface` that records hooks, `NotificationAttentionHelper` and `NotificationRecord` stand-ins), and the
   clip analysis (`AutoHapticAnalyzer` needs MediaCodec, so envelopes are written as its output file).
 - Module: `RoutingTableHolder`, `AlertRouter`, `HapticVibrations` with `HapticEffects`, and `AlertHooks`, fed real
