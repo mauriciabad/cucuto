@@ -1,6 +1,6 @@
 # 0057. The ringtone picker, and phone ringtones in backups
 
-- Status: accepted (defaults the owner may override in the `question` issue linked from #53)
+- Status: accepted (defaults the owner may override: #242)
 - Date: 2026-10-24
 - Issues: #53 (ringtone picker UI), #198 (back up and restore phone ringtones)
 
