@@ -109,6 +109,33 @@ download has its exact size and SHA-256. Preview URLs are relative, so the folde
 against the index URL). `generatedAt` is written only with `--generated-at` or when `SOURCE_DATE_EPOCH` is set, so
 indexes stay reproducible.
 
+### ring
+
+```sh
+packer ring packs/kitchen-orchestra -o rings/                         # every ringtone of a pack or bundle
+packer ring my-songs/ -c bubblegum -v 2 -o bubblegum-radio.ogg --normalize
+```
+
+Renders **ring files**, the audio the app exports for Android's per-contact ringtone, to hear exactly what a phone
+will play. Telecom loops the whole file, so the intro plays once and the loop section repeats until the file lasts at
+least 90 s; `loop: false` is padded with silence; the fade-in happens once
+([rule](../../docs/pack-format.md#ring-files)). Writes Ogg Opus at 48 kHz, 64 kb/s per channel, named
+`<pack id>-<character id>-<n>.ogg` (`n` counts the character's ringtones from 1) unless `-o` names one `.ogg` file. A
+ringtone that needs no rendering (a whole-file loop of 90 s or more without fade-in) is copied when its extension
+matches. `--normalize` applies the same loudness normalization as `build`. Needs ffmpeg and ffprobe.
+
+### cut
+
+```sh
+packer cut songs/bubblegum.flac -o clips/bubblegum-hook.ogg                 # the hook, 2.5 s
+packer cut songs/bubblegum.flac -o clips/intro.ogg --start-ms 1200 --length-ms 3000
+```
+
+Cuts a notification clip from a song as Ogg Opus (96 kb/s), with a 10 ms fade-in and a 200 ms fade-out. Without
+`--start-ms` it finds the hook: the loudest stretch, moved back to its beat
+([hook finder](../../docs/pack-format.md#auto-cut-clips)); `--from-ms` and `--to-ms` limit the search (for example to
+the ringtone's loop section). Needs ffmpeg and ffprobe.
+
 ## pack.yaml
 
 `pack.yaml` is the authoring format: `packer build` maps it onto `pack.json` and the canonical layout
@@ -138,6 +165,10 @@ characters:
       - file: mittens/purr.wav      # full form
         label: Purr                 # default: from the file name ("purr" -> "Purr")
         weight: 2
+      - cut: songs/day.flac         # auto-cut clip: the song's hook, cut at build time (needs ffmpeg)
+      - cut: songs/night.flac       # or from a given point: startMs, lengthMs (default 2500),
+        startMs: 30500              # or search only fromMs..toMs for the hook
+        label: Lullaby
     ringtones:
       - file: songs/day.flac
         when: day                   # shorthand for { time: day }; also a season or weekday name
@@ -158,6 +189,14 @@ Every other key is copied to `pack.json` unchanged, so all pack.json fields work
 named `LICENSE`, `LICENCE`, `README`, `CREDITS`, `NOTICE`, `AUTHORS` or `COPYING` (optionally with `.txt` or `.md`)
 are included. Output file names are
 lowercase slugs of the source names (`My Clip.WAV` becomes `clips/my-clip.wav`).
+
+### Auto-cut clips
+
+A `cut:` entry in `clips` makes a notification clip from a song when the pack is built, with the same hook finder as
+`packer cut`: `clips/<song>-hook.ogg`, labeled "<Song> (hook)", with an `x-cut` key recording the source and range
+(readers ignore `x-` keys). The result is an ordinary clip, so the pack stays format 1. It needs ffmpeg at build time
+and the encoder's output can differ between ffmpeg versions; for packs that must build byte-for-byte anywhere, run
+`packer cut` once and commit the clip instead (as `packs/generate.main.kts` does for the demo packs).
 
 ## Layout
 

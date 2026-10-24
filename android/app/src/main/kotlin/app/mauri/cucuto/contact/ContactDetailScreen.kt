@@ -82,6 +82,7 @@ import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.feedback.Feedback
+import app.mauri.cucuto.ui.haptics.HapticOverrideSection
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.theme.CharacterTheme
@@ -99,6 +100,7 @@ fun ContactDetailScreen(
     chat: ChatKey,
     onBack: () -> Unit,
     onChangeCharacter: () -> Unit,
+    onEditPattern: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel =
@@ -119,6 +121,7 @@ fun ContactDetailScreen(
         state = state,
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
+        hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
         onUnassign = viewModel::unassign,
         onSimulate = {
             if (state.path is SimulatePath.InApp) {
@@ -149,6 +152,7 @@ fun ContactDetailContent(
     onGroupPolicyChange: (GroupPolicy) -> Unit,
     onConsumeFailure: () -> Unit,
     modifier: Modifier = Modifier,
+    hapticOverride: (@Composable () -> Unit)? = null,
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     val extracted by rememberSeedColor(bitmap)
@@ -230,7 +234,9 @@ fun ContactDetailContent(
                     }
                 }
                 if (state.character != null) {
-                    item(key = "haptic") { HapticSection(state.hapticSource) }
+                    item(key = "haptic") {
+                        if (hapticOverride != null) hapticOverride() else HapticSection(state.hapticSource)
+                    }
                 }
                 state.groupPolicy?.let { policy ->
                     item(key = "group") {
@@ -522,8 +528,8 @@ private fun LazyListScope.clipSection(
 }
 
 /**
- * The chat's vibration, read-only. Slot for the per-contact haptic override (#32/#33), which replaces this section
- * with its editor.
+ * The chat's vibration, read-only: what previews and tests show. The app passes the per-contact haptic override card
+ * (#33, [HapticOverrideSection]) instead.
  */
 @Composable
 private fun HapticSection(source: HapticSource) {

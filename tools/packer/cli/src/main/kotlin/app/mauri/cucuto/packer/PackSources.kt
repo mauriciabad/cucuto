@@ -4,6 +4,7 @@ import app.mauri.cucuto.packspec.FileFormat
 import app.mauri.cucuto.packspec.FileKind
 import app.mauri.cucuto.packspec.FileInput
 import app.mauri.cucuto.packspec.JvmPackIo
+import app.mauri.cucuto.packspec.Limits
 import app.mauri.cucuto.packspec.PackPaths
 import app.mauri.cucuto.packspec.zip.ZipArchive
 import com.charleskorn.kaml.Yaml
@@ -85,7 +86,7 @@ object PackSources {
     /** Keys whose YAML scalars become JSON numbers or booleans; every other scalar stays a string. */
     private val TYPED_KEYS = setOf(
         "formatVersion", "weight", "fadeInMs", "startMs", "endMs", "at", "scale", "intensity", "sharpness", "ms",
-        "initialSharpness", "loop",
+        "initialSharpness", "loop", "lengthMs", "fromMs", "toMs",
     )
 
     fun fromYaml(yamlFile: Path): AssembledInput {
@@ -196,7 +197,9 @@ object PackSources {
                             put("label", label(f.nameWithoutExtension))
                         }
                     }
-                    is JsonObject -> {
+                    is JsonObject -> if ("cut" in item) {
+                        out += cut(item, folder, what)
+                    } else {
                         val file = source(item["file"] ?: fail("$what: every entry needs a file"), what)
                         out += buildJsonObject {
                             put("file", add(file, "$folder/${slug(file.nameWithoutExtension)}"))
@@ -214,6 +217,31 @@ object PackSources {
                 }
             }
             return JsonArray(out)
+        }
+
+        /**
+         * A clip cut from a song at build time (`- cut: song.flac`, optional `startMs`, `lengthMs`, `fromMs`, `toMs`):
+         * the hook by default (docs/pack-format.md#auto-cut-clips). Needs ffmpeg; the result is an ordinary clip file.
+         */
+        private fun cut(item: JsonObject, folder: String, what: String): JsonObject {
+            if (!folder.endsWith("/clips")) fail("$what: cut is only allowed in clips")
+            val song = source(item.getValue("cut"), what)
+            fun ms(key: String): Long? = item[key]?.let { v -> (v as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: fail("$what: $key must be a number of milliseconds") }
+            val clip = Files.createTempFile("packer-cut-", ".ogg").also { it.toFile().deleteOnExit() }
+            val range = try {
+                Ringtones.cutClip(song, clip, ms("startMs"), ms("lengthMs") ?: Limits.CUT_CLIP_DEFAULT_MS, ms("fromMs") ?: 0, ms("toMs"))
+            } catch (e: PackerException) {
+                fail("$what: ${e.message}")
+            }
+            return buildJsonObject {
+                put("file", add(clip, "$folder/${slug(song.nameWithoutExtension)}-hook"))
+                put("label", (item["label"] as? JsonPrimitive)?.contentOrNull ?: "${label(song.nameWithoutExtension)} (hook)")
+                for ((k, value) in item) {
+                    if (k !in setOf("cut", "label", "startMs", "lengthMs", "fromMs", "toMs")) put(k, value)
+                }
+                // Where the clip came from, for people reading the manifest; readers ignore x- keys.
+                put("x-cut", buildJsonObject { put("from", song.name); put("startMs", range.startMs); put("endMs", range.endMs) })
+            }
         }
 
         /** A file, a folder (all audio files in it) or a glob, relative to pack.yaml; sorted by name. */
