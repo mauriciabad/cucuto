@@ -225,7 +225,7 @@ folder("valid/longest-clip", "A 30 s clip, the longest a notification clip may b
     media("characters/beep/clips/beep.ogg", clipLongest)
 }
 
-folder("valid/full-pack", "Every pack.json feature: cover, text files, animated sprite, seed colors, tags, weights, custom haptics, ringtones with variants, when conditions, loop points and fade-in.") {
+folder("valid/full-pack", "Every pack.json feature: cover, text files, animated sprite, seed colors, tags, weights, custom haptics, ringtones with variants, when conditions on ringtones and clips, loop points and fade-in.") {
     text("pack.json", """
 {
   "${'$'}schema": "https://cucuto.mauri.app/spec/v1/pack.schema.json",
@@ -251,8 +251,8 @@ folder("valid/full-pack", "Every pack.json feature: cover, text files, animated 
       "seedColor": "#E65100",
       "tags": ["bird"],
       "clips": [
-        { "file": "characters/robin/clips/chirp.ogg", "label": "Chirp", "weight": 2 },
-        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5 }
+        { "file": "characters/robin/clips/chirp.ogg", "label": "Chirp", "weight": 2, "when": { "time": "day" } },
+        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5, "when": { "time": "night", "season": ["autumn", "winter"] } }
       ],
       "haptic": {
         "mode": "custom",
@@ -650,6 +650,15 @@ folder("invalid/when-empty-range", "A time range that starts and ends at the sam
     text("pack.json", pack("when", character = ",\n  \"ringtones\": [{ \"file\": \"characters/beep/ring.ogg\", \"when\": { \"time\": { \"from\": \"08:00\", \"to\": \"08:00\" } } }]"))
     beep()
     media("characters/beep/ring.ogg", ringtoneOgg)
+}
+folder("invalid/clip-when-empty-range", "A clip whose time range starts and ends at the same minute.", listOf("WHEN_INVALID")) {
+    text("pack.json", pack("clip-when", characters = """    {
+      "id": "beep",
+      "name": "Beep",
+      "sprite": "characters/beep/sprite.png",
+      "clips": [{ "file": "characters/beep/clips/beep.ogg", "when": { "time": { "from": "21:30", "to": "21:30" } } }]
+    }"""))
+    beep()
 }
 folder("invalid/loop-reversed", "Loop points with the end before the start.", listOf("LOOP_POINTS_INVALID")) {
     text("pack.json", pack("loop-rev", character = ",\n  \"ringtones\": [{ \"file\": \"characters/beep/ring.ogg\", \"loop\": { \"startMs\": 4000, \"endMs\": 1000 } }]"))

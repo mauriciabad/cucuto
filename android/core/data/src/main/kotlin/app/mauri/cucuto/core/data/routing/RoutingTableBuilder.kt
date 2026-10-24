@@ -1,5 +1,7 @@
 package app.mauri.cucuto.core.data.routing
 
+import app.mauri.cucuto.core.conditions.ClipWhen
+import app.mauri.cucuto.core.conditions.ConditionCompiler
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.data.db.RoutingRow
@@ -7,6 +9,7 @@ import app.mauri.cucuto.core.routing.Clip
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
+import app.mauri.cucuto.core.routing.TimeCondition
 import app.mauri.cucuto.core.routing.Voice
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -26,6 +29,9 @@ import javax.inject.Inject
  *   provider's `content://` URI (ADR 0018).
  * - Clips carry their auto envelope only in voices whose haptic is [Haptic.Auto], the only case where the module
  *   uses it, which keeps the table small (issue #98).
+ * - Clips with a `when` (day or night only, and so on) point at a [TimeCondition] compiled by [ConditionCompiler]:
+ *   each distinct condition once, as the instants it starts and stops applying (ADR 0037). Without a compiler,
+ *   conditions are left out and every clip always plays.
  */
 class RoutingTableBuilder
     @Inject
@@ -40,7 +46,9 @@ class RoutingTableBuilder
             rows: List<RoutingRow>,
             packs: Map<String, InstalledPackEntity>,
             enabled: Boolean,
+            compiler: ConditionCompiler? = null,
         ): RoutingTable {
+            val conditions = Conditions(compiler)
             val voices = ArrayList<Voice>()
             val voiceIndex = HashMap<Voice, Int>()
             val voiceByContact = HashMap<Long, Int>()
@@ -49,7 +57,7 @@ class RoutingTableBuilder
             for (row in rows) {
                 val voice =
                     voiceByContact.getOrPut(row.contactId) {
-                        val built = voiceFor(row, packs) ?: return@getOrPut Route.NO_VOICE
+                        val built = voiceFor(row, packs, conditions) ?: return@getOrPut Route.NO_VOICE
                         voiceIndex.getOrPut(built) {
                             voices += built
                             voices.lastIndex
@@ -68,12 +76,30 @@ class RoutingTableBuilder
                 voices = voices,
                 routes = routes,
                 selfTestClip = mirror.selfTestUri(),
+                conditions = conditions.compiled,
             )
+        }
+
+        /** Compiles each distinct `when` once and hands out its index in the table. */
+        private class Conditions(
+            private val compiler: ConditionCompiler?,
+        ) {
+            private val indices = HashMap<ClipWhen, Int>()
+            val compiled = ArrayList<TimeCondition>()
+
+            fun indexOf(condition: ClipWhen?): Int {
+                if (condition == null || compiler == null) return Clip.ALWAYS
+                return indices.getOrPut(condition) {
+                    compiled += compiler.compile(condition)
+                    compiled.lastIndex
+                }
+            }
         }
 
         private suspend fun voiceFor(
             row: RoutingRow,
             packs: Map<String, InstalledPackEntity>,
+            conditions: Conditions,
         ): Voice? {
             val packId = row.packId ?: return null
             val characterId = row.characterId ?: return null
@@ -89,6 +115,7 @@ class RoutingTableBuilder
                             uri = mirror.clipUri(pack, characterId, clip.file),
                             milliWeight = clip.milliWeight,
                             haptic = if (haptic == Haptic.Auto) clip.autoHaptic else null,
+                            condition = conditions.indexOf(clip.condition),
                         )
                     }
             if (clips.isEmpty()) return null
