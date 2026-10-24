@@ -591,7 +591,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
 - [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
 - [ ] Album-cover ringtone picker with preview and variant chips; contact linking by phone number.
-- [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215), compatible with WaEnhancer X. Without the scope, the guided per-chat ringtone.
+- [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215: static phase in the [WhatsApp ringtone spike](whatsapp-ringtone-spike.md), ADR 0052; device run #228), compatible with WaEnhancer X. Without the scope, the guided per-chat ringtone.
 - [ ] The owner's K.K. Slider pack assigned to several contacts, with day and night variants switching correctly.
 
 Later ideas, out of scope for v1: other messengers (Telegram, Signal, SMS), a home-screen widget, MEGA links as a pack source, community pack submissions to the official repository.

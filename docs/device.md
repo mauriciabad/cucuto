@@ -65,10 +65,12 @@ recovery aid only. Enable/disable and scope subcommands require LSPosed develope
 
 | Package | Version | Role |
 | --- | --- | --- |
-| `com.whatsapp` | 2.26.42.9 | the app whose notifications Cucuto re-voices |
+| `com.whatsapp` | 2.26.42.12 (2026-10-24; was 2.26.42.9) | the app whose notifications Cucuto re-voices |
 | `com.waenhancer` | 2.0.4 | WaEnhancer X; hooks `com.whatsapp`, must keep working |
 
-Cucuto scopes to `android` only and never touches either of these processes.
+Cucuto scopes to System Framework (`system`) only and never touches either of these processes by default. The
+optional WhatsApp scope for automatic call ringtones is designed in [the WhatsApp ringtone spike](whatsapp-ringtone-spike.md)
+(ADR 0051, ADR 0052).
 
 ## Notification sound player
 
