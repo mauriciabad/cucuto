@@ -85,11 +85,11 @@ class ContactDetailContentTest {
     fun clipsPlayAndToggle() {
         show(previewContactDetailState())
 
-        compose.onNodeWithContentDescription("Play ribbit").performClick()
-        compose.onNode(isToggleable() and hasContentDescription("croak")).performClick()
+        compose.onNodeWithContentDescription("Play Ribbit").performClick()
+        compose.onNode(isToggleable() and hasContentDescription("Croak")).performClick()
 
-        assertEquals(listOf("ribbit"), played)
-        assertEquals(listOf("croak" to false), toggles)
+        assertEquals(listOf("Ribbit"), played)
+        assertEquals(listOf("Croak" to false), toggles)
     }
 
     @Test
@@ -97,16 +97,16 @@ class ContactDetailContentTest {
         val state = previewContactDetailState()
         show(state.copy(clips = clipRows(state.character, listOf("characters/frog/clips/croak.ogg"))))
 
-        compose.onNode(isToggleable() and hasContentDescription("ribbit")).assertIsNotEnabled()
+        compose.onNode(isToggleable() and hasContentDescription("Ribbit")).assertIsNotEnabled()
     }
 
     @Test
     fun recentAlertsTellSimulationsFromMessages() {
         show(previewContactDetailState())
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Played croak"))
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Played Croak"))
 
-        compose.onNodeWithText("Played ribbit").assertIsDisplayed()
-        compose.onNodeWithText("Played croak").assertIsDisplayed()
+        compose.onNodeWithText("Played Ribbit").assertIsDisplayed()
+        compose.onNodeWithText("Played Croak").assertIsDisplayed()
         compose.onNodeWithText("Simulated", substring = true).assertIsDisplayed()
     }
 

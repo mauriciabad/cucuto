@@ -32,6 +32,8 @@ data class VoicePack(
  *   toggles store (`AssignmentEntity.disabledClips`). Empty when unknown (previews and tests).
  * @property clipAutoHaptics Each clip's auto envelope (analysed at import, ADR 0020), aligned with [clips]; null for
  *   a clip without one. Empty when unknown.
+ * @property clipLabels Each clip's `label` from `pack.json`, aligned with [clips]; null for a clip without one. Empty
+ *   when unknown.
  */
 data class VoiceCharacter(
     val packId: String,
@@ -44,6 +46,7 @@ data class VoiceCharacter(
     val haptic: Haptic,
     val clipPaths: List<String> = emptyList(),
     val clipAutoHaptics: List<Haptic.Custom?> = emptyList(),
+    val clipLabels: List<String?> = emptyList(),
 ) {
     val voice: ChatVoice get() = ChatVoice(packId, id)
 
@@ -84,7 +87,7 @@ class InstalledCharacterDirectory
                         characters.map { (id, character) ->
                             val clips =
                                 character.clips.mapNotNull { clip ->
-                                    root.resolveInside(clip.file)?.let { Triple(it, clip.file, clip.autoHaptic) }
+                                    root.resolveInside(clip.file)?.let { it to clip }
                                 }
                             VoiceCharacter(
                                 packId = pack.packId,
@@ -95,8 +98,9 @@ class InstalledCharacterDirectory
                                 seedColor = character.seedColor?.let(::parseSeedColor),
                                 clips = clips.map { it.first },
                                 haptic = character.haptic,
-                                clipPaths = clips.map { it.second },
-                                clipAutoHaptics = clips.map { it.third },
+                                clipPaths = clips.map { it.second.file },
+                                clipAutoHaptics = clips.map { it.second.autoHaptic },
+                                clipLabels = clips.map { it.second.label },
                             )
                         },
                 )

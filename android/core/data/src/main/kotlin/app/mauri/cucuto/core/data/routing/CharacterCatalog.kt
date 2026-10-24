@@ -49,12 +49,14 @@ data class CatalogCharacter(
  * @property milliWeight The pack's `weight` in thousandths.
  * @property autoHaptic The clip's analysed envelope for `auto` haptics, when the app has one.
  * @property condition The clip's `when` (day or night only, and so on), or null when it always plays (ADR 0037).
+ * @property label The clip's `label` from `pack.json` ("Shown in the clip list"), or null when it has none.
  */
 data class CatalogClip(
     val file: String,
     val milliWeight: Int,
     val autoHaptic: Haptic.Custom? = null,
     val condition: ClipWhen? = null,
+    val label: String? = null,
 )
 
 /** Looks up installed characters for the routing table. */
@@ -140,6 +142,7 @@ class PackManifestCatalog
                                 (weight * 1000).roundToInt().coerceAtLeast(1),
                                 autoHaptic,
                                 parseWhen(clip["when"]),
+                                clip.string("label")?.trim()?.takeIf { it.isNotEmpty() },
                             )
                         }
                     result[id] =

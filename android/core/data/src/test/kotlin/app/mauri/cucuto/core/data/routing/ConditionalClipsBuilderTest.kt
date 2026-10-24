@@ -93,10 +93,10 @@ class ConditionalClipsBuilderTest {
             Json.parseToJsonElement(
                 """
                 {"characters": [{"id": "owl", "clips": [
-                  {"file": "a.ogg", "when": {"time": "night"}},
+                  {"file": "a.ogg", "label": "Hoot", "when": {"time": "night"}},
                   {"file": "b.ogg", "when": {"time": {"from": "22:00", "to": "06:00"}, "weekday": ["sat", "sun"]}},
                   {"file": "c.ogg", "when": {"season": "winter"}},
-                  {"file": "d.ogg"},
+                  {"file": "d.ogg", "label": "  "},
                   {"file": "e.ogg", "when": {"time": "teatime"}}
                 ]}]}
                 """.trimIndent(),
@@ -108,5 +108,7 @@ class ConditionalClipsBuilderTest {
         assertEquals(null, clips[3].condition)
         // Not understood (a validated pack never has this): the clip simply always plays.
         assertEquals(null, clips[4].condition)
+        // Labels for the clip list (#185); a blank one counts as none.
+        assertEquals(listOf("Hoot", null, null, null, null), clips.map { it.label })
     }
 }

@@ -8,6 +8,7 @@ import app.mauri.cucuto.core.audio.PcmAudio
 import app.mauri.cucuto.core.audio.PcmPlayer
 import app.mauri.cucuto.core.audio.dsp.ClipEdit
 import app.mauri.cucuto.core.creator.CreatorDraft
+import app.mauri.cucuto.core.creator.CreatorHaptics
 import app.mauri.cucuto.core.creator.DraftCharacter
 import app.mauri.cucuto.core.creator.HapticMode
 import app.mauri.cucuto.core.creator.SpriteCrop
@@ -23,6 +24,8 @@ import app.mauri.cucuto.packs.warningItems
 import app.mauri.cucuto.packspec.ErrorCode
 import app.mauri.cucuto.packspec.HapticEvent
 import app.mauri.cucuto.packspec.authoring.Authoring
+import app.mauri.cucuto.ui.haptics.HapticEditorResults
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -51,6 +54,7 @@ class CreatorViewModel
         private val tools: CreatorTools,
         private val catalog: PackCatalog,
         private val preview: CreatorPreview,
+        hapticResults: HapticEditorResults,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(CreatorUiState())
         val state: StateFlow<CreatorUiState> = mutableState.asStateFlow()
@@ -63,6 +67,17 @@ class CreatorViewModel
         private var playJob: Job? = null
         private var workJob: Job? = null
         private val player = PcmPlayer()
+
+        init {
+            // Patterns saved in the haptic editor for a character (#185). They wait for the draft to load, which
+            // matters when the app was killed while the editor was open.
+            viewModelScope.launch {
+                hapticResults.creatorResults.collect { result ->
+                    mutableState.first { it.draft != null }
+                    setCustomHaptic(result.characterKey, CreatorHaptics.toPack(result.haptic))
+                }
+            }
+        }
 
         /**
          * Opens the saved draft, or a copy of [sourcePackId] ("duplicate and edit"). Asks first when that would
@@ -131,7 +146,7 @@ class CreatorViewModel
                         draft = result.draft,
                         page = CreatorPage.Pack,
                         seedSuggestions = emptyMap(),
-                        message = CreatorMessage.Duplicated(result.droppedRingtones, result.droppedAnimations),
+                        message = CreatorMessage.Duplicated(result.keptRingtones, result.keptAnimations),
                     )
                 }
             } catch (e: CancellationException) {
@@ -229,7 +244,21 @@ class CreatorViewModel
             mode: HapticMode,
         ) = editCharacter(key) { copy(haptic = mode) }
 
-        /** The haptic editor's result for a character (hook for #32: the editor calls this when it saves). */
+        /**
+         * What the haptic editor opens for a character: its current pattern and a clip to preview it with. Null when
+         * the character is gone.
+         */
+        fun hapticTarget(key: String): HapticTarget.CreatorCharacter? {
+            val character = state.value.draft?.character(key) ?: return null
+            return HapticTarget.CreatorCharacter(
+                characterKey = key,
+                name = character.name,
+                pattern = character.customHaptic,
+                clip = character.clips.firstOrNull()?.let { tools.media(it.file).path },
+            )
+        }
+
+        /** The haptic editor's result for a character ([HapticEditorResults]). */
         fun setCustomHaptic(
             key: String,
             events: List<HapticEvent>,
@@ -337,7 +366,14 @@ class CreatorViewModel
                         is PictureTarget.Sprite -> {
                             editCharacter(
                                 target.characterKey,
-                            ) { copy(sprite = name, seedColor = seeds.firstOrNull()?.let(::hexColor)) }
+                            ) {
+                                // A duplicated pack's animated sprite would still show the old picture.
+                                copy(
+                                    sprite = name,
+                                    spriteAnimated = null,
+                                    seedColor = seeds.firstOrNull()?.let(::hexColor),
+                                )
+                            }
                             setState { copy(seedSuggestions = seedSuggestions + (target.characterKey to seeds)) }
                         }
                     }

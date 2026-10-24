@@ -7,14 +7,13 @@ import android.os.VibrationAttributes
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
+import app.mauri.cucuto.core.creator.CreatorHaptics
 import app.mauri.cucuto.core.creator.DraftCharacter
 import app.mauri.cucuto.core.creator.HapticMode
-import app.mauri.cucuto.core.data.routing.HapticJson
 import app.mauri.cucuto.core.haptics.HapticCapabilities
 import app.mauri.cucuto.core.haptics.PublicHapticEffects
 import app.mauri.cucuto.core.haptics.auto.AutoHaptics
 import app.mauri.cucuto.core.routing.Haptic
-import app.mauri.cucuto.packspec.SpecJson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +21,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
-import app.mauri.cucuto.packspec.Haptic as PackHaptic
 
 /**
  * "Live preview with real haptics" (brief): plays a clip of the pack being made the way a notification will, with
@@ -112,10 +110,7 @@ class CreatorPreview
                     }
 
                     HapticMode.CUSTOM -> {
-                        val haptic = character.haptic() ?: return autoHaptics.analyze(file)
-                        HapticJson.fromPack(
-                            SpecJson.encodeToJsonElement(PackHaptic.serializer(), haptic),
-                        ) as? Haptic.Custom
+                        CreatorHaptics.fromPack(character.customHaptic) ?: autoHaptics.analyze(file)
                     }
                 }
             } catch (e: CancellationException) {

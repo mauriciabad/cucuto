@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -207,7 +208,15 @@ internal fun CharacterPage(
 
                 // Clips.
                 Section(stringResource(R.string.creator_clips_title), stringResource(R.string.creator_clips_hint)) {
-                    if (character.clips.isEmpty()) {
+                    if (character.ringtones.isNotEmpty() || character.spriteAnimated != null) {
+                        Text(
+                            passThroughNote(character.ringtones.size, character.spriteAnimated != null),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    // A song-only character from a duplicated pack is fine: the format asks for a clip or a ringtone.
+                    if (character.clips.isEmpty() && character.ringtones.isEmpty()) {
                         Text(
                             stringResource(R.string.creator_clips_empty),
                             style = MaterialTheme.typography.bodyMedium,
@@ -320,6 +329,26 @@ internal fun CharacterPage(
         )
     }
 }
+
+/** What a duplicated pack's character keeps without the creator editing it (#185). */
+@Composable
+private fun passThroughNote(
+    ringtones: Int,
+    animated: Boolean,
+): String =
+    when {
+        ringtones > 0 && animated -> {
+            pluralStringResource(R.plurals.creator_kept_ringtones_and_animation, ringtones, ringtones)
+        }
+
+        ringtones > 0 -> {
+            pluralStringResource(R.plurals.creator_kept_ringtones, ringtones, ringtones)
+        }
+
+        else -> {
+            stringResource(R.string.creator_kept_animation)
+        }
+    }
 
 @Composable
 private fun Section(

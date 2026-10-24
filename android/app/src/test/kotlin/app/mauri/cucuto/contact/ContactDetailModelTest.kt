@@ -115,7 +115,7 @@ class ContactDetailModelTest {
 
         assertEquals(listOf(9L, 7L, 6L), rows.map { it.id })
         assertTrue(rows[0].simulated)
-        assertEquals("ribbit", rows[0].clipName)
+        assertEquals("Ribbit", rows[0].clipName)
         assertNull(rows[1].clipName)
         assertTrue(rows[2].perSender)
         assertFalse(rows[2].simulated)
@@ -162,9 +162,31 @@ class ContactDetailModelTest {
     }
 
     @Test
+    fun clipsShowTheirPackLabelElseANameFromTheFile() {
+        val labelled =
+            frog.copy(
+                clipPaths = listOf("characters/frog/clips/ribbit.ogg", "characters/frog/clips/big-croak.ogg"),
+                clipLabels = listOf("Ribbit!", null),
+            )
+        assertEquals(listOf("Ribbit!", "Big croak"), clipRows(labelled, emptyList()).map { it.name })
+        assertEquals(
+            "Ribbit!",
+            clipDisplayName(labelled, "content://app.mauri.cucuto.clips/p.q/1.0.0/characters/frog/clips/ribbit.ogg"),
+        )
+        assertEquals("Big croak", clipDisplayName(labelled, "characters/frog/clips/big-croak.ogg"))
+        assertEquals("Other", clipDisplayName(labelled, "characters/owl/clips/other.ogg"))
+        assertEquals("Other", clipDisplayName(null, "characters/owl/clips/other.ogg"))
+        val rows = decisionsForChat(listOf(entry(1, ADA.conversationKey)), ADA, null) { clipDisplayName(labelled, it) }
+        assertEquals("Ribbit!", rows.single().clipName)
+    }
+
+    @Test
     fun clipNamesAndHapticPlayback() {
-        assertEquals("ribbit", clipName("characters/frog/clips/ribbit.ogg"))
-        assertEquals("ribbit", clipName("content://app.mauri.cucuto.clips/p.q/frog/clips/ribbit.ogg"))
+        assertEquals("Ribbit", clipName("characters/frog/clips/ribbit.ogg"))
+        assertEquals("Ribbit", clipName("content://app.mauri.cucuto.clips/p.q/frog/clips/ribbit.ogg"))
+        assertEquals("Pond song day 2", clipName("characters/frog/clips/pond-song_day--2.opus"))
+        assertEquals("Élan", clipName("élan.ogg"))
+        assertEquals("--", clipName("clips/--.ogg"))
         val custom = Haptic.Custom(listOf(HapticEvent.Preset(0, HapticPreset.CLICK)))
         assertEquals(HapticPlayback.Custom, custom.playback())
         assertEquals(HapticPlayback.Off, Haptic.Off.playback())

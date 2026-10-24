@@ -51,9 +51,11 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import app.mauri.cucuto.R
+import app.mauri.cucuto.core.creator.HapticMode
 import app.mauri.cucuto.core.pack.PackImporter
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import kotlinx.coroutines.launch
 
 /**
@@ -61,15 +63,15 @@ import kotlinx.coroutines.launch
  * or "Duplicate and edit" with [sourcePackId]). Its own pages (pack, character, picture framing, recording, clip
  * editing) stack inside this one destination; system back walks them back before leaving.
  *
- * @param onEditHaptic Opens the haptic editor for a character (the key of [CreatorViewModel.setCustomHaptic]); null
- *   until the editor (#32) is wired, which hides the custom option for characters that have no pattern yet.
+ * @param onEditHaptic Opens the haptic editor for a character's pattern (#185); the editor hands the pattern back
+ *   through `HapticEditorResults`. Null hides the custom option for characters that have no pattern yet.
  */
 @Composable
 fun CreatorScreen(
     sourcePackId: String?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onEditHaptic: ((characterKey: String) -> Unit)? = null,
+    onEditHaptic: ((HapticTarget.CreatorCharacter) -> Unit)? = null,
     viewModel: CreatorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -214,8 +216,14 @@ fun CreatorScreen(
                                 onClipLabel = { clip, label -> viewModel.setClipLabel(page.key, clip, label) },
                                 onClipWeight = { clip, weight -> viewModel.setClipWeight(page.key, clip, weight) },
                                 onRemoveClip = { viewModel.removeClip(page.key, it) },
-                                onHaptic = { viewModel.setHaptic(page.key, it) },
-                                onEditHaptic = { onEditHaptic?.invoke(page.key) },
+                                onHaptic = { mode ->
+                                    viewModel.setHaptic(page.key, mode)
+                                    // "Custom" without a pattern yet goes straight to the editor.
+                                    if (mode == HapticMode.CUSTOM && character.customHaptic.isEmpty()) {
+                                        viewModel.hapticTarget(page.key)?.let { onEditHaptic?.invoke(it) }
+                                    }
+                                },
+                                onEditHaptic = { viewModel.hapticTarget(page.key)?.let { onEditHaptic?.invoke(it) } },
                                 onRemove = { viewModel.removeCharacter(page.key) },
                             )
                         }
@@ -448,10 +456,10 @@ private fun messageText(
         }
 
         is CreatorMessage.Duplicated -> {
-            if (message.droppedRingtones + message.droppedAnimations == 0) {
+            if (message.keptRingtones + message.keptAnimations == 0) {
                 resources.getString(R.string.creator_message_duplicated)
             } else {
-                resources.getString(R.string.creator_message_duplicated_partly)
+                resources.getString(R.string.creator_message_duplicated_kept)
             }
         }
 

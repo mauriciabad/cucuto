@@ -33,6 +33,7 @@ import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.haptics.HapticEditorScreen
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import app.mauri.cucuto.ui.motion.SharedElementEntry
 import app.mauri.cucuto.ui.motion.SharedElementsHost
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
@@ -145,7 +146,7 @@ private fun entries(
                 chat = key.chat,
                 onBack = goBack,
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
-                onEditPattern = { navigate(CucutoDestination.HapticEditor(key.chat)) },
+                onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
             )
         }
     }
@@ -156,10 +157,16 @@ private fun entries(
             onCreate = { source -> navigate(CucutoDestination.Creator(source)) },
         )
     }
-    entry<CucutoDestination.Creator> { key -> CreatorScreen(sourcePackId = key.sourcePackId, onBack = goBack) }
+    entry<CucutoDestination.Creator> { key ->
+        CreatorScreen(
+            sourcePackId = key.sourcePackId,
+            onBack = goBack,
+            onEditHaptic = { target -> navigate(CucutoDestination.HapticEditor(target)) },
+        )
+    }
     entry<CucutoDestination.Discover> { DiscoverScreen(onBack = goBack) }
     entry<CucutoDestination.HapticEditor> { key ->
-        HapticEditorScreen(chat = key.chat, onBack = goBack, onDone = { backStack.remove(key) })
+        HapticEditorScreen(target = key.target, onBack = goBack, onDone = { backStack.remove(key) })
     }
     entry<CucutoDestination.Settings> { SettingsScreen(onNavigate = navigate) }
     entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
