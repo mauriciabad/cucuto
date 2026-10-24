@@ -9,16 +9,19 @@ import androidx.compose.ui.platform.LocalContext
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
 import app.mauri.cucuto.core.ringtone.variants.RuleContext
+import app.mauri.cucuto.packspec.DateSpan
 import app.mauri.cucuto.packspec.When
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 /**
  * Ringtone rules in plain words (ADR 0074): "Rings by day", "Rings in summer and autumn", "Live by day and Radio at
- * night". English and Spanish word order is the same for every pattern used here, so the sentences are built from
+ * night", "on 25 December". English and Spanish word order is the same for every pattern used here, so the sentences are built from
  * small string resources and the locale's list format ("a, b and c" / "a, b y c").
  */
 class RuleText(
@@ -50,6 +53,8 @@ class RuleText(
                 if (seasons.isNotEmpty()) add(resources.getString(R.string.ringtone_rules_in, lists.format(seasons)))
                 val days = condition.weekdays.mapNotNull(::weekday)
                 if (days.isNotEmpty()) add(resources.getString(R.string.ringtone_rules_every, lists.format(days)))
+                val dates = condition.dateSpans.filterNotNull().map(::dates)
+                if (dates.isNotEmpty()) add(lists.format(dates))
             }
         return parts.joinToString(", ").ifEmpty { null }
     }
@@ -113,7 +118,20 @@ class RuleText(
 
     private fun weekday(name: String): String? = WEEKDAYS[name]?.getDisplayName(TextStyle.FULL, locale)
 
+    /** "on 25 December", "from 24 December to 6 January" (`when.date`, ADR 0059). */
+    private fun dates(span: DateSpan): String {
+        val format = DateTimeFormatter.ofPattern(resources.getString(R.string.ringtone_rules_day_pattern), locale)
+        fun day(monthDay: Int) = format.format(LocalDate.of(LEAP_YEAR, monthDay / 100, monthDay % 100))
+        return if (span.from == span.to) {
+            resources.getString(R.string.ringtone_rules_on_day, day(span.from))
+        } else {
+            resources.getString(R.string.ringtone_rules_day_range, day(span.from), day(span.to))
+        }
+    }
+
     private companion object {
+        /** Formats 29 February too. */
+        const val LEAP_YEAR = 2024
         val WEEKDAYS =
             mapOf(
                 "mon" to DayOfWeek.MONDAY,

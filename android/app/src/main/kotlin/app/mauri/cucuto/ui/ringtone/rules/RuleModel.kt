@@ -52,8 +52,8 @@ data class RulesView(
             b: When?,
         ): Boolean = a == b || (a != null && b != null && normalized(a) == normalized(b))
 
-        private fun normalized(w: When): Triple<String?, Set<String>, Set<String>> =
-            Triple(w.time?.toString(), w.seasons.toSet(), w.weekdays.toSet())
+        private fun normalized(w: When): List<Any?> =
+            listOf(w.time?.toString(), w.seasons.toSet(), w.weekdays.toSet(), w.dateSpans.toSet())
 
         /**
          * Whether some entry holds at every moment: one without a condition, day and night together, or the four
@@ -69,7 +69,7 @@ data class RulesView(
             return seasons.containsAll(SEASONS)
         }
 
-        private fun keys(w: When): Int = listOfNotNull(w.time, w.season, w.weekday).size
+        private fun keys(w: When): Int = listOfNotNull(w.time, w.season, w.weekday, w.date).size
     }
 }
 
@@ -107,7 +107,7 @@ enum class WhenChoice {
             val time = (condition.time as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
             val seasons = condition.seasons
             return when {
-                condition.weekday != null -> PACK
+                condition.weekday != null || condition.date != null -> PACK
                 condition.season == null && time == DAY_KEYWORD -> DAY
                 condition.season == null && time == NIGHT_KEYWORD -> NIGHT
                 condition.time == null && seasons.size == 1 -> {

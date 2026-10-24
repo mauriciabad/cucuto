@@ -17,6 +17,8 @@ package app.mauri.cucuto.core.routing
  *   null keeps the clip provider's `content://app.mauri.cucuto.clips/selftest/chirp.wav`.
  * @property conditions When conditional clips may play ([Clip.condition]), deduplicated: every distinct pack `when`
  *   once, as instants the app computed (ADR 0037).
+ * @property days Where local days start, for "first message of the day" clips ([Moment.firstOfDay], ADR 0059); null
+ *   counts days in UTC.
  */
 public data class RoutingTable(
     val generation: Long,
@@ -25,6 +27,7 @@ public data class RoutingTable(
     val routes: List<Route>,
     val selfTestClip: String? = null,
     val conditions: List<TimeCondition> = emptyList(),
+    val days: LocalDays? = null,
 ) {
     private val index: Map<String, Map<String, Route>> = buildIndex(routes)
 
@@ -85,6 +88,9 @@ public data class RoutingTable(
         clip: Clip,
         nowMs: Long,
     ): Boolean = clip.condition == Clip.ALWAYS || conditions[clip.condition].state(nowMs) != TimeCondition.INACTIVE
+
+    /** The local day number of [nowMs] ([LocalDays.dayOf]), for first-of-the-day clips. O(1), no allocation. */
+    public fun dayOf(nowMs: Long): Long = (days ?: LocalDays.UTC).dayOf(nowMs)
 
     /**
      * Result of [resolve].
@@ -157,6 +163,9 @@ public data class Voice(
 ) {
     /** True when at least one clip has a [Clip.condition], so the module must check the time before drawing. */
     val isConditional: Boolean = clips.any { it.condition != Clip.ALWAYS }
+
+    /** True when at least one clip has a [Clip.moment], so the module keeps the chat's rhythm and checks them first. */
+    val hasMoments: Boolean = clips.any { it.moment.isSpecial }
 }
 
 /**
@@ -169,17 +178,59 @@ public data class Voice(
  *   [Haptic.Auto]. Null when the app has not analysed the clip.
  * @property condition Index into [RoutingTable.conditions] (the clip's pack `when`, such as night only), or
  *   [ALWAYS]. A conditional clip joins the pool only while its condition is active or unknown.
+ * @property moment When the clip plays outside the shuffle bag (a rare clip, the first message of the day, a burst),
+ *   or [Moment.NONE] for an ordinary clip (ADR 0059).
  */
 public data class Clip(
     val uri: String,
     val milliWeight: Int = DEFAULT_MILLI_WEIGHT,
     val haptic: Haptic.Custom? = null,
     val condition: Int = ALWAYS,
+    val moment: Moment = Moment.NONE,
 ) {
     public companion object {
         public const val DEFAULT_MILLI_WEIGHT: Int = 1000
 
         /** [condition] of a clip without a `when`: it always joins the pool. */
         public const val ALWAYS: Int = -1
+    }
+}
+
+/**
+ * A special clip (ADR 0059): it never joins the shuffle bag, and plays instead of a draw when its moment comes.
+ *
+ * - [firstOfDay]: the chat's first message of the local day ([RoutingTable.days]).
+ * - [burst]: the chat's [burst]th message in a row, each within [BURST_GAP_MS] of the one before (0: no burst).
+ * - [oneIn]: the clip plays on about one message in [oneIn] while the rest of its condition holds (0: always).
+ *
+ * A clip with [firstOfDay] or [burst] is a *moment* clip; one with only [oneIn] is a *rare* clip. The clip's time
+ * [Clip.condition] must hold too.
+ */
+public data class Moment(
+    val firstOfDay: Boolean = false,
+    val burst: Int = 0,
+    val oneIn: Int = 0,
+) {
+    init {
+        require(burst == 0 || burst in MIN_BURST..MAX_BURST) { "Burst $burst out of range" }
+        require(oneIn == 0 || oneIn in MIN_ONE_IN..MAX_ONE_IN) { "One in $oneIn out of range" }
+    }
+
+    /** Anything but an ordinary clip. */
+    val isSpecial: Boolean get() = firstOfDay || burst != 0 || oneIn != 0
+
+    /** Tied to a moment of the conversation (first of the day, a burst), not only to chance. */
+    val isMoment: Boolean get() = firstOfDay || burst != 0
+
+    public companion object {
+        public val NONE: Moment = Moment()
+
+        /** Longest gap between two messages of one burst. */
+        public const val BURST_GAP_MS: Long = 60_000L
+
+        public const val MIN_BURST: Int = 2
+        public const val MAX_BURST: Int = 50
+        public const val MIN_ONE_IN: Int = 2
+        public const val MAX_ONE_IN: Int = 10_000
     }
 }

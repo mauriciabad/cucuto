@@ -180,13 +180,49 @@ Apps cut a notification clip from a song-only character only if the user asks.
 | `file` | yes | Path to an [audio file](#audio), 0.2 to 30 s. |
 | `label` | no | Shown in the clip list. |
 | `weight` | no | Relative probability, greater than 0 and at most 100, default 1. The app picks clips at random by weight with a shuffle bag, so the same clip never plays twice in a row. |
-| `when` | no | [Condition](#ringtones-and-variants) under which the clip may play, for example `{ "time": "night" }` for a night-only clip. |
+| `when` | no | [Condition](#ringtones-and-variants) under which the clip may play, for example `{ "time": "night" }` for a night-only clip. Clips also accept the [moment keys](#special-clips) `firstOfDay` and `burst`. |
+| `oneIn` | no | Integer 2 to 10,000: a [rare clip](#special-clips) that plays on about one message in `oneIn`. |
 
 **Clip conditions** (day and night clips): when a message arrives, the clips whose `when` matches at that moment and
 the clips without `when` form the pool the shuffle bag draws from. If no clip matches (every clip has a condition
 and none holds), the whole pool plays, so a character is never silent. A character with only unconditional clips
 behaves exactly as before. Example: `ribbit` always, `croak` with `{ "time": "night" }` and `hop` with
 `{ "time": "day" }` make the frog hop by day and croak at night.
+
+#### Special clips
+
+Some clips are not part of the rotation: they wait for a moment of the conversation and then play instead of the
+shuffle bag ([ADR 0059](decisions/0059-rare-and-moment-clips.md)). Everything is decided from the time and from
+counters the app keeps in memory for each chat, so they cost no battery: no sensors, location, network or wake-ups.
+
+| Clip field | Meaning |
+| --- | --- |
+| `when.firstOfDay` | `true`: the chat's first message of the day. Days start at 04:00 local time, so a message at 01:00 still belongs to the evening before. |
+| `when.burst` | Integer 2 to 50: the chat's `burst`-th message in a row, each within a minute of the one before. It plays once per burst; give several clips different numbers to escalate (`3` impatient, `6` furious). |
+| `oneIn` | Integer 2 to 10,000: a rare clip, an easter egg. On each message that no moment clip takes, it plays with a chance of one in `oneIn`, and never twice in a row. |
+
+Rules, for every message:
+
+1. **Moment clips** (`firstOfDay` or `burst`): when the moment comes and the rest of the clip's `when` holds (and its
+   `oneIn` chance, if it has one), the clip plays. If several match, one of them plays at random by `weight`.
+2. **Rare clips** (only `oneIn`): otherwise each rare clip whose `when` holds tries its chance, in manifest order;
+   the first that wins plays.
+3. **The rotation**: otherwise the shuffle bag draws from the other clips, as described above. Special clips never
+   join it, unless the user switched every other clip off (then they all rotate, so the character still speaks).
+
+Combine keys freely: `{ "firstOfDay": true, "time": { "from": "05:00", "to": "12:00" } }` is a good-morning clip
+(a first message after noon gets no greeting that day), and `"oneIn": 13, "when": { "date": "10-31" }` a rare
+Halloween scream. Apps count messages that alert, per chat (per sender in a group with one voice per sender), and
+forget the counts when the phone restarts: the first message after a restart counts as the first of the day.
+
+```json
+"clips": [
+  { "file": "characters/bird/clips/chirp.ogg" },
+  { "file": "characters/bird/clips/dawn-chorus.ogg", "when": { "firstOfDay": true } },
+  { "file": "characters/bird/clips/squawk.ogg", "when": { "burst": 3 } },
+  { "file": "characters/bird/clips/cuckoo.ogg", "oneIn": 25 }
+]
+```
 
 ### Ringtones and variants
 
@@ -208,7 +244,7 @@ end of the audio (checked after measuring the file, with the 50 ms tolerance). A
 `endMs`) must start at least 1 s before the end of the audio.
 
 **`when` conditions** (on ringtone variants and on clips). All present keys must match (AND); a list matches any of
-its values (OR). Times are the phone's local time, and seasons and weekdays follow the local date of the moment
+its values (OR). Times are the phone's local time, and seasons, weekdays and dates follow the local date of the moment
 being checked (so `{ "time": { "from": "22:00", "to": "06:00" }, "weekday": "sat" }` also matches Saturday 05:00,
 the end of Friday night).
 
@@ -217,6 +253,8 @@ the end of Friday night).
 | `time` | `"day"`, `"night"`, or `{ "from": "HH:MM", "to": "HH:MM" }` | Day is from local sunrise to sunset, night the rest. The app computes sunrise and sunset on the phone (NOAA's algorithm) for a place the user sets: a city, coordinates or one approximate location fix; until they set one, day is 07:00 to 19:00. Polar day is all day and polar night all night. A range includes `from` and excludes `to`, and may wrap midnight (`22:00` to `06:00`). `from` equal to `to` is invalid (`WHEN_INVALID`). |
 | `season` | `"spring"`, `"summer"`, `"autumn"`, `"winter"` or a list | Meteorological seasons: spring is March to May, summer June to August, autumn September to November, winter December to February. The app flips them when the place set for day and night is south of the equator. |
 | `weekday` | `"mon"` … `"sun"` or a list | |
+| `date` | `"MM-DD"`, `{ "from": "MM-DD", "to": "MM-DD" }` or a list of them (up to 50) | Days of the year, every year: holidays and seasons the pack defines (`"12-25"`, a Halloween week `{ "from": "10-25", "to": "10-31" }`). A range includes both ends and may wrap the new year (`12-24` to `01-06`). `02-29` matches only in leap years; a day that does not exist (`02-30`, `04-31`) is invalid (`WHEN_INVALID`). |
+| `firstOfDay`, `burst` | | Clips only: [special clips](#special-clips). On a ringtone they are schema violations. |
 
 **Variant resolution** when a contact follows the pack's conditions: take the entries whose `when` matches (an entry
 without `when` always matches), keep those with the most condition keys (the most specific), and play the first of
@@ -354,6 +392,10 @@ The editor keeps 50 ms after every preset, so it may move or drop events of a va
   manifests are strict: unknown properties are schema violations, except keys starting with `x-`, which are reserved
   for experiments and tools and are ignored by readers. Adding any field that readers must understand requires a new
   `formatVersion`; writers should emit the lowest version that can express a pack.
+- **Optional additions within version 1.** While Cucuto is below 1.0, version 1 still grows optional
+  fields that a reader could ignore without misplaying a pack: clip `when` (ADR 0037), `when.date`, clip `oneIn` and
+  the clip moment keys `firstOfDay` and `burst` (ADR 0059). An app older than the field rejects a pack that uses it
+  (`SCHEMA_VIOLATION`); every other pack is unaffected.
 - **`version`** of a pack or bundle follows SemVer 2.0.0 precedence (pre-releases sort before the release).
   When the app imports a pack whose `id` is already installed:
   - a **higher** version updates it in place (installed to `files/packs/<id>/<version>/`), keeping every assignment;
@@ -517,7 +559,7 @@ contract and may be localized. The canonical list with severities and stages is
 | `BUNDLE_PACK_MISSING` | error | references | A bundle folder without `pack.json`. |
 | `BUNDLE_LAYOUT_INVALID` | error | references | Overlapping pack folders or a nested bundle. |
 | `HAPTIC_INVALID` | error | references | Custom haptic breaks a timeline rule. |
-| `WHEN_INVALID` | error | references | Empty or contradictory `when` on a ringtone or clip (time range from = to). |
+| `WHEN_INVALID` | error | references | Empty or contradictory `when` on a ringtone or clip (time range from = to, a date that is not a calendar day). |
 | `LOOP_POINTS_INVALID` | error | references, media | Loop reversed, shorter than 1 s, or past the end of the audio. |
 | `LICENSE_NOT_SPDX` | warning | references | License is free text. |
 | `UNREFERENCED_FILE` | warning | references | Media file not referenced by any manifest. |
@@ -636,8 +678,10 @@ authority: readers detect the type from the contents.
     the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
     contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later
     then gives the contact its own ringtone back. Every other phone ignores it.
-  - On restore, Android contacts are matched again by phone number, then by lookup key, then by exact name. A contact
-    with no match on the new phone keeps its ringtone choice and waits for the user to link it.
+  - `androidContact` is device-local too: lookup keys differ per phone. On restore, every linked contact (with or
+    without a phone ringtone) is matched again by phone number, then by lookup key, then by exact name. A contact with
+    no match on the new phone is unlinked, keeps its voice and ringtone choice, and waits for the user to pick its
+    contact.
 
 Restore is idempotent: running it twice gives the same result, and it never overwrites assignments made on the new
 phone without asking.

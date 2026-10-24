@@ -65,8 +65,10 @@ data class ClipDraft(
     val label: String?,
     /** Null for the default weight (1). */
     val weight: Double? = null,
-    /** The clip's condition (day and night clips), kept from a duplicated pack. */
+    /** The clip's condition (day and night clips, moments), kept from a duplicated pack. */
     val `when`: When? = null,
+    /** A rare clip's chance, one in [oneIn], kept from a duplicated pack. */
+    val oneIn: Int? = null,
 )
 
 /**
@@ -201,6 +203,7 @@ object PackAssembler {
                             label = label?.take(MAX_LABEL),
                             weight = clip.weight?.takeIf { it != 1.0 },
                             `when` = clip.`when`,
+                            oneIn = clip.oneIn,
                         )
                     }
                 val spriteAnimated =

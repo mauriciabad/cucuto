@@ -18,7 +18,7 @@ import app.mauri.cucuto.core.backup.VoiceSnapshot
 import app.mauri.cucuto.core.backup.ZipContentType
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
-import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.ContactLinkRestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -154,12 +154,21 @@ data class RestoreSummary(
     val packsMissing: Int,
     /** Phone ringtones set differently on this phone, kept. */
     val ringtonesKept: Int = 0,
-    /** Where the restored phone ringtones stand on this phone (ADR 0057); null when the backup has none. */
-    val phoneRingtones: PhoneRingtoneRestore? = null,
+    /**
+     * Where the restored Android links and phone ringtones stand on this phone (ADR 0013's amendment for #43, ADR
+     * 0057); null when the backup brought neither.
+     */
+    val contactLinks: ContactLinkRestore? = null,
 ) {
+    /** The backup's linked contacts wait for the permission to read contacts before they can be found here. */
+    val contactsWaiting: Boolean get() = contactLinks?.waitingForPermission == true
+
     /** Phone ringtones are back but nothing is written to Android contacts until the user turns them on. */
     val phoneRingtonesWaiting: Boolean
-        get() = phoneRingtones != null && (phoneRingtones.waitingForPermission || !phoneRingtones.enabled)
+        get() =
+            contactLinks != null &&
+                contactLinks.ringtones > 0 &&
+                (contactLinks.waitingForPermission || !contactLinks.ringtonesEnabled)
 }
 
 @HiltViewModel
@@ -378,7 +387,7 @@ class RestoreViewModel
             firstReport = report
             _step.value =
                 if (report.conflicts.isEmpty()) {
-                    done(summary(report, second = null, phoneRingtones(listOf(report))))
+                    done(summary(report, second = null, contactLinks(listOf(report))))
                 } else {
                     RestoreStep.Conflicts(conflictRows(report.conflicts))
                 }
@@ -416,11 +425,11 @@ class RestoreViewModel
                 viewModelScope.launch {
                     _step.value = RestoreStep.Working(RestoreStep.Phase.RESTORING)
                     if (step.selected.isEmpty()) {
-                        _step.value = done(summary(first, second = null, phoneRingtones(listOf(first))))
+                        _step.value = done(summary(first, second = null, contactLinks(listOf(first))))
                         return@launch
                     }
                     val second = runRestore(current, step.selected) ?: return@launch
-                    _step.value = done(summary(first, second, phoneRingtones(listOf(first, second))))
+                    _step.value = done(summary(first, second, contactLinks(listOf(first, second))))
                 }
         }
 
@@ -468,44 +477,108 @@ class RestoreViewModel
         }
 
         /**
-         * Finds the restored phone ringtones' Android contacts and writes them (ADR 0057). A failure here never fails
-         * the restore: the choices are in the database, and contact detail links them by hand.
+         * Finds the Android contacts of the restored Android links and phone ringtones on this phone, and writes the
+         * ringtones (ADR 0013's amendment for #43, ADR 0057). A failure here never fails the restore: the choices are
+         * in the database, and contact detail links them by hand.
          */
-        private suspend fun phoneRingtones(reports: List<RestoreReport>): PhoneRingtoneRestore? {
-            if (reports.all { it.ringtones.isEmpty() }) return null
+        private suspend fun contactLinks(reports: List<RestoreReport>): ContactLinkRestore? {
+            if (reports.all { report ->
+                    report.ringtones.isEmpty() && report.contacts.none { it.androidContact != null }
+                }
+            ) {
+                return null
+            }
             return try {
-                gateway.restorePhoneRingtones(reports)
+                gateway.restoreContactLinks(reports)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.w(TAG, "Restoring phone ringtones failed", e)
+                Log.w(TAG, "Matching restored contacts failed", e)
                 null
             }
         }
 
         /**
+         * The summary's "Find contacts", once the permission to read contacts is granted: matches the restored
+         * contacts that waited for it, and lists the ones still missing.
+         */
+        fun findContacts() {
+            if ((_step.value as? RestoreStep.Done)?.summary?.contactLinks == null) return
+            updateContactLinks(
+                "Finding restored contacts failed",
+                { gateway.findRestoredContacts() },
+            ) { before, result ->
+                // Nothing waited any more (matched meanwhile at app start): the counts are not known here.
+                if (result.restored > 0) result else before.copy(waitingForPermission = false)
+            }
+        }
+
+        /**
          * The summary's "Turn on phone ringtones", once the contacts permission is granted: turns them on and finishes
-         * the restored ones (contacts found, ring files rendered, contacts written).
+         * the restored contacts (contacts found, ring files rendered, contacts written).
          */
         fun enablePhoneRingtones() {
-            if ((_step.value as? RestoreStep.Done)?.summary?.phoneRingtones == null) return
+            if ((_step.value as? RestoreStep.Done)?.summary?.contactLinks == null) return
+            updateContactLinks(
+                "Turning on phone ringtones failed",
+                { gateway.enablePhoneRingtones() },
+            ) { before, result ->
+                // Nothing waited for the permission: the restore already matched the contacts, now they ring.
+                if (result.restored > 0) {
+                    result
+                } else {
+                    before.copy(waitingForPermission = false, ringtonesEnabled = true)
+                }
+            }
+        }
+
+        /**
+         * The summary's "Choose contact" for an unmatched contact: links it to the contact picked in Android's contact
+         * picker ([contactUri]). The row goes away once it is linked; a failure leaves it there.
+         */
+        fun linkContact(
+            contactId: Long,
+            contactUri: String,
+        ) {
+            val unmatched =
+                (_step.value as? RestoreStep.Done)
+                    ?.summary
+                    ?.contactLinks
+                    ?.unmatched
+                    ?.firstOrNull { it.contactId == contactId } ?: return
+            updateContactLinks(
+                "Linking a picked contact failed",
+                { if (gateway.linkPickedContact(contactId, contactUri)) Unit else null },
+            ) { before, _ ->
+                if (before.unmatched.none { it.contactId == contactId }) return@updateContactLinks before
+                before.copy(
+                    linked = before.linked + 1,
+                    unmatched = before.unmatched.filterNot { it.contactId == contactId },
+                    ringtonesLinked = before.ringtonesLinked + if (unmatched.ringtone) 1 else 0,
+                )
+            }
+        }
+
+        /** Runs [work] and, when it answers, replaces the summary's contact links with [merge] of the old and the answer. */
+        private fun <T : Any> updateContactLinks(
+            failure: String,
+            work: suspend () -> T?,
+            merge: (before: ContactLinkRestore, result: T) -> ContactLinkRestore,
+        ) {
             viewModelScope.launch {
                 val result =
                     try {
-                        gateway.enablePhoneRingtones()
+                        work()
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        Log.w(TAG, "Turning on phone ringtones failed", e)
+                        Log.w(TAG, failure, e)
                         null
                     } ?: return@launch
                 _step.update { step ->
                     val done = step as? RestoreStep.Done ?: return@update step
-                    val before = done.summary.phoneRingtones ?: return@update step
-                    // Nothing waited for the permission: the restore already matched the contacts, now they ring.
-                    val now =
-                        if (result.restored > 0) result else before.copy(waitingForPermission = false, enabled = true)
-                    done.copy(summary = done.summary.copy(phoneRingtones = now))
+                    val before = done.summary.contactLinks ?: return@update step
+                    done.copy(summary = done.summary.copy(contactLinks = merge(before, result)))
                 }
             }
         }
@@ -513,7 +586,7 @@ class RestoreViewModel
         private fun summary(
             first: RestoreReport,
             second: RestoreReport?,
-            phoneRingtones: PhoneRingtoneRestore?,
+            contactLinks: ContactLinkRestore?,
         ): RestoreSummary =
             RestoreSummary(
                 contacts = first.contacts.size,
@@ -525,7 +598,7 @@ class RestoreViewModel
                 credentialsRestored = first.credentialsRestored.size,
                 packsMissing = packsMissing,
                 ringtonesKept = (second ?: first).ringtonesKept,
-                phoneRingtones = phoneRingtones,
+                contactLinks = contactLinks,
             )
 
         private fun done(summary: RestoreSummary): RestoreStep.Done =

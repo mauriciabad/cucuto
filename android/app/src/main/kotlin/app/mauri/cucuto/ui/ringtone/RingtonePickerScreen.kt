@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -76,6 +77,14 @@ import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.picker.PackSectionHeader
+import app.mauri.cucuto.picker.PickerNoMatches
+import app.mauri.cucuto.picker.PickerScrollToRoll
+import app.mauri.cucuto.picker.PickerSearchField
+import app.mauri.cucuto.picker.RerollButton
+import app.mauri.cucuto.picker.SurpriseButton
+import app.mauri.cucuto.picker.animateCellUnlessReduced
+import app.mauri.cucuto.picker.gridIndexOf
 import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.PackFilterChips
@@ -105,6 +114,12 @@ data class RingtonePickerActions(
     val onOpenDiscover: () -> Unit = {},
     /** A pack chip: only that pack's characters (null: all). */
     val onFilterPack: (String?) -> Unit = {},
+    /** The search field's text (ADR 0072). */
+    val onSearch: (String) -> Unit = {},
+    /** A pack header: fold or unfold that pack. */
+    val onToggleFold: (String) -> Unit = {},
+    /** "Surprise me" from a pack, or from every pack (null). */
+    val onSurprise: (String?) -> Unit = {},
     /** "See and edit the rules" of the chosen character (ADR 0074). */
     val onOpenRules: (RingtoneCharacterItem) -> Unit = {},
 )
@@ -183,6 +198,15 @@ fun RingtonePickerScreen(
                     feedback.fire(Feedback.SegmentTick)
                     viewModel.filterPack(packId)
                 },
+                onSearch = viewModel::search,
+                onToggleFold = { packId ->
+                    feedback.fire(Feedback.Tap)
+                    viewModel.toggleFold(packId)
+                },
+                onSurprise = { packId ->
+                    feedback.fire(Feedback.Roll)
+                    viewModel.surprise(packId)
+                },
                 onOpenRules = { item ->
                     viewModel.stopPreview()
                     onOpenRules(item.voice)
@@ -206,16 +230,32 @@ fun RingtonePickerContent(
     LaunchedEffect(state.failed) {
         if (state.failed) snackbar.showSnackbar(failedMessage)
     }
+    val grid = rememberLazyGridState()
+    val sections =
+        remember(state.packs, state.packFilter, state.query, state.folds, state.saved, state.chat?.voice) {
+            state.sections
+        }
+    // Full-width items before the first pack: the header, the "Characters" title, the search field and the chips.
+    val leading = if (state.chips.isEmpty()) 3 else 4
+    PickerScrollToRoll(grid, state.roll?.count) { sections.gridIndexOf(leading) { it.voice == state.roll?.pick } }
     CharacterTheme(seed = selected?.character?.seedColor?.let { Color(it) }) {
         PushedScreen(
             title = stringResource(R.string.ringtone_picker_title),
             subtitle = state.chatName()?.let { stringResource(R.string.ringtone_picker_subtitle, it) },
             onBack = actions.onBack,
             modifier = modifier,
+            actions = {
+                if (!state.loading && state.packs.isNotEmpty() && state.assigned == null) {
+                    SurpriseButton(
+                        label = stringResource(R.string.picker_surprise_all),
+                        onClick = { actions.onSurprise(null) },
+                    )
+                }
+            },
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 if (!state.loading && state.packs.isNotEmpty() && !state.isGroup) {
-                    SaveBar(state, actions.onSave)
+                    SaveBar(state, actions.onSave, onReroll = { actions.onSurprise(state.roll?.packId) })
                 }
             },
         ) { padding ->
@@ -230,14 +270,15 @@ fun RingtonePickerContent(
                 else -> {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(CELL_MIN_WIDTH),
+                        state = grid,
                         contentPadding =
                             PaddingValues(
                                 start = 12.dp,
                                 end = 12.dp,
-                                top = padding.calculateTopPadding(),
                                 bottom = padding.calculateBottomPadding() + 24.dp,
                             ),
-                        modifier = Modifier.fillMaxSize(),
+                        // Below the top bar, not under it, so the packs' sticky headers stay in sight.
+                        modifier = Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()),
                     ) {
                         when {
                             state.packs.isEmpty() -> {
@@ -254,6 +295,7 @@ fun RingtonePickerContent(
                             else -> {
                                 fullWidth("header") { Header(state, beat, actions) }
                                 fullWidth("characters") { SectionTitle(R.string.ringtone_picker_characters) }
+                                fullWidth("search") { PickerSearchField(state.query, actions.onSearch) }
                                 if (state.chips.isNotEmpty()) {
                                     fullWidth("chips") {
                                         PackFilterChips(
@@ -264,11 +306,20 @@ fun RingtonePickerContent(
                                         )
                                     }
                                 }
-                                state.visiblePacks.forEach { pack ->
-                                    fullWidth("pack/${pack.packId}") { PackHeader(pack.name) }
+                                if (sections.isEmpty()) fullWidth("no-matches") { PickerNoMatches(state.query) }
+                                sections.forEach { section ->
+                                    stickyHeader(key = "pack/${section.packId}", contentType = "pack") {
+                                        PackSectionHeader(
+                                            section = section,
+                                            onToggle = { actions.onToggleFold(section.packId) },
+                                            onSurprise = { actions.onSurprise(section.packId) },
+                                            enabled = state.assigned == null,
+                                        )
+                                    }
                                     items(
-                                        pack.characters,
+                                        section.shown,
                                         key = { "character/${it.voice.packId}/${it.voice.characterId}" },
+                                        contentType = { "cover" },
                                     ) {
                                         CoverCell(
                                             item = it,
@@ -276,6 +327,7 @@ fun RingtonePickerContent(
                                             playing = state.playing?.voice == it.voice && state.preview?.paused != true,
                                             isVoice = state.voice == it.voice,
                                             onTap = { actions.onSelect(it) },
+                                            modifier = animateCellUnlessReduced(),
                                         )
                                     }
                                 }
@@ -470,6 +522,7 @@ private fun CoverCell(
     playing: Boolean,
     isVoice: Boolean,
     onTap: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
     val stateLabel =
@@ -483,7 +536,7 @@ private fun CoverCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier =
-            Modifier
+            modifier
                 .padding(vertical = 8.dp)
                 .clickable(
                     onClickLabel = stringResource(R.string.ringtone_picker_preview_label),
@@ -532,9 +585,11 @@ private fun CoverCell(
 private fun SaveBar(
     state: RingtonePickerState,
     onSave: () -> Unit,
+    onReroll: () -> Unit,
 ) {
     val name = state.selectedCharacter?.character?.name
     BottomActionBar {
+        if (state.rolled) RerollButton(onReroll)
         Button(onClick = onSave, enabled = state.canSave, shapes = ButtonDefaults.shapes()) {
             Text(
                 when {
@@ -554,15 +609,6 @@ private fun SectionTitle(text: Int) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp).semantics { heading() },
-    )
-}
-
-@Composable
-private fun PackHeader(name: String) {
-    Text(
-        text = name,
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 12.dp, bottom = 4.dp).semantics { heading() },
     )
 }
 

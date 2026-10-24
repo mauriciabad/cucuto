@@ -5,6 +5,9 @@ import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.data.settings.PickerFoldSettings
+import app.mauri.cucuto.core.data.settings.PickerKind
+import app.mauri.cucuto.core.data.settings.RememberedFolds
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
@@ -12,6 +15,7 @@ import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.voice.VoicePreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.io.File
 
@@ -183,5 +187,29 @@ class FakeVoicePreview(
 
     override fun stop() {
         stops++
+    }
+}
+
+/** Remembers fold choices in memory, like the settings DataStore would (ADR 0072). */
+class FakePickerFoldSettings : PickerFoldSettings {
+    val folds = MutableStateFlow(mapOf<PickerKind, RememberedFolds>())
+
+    override fun observe(picker: PickerKind): Flow<RememberedFolds> = folds.map { it[picker] ?: RememberedFolds() }
+
+    override suspend fun remember(
+        picker: PickerKind,
+        packId: String,
+        expanded: Boolean,
+    ) {
+        folds.update { all ->
+            val now = all[picker] ?: RememberedFolds()
+            val next =
+                if (expanded) {
+                    now.copy(expanded = now.expanded + packId, folded = now.folded - packId)
+                } else {
+                    now.copy(expanded = now.expanded - packId, folded = now.folded + packId)
+                }
+            all + (picker to next)
+        }
     }
 }

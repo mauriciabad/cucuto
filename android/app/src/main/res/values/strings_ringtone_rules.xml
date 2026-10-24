@@ -42,6 +42,10 @@
     <string name="ringtone_rules_summer">summer</string>
     <string name="ringtone_rules_autumn">autumn</string>
     <string name="ringtone_rules_winter">winter</string>
+    <!-- Days of the year (`when.date`): a java.time pattern for "25 December". -->
+    <string name="ringtone_rules_day_pattern">d MMMM</string>
+    <string name="ringtone_rules_on_day">on %1$s</string>
+    <string name="ringtone_rules_day_range">from %1$s to %2$s</string>
 
     <!-- The "When" menu of a version in "Your own rules". -->
     <string name="ringtone_rules_choice_any">Any time</string>

@@ -32,6 +32,8 @@ import javax.inject.Inject
  * - Clips with a `when` (day or night only, and so on) point at a [TimeCondition] compiled by [ConditionCompiler]:
  *   each distinct condition once, as the instants it starts and stops applying (ADR 0037). Without a compiler,
  *   conditions are left out and every clip always plays.
+ * - Rare and moment clips keep their [Clip.moment] (ADR 0059). When any clip plays on the first message of the day,
+ *   the table carries the compiler's local days, so the module knows where they start.
  */
 class RoutingTableBuilder
     @Inject
@@ -70,6 +72,7 @@ class RoutingTableBuilder
                 if (perSender) flags = flags or Route.FLAG_PER_SENDER
                 routes += Route(row.packageName, row.keyValue, voice, row.shuffleSeed, flags, row.contactId)
             }
+            val firstOfDay = voices.any { voice -> voice.clips.any { it.moment.firstOfDay } }
             return RoutingTable(
                 generation = 0,
                 enabled = enabled,
@@ -77,6 +80,7 @@ class RoutingTableBuilder
                 routes = routes,
                 selfTestClip = mirror.selfTestUri(),
                 conditions = conditions.compiled,
+                days = if (firstOfDay) compiler?.localDays() else null,
             )
         }
 
@@ -116,6 +120,7 @@ class RoutingTableBuilder
                             milliWeight = clip.milliWeight,
                             haptic = if (haptic == Haptic.Auto) clip.autoHaptic else null,
                             condition = conditions.indexOf(clip.condition),
+                            moment = clip.moment,
                         )
                     }
             if (clips.isEmpty()) return null

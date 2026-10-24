@@ -260,12 +260,17 @@ object VariantRules {
         ) {
             return false
         }
+        if (condition.date != null &&
+            condition.dateSpans.none { it?.contains(context.time.monthValue, context.time.dayOfMonth) == true }
+        ) {
+            return false
+        }
         return true
     }
 
     /**
      * The next moment after `context.time` when [mode] may pick a different variant (a day/night edge, an hour range
-     * edge, midnight for weekdays, the first day of a season), or null when the pick never depends on time.
+     * edge, midnight for weekdays and dates, the first day of a season), or null when the pick never depends on time.
      */
     fun nextBoundary(
         variants: List<RingtoneVariant>,
@@ -300,7 +305,7 @@ object VariantRules {
                         times += context.dayEnd
                     }
                     range(condition)?.let { (from, to) -> times += listOf(from, to) }
-                    if (condition.weekday != null) times += LocalTime.MIDNIGHT
+                    if (condition.weekday != null || condition.date != null) times += LocalTime.MIDNIGHT
                     if (condition.season != null) seasons = true
                 }
             }
@@ -331,7 +336,7 @@ object VariantRules {
         if (condition == null) {
             0
         } else {
-            listOfNotNull(condition.time, condition.season, condition.weekday).size
+            listOfNotNull(condition.time, condition.season, condition.weekday, condition.date).size
         }
 
     private fun byTag(

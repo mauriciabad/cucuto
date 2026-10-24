@@ -40,10 +40,11 @@ It shows, from top to bottom:
 1. **The character**: its record, its name and pack, and the version that rings now.
 2. **The pack's rules, in plain words.** A summary sentence ("Live by day, Radio at night") and one row per ringtone
    entry, in `pack.json` order, each with its play button (it rings like the call, ADR 0063) and when it rings:
-   "Rings by day", "Rings in summer and autumn", "Rings every Saturday and Sunday, from 22:00 to 06:00", "Rings the
-   rest of the time" (no `when`). An entry that can never ring because an earlier one has the same condition says
-   so. When the conditions can leave a moment uncovered, a last line says which version rings then (the first entry,
-   the pack format's fallback). A pack without conditions reads "Always Live".
+   "Rings by day", "Rings in summer and autumn", "Rings from 22:00 to 06:00, every Saturday and Sunday", "Rings on 25
+   December" (`when.date`, ADR 0059), "Rings the rest of the time" (no `when`). An entry that can never ring because an
+   earlier one has the same condition says so. When the conditions can leave a moment uncovered, a last line says
+   which version rings then (the first entry, the pack format's fallback). A pack without conditions reads "Always
+   Live".
 3. **For this contact** (only with a chat whose ringtone is this character): the rules to choose from, as a radio
    list. Each choice has a one-line explanation:
    - **The pack's rules** (the default);
@@ -65,7 +66,7 @@ It shows, from top to bottom:
 
 - each version has a **switch**: a version turned off never rings for this contact (at least one stays on);
 - each version has a **"When"** menu: any time, by day, at night, in spring, summer, autumn or winter, or the pack's
-  own condition when it is something else (an hour range, weekdays, several seasons);
+  own condition when it is something else (an hour range, weekdays, dates, several seasons);
 - **"When none of these apply"** picks the version that rings when no condition matches.
 
 They are resolved with the pack format's own algorithm ("Variant resolution"): the matching entries, the most
@@ -92,7 +93,9 @@ rules" can only be created or edited on the rules screen.
 
 ### Message clips stay out
 
-Clips can carry `when` conditions too (day and night clips, ADR 0037). They are not in this screen:
+Clips can carry `when` conditions too: day and night, seasons, weekdays and dates (ADR 0037, ADR 0059, the routing
+table's `W` and `D` lines), plus the special clips of ADR 0059 (first of the day, bursts, rare). They are not in this
+screen:
 
 - a message plays a random clip from the pool whose condition matches, so there is no "which version" to choose;
 - per-contact clip control already exists: contact detail's clip toggles turn single clips off;

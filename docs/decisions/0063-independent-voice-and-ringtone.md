@@ -1,7 +1,9 @@
 # 0063. Message voice and ringtone are independent choices; ringtone previews ring like the call
 
 - Status: accepted (owner updates 2026-10-24, #245, #246 and #242; the defaults below can be overridden on those
-  issues); `phone_ringtones` gains `rules` in [ADR 0074](0074-ringtone-rules-screen.md) (database version 5, #288)
+  issues); both pickers' pack sections fold, with search and "Surprise me", in
+  [ADR 0072](0072-picker-folding-and-surprise-me.md) (owner update 2026-10-24, #289 and #290); `phone_ringtones` gains
+  `rules` in [ADR 0074](0074-ringtone-rules-screen.md) (database version 5, #288)
 - Date: 2026-10-24
 - Issues: #245 (independent choices, capability filters), #246 (ringtone previews), #242 (preview length, pause)
 - Amends: [ADR 0017](0017-home-recent-senders-and-picker.md) (picker), [ADR 0039](0039-phone-ringtones-on-the-device.md)
@@ -74,6 +76,9 @@ to `clips`).
 - Both pickers get **pack filter chips** when two or more packs have eligible characters: "All" plus one chip per such
   pack, each with its number of eligible characters ("K.K. Slider · 98"). Packs with none are not offered.
 - **Empty states** (no eligible character at all) explain what is missing and link to **Packs** and **Discover**.
+- Owner update 2026-10-24 (#289 and #290), [ADR 0072](0072-picker-folding-and-surprise-me.md): in both pickers the
+  pack sections fold, a search field finds characters in folded packs, a pack's chip is the quick jump to it, and
+  "Surprise me" picks a random character among these eligible ones (per pack, or from every pack).
 
 ### Ringtone previews (#246; owner update 2026-10-24, #242)
 

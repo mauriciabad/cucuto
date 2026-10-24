@@ -58,6 +58,20 @@ class RuleTextTest {
         assertEquals("When none of these apply, party rings.", text.fallback(fallback))
         val repeated = RulesView.of(listOf(live, live.copy(file = "k/again.ogg", label = "Again")))
         assertEquals("Never rings: Live comes first at the same times", text.line(repeated.lines[1], repeated))
+        val holidays =
+            When(
+                date =
+                    JsonArray(
+                        listOf(
+                            JsonPrimitive("12-25"),
+                            buildJsonObject {
+                                put("from", "12-31")
+                                put("to", "01-06")
+                            },
+                        ),
+                    ),
+            )
+        assertEquals("on 25 December and from 31 December to 6 January", text.condition(holidays))
         assertEquals("As the pack says: in summer and autumn", text.choice(WhenChoice.PACK, When(season = party.condition!!.season)))
     }
 
@@ -71,5 +85,6 @@ class RuleTextTest {
         assertEquals("de 22:00 a 06:00, en verano y otoño, cada sábado y domingo", text.condition(party.condition))
         assertEquals("Siempre Plain", text.summary(RulesView.of(listOf(plain))))
         assertEquals("En invierno", text.choice(WhenChoice.WINTER, null))
+        assertEquals("el 25 de diciembre", text.condition(When(date = JsonPrimitive("12-25"))))
     }
 }

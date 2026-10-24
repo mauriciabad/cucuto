@@ -42,6 +42,10 @@
     <string name="ringtone_rules_summer">verano</string>
     <string name="ringtone_rules_autumn">otoño</string>
     <string name="ringtone_rules_winter">invierno</string>
+    <!-- Days of the year (`when.date`): a java.time pattern for "25 de diciembre". -->
+    <string name="ringtone_rules_day_pattern">d \'de\' MMMM</string>
+    <string name="ringtone_rules_on_day">el %1$s</string>
+    <string name="ringtone_rules_day_range">del %1$s al %2$s</string>
 
     <!-- The "When" menu of a version in "Your own rules". -->
     <string name="ringtone_rules_choice_any">A cualquier hora</string>

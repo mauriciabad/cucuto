@@ -41,8 +41,10 @@ export interface ClipState {
 	/** The audio the clip was cut from, so it can be edited again; null when not kept (see drafts.ts). */
 	source: Float32Array | null;
 	edit: ClipEdit;
-	/** The clip's condition from an opened pack (day and night clips), kept as it is. */
+	/** The clip's condition from an opened pack (day and night clips, moments), kept as it is. */
 	when: Record<string, unknown> | null;
+	/** A rare clip's chance from an opened pack (`oneIn`), kept as it is. */
+	oneIn?: number | null;
 }
 
 /** A file kept as it is from an opened pack: the creator does not edit it yet. */
@@ -213,7 +215,8 @@ export function draftInput(pack: PackState): PackDraftInput {
 				file: { key: clip.uid, extension: clip.encoded.extension },
 				label: blankToNull(clip.label),
 				weight: clip.weight === 1 ? null : clip.weight,
-				when: clip.when
+				when: clip.when,
+				oneIn: clip.oneIn ?? null
 			})),
 			haptic: hapticOf(c),
 			description: c.description,

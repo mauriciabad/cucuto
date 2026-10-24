@@ -6,6 +6,7 @@ import app.mauri.cucuto.packspec.media.SvgSafety
 import app.mauri.cucuto.packspec.zip.RandomAccessInput
 import app.mauri.cucuto.packspec.zip.RawInflater
 import app.mauri.cucuto.packspec.zip.ZipArchive
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -246,15 +247,11 @@ class PackValidator(private val checkMedia: Boolean = true) {
             m.characters.forEachIndexed { ci, c ->
                 val cp = "/characters/$ci"
                 c.clips.forEachIndexed { i, clip ->
-                    clip.`when`?.timeRange?.let { (from, to) ->
-                        if (from == to) sink.add(ErrorCode.WHEN_INVALID, "Time range starts and ends at $from", file = manifestFile, pointer = "$cp/clips/$i/when/time")
-                    }
+                    clip.`when`?.let { checkWhen(it, manifestFile, "$cp/clips/$i/when") }
                 }
                 c.ringtones.forEachIndexed { i, r ->
                     val rp = "$cp/ringtones/$i"
-                    r.`when`?.timeRange?.let { (from, to) ->
-                        if (from == to) sink.add(ErrorCode.WHEN_INVALID, "Time range starts and ends at $from", file = manifestFile, pointer = "$rp/when/time")
-                    }
+                    r.`when`?.let { checkWhen(it, manifestFile, "$rp/when") }
                     r.loopRange?.let { loop ->
                         val start = loop.startMs ?: 0L
                         if (loop.endMs != null && loop.endMs - start < Limits.MIN_LOOP_MS) {
@@ -265,6 +262,19 @@ class PackValidator(private val checkMedia: Boolean = true) {
                 c.haptic?.let { checkHaptic(it, manifestFile, "$cp/haptic") }
             }
             return refs
+        }
+
+        /** WHEN_INVALID: an empty time range, or a date that is not a calendar day (02-30, 04-31). */
+        fun checkWhen(w: When, file: String, pointer: String) {
+            w.timeRange?.let { (from, to) ->
+                if (from == to) sink.add(ErrorCode.WHEN_INVALID, "Time range starts and ends at $from", file = file, pointer = "$pointer/time")
+            }
+            w.dateSpans.forEachIndexed { i, span ->
+                if (span == null) {
+                    val at = if (w.date is JsonArray) "$pointer/date/$i" else "$pointer/date"
+                    sink.add(ErrorCode.WHEN_INVALID, "Not a calendar day (MM-DD)", file = file, pointer = at)
+                }
+            }
         }
 
         fun checkHaptic(h: Haptic, file: String, pointer: String) {

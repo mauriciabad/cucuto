@@ -225,7 +225,7 @@ folder("valid/longest-clip", "A 30 s clip, the longest a notification clip may b
     media("characters/beep/clips/beep.ogg", clipLongest)
 }
 
-folder("valid/full-pack", "Every pack.json feature: cover, text files, animated sprite, seed colors, tags, weights, custom haptics, ringtones with variants, when conditions on ringtones and clips, loop points and fade-in.") {
+folder("valid/full-pack", "Every pack.json feature: cover, text files, animated sprite, seed colors, tags, weights, custom haptics, ringtones with variants, when conditions on ringtones and clips (dates, first of the day, bursts), a rare clip, loop points and fade-in.") {
     text("pack.json", """
 {
   "${'$'}schema": "https://cucuto.mauri.app/spec/v1/pack.schema.json",
@@ -252,7 +252,11 @@ folder("valid/full-pack", "Every pack.json feature: cover, text files, animated 
       "tags": ["bird"],
       "clips": [
         { "file": "characters/robin/clips/chirp.ogg", "label": "Chirp", "weight": 2, "when": { "time": "day" } },
-        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5, "when": { "time": "night", "season": ["autumn", "winter"] } }
+        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5, "when": { "time": "night", "season": ["autumn", "winter"] } },
+        { "file": "characters/robin/clips/morning.ogg", "label": "Good morning", "when": { "firstOfDay": true, "time": { "from": "05:00", "to": "12:00" } } },
+        { "file": "characters/robin/clips/impatient.ogg", "label": "Impatient", "when": { "burst": 3 } },
+        { "file": "characters/robin/clips/golden.ogg", "label": "Golden chirp", "oneIn": 50 },
+        { "file": "characters/robin/clips/spooky.ogg", "label": "Spooky", "when": { "date": [{ "from": "10-25", "to": "10-31" }, "02-29"], "time": "night" } }
       ],
       "haptic": {
         "mode": "custom",
@@ -277,7 +281,8 @@ folder("valid/full-pack", "Every pack.json feature: cover, text files, animated 
         { "file": "characters/song/ringtones/day.ogg", "label": "Day", "tags": ["live"], "when": { "time": "day" }, "loop": { "startMs": 0, "endMs": 5000 }, "fadeInMs": 500 },
         { "file": "characters/song/ringtones/night.ogg", "label": "Night", "tags": ["radio"], "when": { "time": "night", "season": ["autumn", "winter"] }, "loop": false },
         { "file": "characters/song/ringtones/day.ogg", "label": "Weekend mornings", "when": { "weekday": ["sat", "sun"], "time": { "from": "09:00", "to": "12:30" } }, "loop": { "startMs": 1000 }, "weight": 3 },
-        { "file": "characters/song/ringtones/night.ogg", "label": "Summer", "when": { "season": "summer" }, "loop": true }
+        { "file": "characters/song/ringtones/night.ogg", "label": "Summer", "when": { "season": "summer" }, "loop": true },
+        { "file": "characters/song/ringtones/day.ogg", "label": "Holidays", "when": { "date": { "from": "12-24", "to": "01-06" } } }
       ],
       "haptic": { "mode": "none" }
     },
@@ -298,6 +303,7 @@ folder("valid/full-pack", "Every pack.json feature: cover, text files, animated 
     media("characters/robin/sprite-anim.gif", animGif)
     media("characters/robin/clips/chirp.ogg", clipOgg)
     media("characters/robin/clips/tweet.mp3", clipMp3)
+    for (name in listOf("morning", "impatient", "golden", "spooky")) media("characters/robin/clips/$name.ogg", clipOgg)
     media("characters/song/album.jxl", spriteJxl)
     media("characters/song/clips/hook.flac", clipFlac)
     media("characters/song/ringtones/day.ogg", ringtoneOgg)
@@ -727,6 +733,24 @@ folder("invalid/clip-when-empty-range", "A clip whose time range starts and ends
       "sprite": "characters/beep/sprite.png",
       "clips": [{ "file": "characters/beep/clips/beep.ogg", "when": { "time": { "from": "21:30", "to": "21:30" } } }]
     }"""))
+    beep()
+}
+folder("invalid/clip-when-bad-date", "A clip for 30 February, which never comes.", listOf("WHEN_INVALID")) {
+    text("pack.json", pack("bad-date", characters = """    {
+      "id": "beep",
+      "name": "Beep",
+      "sprite": "characters/beep/sprite.png",
+      "clips": [{ "file": "characters/beep/clips/beep.ogg", "when": { "date": ["12-25", { "from": "02-20", "to": "02-30" }] } }]
+    }"""))
+    beep()
+}
+folder("invalid/schema-burst-on-ringtone", "A burst condition on a ringtone (conversation moments are for clips only).", listOf("SCHEMA_VIOLATION")) {
+    text("pack.json", pack("ring-burst", character = ",\n  \"ringtones\": [{ \"file\": \"characters/beep/ring.ogg\", \"when\": { \"burst\": 3 } }]"))
+    beep()
+    media("characters/beep/ring.ogg", ringtoneOgg)
+}
+folder("invalid/schema-one-in-one", "A rare clip that would play on every message (oneIn must be at least 2).", listOf("SCHEMA_VIOLATION")) {
+    text("pack.json", pack("one-in-one").replace("\"file\": \"characters/beep/clips/beep.ogg\" }", "\"file\": \"characters/beep/clips/beep.ogg\", \"oneIn\": 1 }"))
     beep()
 }
 folder("invalid/loop-reversed", "Loop points with the end before the start.", listOf("LOOP_POINTS_INVALID")) {

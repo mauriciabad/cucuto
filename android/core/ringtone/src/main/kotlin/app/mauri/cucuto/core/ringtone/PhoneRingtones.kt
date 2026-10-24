@@ -21,10 +21,10 @@ import app.mauri.cucuto.core.data.settings.PhoneRingtoneSettings
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContacts
 import app.mauri.cucuto.core.ringtone.render.RingFileRenderer
+import app.mauri.cucuto.core.ringtone.restore.ContactLinks
+import app.mauri.cucuto.core.ringtone.restore.ContactRelinker
 import app.mauri.cucuto.core.ringtone.restore.RelinkOutcome
-import app.mauri.cucuto.core.ringtone.restore.RestoredRingtone
-import app.mauri.cucuto.core.ringtone.restore.RingtoneLinks
-import app.mauri.cucuto.core.ringtone.restore.RingtoneRelinker
+import app.mauri.cucuto.core.ringtone.restore.RestoredLink
 import app.mauri.cucuto.core.ringtone.store.CharacterRingtones
 import app.mauri.cucuto.core.ringtone.store.PhoneRingtoneStore
 import app.mauri.cucuto.core.ringtone.store.RingtoneCatalog
@@ -86,22 +86,36 @@ data class ContactPhoneRingtone(
     val syncing: Boolean,
 )
 
+/** A restored contact with no matching Android contact on this phone: the restore summary offers to pick one. */
+data class UnmatchedContact(
+    val contactId: Long,
+    /** The Cucuto contact's name (null: no name). */
+    val displayName: String?,
+    /** It has a phone ringtone, which rings once it is linked. */
+    val ringtone: Boolean,
+)
+
 /**
- * Where restored phone ringtones stand on this phone (ADR 0057), for the restore summary.
+ * Where the Android links and phone ringtones a restore brought back stand on this phone, for the restore summary
+ * (ADR 0013's amendment for #43, ADR 0057). Counts are 0 and [unmatched] empty while [waitingForPermission].
  *
- * @property restored Phone ringtones the restore brought back (linked or not).
+ * @property restored Restored contacts that needed their Android contact on this phone (an Android link in the
+ *   backup, a phone ringtone, or both).
  * @property linked Those whose Android contact was found on this phone.
- * @property missing Names of the Cucuto contacts with no matching Android contact here (null: no name); the user links
- *   them from the chat.
- * @property waitingForPermission The contacts permission is missing: Android contacts are matched once it is granted.
- * @property enabled Whether phone ringtones are on (only then are contacts written).
+ * @property unmatched Those with no match here; the user picks the contact (the summary, or contact detail later).
+ * @property ringtones Restored phone ringtones among [restored].
+ * @property ringtonesLinked Phone ringtones whose Android contact was found.
+ * @property waitingForPermission The contacts permission is missing: contacts are matched once it is granted.
+ * @property ringtonesEnabled Whether phone ringtones are on (only then are contacts written).
  */
-data class PhoneRingtoneRestore(
+data class ContactLinkRestore(
     val restored: Int,
     val linked: Int,
-    val missing: List<String?>,
+    val unmatched: List<UnmatchedContact>,
+    val ringtones: Int,
+    val ringtonesLinked: Int,
     val waitingForPermission: Boolean,
-    val enabled: Boolean,
+    val ringtonesEnabled: Boolean,
 )
 
 /**
@@ -146,8 +160,8 @@ class PhoneRingtones
                 wallClock = clock::now,
                 ruleContext = { RuleContext.at(LocalDateTime.now(), dayNight.place.first(), ZoneId.systemDefault()) },
             )
-        private val links = ContactRingtoneLinks(contactRepository, androidContacts)
-        private val relinker = RingtoneRelinker(androidContacts, links, store, clock::now)
+        private val links = DatabaseContactLinks(contactRepository, androidContacts)
+        private val relinker = ContactRelinker(androidContacts, links, store, clock::now)
         private val mutex = Mutex()
         private val restoreMutex = Mutex()
         private val started = AtomicBoolean(false)
@@ -176,7 +190,7 @@ class PhoneRingtones
             // screen): match its Android contacts now.
             scope.launch {
                 try {
-                    if (androidContacts.canReadAndWrite() && pending().isNotEmpty()) processPendingRestore()
+                    if (androidContacts.canRead() && pending().isNotEmpty()) processPendingRestore()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -186,6 +200,8 @@ class PhoneRingtones
         }
 
         fun canReadAndWriteContacts(): Boolean = androidContacts.canReadAndWrite()
+
+        fun canReadContacts(): Boolean = androidContacts.canRead()
 
         fun canReadPhoneState(): Boolean =
             context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
@@ -197,39 +213,48 @@ class PhoneRingtones
         suspend fun enable(): Boolean = enableAndRestore() != null
 
         /**
-         * [enable], returning where the restored phone ringtones that waited for the permission stand (nothing
-         * restored when none waited). Null without the contacts permission.
+         * [enable], returning where the restored contacts that waited for the permission stand (nothing restored when
+         * none waited). Null without the contacts permission.
          */
-        suspend fun enableAndRestore(): PhoneRingtoneRestore? {
+        suspend fun enableAndRestore(): ContactLinkRestore? {
             if (!androidContacts.canReadAndWrite()) return null
             settings.setEnabled(true)
             return processPendingRestore()
         }
 
         /**
-         * After a backup restore (ADR 0057): finds the Android contact of each restored phone ringtone on this phone
-         * (phone numbers, then the lookup key, then the exact name), adopts the backup's undo record on the phone that
-         * wrote it, and renders the ring files and writes the contacts when phone ringtones are on. Without the
-         * contacts permission the list waits, and [enable] (or the next app start with the permission) finishes it.
+         * After a backup restore (ADR 0013's amendment for #43, ADR 0057): finds the Android contact of each restored
+         * contact on this phone (phone numbers, then the lookup key, then the exact name), adopts the backup's undo
+         * record on the phone that wrote it, and renders the ring files and writes the contacts when phone ringtones
+         * are on. Without the permission to read contacts the list waits, and [processPendingRestore] after the user
+         * grants it, [enable], or the next app start with the permission finishes it.
          */
-        suspend fun afterRestore(items: List<RestoredRingtone>): PhoneRingtoneRestore {
+        suspend fun afterRestore(items: List<RestoredLink>): ContactLinkRestore {
             if (items.isEmpty()) return processPendingRestore()
             restoreMutex.withLock {
                 val merged = (pending().filter { old -> items.none { it.contactId == old.contactId } } + items)
-                settings.setPendingRestore(RestoredRingtone.encode(merged))
+                settings.setPendingRestore(RestoredLink.encode(merged))
             }
             return processPendingRestore()
         }
 
-        /** Matches the pending restored ringtones' Android contacts, if the permission allows it. Never throws. */
-        suspend fun processPendingRestore(): PhoneRingtoneRestore {
+        /** Matches the pending restored contacts' Android contacts, if the permission allows it. Never throws. */
+        suspend fun processPendingRestore(): ContactLinkRestore {
             val on = settings.isEnabled()
             val result =
                 restoreMutex.withLock {
                     val items = pending()
-                    if (items.isEmpty()) return@withLock PhoneRingtoneRestore(0, 0, emptyList(), false, on)
-                    if (!androidContacts.canReadAndWrite()) {
-                        return@withLock PhoneRingtoneRestore(items.size, 0, emptyList(), true, on)
+                    if (items.isEmpty()) return@withLock ContactLinkRestore(0, 0, emptyList(), 0, 0, false, on)
+                    if (!androidContacts.canRead()) {
+                        return@withLock ContactLinkRestore(
+                            restored = items.size,
+                            linked = 0,
+                            unmatched = emptyList(),
+                            ringtones = items.count { it.ringtone },
+                            ringtonesLinked = 0,
+                            waitingForPermission = true,
+                            ringtonesEnabled = on,
+                        )
                     }
                     val results =
                         withContext(Dispatchers.IO) {
@@ -239,25 +264,46 @@ class PhoneRingtones
                                 } catch (e: CancellationException) {
                                     throw e
                                 } catch (e: Exception) {
-                                    Log.w(TAG, "Relinking a restored ringtone failed", e)
+                                    Log.w(TAG, "Relinking a restored contact failed", e)
                                     item to RelinkOutcome.MISSING
                                 }
                             }
                         }
                     settings.setPendingRestore(null)
-                    PhoneRingtoneRestore(
+                    val found = results.filter { it.second != RelinkOutcome.MISSING }.map { it.first }
+                    ContactLinkRestore(
                         restored = items.size,
-                        linked = results.count { it.second != RelinkOutcome.MISSING },
-                        missing = results.filter { it.second == RelinkOutcome.MISSING }.map { it.first.displayName },
+                        linked = found.size,
+                        unmatched =
+                            results
+                                .filter { it.second == RelinkOutcome.MISSING }
+                                .map { (item) -> UnmatchedContact(item.contactId, item.displayName, item.ringtone) },
+                        ringtones = items.count { it.ringtone },
+                        ringtonesLinked = found.count { it.ringtone },
                         waitingForPermission = false,
-                        enabled = on,
+                        ringtonesEnabled = on,
                     )
                 }
-            if (on && result.restored > 0 && !result.waitingForPermission) syncNow(SyncReason.Changed)
+            if (on && result.ringtones > 0 && !result.waitingForPermission) syncNow(SyncReason.Changed)
             return result
         }
 
-        private suspend fun pending(): List<RestoredRingtone> = RestoredRingtone.decode(settings.pendingRestore())
+        /**
+         * The restore summary's "Choose contact" (#43): links [contactId] to the contact Android's contact picker
+         * returned ([contactUri]; the picker grants access to it, so no permission is needed). Unlike [link], it adds
+         * no phone ringtone the backup did not have. Returns the contact, or null when the URI resolves to nothing.
+         */
+        suspend fun linkPicked(
+            contactId: Long,
+            contactUri: String,
+        ): AndroidContact? {
+            val picked = androidContacts.resolve(contactUri) ?: return null
+            links.link(contactId, picked)
+            if (settings.isEnabled() && dao.get(contactId) != null) syncNow(SyncReason.Changed)
+            return picked
+        }
+
+        private suspend fun pending(): List<RestoredLink> = RestoredLink.decode(settings.pendingRestore())
 
         /** Turns phone ringtones off: every changed contact gets its own ringtone back and the ring files go. */
         suspend fun disable() {
@@ -438,11 +484,11 @@ class PhoneRingtones
         }
     }
 
-/** [RingtoneLinks] over the contacts table: the Android link and the phone keys it stores (ADR 0039). */
-internal class ContactRingtoneLinks(
+/** [ContactLinks] over the contacts table: the Android link and the phone keys it stores (ADR 0039). */
+internal class DatabaseContactLinks(
     private val contacts: ContactRepository,
     private val androidContacts: AndroidContacts,
-) : RingtoneLinks {
+) : ContactLinks {
     override suspend fun linkedKey(contactId: Long): String? = contacts.get(contactId)?.contact?.androidLookupKey
 
     override suspend fun phoneNumbers(contactId: Long): List<String> =

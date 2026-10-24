@@ -91,6 +91,14 @@ data class ContactRestoreOutcome(
     val voice: VoiceOutcome,
     /** Keys of the backup contact that belong to another contact on this phone (left there; merge by hand). */
     val keysOwnedElsewhere: List<String>,
+    /** The contact's name in the backup. */
+    val displayName: String? = null,
+    /**
+     * The Android link this restore took from the backup: set for a created contact, or a matched one that had no
+     * link here; null when the backup has none or this phone's own link was kept. Lookup keys are per device, so the
+     * app matches it again on this phone (ADR 0013, amendment for #43).
+     */
+    val androidContact: BackupAndroidContact? = null,
 )
 
 /** A contact whose voice on this phone differs from the backup's. Restore again with its [backupId] to replace it. */
@@ -149,6 +157,8 @@ data class RestoreReport(
  * - Settings in the backup are applied; unknown keys are ignored.
  * - Phone ringtones follow the voice's rule ([restoreRingtone]); finding their Android contacts on this phone and
  *   writing them is the app's next step ([RestoreReport.ringtones]).
+ * - Android links from the backup are stored as they are and reported ([ContactRestoreOutcome.androidContact]): lookup
+ *   keys are per device, so the app matches them again on this phone.
  */
 class BackupRestorer(
     private val db: CucutoDatabase,
@@ -302,6 +312,8 @@ class BackupRestorer(
                 ),
             )
         var local = contacts.get(id)!!.contact
+        val linkFromBackup =
+            backup.androidContact?.takeIf { match == ContactMatch.CREATED || local.androidLookupKey == null }
         if (match != ContactMatch.CREATED) {
             val android = backup.androidContact
             val filled =
@@ -340,7 +352,15 @@ class BackupRestorer(
         }
 
         val (voice, conflict) = restoreVoice(backup, local, match == ContactMatch.CREATED, options)
-        return ContactRestoreOutcome(backup.id, id, match, voice, elsewhere) to conflict
+        return ContactRestoreOutcome(
+            backupId = backup.id,
+            contactId = id,
+            match = match,
+            voice = voice,
+            keysOwnedElsewhere = elsewhere,
+            displayName = backup.displayName,
+            androidContact = linkFromBackup,
+        ) to conflict
     }
 
     private suspend fun restoreVoice(

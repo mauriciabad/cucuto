@@ -40,7 +40,9 @@ a dead end.
 Below it, a grid of album covers, grouped by pack: every installed character that has at least one ringtone. A
 **bottom bar** saves ("Ring with Tootle the kettle"). It reads "Already chosen" and is disabled when nothing changed.
 Since ADR 0063, pack filter chips with counts appear when two or more packs have such characters, and the empty state
-links to Packs and Discover.
+links to Packs and Discover. Since [ADR 0072](0072-picker-folding-and-surprise-me.md) (owner update 2026-10-24, #289 and #290), the
+pack sections fold, a search field finds covers in folded packs, and "Surprise me" picks a random character with
+ringtones, with a "Re-roll" button next to the save button.
 
 **Game feel**, like the character picker (#132), through the Feedback engine (#112):
 
@@ -119,10 +121,15 @@ never replaced. MediaStore URIs of ring files are never restored as ringtones.
    files and writes the contacts right away. Without the permission, the list waits in settings (a small JSON list)
    and finishes when the user turns phone ringtones on, or at the next app start with the permission.
 
+Since #43 the same matcher, renamed `ContactRelinker`, also re-links every Android link a restore brings in, ringtone or
+not. It needs only `READ_CONTACTS`, and the summary's Contacts card lists the unmatched contacts with a contact picker
+([ADR 0013](0013-backup-and-restore.md#amendment-2026-10-24-43-re-linking-android-contacts)).
+
 **The restore summary** gets a "Phone ringtones" card:
 
 - how many came back;
-- which contacts are not on this phone (link them from the chat);
+- which contacts are not on this phone (link them from the chat; since #43 they are listed in the Contacts card, with
+  a contact picker);
 - "Turn on phone ringtones" (the contacts permission, explained first) when they are off;
 - otherwise, how many contacts ring with their character again.
 

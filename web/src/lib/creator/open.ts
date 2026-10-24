@@ -145,7 +145,8 @@ export async function openPackArchive(
 				durationMs,
 				source: samples,
 				edit: { startMs: 0, endMs: Math.floor(durationMs), trimSilence: false, normalize: false },
-				when: clip.when ?? null
+				when: clip.when ?? null,
+				oneIn: clip.oneIn ?? null
 			});
 		}
 		const haptic: HapticState =
