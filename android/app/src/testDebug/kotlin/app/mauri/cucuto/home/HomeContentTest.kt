@@ -32,6 +32,7 @@ class HomeContentTest {
 
     private var demoRequests = 0
     private var demoImports = 0
+    private var restores = 0
 
     private fun show(
         state: HomeState,
@@ -50,6 +51,7 @@ class HomeContentTest {
                     journey = journey,
                     onGetDemoPacks = { demoRequests++ },
                     onImportDemoPacks = { demoImports++ },
+                    onRestoreBackup = { restores++ },
                 )
             }
         }
@@ -106,6 +108,9 @@ class HomeContentTest {
         // Offline fallback: a demo packs file already in Downloads.
         compose.onNodeWithText("Pick a file from Downloads").performClick()
         assertEquals(1, demoImports)
+        // A new phone: the restore flow starts right here, not only in Settings.
+        compose.onNodeWithText("Restore a backup").performClick()
+        assertEquals(1, restores)
     }
 
     @Test

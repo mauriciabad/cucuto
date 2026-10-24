@@ -1,6 +1,8 @@
 package app.mauri.cucuto.ui.status
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SetupCardModeTest {
@@ -50,5 +52,30 @@ class SetupCardModeTest {
     @Test
     fun removingEveryPackIsLeftToHomesOwnPrompt() {
         assertEquals(SetupCardMode.Hidden, setupCardMode(green.copy(packs = PacksCheck.None), true, false))
+    }
+
+    @Test
+    fun theSettingsBadgeLightsOnlyForWhatTheUserMustFix() {
+        // #180: the badge follows needsAttention, so it is as calm as Home's banner.
+        val mustFix =
+            listOf(
+                firstRun,
+                green.copy(module = ModuleCheck.NeedsReboot(afterUpdate = true, frameworkLost = true)),
+                green.copy(module = ModuleCheck.NeedsReboot(afterUpdate = false)),
+                green.copy(module = ModuleCheck.FrameworkUnsupported("Some framework")),
+                green.copy(scope = ScopeCheck.MissingSystem(emptyList())),
+                green.copy(whatsApp = WhatsAppCheck.Disabled(listOf("com.whatsapp"))),
+            )
+        mustFix.forEach { assertTrue(it.toString(), it.needsAttention) }
+        val optional =
+            listOf(
+                green,
+                // Voices keep working on the old module code until the next reboot.
+                green.copy(module = ModuleCheck.Active(listOf("playSound"), updatePending = true)),
+                green.copy(module = ModuleCheck.AwaitingSelfTest),
+                green.copy(scope = ScopeCheck.Unknown),
+                green.copy(packs = PacksCheck.None),
+            )
+        optional.forEach { assertFalse(it.toString(), it.needsAttention) }
     }
 }

@@ -96,7 +96,7 @@
     <string name="status_whatsapp_found">Encontrado: %1$s.</string>
     <string name="status_whatsapp_disabled">%1$s está instalado pero desactivado. Actívalo en los ajustes del sistema.</string>
     <string name="status_whatsapp_missing">Instala WhatsApp o WhatsApp Business. Cucuto da voz a sus notificaciones.</string>
-    <string name="status_list_separator">, </string>
+    <string name="status_list_separator">", "</string>
     <plurals name="status_packs_installed">
         <item quantity="one">%d pack instalado.</item>
         <item quantity="many">%d packs instalados.</item>

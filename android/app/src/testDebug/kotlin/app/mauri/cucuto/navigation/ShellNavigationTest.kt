@@ -12,8 +12,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.navigation3.runtime.NavKey
@@ -38,7 +40,7 @@ class ShellNavigationTest {
 
     private lateinit var navigator: AppNavigator
 
-    private fun show() {
+    private fun show(settingsBadge: Boolean = false) {
         compose.setContent {
             CucutoTheme(dynamicColor = false) {
                 navigator = rememberAppNavigator()
@@ -57,7 +59,7 @@ class ShellNavigationTest {
                         }
                         entry<CucutoDestination.Developer> { Text("Developer screen") }
                     }
-                CucutoShellLayout(navigator = navigator, entryProvider = entries)
+                CucutoShellLayout(navigator = navigator, entryProvider = entries, settingsBadge = settingsBadge)
             }
         }
     }
@@ -68,6 +70,22 @@ class ShellNavigationTest {
         compose.onNodeWithText("Home screen").assertIsDisplayed()
         listOf("Home", "Packs", "Discover", "Settings").forEach { tab(it).assertIsDisplayed() }
         tab("Home").assertIsSelected()
+    }
+
+    @Test
+    fun theSettingsTabWearsABadgeOnlyWhenSetupNeedsAttention() {
+        show(settingsBadge = true)
+        // TalkBack reads the badge with the tab.
+        compose.onNodeWithContentDescription("Setup needs attention", useUnmergedTree = true).assertIsDisplayed()
+        compose
+            .onNode(hasClickAction() and hasText("Settings") and hasContentDescription("Setup needs attention"))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun noBadgeWhenSetupIsFine() {
+        show()
+        compose.onNodeWithContentDescription("Setup needs attention", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test

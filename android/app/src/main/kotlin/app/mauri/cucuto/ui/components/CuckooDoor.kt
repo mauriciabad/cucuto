@@ -52,8 +52,10 @@ import app.mauri.cucuto.ui.theme.LocalReducedMotion
  * door opens at 0 ms (fast spatial), the character pops out at 80 ms (fast spatial), calls at [callsAtMillis];
  * with [closeAfterMillis] it goes back in (default spatial) and the door closes 250 ms later.
  *
- * Colors follow the scheme (wrap it in a `CharacterTheme` for a character's colors): house `primaryContainer`,
- * door `primary`. [character] is clipped to the door opening, like a sprite; null draws the Cucuto bird.
+ * Colors follow the scheme (wrap it in a `CharacterTheme` for a character's colors): by default house
+ * `primaryContainer` and door `primary` ([CuckooDoorDefaults.colors]), for surfaces and surface containers. On a filled
+ * `primaryContainer` card pass [CuckooDoorDefaults.onContainerColors], or the house disappears into the card (#178).
+ * [character] is clipped to the door opening, like a sprite; null draws the Cucuto bird.
  * With "Remove animations" on, the door cross-fades to the open state and nothing bounces.
  */
 @Composable
@@ -63,11 +65,12 @@ fun CuckooDoor(
     contentDescription: String? = null,
     closeAfterMillis: Long? = null,
     callsAtMillis: List<Long> = listOf(Feedback.Assign.CHARACTER_CLIP_DELAY_MS),
+    colors: CuckooDoorColors = CuckooDoorDefaults.colors(),
     character: (@Composable () -> Unit)? = null,
 ) {
     val timeline = rememberDoorTimeline(closeAfterMillis, callsAtMillis)
     val seconds = rememberBeatSeconds(beat, timeline.endSeconds)
-    DoorScene({ seconds.floatValue }, timeline, contentDescription, character, modifier)
+    DoorScene({ seconds.floatValue }, timeline, colors, contentDescription, character, modifier)
 }
 
 /** The door frozen [seconds] after its beat: previews, filmstrips and screenshot tests. */
@@ -77,10 +80,11 @@ fun CuckooDoorStill(
     modifier: Modifier = Modifier,
     closeAfterMillis: Long? = null,
     callsAtMillis: List<Long> = listOf(Feedback.Assign.CHARACTER_CLIP_DELAY_MS),
+    colors: CuckooDoorColors = CuckooDoorDefaults.colors(),
     character: (@Composable () -> Unit)? = null,
 ) {
     val timeline = rememberDoorTimeline(closeAfterMillis, callsAtMillis)
-    DoorScene({ seconds }, timeline, contentDescription = null, character = character, modifier = modifier)
+    DoorScene({ seconds }, timeline, colors, contentDescription = null, character = character, modifier = modifier)
 }
 
 @Composable
@@ -99,11 +103,11 @@ private fun rememberDoorTimeline(
 private fun DoorScene(
     seconds: () -> Float,
     timeline: DoorTimeline,
+    colors: CuckooDoorColors,
     contentDescription: String?,
     character: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val colors = doorColors()
     val semantics =
         if (contentDescription !=
             null
@@ -164,32 +168,59 @@ private fun DrawScope.scale(
     block: DrawScope.() -> Unit,
 ) = withTransform({ scale(factor, factor, pivot = Offset.Zero) }, block)
 
+/**
+ * The door's colors. [opening] is the hole behind the door (and the knob and the door's rim); [waves] are the sound
+ * arcs, drawn outside the house, on whatever is behind it.
+ */
 @Immutable
-private data class DoorColors(
+data class CuckooDoorColors(
     val house: Color,
     val door: Color,
     val opening: Color,
-    val knob: Color,
     val waves: Color,
 )
 
-@Composable
-private fun doorColors(): DoorColors {
-    val scheme = MaterialTheme.colorScheme
-    val opening = lerp(scheme.primaryContainer, Color.Black, OPENING_DARKEN)
-    return DoorColors(
-        house = scheme.primaryContainer,
-        door = scheme.primary,
-        opening = opening,
-        knob = opening,
-        waves = scheme.primary,
-    )
+object CuckooDoorDefaults {
+    /** For surfaces and surface containers: the logo's look, a `primaryContainer` house with a `primary` door. */
+    @Composable
+    fun colors(): CuckooDoorColors {
+        val scheme = MaterialTheme.colorScheme
+        return CuckooDoorColors(
+            house = scheme.primaryContainer,
+            door = scheme.primary,
+            opening = lerp(scheme.primaryContainer, Color.Black, OPENING_DARKEN),
+            waves = scheme.primary,
+        )
+    }
+
+    /** For a door on a filled `primaryContainer` card (the status card): see [onContainerColors]. */
+    @Composable
+    fun onContainerColors(): CuckooDoorColors =
+        onContainerColors(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
+
+    /**
+     * For a door on a filled [container] whose content color is [content] (#178). The house takes [content], the
+     * role Material guarantees to contrast with [container] in light, dark, high-contrast and dynamic schemes alike;
+     * the opening is cut out of the house, showing the card through it, like the brand's mono mark; the door sits
+     * between the two, as the apricot door of the brand's "on color" mark sits between its cream house and the
+     * tangerine behind it.
+     */
+    fun onContainerColors(
+        container: Color,
+        content: Color,
+    ): CuckooDoorColors =
+        CuckooDoorColors(
+            house = content,
+            door = lerp(content, container, ON_CONTAINER_DOOR_BLEND),
+            opening = container,
+            waves = content,
+        )
 }
 
 private fun DrawScope.drawBackDoor(
     timeline: DoorTimeline,
     t: Float,
-    colors: DoorColors,
+    colors: CuckooDoorColors,
 ) {
     val alpha = timeline.backDoorAlpha(t)
     if (alpha <= 0f) return
@@ -204,7 +235,7 @@ private fun DrawScope.drawBackDoor(
 private fun DrawScope.drawFrontDoor(
     timeline: DoorTimeline,
     t: Float,
-    colors: DoorColors,
+    colors: CuckooDoorColors,
 ) {
     val alpha = timeline.frontDoorAlpha(t)
     if (alpha <= 0f) return
@@ -219,7 +250,7 @@ private fun DrawScope.drawFrontDoor(
             alpha = alpha * RIM_ALPHA,
             style = Stroke(width = RIM_WIDTH),
         )
-        drawCircle(colors.knob, KNOB_R, Offset(OPENING_X + KNOB_DX, OPENING_Y), alpha = alpha)
+        drawCircle(colors.opening, KNOB_R, Offset(OPENING_X + KNOB_DX, OPENING_Y), alpha = alpha)
     }
 }
 
@@ -247,7 +278,7 @@ private fun DrawScope.drawBird(
 private fun DrawScope.drawWaves(
     timeline: DoorTimeline,
     t: Float,
-    colors: DoorColors,
+    colors: CuckooDoorColors,
 ) {
     val (alpha, travel) = timeline.waves(t)
     if (alpha <= MIN_ALPHA) return
@@ -425,6 +456,7 @@ private const val OPENING_X = 23.5f
 private const val OPENING_Y = 30f
 private const val OPENING_R = 10f
 private const val OPENING_DARKEN = 0.72f
+private const val ON_CONTAINER_DOOR_BLEND = 0.6f
 private const val HINGE_X = 15.5f
 private const val KNOB_DX = 7.1f
 private const val KNOB_R = 1.6f

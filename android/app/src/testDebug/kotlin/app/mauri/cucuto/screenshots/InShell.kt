@@ -16,11 +16,12 @@ import app.mauri.cucuto.navigation.TopLevelTab
 
 /**
  * Shows [content] as the root of [tab] inside the app shell (ADR 0027): the adaptive navigation bar with Home, Packs,
- * Discover and Settings, [tab] selected, as the screen looks in the app.
+ * Discover and Settings, [tab] selected, as the screen looks in the app. [settingsBadge]: setup needs attention.
  */
 @Composable
 internal fun InShell(
     tab: TopLevelTab,
+    settingsBadge: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val current by rememberUpdatedState(content)
@@ -40,5 +41,5 @@ internal fun InShell(
                 entry<CucutoDestination.Settings>(metadata = TabRootMetadata) { current() }
             }
         }
-    CucutoShellLayout(navigator = navigator, entryProvider = entries)
+    CucutoShellLayout(navigator = navigator, entryProvider = entries, settingsBadge = settingsBadge)
 }
