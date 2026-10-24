@@ -43,14 +43,16 @@ class DiscoverViewModelTest {
     private val catalog = FakeCatalog()
     private val links = IncomingRepoLinks()
     private val demoRequests = DemoPacksRequests()
-    private val client = testClient()
+    private val dispatchers = DiscoverTestDispatchers()
+    private val http = testHttpClient()
+    private val client = testClient(http, dispatchers.io)
     private lateinit var indexCache: FileIndexCache
 
     private val defaultPath = "/repo/index.json"
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(dispatchers.main)
         server = repositoryServer()
         server.dispatcher = routes
         store = FakeDiscoverStore(server.at(defaultPath).toString())
@@ -60,6 +62,7 @@ class DiscoverViewModelTest {
     @After
     fun tearDown() {
         server.close()
+        http.shutDown()
         Dispatchers.resetMain()
     }
 
@@ -69,12 +72,12 @@ class DiscoverViewModelTest {
                 store = store,
                 client = client,
                 indexCache = indexCache,
-                previews = PreviewStore(client, tmp.newFolder()),
+                previews = PreviewStore(client, tmp.newFolder(), dispatchers.io),
                 downloader = PackDownloader(client, catalog, tmp.newFolder()),
                 catalog = catalog,
                 links = links,
                 demoRequests = demoRequests,
-            )
+            ).also { it.ioDispatcher = dispatchers.io }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         return vm
     }

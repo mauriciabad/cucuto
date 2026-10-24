@@ -3,12 +3,15 @@ package app.mauri.cucuto.core.repo
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 import okio.Buffer
+import org.junit.rules.ExternalResource
 import java.io.File
 import java.net.InetAddress
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** spec/ at the repository root (set by the Gradle test task). */
 val specDir: File = File(System.getProperty("cucuto.specDir") ?: error("cucuto.specDir is not set"))
@@ -59,16 +62,31 @@ fun MockWebServer.at(
     host: String = "localhost",
 ): HttpUrl = url(path).newBuilder().host(host).build()
 
-fun testClient(limits: RepoLimits = RepoLimits()): RepositoryClient =
-    RepositoryClient(
-        httpClient =
+/**
+ * The repository clients of one test, trusting [TestTls] (a JUnit rule). Each has its own OkHttp client, whose threads
+ * and connections are closed after the test (#261): otherwise every test leaves some behind for the rest of the run.
+ */
+class TestClients : ExternalResource() {
+    private val made = CopyOnWriteArrayList<OkHttpClient>()
+
+    fun client(limits: RepoLimits = RepoLimits()): RepositoryClient {
+        val http =
             RepositoryClient
                 .defaultHttpClient()
                 .newBuilder()
                 .sslSocketFactory(TestTls.client.sslSocketFactory(), TestTls.client.trustManager)
-                .build(),
-        limits = limits,
-    )
+                .build()
+        made += http
+        return RepositoryClient(httpClient = http, limits = limits)
+    }
+
+    override fun after() {
+        made.forEach {
+            it.dispatcher.executorService.shutdownNow()
+            it.connectionPool.evictAll()
+        }
+    }
+}
 
 fun ok(body: String): MockResponse =
     MockResponse
