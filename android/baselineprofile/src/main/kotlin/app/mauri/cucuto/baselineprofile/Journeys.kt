@@ -145,20 +145,33 @@ private fun MacrobenchmarkScope.openFirstChatDetail(): Boolean {
 private fun MacrobenchmarkScope.openTab(label: String) {
     val tab = device.wait(Until.findObject(By.text(appString(label))), TIMEOUT_MS) ?: return
     click(tab)
+    // A query left in Home's search bar would hide the chats from the next step.
+    if (label == "tab_home") device.findObject(By.desc(appString("home_search_clear")))?.let(::click)
 }
 
-/** Taps the search field whose placeholder is the string [hint] and types [text]. */
+/**
+ * Types [text] into the search field whose placeholder is the string [hint], then closes the keyboard. The text goes
+ * straight to that field, never to whatever else has the focus (Home's own search bar, say).
+ */
 private fun MacrobenchmarkScope.search(
     hint: String,
     text: String,
 ) {
     val field = findInMainList(By.text(appString(hint)), Direction.UP) ?: return
-    click(field)
-    device.findObject(By.focused(true))?.text = text
+    try {
+        field.click()
+        device.waitForIdle()
+        field.text = text
+    } catch (_: StaleObjectException) {
+        device.findObject(By.clazz(EDIT_TEXT).focused(true))?.text = text
+    }
     device.waitForIdle()
-    // The keyboard's search action: the pickers drop the focus, so the keyboard closes.
-    device.pressEnter()
-    device.waitForIdle()
+    hideKeyboard()
+}
+
+/** Closes the on-screen keyboard if it is shown: it covers the navigation bar, and it takes a back press. */
+private fun MacrobenchmarkScope.hideKeyboard() {
+    if (shell("dumpsys input_method").contains("mInputShown=true")) back()
 }
 
 /** Scrolls the main list until [selector] shows, then taps it. False when it never shows. */
@@ -197,13 +210,18 @@ private fun MacrobenchmarkScope.click(target: UiObject2) {
     device.waitForIdle()
 }
 
-/** Goes back until Home's search bar shows (a keyboard or a dialog can take a press), never past Home. */
+/**
+ * Goes back to Home: the keyboard closed first, then back until no back arrow shows (a tab root), never past it, as
+ * a back press there would leave the app.
+ */
 private fun MacrobenchmarkScope.backToHome() {
-    val home = By.text(appString("home_search_hint"))
-    repeat(BACK_ATTEMPTS) {
-        if (device.hasObject(home)) return
+    hideKeyboard()
+    val arrow = By.desc(appString("navigate_back"))
+    for (attempt in 1..BACK_ATTEMPTS) {
+        if (!device.hasObject(arrow)) break
         back()
     }
+    openTab("tab_home")
 }
 
 private fun MacrobenchmarkScope.back() {
@@ -285,3 +303,5 @@ private const val SCROLL_PERCENT = 0.8f
 private const val SHORT_TIMEOUT_MS = 1_000L
 
 private const val BACK_ATTEMPTS = 4
+
+private const val EDIT_TEXT = "android.widget.EditText"
