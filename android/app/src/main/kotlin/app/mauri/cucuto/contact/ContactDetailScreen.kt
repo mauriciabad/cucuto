@@ -32,6 +32,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -90,7 +91,10 @@ import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.haptics.HapticOverrideSection
 import app.mauri.cucuto.ui.motion.SharedElement
+import app.mauri.cucuto.ui.ringtone.PhoneCallsRow
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSection
+import app.mauri.cucuto.ui.ringtone.SoundRow
+import app.mauri.cucuto.ui.ringtone.SoundRowIcon
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import app.mauri.cucuto.ui.theme.rememberSeedColor
@@ -98,8 +102,9 @@ import app.mauri.cucuto.xposed.events.Outcome
 import java.io.File
 
 /**
- * Contact detail (brief, screen 4) for [chat]: its character (change or remove it), "Simulate message", the clip
- * pool with per-contact toggles, the vibration and group policy, and the chat's recent alerts from the decision log.
+ * Contact detail (brief, screen 4) for [chat]: two rows, "Messages" and "Phone calls", each one tap from its picker
+ * (independent choices, ADR 0063), "Simulate message", the clip pool with per-contact toggles, the vibration, the
+ * phone ringtone set-up and group policy, and the chat's recent alerts from the decision log.
  */
 @Composable
 fun ContactDetailScreen(
@@ -129,6 +134,7 @@ fun ContactDetailScreen(
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
         hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
+        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone) },
         phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone, Modifier.padding(top = 16.dp)) },
         onUnassign = viewModel::unassign,
         onSimulate = {
@@ -161,6 +167,7 @@ fun ContactDetailContent(
     onConsumeFailure: () -> Unit,
     modifier: Modifier = Modifier,
     hapticOverride: (@Composable () -> Unit)? = null,
+    phoneCalls: (@Composable () -> Unit)? = null,
     phoneRingtone: (@Composable () -> Unit)? = null,
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -232,14 +239,16 @@ fun ContactDetailContent(
                     ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                item(key = "header") {
-                    Header(
+                item(key = "header") { Header(state = state, onBitmap = { bitmap = it }) }
+                item(key = "sounds") {
+                    SoundsCard(
                         state = state,
                         onChangeCharacter = {
                             feedback.fire(Feedback.Tap)
                             onChangeCharacter()
                         },
-                        onBitmap = { bitmap = it },
+                        // Phone calls come from people: groups have no phone ringtone (#52).
+                        phoneCalls = phoneCalls.takeIf { state.chat?.isGroup != true && !state.isGroup },
                     )
                 }
                 item(key = "simulate") { SimulateCard(state, onSimulate) }
@@ -308,7 +317,6 @@ private fun ContactDetailState.kindLabel(): Int {
 @Composable
 private fun Header(
     state: ContactDetailState,
-    onChangeCharacter: () -> Unit,
     onBitmap: (Bitmap) -> Unit,
 ) {
     Column(
@@ -361,8 +369,78 @@ private fun Header(
                 }
             }
         }
-        FilledTonalButton(onClick = onChangeCharacter) {
-            Text(stringResource(if (state.character != null) R.string.contact_change else R.string.contact_choose))
+    }
+}
+
+/**
+ * The chat's two sounds as rows (ADR 0063): "Messages" (the character whose clips play; opens the character picker)
+ * and, for 1:1 chats, "Phone calls" ([phoneCalls], the ringtone; opens the ringtone picker). They are chosen apart.
+ */
+@Composable
+private fun SoundsCard(
+    state: ContactDetailState,
+    onChangeCharacter: () -> Unit,
+    phoneCalls: (@Composable () -> Unit)?,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(vertical = 8.dp, horizontal = 4.dp)) {
+            Text(
+                stringResource(R.string.contact_sounds_header),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp).semantics { heading() },
+            )
+            val character = state.character
+            SoundRow(
+                label = stringResource(R.string.contact_row_messages),
+                value =
+                    when {
+                        character != null && state.packName != null -> {
+                            stringResource(R.string.contact_row_messages_value, character.name, state.packName)
+                        }
+
+                        character != null -> {
+                            character.name
+                        }
+
+                        state.voiceMissing -> {
+                            stringResource(R.string.contact_row_messages_missing)
+                        }
+
+                        else -> {
+                            stringResource(R.string.contact_row_messages_none)
+                        }
+                    },
+                clickLabel =
+                    stringResource(
+                        if (character !=
+                            null
+                        ) {
+                            R.string.contact_change
+                        } else {
+                            R.string.contact_choose
+                        },
+                    ),
+                onClick = onChangeCharacter,
+                leading = {
+                    if (character != null) {
+                        VoiceAvatar(
+                            character = character,
+                            name = character.name,
+                            contentDescription = null,
+                            size = 48.dp,
+                        )
+                    } else {
+                        SoundRowIcon(Icons.Rounded.Notifications)
+                    }
+                },
+            )
+            if (phoneCalls != null) {
+                HorizontalDivider(Modifier.padding(horizontal = 12.dp))
+                phoneCalls()
+            }
         }
     }
 }

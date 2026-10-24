@@ -7,7 +7,13 @@ import app.mauri.cucuto.contact.DecisionRow
 import app.mauri.cucuto.contact.SimulatePath
 import app.mauri.cucuto.contact.clipRows
 import app.mauri.cucuto.core.data.db.DecisionOutcome
+import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.ui.ringtone.PhoneCallsRowContent
+import app.mauri.cucuto.ui.ringtone.PhoneRingtoneUiState
+import app.mauri.cucuto.ui.ringtone.RingSound
+import app.mauri.cucuto.ui.ringtone.VariantChip
 import org.junit.Test
+import java.io.File
 
 /** Contact detail: Iris speaks as Bleep the frog, with its clips and the latest notifications it voiced. */
 class ContactDetailScreenshotTest(
@@ -50,6 +56,27 @@ class ContactDetailScreenshotTest(
                 onToggleClip = { _, _ -> },
                 onGroupPolicyChange = {},
                 onConsumeFailure = {},
+                // Messages and Phone calls are independent (ADR 0063): the frog's song rings, day and night.
+                phoneCalls = {
+                    PhoneCallsRowContent(
+                        state =
+                            PhoneRingtoneUiState(
+                                loading = false,
+                                enabled = true,
+                                contactId = chat.contactId,
+                                characterName = frog.name,
+                                hasCharacter = true,
+                                variants = listOf(VariantChip("day.ogg", "Day"), VariantChip("night.ogg", "Night")),
+                                using = true,
+                                mode = RingtoneMode.TIME,
+                                modes = listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.TIME, RingtoneMode.FIXED),
+                                ringingCharacter = frog,
+                                previewSound = RingSound(File("/demo/frog/ringtones/day.ogg")),
+                            ),
+                        onChoose = {},
+                        onTogglePreview = {},
+                    )
+                },
             )
         }
 

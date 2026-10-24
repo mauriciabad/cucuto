@@ -11,6 +11,7 @@ import app.mauri.cucuto.core.repo.RepoError
 import app.mauri.cucuto.packspec.BundleManifest
 import app.mauri.cucuto.packspec.Issue
 import app.mauri.cucuto.packspec.ValidationReport
+import app.mauri.cucuto.ui.ringtone.RingSound
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
@@ -81,7 +82,15 @@ data class LibraryCharacter(
     val seedColor: Int?,
     val clips: List<File>,
     val ringtoneCount: Int,
-)
+    /** Its ringtones, `pack.json` order (empty when unknown); previews ring the first like a call (#246, #242). */
+    val ringtones: List<RingSound> = emptyList(),
+) {
+    /** It can speak for messages (ADR 0063). */
+    val forMessages: Boolean get() = clips.isNotEmpty()
+
+    /** It can ring for calls (ADR 0063). */
+    val forCalls: Boolean get() = ringtoneCount > 0
+}
 
 /** A contact that uses a character of a pack. */
 data class AssignedContact(

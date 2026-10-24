@@ -74,6 +74,7 @@ import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.PushedScreen
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.ringtone.RingtonePlayback
 import app.mauri.cucuto.ui.theme.LocalReducedMotion
 import kotlinx.coroutines.delay
 
@@ -267,6 +268,7 @@ private fun ReviewContent(
 ) {
     val review = state.review
     val player = rememberClipPlayer()
+    val ringtones = rememberRingtonePlayback()
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
@@ -303,6 +305,7 @@ private fun ReviewContent(
                 selected = state.selection.isSelected(pack.id),
                 enabled = !state.installing,
                 player = player,
+                ringtones = ringtones,
                 onSelectedChange = { onSelect(pack.id, it) },
             )
         }
@@ -339,6 +342,7 @@ private fun ReviewPackCard(
     selected: Boolean,
     enabled: Boolean,
     player: ClipPlayer,
+    ringtones: RingtonePlayback<String>,
     onSelectedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -378,7 +382,7 @@ private fun ReviewPackCard(
                     )
                 }
             }
-            RevealedCharacters(pack, player)
+            RevealedCharacters(pack, player, ringtones)
             if (pack.orphanedContacts > 0) {
                 Text(
                     pluralStringResource(R.plurals.import_orphaned, pack.orphanedContacts, pack.orphanedContacts),
@@ -396,6 +400,7 @@ private fun ReviewPackCard(
 private fun RevealedCharacters(
     pack: ReviewPack,
     player: ClipPlayer,
+    ringtones: RingtonePlayback<String>,
     modifier: Modifier = Modifier,
 ) {
     val reduced = LocalReducedMotion.current
@@ -417,7 +422,12 @@ private fun RevealedCharacters(
                 visible = index < revealed,
                 enter = scaleIn(motion.fastSpatialSpec()) + fadeIn(motion.fastEffectsSpec()),
             ) {
-                CharacterBadge(character, playerKey = "review/${pack.id}/${character.id}", player = player)
+                CharacterBadge(
+                    character,
+                    playerKey = "review/${pack.id}/${character.id}",
+                    player = player,
+                    ringtones = ringtones,
+                )
             }
         }
     }

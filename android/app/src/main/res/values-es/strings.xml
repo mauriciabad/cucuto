@@ -201,8 +201,8 @@
     <string name="picker_assign_label">Asignar</string>
     <string name="picker_remove">Quitar voz</string>
     <string name="picker_failed">No se ha podido guardar la voz. Inténtalo de nuevo.</string>
-    <string name="picker_empty_title">Aún no hay personajes</string>
-    <string name="picker_empty_body">Importa un pack de sonidos para llenar esta cuadrícula.</string>
+    <string name="picker_empty_title">Aún no hay voces para mensajes</string>
+    <string name="picker_empty_body">Ninguno de tus packs tiene clips de mensajes. Importa un pack en Packs o descarga uno en Descubrir.</string>
     <string name="picker_loading">Cargando personajes</string>
 
     <!-- Design gallery (debug builds) -->

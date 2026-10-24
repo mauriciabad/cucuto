@@ -1,8 +1,9 @@
-# 0063. Message voice and ringtone are independent choices; ringtone previews from the start
+# 0063. Message voice and ringtone are independent choices; ringtone previews ring like the call
 
-- Status: accepted (owner update 2026-10-24, #245 and #246; the defaults below can be overridden on those issues)
+- Status: accepted (owner updates 2026-10-24, #245, #246 and #242; the defaults below can be overridden on those
+  issues)
 - Date: 2026-10-24
-- Issues: #245 (independent choices, capability filters), #246 (ringtone previews)
+- Issues: #245 (independent choices, capability filters), #246 (ringtone previews), #242 (preview length, pause)
 - Amends: [ADR 0017](0017-home-recent-senders-and-picker.md) (picker), [ADR 0039](0039-phone-ringtones-on-the-device.md)
   (data), [ADR 0057](0057-ringtone-picker-and-ringtone-backups.md) (mixing, previews, backups)
 
@@ -20,6 +21,9 @@ there should be a filter based on this so i see the apropiate ones."
 
 And (#246): "on the kk pack, the sounds should be ringtones, not notifications. and when playing they should play
 longer and from the beginig."
+
+And on #242 (item 3), about ADR 0057's 30 s preview: "preview should use the same logic as the actuall ringtone when
+they call, so the stopping should be the same as that (wich i doubt is cut at 30s). we may need a way to pause."
 
 Most packs offer only one of the two: creature packs have clips, song packs (the private K.K. Slider pack, rebuilt as
 ringtone-only) have ringtones. The pack format already allows both kinds of character
@@ -71,11 +75,19 @@ to `clips`).
   pack, each with its number of eligible characters ("K.K. Slider · 98"). Packs with none are not offered.
 - **Empty states** (no eligible character at all) explain what is missing and link to **Packs** and **Discover**.
 
-### Ringtone previews (#246)
+### Ringtone previews (#246; owner update 2026-10-24, #242)
 
-Ringtone previews play the pack's file **from 0 ms** (never from a loop point, and never an auto-cut clip), for
-**30 s** or the whole file when it is shorter, with a play/stop button and a progress bar. They use ringtone audio
-attributes, as in ADR 0057, and stop when the screen stops. This applies everywhere a ringtone plays:
+A ringtone preview **rings the way the call rings** and keeps ringing until the user stops it. It starts **at 0 ms**
+(never at a loop point, and never an auto-cut clip) and follows the same ring file layout every renderer uses
+(`RingFilePlan`, [pack format](../pack-format.md#ring-files)): the intro once, the loop section over and over, the
+silence after a `loop: false` ringtone, and the fade-in at the start of each ring file, round and round as Telecom
+loops the file. There is no 30 s cut. `RingTimeline` turns the plan into what plays when, and `MediaRingtonePreview`
+follows it with one `MediaPlayer` (seeking back at each loop end). The version is the one the rule picks now, as in
+ADR 0057.
+
+The controls are **play, pause and stop**, with a ring around the button that goes round once per ring file. Pause
+keeps the place; play resumes it. Previews use ringtone audio attributes, as in ADR 0057, and stop when the screen
+stops. This applies everywhere a ringtone plays:
 
 - the ringtone picker (each version, and a tap on a cover);
 - the Phone calls row on contact detail (the version that rings now);
@@ -86,8 +98,9 @@ Notification clip previews stay short and unchanged (ADR 0017).
 ### Packs: what each character offers
 
 A pack's detail screen lists each character with what it offers: **Messages**, **Ringtone**, or both. A tap on the
-picture plays a clip; a ringtone has its own play/stop button with progress. A ringtone-only character's picture plays
-its ringtone.
+picture plays a clip; a ringtone has its own play, pause and stop buttons with progress. A ringtone-only character's
+picture rings its ringtone. The character badges on the Packs list and the import review say what each character
+offers too, and a ringtone-only character's badge rings its song until tapped again.
 
 ### Backups
 
@@ -103,11 +116,12 @@ which rings nothing until the voice has ringtones.
   #246). ADR 0017, 0039 and 0057 point here.
 - One migration (3 to 4) and a `MigrationTest` case. No new permission and no module change: routing reads only the
   voice, Telecom only the contact's ringtone.
-- `RingtonePreview.play` takes the start position (always 0 for ringtones) and the playing state carries the preview
-  length for the progress bar.
+- `RingtonePreview` rings a `RingSound` (file, loop, fade-in) and can pause, resume and stop; `RingtonePlayback` keeps
+  the state the buttons and the progress ring read.
+- The preview's loop seam is a `MediaPlayer` seek, so it can be a few milliseconds less seamless than the rendered
+  ring file the phone rings with. Telecom plays the real file (ADR 0033, ADR 0039).
 - Tests: the filters (`PickerFiltersTest`), the follow and override rules (`PhoneRingtoneFollowTest` on Room), the
-  picker's selection rules, preview start positions and lengths (`RingtonePreviewWindowTest`), backup export and
-  restore of kept ringtones, and the migration. Goldens: contact detail, picker, ringtone picker and Packs, light,
-  dark and large font.
-- Defaults the owner may change (#245, #246): chips appear from two eligible packs; removing a voice keeps the
-  ringtone; previews last 30 s.
+  picker's selection rules, the ring timeline from 0 ms with the pack format's examples (`RingTimelineTest`), ringing
+  until stopped with pause and progress (`RingtonePlaybackTest`), backup export and restore of kept ringtones, and the
+  migration. Goldens: contact detail, picker, ringtone picker and Packs, light, dark and large font.
+- Defaults the owner may change (#245): chips appear from two eligible packs; removing a voice keeps the ringtone.

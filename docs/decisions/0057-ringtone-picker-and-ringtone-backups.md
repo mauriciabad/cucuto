@@ -53,8 +53,10 @@ links to Packs and Discover.
 **Previews** (`RingtonePreview`) use `MediaPlayer` with ringtone audio attributes, like Android's ringtone picker, so
 they follow the ring volume and the ringer mode. They play the pack's file as it is, stop after 30 s at most (a song
 can last 6 minutes), and stop when the screen stops. The "now" version uses 07:00 to 19:00 for day; the sync uses the
-chosen place (ADR 0037). Amended by ADR 0063 (#246): every ringtone preview starts at 0 ms, plays 30 s or the whole
-file, and shows play/stop with progress, also on contact detail and on a pack's detail screen.
+chosen place (ADR 0037). Amended by ADR 0063 (#246; owner update 2026-10-24, #242: "preview should use the same
+logic as the actuall ringtone when they call"): every ringtone preview rings like the call, from 0 ms through the ring
+file layout, until the user stops it (no 30 s cut), with play, pause and stop and progress, also on contact detail and
+on the Packs screens.
 
 **Mixing.** Picking the voice's character stores no character of its own (`packId` null), so the ringtone keeps
 following the voice when the voice changes. That is the brief's "assigning a character assigns both". Any other
@@ -142,5 +144,5 @@ The feature switch itself is not in backups: turning it on needs the permission 
   - the undo record travels in backups;
   - picking the voice's character means "follow the voice";
   - a ringtone set on the new phone is kept unless the contact's voice conflict is overwritten;
-  - previews stop after 30 s;
+  - previews stop after 30 s (overridden by the owner, #242: they ring like the call until stopped, ADR 0063);
   - an unmatched contact is unlinked rather than left with a stale link.

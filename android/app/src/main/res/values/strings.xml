@@ -193,8 +193,8 @@
     <string name="picker_assign_label">Assign</string>
     <string name="picker_remove">Remove voice</string>
     <string name="picker_failed">Couldn\'t save the voice. Try again.</string>
-    <string name="picker_empty_title">No characters yet</string>
-    <string name="picker_empty_body">Import a sound pack to fill this grid.</string>
+    <string name="picker_empty_title">No message voices yet</string>
+    <string name="picker_empty_body">None of your packs has message clips. Import a pack in Packs, or download one in Discover.</string>
     <string name="picker_loading">Loading characters</string>
 
     <!-- Contact detail (#26) -->

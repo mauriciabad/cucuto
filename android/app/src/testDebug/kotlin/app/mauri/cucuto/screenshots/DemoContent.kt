@@ -9,6 +9,7 @@ import app.mauri.cucuto.core.data.voices.VoicePack
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.packs.AssignedContact
 import app.mauri.cucuto.packs.LibraryCharacter
+import app.mauri.cucuto.ui.ringtone.RingSound
 import app.mauri.cucuto.packs.LibraryPack
 import java.io.File
 import java.util.Locale
@@ -164,13 +165,22 @@ data class DemoPack(
                         clips = clips(c.id),
                         haptic = Haptic.Keep,
                         clipPaths = clips(c.id).map { "${c.id}/clips/${it.name}" },
+                        ringtoneCount = c.ringtones,
                     )
                 },
         )
 
     fun libraryCharacters(): List<LibraryCharacter> =
         characters.map { c ->
-            LibraryCharacter(c.id, c.name, sprite(c.id), c.seedColor.toInt(), clips(c.id), c.ringtones)
+            LibraryCharacter(
+                c.id,
+                c.name,
+                sprite(c.id),
+                c.seedColor.toInt(),
+                clips(c.id),
+                c.ringtones,
+                ringtones = List(c.ringtones) { RingSound(File("/demo/${c.id}/ringtones/$it.ogg")) },
+            )
         }
 
     fun libraryPack(contacts: List<AssignedContact> = DemoContent.contactsOf(this)): LibraryPack =

@@ -6,12 +6,15 @@ import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
+import app.mauri.cucuto.packspec.LoopRange
 import app.mauri.cucuto.packspec.When
 import app.mauri.cucuto.testing.TestData.ADA
+import app.mauri.cucuto.testing.TestData.CLUB
 import app.mauri.cucuto.testing.TestData.chat
 import app.mauri.cucuto.testing.TestData.frog
 import app.mauri.cucuto.testing.TestData.kettle
 import app.mauri.cucuto.testing.TestData.owl
+import app.mauri.cucuto.ui.components.PackChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -127,9 +130,11 @@ class RingtonePickerViewModelTest {
             assertEquals(listOf("frog/day.ogg"), preview.plays)
             assertEquals(PlayingVariant(frog.voice, "frog/day.ogg"), vm.state.value.playing)
 
-            // The record stops by itself when the file ends.
-            advanceTimeBy(preview.duration + 1)
+            // It rings like the call: still going long after the song's length, until stopped (#242).
+            advanceTimeBy(10 * 60_000)
             runCurrent()
+            assertEquals(PlayingVariant(frog.voice, "frog/day.ogg"), vm.state.value.playing)
+            vm.stopPreview()
             assertNull(vm.state.value.playing)
             assertTrue(preview.stops > 0)
         }
@@ -146,28 +151,67 @@ class RingtonePickerViewModelTest {
         }
 
     @Test
-    fun eachVersionPlaysOnItsOwnAndStopsWhenTappedAgain() =
+    fun eachVersionRingsOnItsOwnPausesAndResumesAndStops() =
         runTest(dispatcher) {
             val vm = viewModel()
             collect(vm)
             vm.togglePreview(frogItem, "frog/night.ogg")
             assertEquals(PlayingVariant(frog.voice, "frog/night.ogg"), vm.state.value.playing)
             vm.togglePreview(frogItem, "frog/night.ogg")
-            assertNull(vm.state.value.playing)
+            assertTrue(
+                vm.state.value.preview!!
+                    .paused,
+            )
+            assertEquals(1, preview.pauses)
+            vm.togglePreview(frogItem, "frog/night.ogg")
+            assertFalse(
+                vm.state.value.preview!!
+                    .paused,
+            )
+            assertEquals(1, preview.resumes)
             vm.togglePreview(kettleItem, "kettle/live.ogg")
             assertEquals(listOf("frog/night.ogg", "kettle/live.ogg"), preview.plays)
+            vm.stopPreview()
+            assertNull(vm.state.value.playing)
         }
 
     @Test
-    fun previewsLongerThanThirtySecondsStopThere() =
+    fun theProgressGoesRoundOneRingCycle() =
         runTest(dispatcher) {
-            preview.duration = 360_000
+            preview.cycle = 92_000
             val vm = viewModel()
             collect(vm)
             vm.togglePreview(kettleItem, "kettle/reel.ogg")
-            advanceTimeBy(RingtonePickerViewModel.MAX_PREVIEW_MS + 1)
-            runCurrent()
-            assertNull(vm.state.value.playing)
+            assertEquals(
+                92_000L,
+                vm.state.value.preview!!
+                    .cycleMs,
+            )
+        }
+
+    @Test
+    fun previewsRingWithTheVersionsLoopAndFadeIn() =
+        runTest(dispatcher) {
+            val looped =
+                RingtoneCharacterItem(
+                    kettle,
+                    listOf(
+                        RingtoneVariantItem(
+                            RingtoneVariant(
+                                file = "kettle/loop.ogg",
+                                label = "Loop",
+                                loop = LoopRange(4_000L, 12_000L),
+                            ),
+                            File("/packs/kettle/loop.ogg"),
+                        ),
+                    ),
+                )
+            source.packs.value = listOf(RingtonePackItem(kettle.packId, "Kitchen orchestra", listOf(looped)))
+            val vm = viewModel()
+            collect(vm)
+            vm.select(looped)
+            // The preview gets the loop section and fade-in, so it rings the intro once and then the loop (#242).
+            assertEquals(LoopRange(4_000L, 12_000L), preview.sounds.single().loop)
         }
 
     @Test
@@ -182,7 +226,10 @@ class RingtonePickerViewModelTest {
             vm.setVariant("kettle/radio.ogg")
 
             assertTrue(vm.save())
-            assertEquals(listOf(Saved(1, kettle.voice, RingtoneMode.FIXED, "kettle/radio.ogg")), source.saved)
+            assertEquals(
+                listOf(Saved(1, kettle.voice, followsVoice = false, RingtoneMode.FIXED, "kettle/radio.ogg")),
+                source.saved,
+            )
             assertTrue(preview.stops > 0)
             assertEquals(
                 kettle.voice,
@@ -202,9 +249,55 @@ class RingtonePickerViewModelTest {
             assertEquals(RingtoneSelection(kettle.voice, followsVoice = false), vm.state.value.saved)
 
             vm.select(frogItem)
+            assertTrue(
+                vm.state.value.selection!!
+                    .followsVoice,
+            )
             vm.setMode(RingtoneMode.TIME)
             vm.save()
-            assertEquals(Saved(1, null, RingtoneMode.TIME, null), source.saved.single())
+            assertEquals(Saved(1, null, followsVoice = true, RingtoneMode.TIME, null), source.saved.single())
+        }
+
+    @Test
+    fun aRingtoneKeptWhileTheVoiceHasNoneStillFollowsUntilTheUserPicksAnother() =
+        runTest(dispatcher) {
+            // The voice (a bird without ringtones) is not in the ringtone grid; the kettle stayed from before.
+            source.chat.value = chat(ADA, "Ada", voice = ChatVoice(frog.packId, "tweet"))
+            source.saved(PhoneRingtoneEntity(1, kettle.packId, kettle.id, updatedAt = 1, followsVoice = true))
+            val vm = viewModel()
+            collect(vm)
+            assertEquals(RingtoneSelection(kettle.voice, followsVoice = true), vm.state.value.saved)
+
+            // Tapping the kept cover keeps it as it is: nothing to save.
+            vm.select(kettleItem)
+            assertTrue(
+                vm.state.value.selection!!
+                    .followsVoice,
+            )
+            assertFalse(vm.state.value.canSave)
+
+            // Another character is the user's own pick, which voice changes leave alone.
+            vm.select(owlItem)
+            vm.save()
+            assertEquals(Saved(1, owl.voice, followsVoice = false, RingtoneMode.PACK, null), source.saved.single())
+        }
+
+    @Test
+    fun aRingtoneThePersonPickedIsNotTheVoices() =
+        runTest(dispatcher) {
+            source.saved(PhoneRingtoneEntity(1, kettle.packId, kettle.id, RingtoneMode.PACK, updatedAt = 1))
+            val vm = viewModel()
+            collect(vm)
+            assertFalse(
+                vm.state.value.saved!!
+                    .followsVoice,
+            )
+            vm.select(kettleItem)
+            assertFalse(
+                vm.state.value.selection!!
+                    .followsVoice,
+            )
+            assertFalse(vm.state.value.canSave)
         }
 
     @Test
@@ -271,7 +364,7 @@ class RingtonePickerViewModelTest {
             vm.select(owlItem)
             assertEquals(emptyList<RingtoneMode>(), vm.state.value.modes)
             vm.save()
-            assertEquals(Saved(1, owl.voice, RingtoneMode.PACK, null), source.saved.single())
+            assertEquals(Saved(1, owl.voice, followsVoice = false, RingtoneMode.PACK, null), source.saved.single())
         }
 
     @Test
@@ -316,16 +409,57 @@ class RingtonePickerViewModelTest {
         }
 
     @Test
-    fun aChatWithoutContactCannotSave() =
+    fun aChatWithoutVoiceOrContactCanStillGetARingtone() =
         runTest(dispatcher) {
             source.chat.value = chat(ADA, "Ada", voice = null, contactId = null)
             val vm = viewModel()
             collect(vm)
             assertNull(vm.state.value.selection)
             vm.select(kettleItem)
+            assertTrue(vm.state.value.canSave)
+            assertTrue(vm.save())
+            // No contact yet: the source creates it (null here).
+            assertEquals(
+                Saved(null, kettle.voice, followsVoice = false, RingtoneMode.PACK, null),
+                source.saved.single(),
+            )
+        }
+
+    @Test
+    fun aGroupHasNoPhoneRingtone() =
+        runTest(dispatcher) {
+            source.chat.value = chat(CLUB, "Club", voice = frog.voice)
+            val vm = viewModel(CLUB)
+            collect(vm)
+            vm.select(kettleItem)
             assertFalse(vm.state.value.canSave)
             assertFalse(vm.save())
-            assertTrue(source.saved.isEmpty())
+        }
+
+    @Test
+    fun packChipsOfferOnlyPacksWithRingtonesWithTheirCounts() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            collect(vm)
+            assertEquals(
+                listOf(
+                    PackChip(frog.packId, "Chiptune critters", 2),
+                    PackChip(kettle.packId, "Kitchen orchestra", 1),
+                ),
+                vm.state.value.chips,
+            )
+            vm.filterPack(kettle.packId)
+            assertEquals(
+                listOf(kettle.packId),
+                vm.state.value.visiblePacks
+                    .map { it.packId },
+            )
+            vm.filterPack(null)
+            assertEquals(2, vm.state.value.visiblePacks.size)
+
+            // One pack with ringtones needs no filter.
+            source.packs.value = source.packs.value.take(1)
+            assertEquals(emptyList<PackChip>(), vm.state.value.chips)
         }
 
     @Test
@@ -351,8 +485,9 @@ class RingtonePickerViewModelTest {
     }
 
     data class Saved(
-        val contactId: Long,
+        val contactId: Long?,
         val voice: ChatVoice?,
+        val followsVoice: Boolean,
         val mode: RingtoneMode,
         val variant: String?,
     )
@@ -373,15 +508,25 @@ class RingtonePickerViewModelTest {
             combine(this.chat, packs, row) { c, p, r -> RingtonePickerData(c, r, p) }
 
         override suspend fun save(
-            contactId: Long,
-            voice: ChatVoice?,
+            chat: ChatKey,
+            contactId: Long?,
+            character: ChatVoice?,
+            followsVoice: Boolean,
             mode: RingtoneMode,
             variant: String?,
         ) {
             if (fail) error("disk full")
-            saved += Saved(contactId, voice, mode, variant)
+            saved += Saved(contactId, character, followsVoice, mode, variant)
             row.value =
-                PhoneRingtoneEntity(contactId, voice?.packId, voice?.characterId, mode, variant, updatedAt = 2)
+                PhoneRingtoneEntity(
+                    contactId ?: 1,
+                    character?.packId,
+                    character?.characterId,
+                    mode,
+                    variant,
+                    updatedAt = 2,
+                    followsVoice = followsVoice,
+                )
         }
 
         override fun canReadPhoneState() = phoneState
@@ -389,12 +534,24 @@ class RingtonePickerViewModelTest {
 
     private class FakePreview : RingtonePreview {
         val plays = mutableListOf<String>()
+        val sounds = mutableListOf<RingSound>()
         var stops = 0
-        var duration = 8_000L
+        var pauses = 0
+        var resumes = 0
+        var cycle = 90_000L
 
-        override suspend fun play(file: File): Long? {
-            plays += file.path.removePrefix("/packs/")
-            return duration
+        override suspend fun ring(sound: RingSound): Long? {
+            plays += sound.file.path.removePrefix("/packs/")
+            sounds += sound
+            return cycle
+        }
+
+        override fun pause() {
+            pauses++
+        }
+
+        override fun resume() {
+            resumes++
         }
 
         override fun stop() {
