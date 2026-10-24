@@ -1,6 +1,6 @@
 # 0018. Clip mirror: SystemUI plays clips without starting Cucuto
 
-- Status: accepted (owner may override the shared-storage default: #150)
+- Status: accepted; the owner kept the shared-storage default on #150 (hook alternative re-checked in #216)
 - Date: 2026-10-24
 - Issues: #121 (follow-up to #88)
 
@@ -108,3 +108,15 @@ Option 5, entirely in the app. The module needs no new code for pack clips.
   FLAG_ONEWAY` with a stack trace in logcat. `system_server` warns about every two-way Binder call it makes to an
   app. The call runs on the module's own `cucuto-events` thread, so it never blocks a notification. It is log noise
   at most once per 10 s, left for a follow-up.
+
+## Owner answer (2026-10-24, #150)
+
+> For me that's fine.
+>
+> Given my answer in https://github.com/mauriciabad/cucuto/issues/145#issuecomment-6377185080 maybe a hook would also solve the issue. I let you decide what is best; I simply pointed out that there's a new option there.
+
+The mirror stays. The new option from #145 is a WhatsApp scope ([ADR 0051](0051-optional-whatsapp-scope.md)), but
+the delay is not in WhatsApp: SystemUI opens the clip, and the wait was Cucuto's process starting. The hooks that
+could help sit in SystemUI or another provider (options 3 and 4 above), which ADR 0051 does not open up, and the
+mirror already matches the stock tone. #216 records this check and would overturn it only if a hook proves clearly
+better.

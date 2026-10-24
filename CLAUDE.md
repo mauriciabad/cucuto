@@ -35,9 +35,17 @@ notification sound and vibration per contact, using clips from user-imported sou
   over memory; cite the doc in the PR when a decision depends on it.
 - **Never commit copyrighted media.** Only CC0 demo content in `packs/`, brand assets in `brand/`, app resources and
   website assets. CI (the `media-guard` job in `.github/workflows/ci.yml`) enforces an allowlist. No pack (`*.soundpack.zip`) or backup (`cucuto-backup-*.zip`) files outside build output and `spec/fixtures/`.
-- **Never hook the WhatsApp process.** The module is scoped to System Framework only (`system` in
-  `META-INF/xposed/scope.list`, which is `system_server` for modern modules; `android` would be wrong, see ADR 0002). Never throw inside
-  `system_server`; every hook catches everything and degrades to WhatsApp's default tone.
+- **Don't hook the WhatsApp process by default** (owner, #145, amended 2026-10-24; ADR 0051). The module's required
+  scope is System Framework only (`system` in `META-INF/xposed/scope.list`, which is `system_server` for modern
+  modules; `android` would be wrong, see ADR 0002), and Cucuto must work fully with only that scope. The one
+  exception: a feature that cannot work without WhatsApp's process (only automatic WhatsApp call ringtones so far,
+  #215) may use an **optional, opt-in** WhatsApp scope. It stays off until the user turns that feature on; a full
+  screen first explains what is hooked and why, that nothing of messages is read, and links the open-source hook
+  code; the feature works only while the user has enabled that scope in LSPosed. Inside WhatsApp, minimum intrusion
+  still applies: hook as little as possible, substitute values downstream of WhatsApp's own decisions, read nothing
+  of messages. It must stay compatible with WaEnhancer X (verified on the device). Any other feature that wants the
+  WhatsApp scope needs a new ADR and a `question` issue. Never throw inside `system_server` or WhatsApp; every hook
+  catches everything and degrades to WhatsApp's default behaviour (its own tone or ringtone).
 
 ## Repository layout
 
