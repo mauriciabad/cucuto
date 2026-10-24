@@ -28,8 +28,8 @@ android {
         // its own version for F-Droid's update check (fdroid/README.md). Release builds also take both from the tag
         // (`-Pcucuto.version`, release.yml and the F-Droid recipe):
         // versionCode = MAJOR * 1_000_000 + MINOR * 1_000 + PATCH (ADR 0021, docs/releasing.md).
-        versionCode = 2002
-        versionName = "0.2.2"
+        versionCode = 2003
+        versionName = "0.2.3"
 
         // End-to-end smoke tests (src/androidTest, docs/maintaining.md): Hilt's test application, and every test in
         // its own process on a cleared app (Orchestrator), so each one starts like a fresh install.
