@@ -224,6 +224,7 @@ internal fun SettingsContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item(key = "voices") { VoicesSection(state.enabled, actions.onEnabled) }
+            item(key = "daynight") { DayNightSection(actions.onNavigate) }
             item(key = "feel") { FeelSection(state, systemRemovesAnimations, actions) }
             item(key = "backup") { BackupSection(state, actions) }
             item(key = "setup") { SetupSection(actions.onNavigate) }
@@ -417,6 +418,18 @@ private fun lastBackupColor(auto: AutoBackupState) =
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
+
+/** Day and night clips (#118, ADR 0037): where sunrise and sunset are computed for. */
+@Composable
+private fun DayNightSection(onNavigate: (CucutoDestination) -> Unit) {
+    SettingsSection(R.string.daynight_title) {
+        SettingsLinkRow(
+            title = stringResource(R.string.settings_daynight_place),
+            supporting = stringResource(R.string.settings_daynight_place_body),
+            onClick = { onNavigate(CucutoDestination.DayNight) },
+        )
+    }
+}
 
 @Composable
 private fun SetupSection(onNavigate: (CucutoDestination) -> Unit) {

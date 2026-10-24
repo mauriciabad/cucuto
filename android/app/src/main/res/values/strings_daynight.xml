@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Day and night clips (#118, ADR 0037). Kept apart from strings.xml so parallel UI work merges cleanly. -->
 <resources>
-    <string name="screen_daynight">Day and night</string>
-    <string name="screen_daynight_body">Where sunrise and sunset are worked out, for voices with day and night clips.</string>
     <string name="daynight_title">Day and night</string>
+    <string name="settings_daynight_place">Place for sunrise and sunset</string>
+    <string name="settings_daynight_place_body">Voices with day and night clips switch at sunrise and sunset there.</string>
     <string name="daynight_intro">Some voices have clips for the day and others for the night. Cucuto works out sunrise and sunset on your phone for the place you choose here. Your location never leaves the phone and is never tracked.</string>
     <string name="daynight_now_day">It\'s day now</string>
     <string name="daynight_now_night">It\'s night now</string>

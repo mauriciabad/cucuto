@@ -165,6 +165,8 @@ characters:
       - file: mittens/purr.wav      # full form
         label: Purr                 # default: from the file name ("purr" -> "Purr")
         weight: 2
+      - file: mittens/snore.ogg
+        when: night                 # night-only clip; same shorthands as for ringtones
       - cut: songs/day.flac         # auto-cut clip: the song's hook, cut at build time (needs ffmpeg)
       - cut: songs/night.flac       # or from a given point: startMs, lengthMs (default 2500),
         startMs: 30500              # or search only fromMs..toMs for the hook
