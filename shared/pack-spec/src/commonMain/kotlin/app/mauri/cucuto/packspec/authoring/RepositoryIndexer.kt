@@ -28,10 +28,24 @@ import app.mauri.cucuto.packspec.SpecJson
  * docs/pack-format.md#pack-repositories). Sizes and SHA-256 hashes are computed by the caller (platform code).
  */
 object RepositoryIndexer {
-    /** A preview file to copy: [archivePath] inside the pack or bundle archive, [path] in the repository folder. */
+    /**
+     * A preview file: [archivePath] inside the pack or bundle archive, [path] in the repository folder. Copied as is,
+     * unless [cut] says to cut a sample from it (a ringtone).
+     */
     data class Preview(
         val archivePath: String,
         val path: String,
+        val cut: SampleCut? = null,
+    )
+
+    /**
+     * A ringtone-only character's sample (ADR 0069, #325): the platform cuts an auto-cut clip
+     * ([app.mauri.cucuto.packspec.ClipCuts], [Limits.CUT_CLIP_DEFAULT_MS], Ogg Opus) at the hook within
+     * `[fromMs, toMs)` of the ringtone (the whole file when [toMs] is null).
+     */
+    data class SampleCut(
+        val fromMs: Long,
+        val toMs: Long?,
     )
 
     /** One index entry and the preview files it refers to. */
@@ -48,12 +62,14 @@ object RepositoryIndexer {
 
     /**
      * The entry for a validated pack or bundle ([content]), with [sizeUnpacked] (the sum of the archive's entry sizes)
-     * and its [download].
+     * and its [download]. With [cutSamples] (the caller has an audio encoder), ringtone-only characters get a sample
+     * cut from their first ringtone ([Preview.cut]); without it they have none.
      */
     fun entry(
         content: PackContent,
         sizeUnpacked: Long,
         download: Download,
+        cutSamples: Boolean = false,
     ): Indexed {
         val previews = mutableListOf<Preview>()
 
@@ -67,6 +83,22 @@ object RepositoryIndexer {
 
         fun ext(p: String) = p.substringAfterLast('.')
 
+        fun sample(
+            pack: PackEntry,
+            c: Character,
+            prefix: String,
+        ): String? {
+            c.clips.firstOrNull()?.let {
+                return copy(PackPaths.join(pack.root, it.file), "$prefix/${c.id}-sample.${ext(it.file)}")
+            }
+            val ringtone = c.ringtones.firstOrNull()?.takeIf { cutSamples } ?: return null
+            val path = "$prefix/${c.id}-sample.$CUT_EXTENSION"
+            val loop = ringtone.loopRange
+            val cut = SampleCut(loop?.startMs ?: 0, loop?.endMs)
+            if (previews.none { it.path == path }) previews += Preview(PackPaths.join(pack.root, ringtone.file), path, cut)
+            return path
+        }
+
         fun previews(
             pack: PackEntry,
             prefix: String,
@@ -75,17 +107,14 @@ object RepositoryIndexer {
             val cover = m.cover?.let { copy(PackPaths.join(pack.root, it), "$prefix/cover.${ext(it)}") }
             val characters =
                 m.characters.map { c ->
-                    val first = c.clips.firstOrNull()
+                    val sample = sample(pack, c, prefix)
                     CharacterPreview(
                         id = c.id,
                         name = c.name,
                         sprite = copy(PackPaths.join(pack.root, c.sprite), "$prefix/${c.id}.${ext(c.sprite)}"),
-                        sample =
-                            first?.let {
-                                copy(PackPaths.join(pack.root, it.file), "$prefix/${c.id}-sample.${ext(it.file)}")
-                            },
+                        sample = sample,
                         seedColor = c.seedColor,
-                        haptic = first?.let { previewHaptic(c) },
+                        haptic = sample?.let { previewHaptic(c) },
                     )
                 }
             return cover to characters
@@ -200,6 +229,7 @@ object RepositoryIndexer {
 
     const val INDEX_FILE = "repository.json"
     private const val AUTO_MODE = "auto"
+    private const val CUT_EXTENSION = "ogg"
     const val PACKS_FOLDER = "packs"
     const val PREVIEWS_FOLDER = "previews"
 }
