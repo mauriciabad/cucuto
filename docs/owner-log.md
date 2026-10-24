@@ -650,11 +650,11 @@ The owner set up #188 with an agent driving the Cloud console in Chrome while th
 
 > i also installed the claude chrome extension
 
-> i use aliases, can we make cucutogoogle@a.mauri.app ?
+> i use aliases, can we make [alias redacted] ?
 
 (The user support email can only be the signed-in account or a Google Group it manages, so the alias went into the developer contact instead.)
 
-> okay  mauriciabad1@gmail.com is fine
+> okay  [email redacted] is fine
 
 > I agree
 
