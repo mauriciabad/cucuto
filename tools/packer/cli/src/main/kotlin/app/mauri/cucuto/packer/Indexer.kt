@@ -43,13 +43,15 @@ class Indexer(private val log: (String) -> Unit) {
         }
         if (archives.isEmpty()) throw PackerException("No pack archives (.zip) to index")
         Files.createDirectories(outDir)
+        // Ringtone-only characters get a sample cut from their ringtone, which needs ffmpeg (ADR 0069, #325).
+        val cutSamples = MediaTools.hasTool("ffmpeg") && MediaTools.hasTool("ffprobe")
         val entries = mutableListOf<RepositoryEntry>()
         for (file in archives) {
             val validation = JvmPackIo.validatePath(file)
             if (!validation.report.isValid) {
                 throw PackerException("$file is not a valid pack:\n" + validation.report.errors.joinToString("\n") { "  $it" })
             }
-            val entry = entry(file, validation.content!!, outDir, options)
+            val entry = entry(file, validation.content!!, outDir, options, cutSamples)
             entries.firstOrNull { it.id == entry.id }?.let {
                 log("  ${entry.id}: keeping the highest of ${it.version} and ${entry.version}")
             }
@@ -64,17 +66,44 @@ class Indexer(private val log: (String) -> Unit) {
         return index
     }
 
-    private fun entry(file: Path, content: PackContent, outDir: Path, options: Options): RepositoryEntry {
+    private fun entry(file: Path, content: PackContent, outDir: Path, options: Options, cutSamples: Boolean): RepositoryEntry {
         val download = download(file, outDir, options)
         return FileInput(file).use { input ->
             val zip = ZipArchive.open(input, JvmPackIo.inflater).source!!
-            val indexed = RepositoryIndexer.entry(content, zip.entries.sumOf { it.size }, download)
+            val indexed = RepositoryIndexer.entry(content, zip.entries.sumOf { it.size }, download, cutSamples)
+            if (!cutSamples) {
+                val songs = ringtoneOnly(content)
+                if (songs.isNotEmpty()) log("  warning: no sample for ${songs.joinToString()} (ringtone only; cutting one needs ffmpeg)")
+            }
             for (preview in indexed.previews) {
                 val target = outDir.resolve(preview.path)
                 Files.createDirectories(target.parent)
-                target.writeBytes(zip.read(preview.archivePath))
+                val cut = preview.cut
+                if (cut == null) {
+                    target.writeBytes(zip.read(preview.archivePath))
+                } else {
+                    val source = Files.createTempFile("packer-sample-", "." + preview.archivePath.substringAfterLast('.'))
+                    try {
+                        source.writeBytes(zip.read(preview.archivePath))
+                        val range = Ringtones.cutClip(source, target, fromMs = cut.fromMs, toMs = cut.toMs)
+                        log("  cut ${preview.path} from ${preview.archivePath} (${range.startMs}..${range.endMs} ms)")
+                    } finally {
+                        Files.deleteIfExists(source)
+                    }
+                }
             }
             indexed.entry
+        }
+    }
+
+    /** The characters of [content] with ringtones and no clips, as `pack/character`. */
+    private fun ringtoneOnly(content: PackContent): List<String> {
+        val packs = when (content) {
+            is PackContent.Single -> listOf(content.pack)
+            is PackContent.Bundle -> content.packs
+        }
+        return packs.flatMap { p ->
+            p.manifest.characters.filter { it.clips.isEmpty() && it.ringtones.isNotEmpty() }.map { "${p.manifest.id}/${it.id}" }
         }
     }
 
