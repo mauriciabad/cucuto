@@ -28,6 +28,8 @@ data class VoicePack(
  * @property seedColor The pack's seed color as ARGB, or null (the app extracts one from the sprite).
  * @property clips The character's notification clips, in `pack.json` order.
  * @property haptic The character's own vibration (routing model; `Keep` leaves WhatsApp's).
+ * @property clipAutoHaptics Each clip's auto envelope (analysed at import, ADR 0020), aligned with [clips]; null for
+ *   a clip without one. Empty when unknown.
  */
 data class VoiceCharacter(
     val packId: String,
@@ -38,8 +40,12 @@ data class VoiceCharacter(
     val seedColor: Int?,
     val clips: List<File>,
     val haptic: Haptic,
+    val clipAutoHaptics: List<Haptic.Custom?> = emptyList(),
 ) {
     val voice: ChatVoice get() = ChatVoice(packId, id)
+
+    /** The auto envelope of [clip], or null when it has none. */
+    fun autoHapticOf(clip: File): Haptic.Custom? = clipAutoHaptics.getOrNull(clips.indexOf(clip))
 }
 
 /** The characters of every installed pack. */
@@ -73,6 +79,10 @@ class InstalledCharacterDirectory
                     name = pack.name,
                     characters =
                         characters.map { (id, character) ->
+                            val clips =
+                                character.clips.mapNotNull { clip ->
+                                    root.resolveInside(clip.file)?.let { it to clip.autoHaptic }
+                                }
                             VoiceCharacter(
                                 packId = pack.packId,
                                 id = id,
@@ -80,8 +90,9 @@ class InstalledCharacterDirectory
                                 sprite = character.sprite?.let { root.resolveInside(it) },
                                 spriteAnimated = character.spriteAnimated?.let { root.resolveInside(it) },
                                 seedColor = character.seedColor?.let(::parseSeedColor),
-                                clips = character.clips.mapNotNull { root.resolveInside(it.file) },
+                                clips = clips.map { it.first },
                                 haptic = character.haptic,
+                                clipAutoHaptics = clips.map { it.second },
                             )
                         },
                 )

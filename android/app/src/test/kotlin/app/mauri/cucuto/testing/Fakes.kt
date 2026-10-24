@@ -143,6 +143,25 @@ class FakeVoicePreview(
         return durationMs
     }
 
+    /** Clips played with a given haptic (haptic editor and overrides): character ID and haptic. */
+    val hapticPlays = mutableListOf<Pair<String, Haptic>>()
+
+    /** Patterns played alone. */
+    val vibrations = mutableListOf<Haptic.Custom>()
+
+    override suspend fun play(
+        character: VoiceCharacter,
+        haptic: Haptic,
+    ): Long? {
+        hapticPlays += character.id to haptic
+        return durationMs
+    }
+
+    override fun vibrate(haptic: Haptic.Custom): Boolean {
+        vibrations += haptic
+        return true
+    }
+
     override fun stop() {
         stops++
     }
