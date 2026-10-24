@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.VibratorManager
 import app.mauri.cucuto.core.haptics.HapticCapabilities
 import app.mauri.cucuto.core.haptics.HapticEffects
-import app.mauri.cucuto.core.haptics.hapticCapabilities
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
@@ -29,7 +28,7 @@ internal class VibratorReader(
             context
                 ?.getSystemService(VibratorManager::class.java)
                 ?.defaultVibrator
-                ?.hapticCapabilities()
+                ?.let(HapticEffects::capabilities)
         } catch (_: Throwable) {
             null
         }

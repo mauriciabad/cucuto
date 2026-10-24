@@ -86,7 +86,7 @@ pack files `*.soundpack.zip` · backups `cucuto-backup-YYYY-MM-DD.zip` (always e
   stay green), do it **in parallel, in a separate PR** (`build(deps): …`, its own branch), or merge the green
   Dependabot PR. If it is not cheap (a major version with breaking changes), open or update a `type:chore` issue with
   what blocks it and carry on with your task. Never mix dependency bumps into a feature PR. Dependabot keeps
-  proposing updates (ADR 0004).
+  proposing updates and auto-merges green patch and minor ones; the PRs left open carry `deps:major` (ADR 0004).
 
 ## Builds
 

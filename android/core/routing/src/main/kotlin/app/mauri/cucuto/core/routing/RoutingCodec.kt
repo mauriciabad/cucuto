@@ -11,6 +11,7 @@ public class RoutingFormatException(
  *
  * ```
  * cucuto-routing⇥1⇥<generation>⇥<enabled 0|1>⇥<packages>⇥<voices>⇥<routes>⇥<clip haptics>
+ * S⇥<self-test clip URI>                                        optional, at most once
  * P⇥<package>                                                   one per package, referenced by index
  * H⇥<clip haptic>                                               one per distinct clip envelope, referenced by index
  * V⇥<packId>⇥<characterId>⇥<haptic>⇥<uriBase>⇥<clips>{⇥<uriSuffix>⇥<milliWeight>⇥<clipHaptic|->}[⇥h<index|->,…]
@@ -68,6 +69,14 @@ public object RoutingCodec {
             .tab()
             .append(clipHaptics.size)
             .append('\n')
+
+        table.selfTestClip?.let { uri ->
+            out
+                .append('S')
+                .tab()
+                .escaped(uri)
+                .append('\n')
+        }
 
         for (name in packages.keys) {
             out
@@ -428,9 +437,16 @@ public object RoutingCodec {
             val packages = ArrayList<String>(header.packages)
             val voices = ArrayList<Voice>(header.voices)
             val routes = ArrayList<Route>(header.routes)
+            var selfTestClip: String? = null
             val clipHaptics = ArrayList<Haptic.Custom>(header.clipHaptics)
             while (pos < s.length) {
                 when (s[pos]) {
+                    'S' -> {
+                        type()
+                        selfTestClip = string()
+                        endLine()
+                    }
+
                     'P' -> {
                         type()
                         packages += string()
@@ -471,7 +487,7 @@ public object RoutingCodec {
                         "${header.packages}/${header.voices}/${header.routes}/${header.clipHaptics}",
                 )
             }
-            return RoutingTable(header.generation, header.enabled, voices, routes)
+            return RoutingTable(header.generation, header.enabled, voices, routes, selfTestClip)
         }
 
         private fun voice(dictionary: List<Haptic.Custom>): Voice {

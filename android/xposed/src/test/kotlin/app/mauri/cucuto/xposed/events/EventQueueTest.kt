@@ -107,6 +107,39 @@ class EventQueueTest {
     }
 
     @Test
+    fun statusRequestsMakeOneDeliveryOnTheSameSchedule() {
+        assertFalse(queue.hasWork)
+        assertTrue(queue.requestStatus())
+        assertFalse(queue.requestStatus()) // already scheduled
+        assertTrue(queue.hasWork)
+        assertEquals(1_002_000, queue.nextDeliveryAt(1_000_000))
+
+        assertTrue(queue.take(1_002_000).isEmpty()) // a status-only attempt
+        assertFalse(queue.hasWork)
+        queue.completed(emptyList(), delivered = true)
+        // It counted as an attempt: the rate limit still holds.
+        assertTrue(queue.requestStatus())
+        assertEquals(1_012_000, queue.nextDeliveryAt(1_003_000))
+    }
+
+    @Test
+    fun aStatusRequestRidesAlongWithQueuedEvents() {
+        queue.offer(event(1))
+        assertFalse(queue.requestStatus()) // the events' delivery carries the status
+        assertEquals(listOf(1L), queue.take(0).map { it.timeMillis })
+        assertFalse(queue.hasWork)
+    }
+
+    @Test
+    fun aFailedStatusOnlyDeliveryIsRetriedWithBackoff() {
+        queue.requestStatus()
+        val batch = queue.take(0)
+        queue.completed(batch, delivered = false)
+        assertTrue(queue.hasWork)
+        assertEquals(40_000, queue.nextDeliveryAt(0))
+    }
+
+    @Test
     fun eventsSurviveTheWireFormat() {
         val original = event(4)
         val map = original.toMap()
@@ -133,6 +166,32 @@ class EventQueueTest {
         assertFalse(line, line.contains("123456789"))
         assertFalse(line, line.contains("Name"))
         assertTrue(line, line.contains("key=@lid"))
+    }
+
+    @Test
+    fun groupLogLinesShowOnlyTheSendersShape() {
+        val line =
+            CucutoModule.describe(
+                event(5).copy(
+                    conversationKey = "120363000000000005@g.us",
+                    isGroup = true,
+                    senderKey = "424242424242424@lid",
+                    senderName = "Sender Name",
+                ),
+            )
+        assertTrue(line, line.contains("key=@g.us group=true sender=@lid"))
+        assertFalse(line, line.contains("424242"))
+        assertFalse(line, line.contains("Sender"))
+        assertFalse(line, CucutoModule.describe(event(6)).contains("sender="))
+    }
+
+    @Test
+    fun senderShapeTellsWhatTheRecordCarried() {
+        assertEquals("@lid", ModuleLog.senderShape("123@lid", hasName = true))
+        assertEquals("@s.whatsapp.net", ModuleLog.senderShape("34600000000@s.whatsapp.net", hasName = false))
+        assertEquals("<other>", ModuleLog.senderShape("some person", hasName = true))
+        assertEquals("<name only>", ModuleLog.senderShape(null, hasName = true))
+        assertEquals("<none>", ModuleLog.senderShape(null, hasName = false))
     }
 
     @Test

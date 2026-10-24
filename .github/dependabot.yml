@@ -1,4 +1,9 @@
 # Dependency updates (docs/decisions/0004-dependabot-for-dependency-updates.md).
+#
+# Every ecosystem runs weekly and groups its patch and minor updates into one PR per group, which
+# .github/workflows/dependabot.yml auto-merges once `ci-ok` is green. Groups list `update-types: [minor, patch]`, so a
+# major never joins a group: it arrives as a PR of its own, gets the `deps:major` label and waits for an agent
+# (CLAUDE.md, Workflow, "Dependencies"). A dependency joins the first group whose patterns match it.
 version: 2
 
 updates:
@@ -13,15 +18,20 @@ updates:
       include: scope
     labels: ["area:android", "type:chore"]
     groups:
-      kotlin:
+      # The build toolchain moves together: Kotlin (plugins and kotlinx libraries), KSP, and AGP (built-in Kotlin).
+      kotlin-and-agp:
+        update-types: [minor, patch]
         patterns:
           - "org.jetbrains.kotlin*"
           - "com.google.devtools.ksp*"
-      androidx-and-agp:
+          - "com.android.*"
+      # Jetpack, including the Compose BOM and Material 3.
+      androidx-and-compose:
+        update-types: [minor, patch]
         patterns:
           - "androidx.*"
-          - "com.android.tools.build*"
       android-libraries:
+        update-types: [minor, patch]
         patterns:
           - "*"
 
@@ -37,6 +47,7 @@ updates:
     labels: ["area:packer", "type:chore"]
     groups:
       packer:
+        update-types: [minor, patch]
         patterns:
           - "*"
 
@@ -52,11 +63,13 @@ updates:
     labels: ["area:pack", "type:chore"]
     groups:
       pack-spec:
+        update-types: [minor, patch]
         patterns:
           - "*"
 
-  # The Rust crate of :core:jxl (jxl-rs behind JNI, ADR 0006). jxl-rs is 0.x and pinned exactly, so each bump is a
-  # PR of its own. CI rebuilds the library; the decoder tests need a device (android/core/jxl/README.md).
+  # The Rust crate of :core:jxl (jxl-rs behind JNI, ADR 0006). jxl-rs and jni are 0.x and pinned exactly; their API
+  # changes between minor versions, so only patch releases are grouped (and auto-merged). A minor bump arrives as a
+  # PR of its own for an agent. CI rebuilds the library; the decoder tests need a device (android/core/jxl/README.md).
   - package-ecosystem: cargo
     directory: /android/core/jxl/rust
     schedule:
@@ -67,6 +80,11 @@ updates:
       prefix: build
       include: scope
     labels: ["area:android", "type:chore"]
+    groups:
+      cargo:
+        update-types: [patch]
+        patterns:
+          - "*"
 
   - package-ecosystem: github-actions
     directory: /
@@ -78,10 +96,12 @@ updates:
     labels: ["area:ci", "type:chore"]
     groups:
       github-actions:
+        update-types: [minor, patch]
         patterns:
           - "*"
 
-  # JavaScript tooling runs on Bun (#115): Dependabot's `bun` ecosystem reads package.json and the text bun.lock.
+  # JavaScript tooling runs on Bun (#115): Dependabot's `bun` ecosystem reads package.json and the text bun.lock. Every
+  # web/ dependency is a devDependency (the site is static), and groups can't filter by dependency type for bun.
   - package-ecosystem: bun
     directory: /web
     schedule:
@@ -93,19 +113,23 @@ updates:
       include: scope
     labels: ["area:web", "type:chore"]
     groups:
-      web:
+      web-dev:
+        update-types: [minor, patch]
         patterns:
           - "*"
 
   - package-ecosystem: bun
     directory: /brand/tools
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
     commit-message:
       prefix: build
       include: scope
     labels: ["area:brand", "type:chore"]
     groups:
       brand-tools:
+        update-types: [minor, patch]
         patterns:
           - "*"

@@ -172,9 +172,53 @@ class HapticPlannerTest {
             ),
             HapticPlanner.plan(presets, noBuilder),
         )
-        // An unsupported primitive (LOW_TICK here) falls back to a waveform: a composition with it would not play.
-        val low = Haptic.Custom(listOf(HapticEvent.Preset(0, HapticPreset.LOW_TICK)))
-        assertTrue(HapticPlanner.plan(low, noBuilder) is HapticPlan.Waveform)
+        // An unsupported primitive (LOW_TICK here): a composition with it would not play. Alone, it becomes the
+        // closest predefined effect; with other presets, a waveform.
+        val low = Haptic.Custom(listOf(HapticEvent.Preset(40, HapticPreset.LOW_TICK)))
+        assertEquals(HapticPlan.Predefined(HapticPreset.LOW_TICK), HapticPlanner.plan(low, noBuilder))
+        val lowAndClick = Haptic.Custom(low.events + HapticEvent.Preset(200, HapticPreset.CLICK))
+        assertTrue(HapticPlanner.plan(lowAndClick, noBuilder) is HapticPlan.Waveform)
+    }
+
+    @Test
+    fun withoutTheBuilderMixedTimelinesBecomeOneEnvelope() {
+        // The brief's click, tick and envelope: each preset becomes a 20 ms rise and fall (the device's minimum
+        // segment) at its own sharpness, joined with the envelope.
+        val plan = HapticPlanner.plan(brief, noBuilder) as HapticPlan.Envelope
+        assertEquals(
+            HapticEvent.Envelope(
+                0,
+                listOf(
+                    // Click at 0, scale 0.8: 1000 × (300 + 700 × 0.8) / 1000 = 860.
+                    ControlPoint(860, 900, 20),
+                    ControlPoint(0, 900, 20),
+                    // Gap until the tick at 120 (held at zero), tick at 120 with scale 0.5: 700 × 650 / 1000 = 455.
+                    ControlPoint(0, 1000, 80),
+                    ControlPoint(455, 1000, 20),
+                    ControlPoint(0, 1000, 20),
+                    // The envelope, unchanged, from 220.
+                    ControlPoint(0, 800, 60),
+                    ControlPoint(1000, 800, 120),
+                    ControlPoint(0, 400, 180),
+                ),
+            ),
+            plan.envelope,
+        )
+        // The module (with the Builder) still gets the timeline one to one.
+        assertEquals(HapticPlan.Timeline(brief.events), HapticPlanner.plan(brief, modern))
+        // Without envelope support, a mixed timeline is a waveform.
+        assertTrue(HapticPlanner.plan(brief, noBuilder.copy(envelopesSupported = false)) is HapticPlan.Waveform)
+    }
+
+    @Test
+    fun presetBumpsRespectTheDeviceMinimumSegment() {
+        val bump = HapticPlanner.presetBump(HapticEvent.Preset(10, HapticPreset.LOW_TICK, 0), noBuilder)
+        assertEquals(
+            HapticEvent.Envelope(10, listOf(ControlPoint(150, 300, 20), ControlPoint(0, 300, 20)), 300),
+            bump,
+        )
+        val coarse = HapticPlanner.presetBump(HapticEvent.Preset(0, HapticPreset.CLICK), basic)
+        assertEquals(listOf(10, 10), coarse.points.map { it.durationMs })
     }
 
     @Test

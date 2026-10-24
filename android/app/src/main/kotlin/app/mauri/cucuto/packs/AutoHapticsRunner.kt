@@ -7,10 +7,10 @@ import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
 import app.mauri.cucuto.core.haptics.HapticCapabilities
+import app.mauri.cucuto.core.haptics.PublicHapticEffects
 import app.mauri.cucuto.core.haptics.auto.AutoHapticFile
 import app.mauri.cucuto.core.haptics.auto.AutoHapticSet
 import app.mauri.cucuto.core.haptics.auto.AutoHaptics
-import app.mauri.cucuto.core.haptics.hapticCapabilities
 import app.mauri.cucuto.core.pack.PackAnalyzer
 import app.mauri.cucuto.core.pack.PackStore
 import app.mauri.cucuto.packspec.PackManifest
@@ -49,7 +49,7 @@ class AutoHapticsRunner
     ) {
         private val autoHaptics: AutoHaptics by lazy {
             val vibrator = context.getSystemService(VibratorManager::class.java)?.defaultVibrator
-            AutoHaptics(vibrator?.hapticCapabilities() ?: HapticCapabilities())
+            AutoHaptics(vibrator?.let(PublicHapticEffects::capabilities) ?: HapticCapabilities())
         }
 
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

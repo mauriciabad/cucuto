@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.haptics
 
+import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
@@ -23,6 +24,11 @@ internal sealed interface HapticPlan {
     /** A `VibrationEffect.Composition` of primitives; [delayMs] counts from the end of the previous primitive. */
     data class Primitives(
         val primitives: List<Primitive>,
+    ) : HapticPlan
+
+    /** `VibrationEffect.createPredefined(EFFECT_…)` for a lone preset whose primitive is unsupported (no scale). */
+    data class Predefined(
+        val preset: HapticPreset,
     ) : HapticPlan
 
     /** `VibrationEffect.createWaveform(timings, amplitudes, -1)`: the last resort every vibrator can play. */
@@ -50,8 +56,14 @@ internal sealed interface HapticPlan {
  *   (simplified, shape first), segments between `minControlPointMs` and `maxControlPointMs`, at most
  *   `maxEnvelopeMs` long.
  *
- * Then the best API is chosen: the Builder when it exists; otherwise one basic envelope (envelopes only), a
- * composition (presets only, all supported), or a plain waveform.
+ * Then the best API is chosen: the Builder when it exists (only ever in `system_server`, see [HapticEffects]);
+ * otherwise, with public APIs only:
+ *
+ * - one basic envelope for envelope-only timelines, and for mixed timelines on devices with envelope support (each
+ *   preset becomes a short envelope bump, [presetBump]);
+ * - a composition for preset-only timelines whose primitives are all supported;
+ * - `createPredefined` for a lone preset whose primitive is unsupported;
+ * - a plain waveform otherwise.
  */
 internal object HapticPlanner {
     /** The pack format's longest timeline ("the whole timeline lasts at most 5,000 ms"). */
@@ -66,11 +78,20 @@ internal object HapticPlanner {
     /** Waveform fallback: envelope sampling step, and the pulse that stands for each preset. */
     private const val WAVEFORM_STEP_MS = 20
 
+    /** Shortest rise (and fall) of the envelope bump that stands in for a preset without the Builder. */
+    private const val PRESET_BUMP_MS = 10
+
     fun plan(
         haptic: Haptic.Custom,
         capabilities: HapticCapabilities,
     ): HapticPlan {
-        val timeline = normalize(haptic.events, capabilities)
+        val events =
+            if (!capabilities.builderSupported && capabilities.envelopesSupported && isMixed(haptic.events)) {
+                haptic.events.map { if (it is HapticEvent.Preset) presetBump(it, capabilities) else it }
+            } else {
+                haptic.events
+            }
+        val timeline = normalize(events, capabilities)
         if (timeline.isEmpty()) return HapticPlan.None
         return when {
             capabilities.builderSupported -> {
@@ -83,6 +104,10 @@ internal object HapticPlanner {
 
             timeline.all { it is HapticEvent.Preset && it.preset in capabilities.primitiveDurationsMs } -> {
                 primitives(timeline.filterIsInstance<HapticEvent.Preset>(), capabilities)
+            }
+
+            timeline.size == 1 && timeline[0] is HapticEvent.Preset -> {
+                HapticPlan.Predefined((timeline[0] as HapticEvent.Preset).preset)
             }
 
             else -> {
@@ -129,6 +154,41 @@ internal object HapticPlanner {
             }
         }
         return out
+    }
+
+    private fun isMixed(events: List<HapticEvent>): Boolean =
+        events.any { it is HapticEvent.Preset } && events.any { it is HapticEvent.Envelope }
+
+    /**
+     * The envelope that stands in for [preset] when the Builder is missing: a rise to the preset's strength and a
+     * fall back to zero, each as short as the device allows (its minimum segment, [PRESET_BUMP_MS] at least), at the
+     * preset's sharpness. Same strength as the waveform fallback's pulse.
+     */
+    fun presetBump(
+        preset: HapticEvent.Preset,
+        capabilities: HapticCapabilities,
+    ): HapticEvent.Envelope {
+        val segment = maxOf(PRESET_BUMP_MS, capabilities.minControlPointMs)
+        val sharpness =
+            when (preset.preset) {
+                HapticPreset.CLICK -> 900
+                HapticPreset.TICK -> 1000
+                HapticPreset.LOW_TICK -> 300
+            }
+        return HapticEvent.Envelope(
+            preset.atMs,
+            listOf(
+                ControlPoint(presetIntensity(preset), sharpness, segment),
+                ControlPoint(0, sharpness, segment),
+            ),
+            sharpness,
+        )
+    }
+
+    /** A preset's strength in thousandths: its pulse strength, scaled so that scale 0 is weak but not off. */
+    private fun presetIntensity(preset: HapticEvent.Preset): Int {
+        val strength = pulse(preset.preset).second
+        return (strength * (300 + 700 * preset.milliScale.coerceIn(0, 1000) / 1000)) / 1000
     }
 
     /** Joins the envelopes of an envelope-only timeline into one, holding zero intensity in the gaps. */
@@ -202,9 +262,9 @@ internal object HapticPlanner {
             val next = timeline.getOrNull(index + 1)?.atMs ?: Int.MAX_VALUE
             when (event) {
                 is HapticEvent.Preset -> {
-                    val (pulseMs, strength) = pulse(event.preset)
+                    val pulseMs = pulse(event.preset).first
                     // Scale 0 is "the weakest perceptible", not off.
-                    val intensity = (strength * (300 + 700 * event.milliScale / 1000)) / 1000
+                    val intensity = presetIntensity(event)
                     val pulseAmplitude =
                         if (capabilities.amplitudeControl) {
                             amplitude(
