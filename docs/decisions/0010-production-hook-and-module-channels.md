@@ -107,8 +107,9 @@ sets two requirements for the whole notification path, now an M1 acceptance crit
   runs later on the `cucuto-events` thread, so `playSound` and `playVibration` never wait for it. The gap is elsewhere:
   SystemUI opens the clip from `ClipProvider`, and when Cucuto's process is not running Android cold-starts it
   (Hilt graph, `RoutingPublisher.start()`) before the first byte is served, while the vibration from `system_server`
-  is not delayed. Not measured yet; #121 measures it on the device and removes the cold start from the sound path if
-  it is noticeable.
+  is not delayed. #121 measured it at 0.35 to 0.45 s, and
+  [ADR 0018](0018-clip-mirror-for-instant-sounds.md) removes it: clips are mirrored to shared storage and SystemUI
+  reads them as `file://` paths, so no process starts on the sound path. `ClipProvider` remains the fallback.
 - **Battery.** Delivery uses `Handler.postAtTime` on `uptimeMillis`: no alarm, no wake lock, no service, so it never
   wakes the phone and only runs while the CPU is already awake after an alert. Its cost is at most one process start
   and a Room write per 10 s during active chats. #121 checks it with batterystats and, if it shows, defers delivery
