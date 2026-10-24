@@ -282,3 +282,13 @@ pattern" in the haptic editor and the creators, is #217; auto haptics from the w
 > when you finish this, run 2 agents that make the private packs about pokemon and kk i asked for initially (i think the plan file has more details)
 
 (Two agents build the private Pokémon and K.K. Slider packs under the gitignored `private/` folder, per the brief; nothing is committed or uploaded, and the zips go to the phone over adb.)
+
+## 2026-10-23 — Issue #135 (bug report form: "Website on mobile has margin on the right", part: website or PWA pack creator)
+
+> The main nav messes up with the body width and overflows making a visual glitch.
+> Besides fixing this specific case, would be nice to ensure that the body cannot have this typical overflow issue.
+
+(Fixed in the PR that closes #135. The header nav was already clipped by #192, but between 641 and about 675 px it
+still ran past the screen and hid its last link; it now shrinks and scrolls. Long inline code on
+`/authors/pack-format/` made that page 778 px wide on phones; it now wraps. `web/tests/overflow.e2e.ts` checks
+every page in both languages at 320, 360 and 656 px so the overflow cannot come back unnoticed.)
