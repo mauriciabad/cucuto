@@ -1,6 +1,7 @@
 # 0074. Ringtone rules: the pack's rules in plain words, and your own rules per contact
 
-- Status: accepted (defaults the owner may override: #303)
+- Status: accepted (defaults the owner may override: #303); amended 2026-10-24 (#347): the rules screen is the one
+  place to choose the rule, the picker's rule chips are gone (see [The picker](#the-picker))
 - Date: 2026-10-24
 - Issue: #288
 - Amends: [ADR 0039](0039-phone-ringtones-on-the-device.md) (rule modes, data),
@@ -30,8 +31,8 @@ guidelines.
 `CucutoDestination.RingtoneRules(packId, characterId, chat?)`, a pushed screen in `ui/ringtone/rules/`. It is
 reachable from:
 
-- the **ringtone picker**: "See and edit the rules", under the rule chips of the chosen character (characters with two
-  or more versions);
+- the **ringtone picker**: the "Which version rings" row of the chosen character (characters with two or more
+  versions; since #347 the picker has no rule chips, see [The picker](#the-picker));
 - the **Packs** tab: "Rules" on each character of a pack's detail screen that has two or more versions (no contact:
   the screen only shows the rules).
 
@@ -56,6 +57,12 @@ It shows, from top to bottom:
 
    With a chat whose ringtone is another character (a cover tapped in the picker but not saved yet), or "Android
    default" or "Leave as is" ([ADR 0073](0073-sound-flow-message-then-ringtone.md)), the screen shows the pack's rules and says that the rules can be changed once the character rings for that contact.
+   Amended 2026-10-24 (#347): the screen is editable for any 1:1 chat. When the character does not ring for the
+   chat yet (another character, "Android default", "Leave as is", or nothing), the section says so ("Saving makes
+   Bubblegum K.K. ring for Iris") and the save button reads "Ring with Bubblegum K.K.": saving stores the character
+   with the chosen rule, exactly as saving it in the picker would (following the voice when it is the voice's own
+   character, ADR 0063). "Reset to the pack's rules" is offered only once the character rings. Without a chat (from
+   Packs) or for a group, the screen only shows the rules.
 4. A **bottom bar**: "Save" (disabled while nothing changed) and, when the contact's rule is not the pack's,
    **"Reset to the pack's rules"**, which saves at once. Saving closes the screen; "Random per call" asks for the phone
    permission first, as in the picker.
@@ -87,9 +94,24 @@ lacks only when the ringtone syncs, never in the stored rules, so a pack install
 
 ### The picker
 
-The picker keeps its chips. A contact with its own rules shows a **"Your own rules"** chip, selected; picking another
+Amended 2026-10-24 (#347). The picker's rule chips and the rules screen offered different choices: a contact with its
+own rules opened the picker on chips that could not show them. The rule is now chosen in one place, this screen:
+
+- The picker shows the chosen character's versions, each with its play button (no radio buttons: "One version" is
+  picked here), then one **"Which version rings"** row with the rule in a few words ("Pack's rules", "Day and night",
+  "One version: Live", "Your own rules"). The row opens this screen. A character with one version has no row.
+- A cover tapped in the picker keeps the rule stored for it when it is the character that rings, else the pack's
+  rules; saving in the picker stores the character with that rule. To ring a new character with another rule, open
+  the row and save on this screen: it stores the character and the rule together.
+- A save on this screen replaces the picker's unsaved choice, so the picker shows what is stored when it comes back.
+- Contact detail's Phone calls row has no rules link any more ([ADR 0073](0073-sound-flow-message-then-ringtone.md),
+  #348): the row opens the picker, the picker's row opens this screen.
+
+The original text, replaced:
+
+~~The picker keeps its chips. A contact with its own rules shows a **"Your own rules"** chip, selected; picking another
 chip and saving replaces them, and the chip stays offered until the picker closes so the user can go back. "Your own
-rules" can only be created or edited on the rules screen.
+rules" can only be created or edited on the rules screen.~~
 
 ### Message clips stay out
 
@@ -114,6 +136,10 @@ Contact detail's clip list keeps showing the pack's clips as they are.
   in English and Spanish), `RingtoneRulesViewModelTest` (seeding, editing, normalizing to the pack's rules, reset,
   save), backup export and restore of custom rules, the schema fixtures, the migration. Goldens: `ringtone-rules`
   (light, dark, large font in English and Spanish).
+- #347: the picker loses `setMode`, `setVariant` and its rule chips; `RingtoneRulesState` gains `ringsNow` and saves a
+  character that does not ring yet. Tests: `RingtonePickerViewModelTest` (a tapped cover keeps the stored rule only
+  for the ringing character), `RingtoneRulesViewModelTest` (saving a new character with its rule). Goldens: ringtone
+  picker, ringtone rules.
 - Defaults the owner may change (#303): the entry points (picker and Packs, not contact detail, which #298 is
   restructuring), saving closes the screen while "Reset" saves at once, the pack's rules are shown before the
   contact's choice, and message clips have no per-contact rules.

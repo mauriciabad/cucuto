@@ -193,7 +193,7 @@ class RingtoneRulesViewModelTest {
         }
 
     @Test
-    fun withoutAChatOrForAnotherCharacterTheRulesAreOnlyShown() =
+    fun withoutAChatTheRulesAreOnlyShown() =
         runTest(dispatcher) {
             val packs = viewModel(chat = null)
             collect(packs)
@@ -201,32 +201,54 @@ class RingtoneRulesViewModelTest {
             assertFalse(packs.state.value.otherCharacter)
             packs.setMode(RingtoneMode.RANDOM)
             assertEquals(RingtoneMode.PACK, packs.state.value.mode)
-
-            val other = viewModel(voice = kettle.voice)
-            collect(other)
-            assertFalse(other.state.value.editable)
-            assertTrue(other.state.value.otherCharacter)
-            assertFalse(other.save())
+            assertFalse(packs.save())
         }
 
     @Test
-    fun androidDefaultAndLeaveAsIsRingNoCharacterEvenWhenTheVoiceHasRingtones() =
+    fun aCharacterThatDoesNotRingYetIsSavedWithItsRule() =
         runTest(dispatcher) {
-            // The voice (frog) has ringtones, but the stored choice rings no character (ADR 0073): the screen
-            // must not offer to edit frog's rules, or saving would silently replace the choice.
+            // The rules screen is the one place to choose the rule (#347): saving makes the kettle ring for Ada.
+            source.kettleEntries.value =
+                listOf(entry("kettle/day.ogg", "Day", "day"), entry("kettle/night.ogg", "Night", "night"))
+            val vm = viewModel(voice = kettle.voice)
+            collect(vm)
+            val state = vm.state.value
+            assertTrue(state.editable)
+            assertTrue(state.otherCharacter)
+            assertFalse(state.ringsNow)
+            // Even the pack's rules can be saved: that is what makes it ring.
+            assertTrue(state.canSave)
+            assertFalse(state.canReset)
+            vm.setMode(RingtoneMode.TIME)
+            assertTrue(vm.save())
+            assertEquals(
+                Saved(1, kettle.voice, followsVoice = false, RingtoneMode.TIME, null, emptyList()),
+                source.saved.single(),
+            )
+        }
+
+    @Test
+    fun androidDefaultAndLeaveAsIsRingNoCharacterUntilTheRulesScreenSavesOne() =
+        runTest(dispatcher) {
+            // The voice (frog) has ringtones, but the stored choice rings no character (ADR 0073): the screen says
+            // so, and saving replaces the choice with the frog and its rule (#347).
             for (choice in listOf(RingtoneChoice.ANDROID_DEFAULT, RingtoneChoice.UNCHANGED)) {
+                source.saved.clear()
                 source.row.value = PhoneRingtoneEntity(1, updatedAt = 1, followsVoice = false, choice = choice)
                 val vm = viewModel()
                 collect(vm)
                 val state = vm.state.value
-                assertNull(choice.name, state.saved)
-                assertFalse(choice.name, state.editable)
+                assertTrue(choice.name, state.editable)
                 assertTrue(choice.name, state.otherCharacter)
-                vm.setMode(RingtoneMode.RANDOM)
-                assertFalse(choice.name, vm.save())
                 assertFalse(choice.name, vm.reset())
+                vm.setMode(RingtoneMode.RANDOM)
+                assertTrue(choice.name, vm.save())
+                assertEquals(
+                    choice.name,
+                    Saved(1, null, followsVoice = true, RingtoneMode.RANDOM, null, emptyList()),
+                    source.saved.single(),
+                )
             }
-            assertTrue(source.saved.isEmpty())
         }
 
     @Test
@@ -272,6 +294,7 @@ class RingtoneRulesViewModelTest {
     private class FakeSource : RingtoneRulesSource {
         val chat = MutableStateFlow<Chat?>(null)
         val entries = MutableStateFlow<List<RingtoneVariantItem>>(emptyList())
+        val kettleEntries = MutableStateFlow<List<RingtoneVariantItem>>(emptyList())
         val row = MutableStateFlow<PhoneRingtoneEntity?>(null)
         val saved = mutableListOf<Saved>()
         var phoneState = true
@@ -281,7 +304,7 @@ class RingtoneRulesViewModelTest {
             voice: ChatVoice,
             chat: ChatKey?,
         ): Flow<RingtoneRulesData> =
-            combine(this.chat, entries, row) { c, e, r ->
+            combine(this.chat, entries, kettleEntries, row) { c, e, k, r ->
                 val character = listOf(frog, kettle).first { it.voice == voice }
                 RingtoneRulesData(
                     character,
@@ -291,7 +314,7 @@ class RingtoneRulesViewModelTest {
                     ) {
                         e
                     } else {
-                        emptyList()
+                        k
                     },
                     c.takeIf { chat != null },
                     r.takeIf { chat != null },
