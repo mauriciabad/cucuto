@@ -66,6 +66,7 @@ Rich effects are built from composition primitives. Before playing one, check
 | Pack imported / status all green | `PRIMITIVE_TICK` 0.3, +60 ms `PRIMITIVE_TICK` 0.5, +60 ms `PRIMITIVE_CLICK` 0.8 (mirrors the success arpeggio) | `Confirm` |
 | Error | `PRIMITIVE_LOW_TICK` 0.8 → +90 ms `PRIMITIVE_LOW_TICK` 0.6 (mirrors the two low notes) | `Reject` |
 | Sprite "speaks" in the picker | The character's own haptic (pack haptic or auto mode), scaled to 0.6 | none |
+| "Surprise me" roll in the pickers (dice rattle; no UI sound; in the character picker the clip and haptic land 220 ms after the beat, [ADR 0072](../docs/decisions/0072-picker-folding-and-surprise-me.md)) | `PRIMITIVE_LOW_TICK` 0.4, +50 ms `PRIMITIVE_TICK` 0.3, +50 ms `PRIMITIVE_TICK` 0.45, +50 ms `PRIMITIVE_TICK` 0.6 (rising, like a die tumbling to a stop) | `SegmentTick` |
 
 Never use `createOneShot`, `vibrate(long)` or legacy waveforms for UI feedback: they ring on and feel buzzy.
 

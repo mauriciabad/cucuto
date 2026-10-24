@@ -39,7 +39,9 @@ a dead end.
 Below it, a grid of album covers, grouped by pack: every installed character that has at least one ringtone. A
 **bottom bar** saves ("Ring with Tootle the kettle"). It reads "Already chosen" and is disabled when nothing changed.
 Since ADR 0063, pack filter chips with counts appear when two or more packs have such characters, and the empty state
-links to Packs and Discover.
+links to Packs and Discover. Since [ADR 0072](0072-picker-folding-and-surprise-me.md) (owner update 2026-10-24, #289 and #290), the
+pack sections fold, a search field finds covers in folded packs, and "Surprise me" picks a random character with
+ringtones, with a "Re-roll" button next to the save button.
 
 **Game feel**, like the character picker (#132), through the Feedback engine (#112):
 

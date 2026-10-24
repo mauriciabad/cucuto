@@ -7,6 +7,8 @@ import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
+import app.mauri.cucuto.core.data.settings.PickerFoldSettings
+import app.mauri.cucuto.core.data.settings.PickerKind
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
@@ -39,6 +41,9 @@ import kotlinx.coroutines.launch
  * @property assigned Set once an assignment is saved: the screen celebrates, then closes.
  * @property packs Installed packs with the characters that can speak for messages (with clips, [voicePacks]).
  * @property packFilter The pack chip chosen, or null for all packs.
+ * @property query The search field's text (ADR 0072).
+ * @property folds Which pack sections are folded (ADR 0072).
+ * @property roll The last "Surprise me" pick (ADR 0072).
  */
 @Immutable
 data class PickerState(
@@ -51,6 +56,9 @@ data class PickerState(
     val assigned: ChatVoice? = null,
     val failed: Boolean = false,
     val packFilter: String? = null,
+    val query: String = "",
+    val folds: PackFolds = PackFolds(),
+    val roll: SurpriseRoll<ChatVoice>? = null,
 ) {
     val canAssign: Boolean get() = chatKey != null
 
@@ -60,6 +68,24 @@ data class PickerState(
     /** The packs the grid shows: the chosen chip's, or all. */
     val visiblePacks: List<VoicePack>
         get() = selectedChip(chips, packFilter)?.let { id -> packs.filter { it.packId == id } } ?: packs
+
+    /** The pack sections the grid shows: chip, search and folds applied (ADR 0072). */
+    val sections: List<PackSection<VoiceCharacter>>
+        get() =
+            packSections(
+                packs = packs,
+                id = { it.packId },
+                name = { it.name },
+                characters = { it.characters },
+                characterName = { it.name },
+                chipPack = selectedChip(chips, packFilter),
+                query = query,
+                folds = folds,
+                currentPack = chat?.voice?.packId,
+            )
+
+    /** The selected character came from "Surprise me": the screen offers to re-roll or use it. */
+    val rolled: Boolean get() = roll != null && roll.pick == selected && assigned == null
 
     /** The chat's voice: the one just assigned, else the stored one. */
     val currentVoice: ChatVoice? get() = assigned ?: chat?.voice
@@ -100,22 +126,79 @@ class PickerViewModel
         private val chats: ChatDirectory,
         characters: CharacterDirectory,
         private val preview: VoicePreview,
+        private val foldSettings: PickerFoldSettings,
     ) : ViewModel() {
         private val interaction = MutableStateFlow(PickerState(chatKey = chatKey))
         private var previewJob: Job? = null
 
         val state: StateFlow<PickerState> =
-            combine(chats.observeChats(), characters.observePacks(), interaction) { all, packs, local ->
+            combine(
+                chats.observeChats(),
+                characters.observePacks(),
+                foldSettings.observe(PickerKind.Voice),
+                interaction,
+            ) { all, packs, remembered, local ->
                 local.copy(
                     loading = false,
                     chat = chatKey?.let { key -> all.firstOrNull { key in it.keys } },
                     packs = voicePacks(packs),
+                    folds = local.folds.copy(remembered = remembered),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), interaction.value)
 
         /** Shows only [packId]'s characters, or every pack for null. */
         fun filterPack(packId: String?) {
             interaction.update { it.copy(packFilter = packId) }
+        }
+
+        /** The search field's text: finds characters in folded packs too (ADR 0072). */
+        fun search(query: String) {
+            interaction.update { it.copy(query = query) }
+        }
+
+        /** Folds or unfolds [packId]'s section, and remembers it for next time (ADR 0072). */
+        fun toggleFold(packId: String) {
+            val section = state.value.sections.firstOrNull { it.packId == packId && it.foldable } ?: return
+            val expanded = !section.expanded
+            interaction.update { it.copy(folds = it.folds.with(packId, expanded)) }
+            viewModelScope.launch {
+                try {
+                    foldSettings.remember(PickerKind.Voice, packId, expanded)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Only the memory for next time is lost; the section still folds now.
+                }
+            }
+        }
+
+        /**
+         * "Surprise me" (ADR 0072, #290): selects a random character with clips from [packId], or from every pack for
+         * null, never the one selected now ([SurprisePick]), and previews it with its haptic at [atNanos] (after the
+         * roll's rattle). The pick becomes visible: the search clears, a chip hiding it goes back to "All" and its pack
+         * unfolds for this visit. Returns the pick, or null when there is none.
+         */
+        fun surprise(
+            packId: String?,
+            atNanos: Long? = null,
+        ): VoiceCharacter? {
+            val current = state.value
+            if (current.assigned != null) return null
+            val pool = current.packs.filter { packId == null || it.packId == packId }.flatMap { it.characters }
+            val previous = current.selected ?: current.currentVoice
+            val pick = SurprisePick.pick(pool, pool.firstOrNull { it.voice == previous }) ?: return null
+            interaction.update {
+                it.copy(
+                    selected = pick.voice,
+                    failed = false,
+                    query = "",
+                    packFilter = it.packFilter?.takeIf { chip -> chip == pick.packId },
+                    folds = it.folds.with(pick.packId, expanded = true),
+                    roll = SurpriseRoll(packId, pick.voice, (it.roll?.count ?: 0) + 1),
+                )
+            }
+            speak(pick, withHaptic = true, atNanos = atNanos)
+            return pick
         }
 
         /**
