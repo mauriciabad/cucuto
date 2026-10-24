@@ -45,11 +45,19 @@ public object RoutingContract {
     public const val CLIP_AUTHORITY: String = "app.mauri.cucuto.clips"
 
     /**
-     * Encoded tables above this size are refused by the publisher. Remote Preferences travel through Binder, whose
-     * transaction buffer is 1 MiB per process and shared, and a Java string can take two bytes per character in a
-     * parcel. A heavy user (500 contacts, 176 distinct voices of 12 clips) needs about half of this limit.
+     * Largest table written to Remote Preferences. They travel through Binder, whose transaction buffer is 1 MiB per
+     * process and shared, and a Java string can take two bytes per character in a parcel. A larger table goes to the
+     * remote file and the app's provider only ([MAX_TABLE_BYTES]); Remote Preferences then get a copy without clip
+     * envelopes at an older generation, or keep their table (ADR 0054).
      */
-    public const val MAX_ENCODED_CHARS: Int = 256 * 1024
+    public const val MAX_PREFERENCES_CHARS: Int = 256 * 1024
+
+    /**
+     * Largest table the publisher writes, in UTF-8 bytes: what the remote file and the app's provider carry. Both
+     * pass a file descriptor, not a Binder parcel, so only the module's read limit ([RoutingFile.MAX_BYTES], the same
+     * in every released module) bounds them. A heavy user with every feature on needs about a quarter of it.
+     */
+    public const val MAX_TABLE_BYTES: Int = 1024 * 1024
 
     /**
      * The clip provider's URI for a clip, used when the clip is not mirrored (ADR 0018):

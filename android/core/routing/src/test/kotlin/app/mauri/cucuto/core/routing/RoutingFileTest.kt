@@ -2,7 +2,9 @@ package app.mauri.cucuto.core.routing
 
 import app.mauri.cucuto.core.routing.RoutingFixtures.sample
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RoutingFileTest {
@@ -39,5 +41,24 @@ class RoutingFileTest {
         assertNull(RoutingFile.unframe("cucuto-routing-file 2 0 0\n".toByteArray()))
         assertNull(RoutingFile.unframe("cucuto-routing-file 1 x 0\n".toByteArray()))
         assertNull(RoutingFile.unframe(ByteArray(RoutingFile.MAX_BYTES + 1)))
+    }
+
+    @Test
+    fun acceptsATableAtTheLimit() {
+        // Every released module (0.1.1 on) rejects files over 1,048,640 bytes: the limit must never shrink.
+        assertEquals(1_048_640, RoutingFile.MAX_BYTES)
+        val atLimit = "x".repeat(RoutingContract.MAX_TABLE_BYTES)
+        assertTrue(RoutingFile.fits(atLimit))
+        assertFalse(RoutingFile.fits(atLimit + "x"))
+        // The header is at most 41 bytes, so a table that fits always frames under the module's limit.
+        assertEquals(atLimit, RoutingFile.unframe(RoutingFile.frame(atLimit)))
+    }
+
+    @Test
+    fun measuresUtf8WithoutEncoding() {
+        for (text in listOf("", "cucuto", "héllo ñ", "🐸 frog", "aࠀb", "lone \uD83D surrogate")) {
+            assertEquals(text, text.toByteArray(Charsets.UTF_8).size, RoutingFile.utf8Length(text))
+        }
+        assertFalse(RoutingFile.fits("é".repeat(RoutingContract.MAX_TABLE_BYTES / 2 + 1)))
     }
 }
