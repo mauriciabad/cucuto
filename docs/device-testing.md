@@ -1,4 +1,4 @@
-# Device testing: production hook (M1, issues #15–#17)
+# Device testing: production hook (M1, issues #15–#17, #121)
 
 A supervised session on the owner's phone (Pixel 10 Pro, `CP3A.261005.005`, LSPosed 2.2.1, libxposed API 102),
 run by the lead with the owner present. It enables the production module for the first time, so read the recovery
@@ -213,3 +213,60 @@ alternated, the slowest `NNus`, and the parity results. If everything passed, #1
 
 Leave the module enabled only if the owner wants to keep using it; otherwise disable it in LSPosed and reboot, or
 `adb uninstall app.mauri.cucuto`. To remove the test voice later: clear the app's data.
+
+## 6. Instant clips: the clip mirror (#121, ADR 0018)
+
+The sound must start as fast as WhatsApp's own tone, also when Cucuto's process is not running. Before #121,
+SystemUI opened clips through `ClipProvider`, and a dead process added 0.35 to 0.45 s while Android cold-started
+it. The app now mirrors the clips to `Android/media/app.mauri.cucuto/clips/` and publishes `file://` URIs, which
+SystemUI reads with no process start ([ADR 0018](decisions/0018-clip-mirror-for-instant-sounds.md)).
+
+**After installing the build (no reboot needed).** Open Cucuto once, then:
+
+```
+adb shell ls -R /sdcard/Android/media/app.mauri.cucuto/clips    # .nomedia, selftest/chirp.wav, <packId>/<version>/…
+adb logcat -d -s cucuto                                         # no "Clip mirror off (…)" line
+adb shell su -c "grep -h -F 'app.mauri.cucuto,cucuto,' /data/adb/lspd/log/modules_*.log" | grep 'Routing table' | tail -2
+```
+
+The last command should show a new `Routing table <generation>` line from after the install: the clip URIs changed,
+so the app republished. From then on, WhatsApp alerts for assigned contacts already use the mirror. The module log
+shows `clip=file:///storage/emulated/0/Android/media/app.mauri.cucuto/clips/<packId>/<version>/…`.
+
+**After the next reboot.** The self-test switches to the mirrored chirp once the module code that reads the
+table's `S` line is running. To measure the cold path without a WhatsApp message:
+
+1. Start a streaming log in one terminal (the main buffer wraps within seconds, so a later dump misses lines):
+
+   ```
+   adb logcat -b main,events -v threadtime -T 1 RingtonePlayer:D NotificationPlayer:I am_proc_start:I '*:S'
+   ```
+
+2. Tap **Post test notification**, then within 4 s snooze it, leave the app and kill its process (as the
+   low-memory killer would; `am kill` does not kill a process that is still stopping):
+
+   ```
+   K=$(adb shell cmd notification list | grep '|app.mauri.cucuto|' | grep -v '|android|' | head -1)
+   adb shell cmd notification snooze --for 15000 "$K"
+   adb shell input keyevent HOME
+   sleep 3; adb shell su -c 'kill -9 $(pidof app.mauri.cucuto)'
+   ```
+
+3. 15 s later the notification returns and alerts.
+
+**Look for:**
+
+- `RingtonePlayer: playAsync(uri=file:///storage/emulated/0/Android/media/app.mauri.cucuto/clips/selftest/chirp.wav`.
+- **No** `am_proc_start … app.mauri.cucuto,content provider,{…ClipProvider}` line.
+- `in run` → `requesting AudioFocus` within about 60 ms (stock tone: 20 to 50 ms; the old cold path: 350 to 460 ms).
+  `player.start` follows about 500 ms later on every path (`NotificationPlayer`'s fixed focus ramp).
+- Module log: `alert app.mauri.cucuto SWAPPED … clip=file:///…/clips/selftest/chirp.wav (self-test)`.
+
+**Diagnose:**
+
+- `clip=content://…` after the reboot: the mirror is off. `adb logcat -d -s cucuto` names the reason (not the
+  system user, SystemUI without `MANAGE_EXTERNAL_STORAGE`, shared storage unavailable). Clips still play through the
+  provider, cold start included.
+- `file://` URI but silence: the copy is missing. `NotificationPlayer` logs `error loading sound for file://…`.
+  Opening Cucuto rebuilds the table and repairs the mirror.
+
