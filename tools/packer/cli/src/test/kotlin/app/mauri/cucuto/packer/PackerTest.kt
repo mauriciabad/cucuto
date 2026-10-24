@@ -66,6 +66,9 @@ class PackerTest {
         val clip = frog["clips"]!!.jsonArray.first().jsonObject
         assertEquals("characters/frog/clips/ribbit.ogg", clip["file"]!!.jsonPrimitive.content)
         assertEquals("Ribbit", clip["label"]!!.jsonPrimitive.content)
+        // `when: night` on a clip expands like on a ringtone (day and night clips, #118).
+        val croak = frog["clips"]!!.jsonArray[1].jsonObject
+        assertEquals("night", croak["when"]!!.jsonObject["time"]!!.jsonPrimitive.content)
         val day = frog["ringtones"]!!.jsonArray.first().jsonObject
         assertEquals("day", day["when"]!!.jsonObject["time"]!!.jsonPrimitive.content)
         assertEquals("custom", frog["haptic"]!!.jsonObject["mode"]!!.jsonPrimitive.content)
@@ -80,7 +83,7 @@ class PackerTest {
         val packs = tmp.resolve("packs")
         for (src in demoPacks) assertEquals(0, packer("build", src.toString(), "-o", packs.toString()).statusCode)
         // Packs and bundles are always written as <id>-<version>.soundpack.zip (ADR 0007).
-        assertTrue(packs.resolve("app.mauri.demo.chiptune-critters-1.0.0.soundpack.zip").toFile().isFile)
+        assertTrue(packs.resolve("app.mauri.demo.chiptune-critters-1.1.0.soundpack.zip").toFile().isFile)
         val bundle = packs.resolve("app.mauri.demo.all-1.0.0.soundpack.zip")
         val result = packer(
             "bundle", "--id", "app.mauri.demo.all", "--name", "Cucuto demo packs", "--version", "1.0.0",

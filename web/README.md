@@ -23,7 +23,7 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   (Vite, `svelte-kit`, svelte-check, Prettier, ESLint, Playwright) on the Bun runtime instead of the `node` in their
   shebangs; the build-time scripts in `scripts/` are TypeScript run by Bun directly. Everything works on Bun 1.4.3,
   with no Node fallback. Dependencies are locked in the text `bun.lock`; Dependabot updates them (`bun` ecosystem).
-- **Pages.** Home, Packs, Install guide, For pack authors (plus `/authors/pack-format/`, which renders
+- **Pages.** Home, Packs, Create (the pack creator, below), Install guide, For pack authors (plus `/authors/pack-format/`, which renders
   `docs/pack-format.md` at build time with marked: GitHub-style heading anchors, relative links rewritten to the
   repository), Privacy, and `/open/` (the PWA file handler stub). Keep the copy true to the app: the privacy page
   cites the code it describes, and anything not built yet is labeled "planned".
@@ -33,8 +33,15 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   `{placeholder}` links (`src/lib/i18n/links.ts`); render them with `<Html>`. Link to pages with
   `pageHref('/install/', locale)`. `hooks.server.ts` sets `<html lang>`; `Seo` adds `hreflang` alternates. The pack
   format spec stays English-only.
-- **Screenshot and video slots.** The home page has placeholders for the scripted screenshots (#41) and the
-  explainer video (#42); replace them there.
+- **Screenshots (#41).** The home page shows the app's own screenshots from `src/lib/assets/images/screenshots/`
+  (`<name>-light.png` and `-dark.png`, Spanish ones in `es/` once the app is translated). They are rendered from the
+  demo packs by the app's screenshot tests: refresh them with `cd android && ./gradlew :app:exportWebScreenshots`
+  (ADR 0032).
+- **Explainer video (#42, ADR 0042).** `ExplainerVideo.svelte` on Home. The build looks for
+  `static/video/explainer.{webm,mp4}` (and the optional Spanish cut `explainer.es.*`) and shows the poster with "coming
+  soon" until they exist; then it plays muted when scrolled into view (never with reduced motion or Data Saver), or
+  with sound from the play button, with the `explainer.{en,es}.vtt` captions and a transcript built from them. The
+  service worker never caches `/video/`. What to film and deliver: `docs/explainer-video.md`.
 - **Brand.** Tokens, logos, icons, the OG image and the door-open animation are copies of files in `brand/`. Rebuild
   the brand, then run `bun run sync:brand` and commit the result. `colors.css` and `typography.css` are not formatted by
   Prettier so the copies stay identical.
@@ -47,8 +54,8 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   natively. Link with `resolve('install/')` from `$app/paths`.
 - **404.** `adapter-static` writes the SPA fallback to `404.html`, which GitHub Pages serves for unknown paths.
 - **PWA.** `static/manifest.webmanifest` plus `src/service-worker/index.ts`, which precaches the app shell and every
-  prerendered page. The manifest's `file_handlers` entry opens `.zip` files (`application/zip`; packs are `<name>.soundpack.zip`) on `/open/`, a stub until the pack
-  creator (#48).
+  prerendered page. The manifest's `file_handlers` entry opens `.zip` files (`application/zip`; packs are `<name>.soundpack.zip`) on `/open/`, which checks them. The
+  manifest's `shortcuts` entry opens the Create page.
 - **Motion.** `src/lib/styles/motion.css` turns the brand's spring tokens into CSS `linear()` easings. Everything
   respects `prefers-reduced-motion`.
 - **Release data.** `bun run build` and `bun run dev` first run `scripts/build-data.ts`, which reads the GitHub Releases
@@ -70,5 +77,14 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
   `src/lib/pack-spec/` types it and loads it lazily (`loadPackSpec()`); `PackCheck.svelte` is the UI, on `/authors/#check` and `/open/`. Without the
   module the site still builds and the checker says it is not included; CI builds it in the `pack-spec-js` job and
   sets `CUCUTO_REQUIRE_PACK_SPEC=1`, which makes `vite.config.ts` fail without it.
+- **Pack creator (#48, ADR 0038).** `/create/` (`src/lib/components/creator/`, logic in `src/lib/creator/`) builds
+  packs on the device: pictures are cropped on a canvas and written as JPEG XL where the browser can encode it,
+  else WebP (PNG or JPEG on Safari); clips are recorded with MediaRecorder or decoded with Web Audio, cut and
+  processed by the shared Kotlin pipeline (`authoring/` in `shared/pack-spec`, the same code as the app's creator),
+  and encoded to Ogg Opus with WebCodecs (`ogg.ts` writes the container) or to WAV where the browser has no Opus
+  encoder. The shared `PackAssembler` lays the pack out, `fflate` zips it like the app does, and the validator checks
+  the file before the download. `tests/creator.test.ts` (Bun) re-lays out every valid golden fixture;
+  `tests/create.e2e.ts` makes a pack in Chromium and validates the download. `PORT=4848 bun run test` runs the
+  e2e tests on another port when several checkouts share a machine.
 - **TypeScript 6.** TypeScript 7 is out, but SvelteKit 3, svelte-check and typescript-eslint still declare
   `typescript@^6` as their peer, so the site stays on 6.x until they support 7.

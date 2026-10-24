@@ -438,7 +438,7 @@
     <string name="error_bundle_pack_missing">Falta un pack que la colección incluye en su lista.</string>
     <string name="error_bundle_layout_invalid">Las carpetas de la colección no están bien organizadas.</string>
     <string name="error_haptic_invalid">Un patrón de vibración del pack está roto.</string>
-    <string name="error_when_invalid">La regla de hora o temporada de un tono de llamada está rota.</string>
+    <string name="error_when_invalid">Una regla de hora, temporada o día de la semana de un clip o tono de llamada está rota.</string>
     <string name="error_loop_points_invalid">Los puntos de bucle de un tono de llamada son incorrectos.</string>
     <string name="error_license_not_spdx">La licencia no es un nombre de licencia estándar, así que se muestra tal cual.</string>
     <string name="error_unreferenced_file">Algunos archivos no los usa ningún personaje y se han dejado fuera.</string>

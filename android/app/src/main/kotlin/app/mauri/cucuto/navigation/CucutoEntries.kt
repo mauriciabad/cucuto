@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import app.mauri.cucuto.BuildConfig
 import app.mauri.cucuto.contact.ContactDetailScreen
+import app.mauri.cucuto.daynight.DayNightScreen
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
@@ -48,6 +49,7 @@ fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
         // The setup guide reopened from Setup: finishing or skipping just closes it.
         entry<CucutoDestination.Onboarding> { OnboardingScreen(onFinish = goBack, resume = false) }
         entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
+        entry<CucutoDestination.DayNight> { DayNightScreen(onBack = goBack) }
         entry<CucutoDestination.HapticEditor>(
             clazzContentKey = { "haptics/${it.chat?.packageName}/${it.chat?.conversationKey}" },
         ) { key ->

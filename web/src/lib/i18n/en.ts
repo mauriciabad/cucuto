@@ -14,6 +14,17 @@ export interface IconItem {
 	text: string;
 }
 
+/**
+ * One screenshot on the home page. `image` names the files written by the app's screenshot tests
+ * (`./gradlew :app:exportWebScreenshots`, ADR 0032) to src/lib/assets/images/screenshots/.
+ */
+export interface Shot {
+	image: 'onboarding' | 'home' | 'picker' | 'packs';
+	title: string;
+	text: string;
+	alt: string;
+}
+
 export interface QA {
 	q: string;
 	aHtml: string;
@@ -33,7 +44,13 @@ export const en = {
 		skipLink: 'Skip to content',
 		homeLabel: 'Cucuto home',
 		navLabel: 'Main',
-		nav: { packs: 'Packs', install: 'Install', authors: 'Pack authors', privacy: 'Privacy' },
+		nav: {
+			packs: 'Packs',
+			create: 'Create',
+			install: 'Install',
+			authors: 'Pack authors',
+			privacy: 'Privacy'
+		},
 		github: 'GitHub',
 		languageLabel: 'Language',
 		switchTo: 'Leer en español',
@@ -65,6 +82,16 @@ export const en = {
 		videoSoonTitle: 'The explainer video is on its way',
 		videoSoonText:
 			'A short tour: a message arrives, the phone plays the sender’s character, and you know who wrote without looking.',
+		video: {
+			soonBadge: 'Coming soon',
+			posterAlt:
+				'Illustration: a phone shows Cucuto’s character picker, where Bleep the frog is being assigned in a burst of confetti. Next to it, the cuckoo clock sings and three chats each have their own character.',
+			label: 'Cucuto explainer video',
+			play: 'Play the video',
+			unsupported:
+				'Your browser can’t play this video. The transcript below has everything it says.',
+			transcript: 'Read the transcript'
+		},
 		howTitle: 'How it works',
 		steps: iconItems([
 			{
@@ -120,14 +147,33 @@ export const en = {
 		]),
 		screenshotsTitle: 'A look inside',
 		screenshotsLead:
-			'Screenshots of the app with the free demo packs arrive with the first release.',
-		screenshotSoon: 'Screenshot coming soon',
+			'The app with the two free demo packs and made-up chats, in your light or dark theme.',
 		screenshots: [
-			{ title: 'Status', text: 'One card that turns green when everything is ready.' },
-			{ title: 'Chats', text: 'People who wrote recently, waiting for a voice.' },
-			{ title: 'Characters', text: 'Tap to hear a character, tap again to assign it.' },
-			{ title: 'Packs', text: 'Browse repositories, preview clips, download packs.' }
-		],
+			{
+				image: 'onboarding',
+				title: 'Setup',
+				text: 'A short guided setup checks the module and its scope for you.',
+				alt: 'Cucuto’s welcome screen: the cuckoo clock with its door open and what the app does.'
+			},
+			{
+				image: 'home',
+				title: 'Chats',
+				text: 'People who wrote recently, waiting for a voice.',
+				alt: 'The home screen: recent senders without a voice and chats with their characters.'
+			},
+			{
+				image: 'picker',
+				title: 'Characters',
+				text: 'Tap to hear a character, tap again to assign it.',
+				alt: 'The character picker for a chat, with the demo packs’ characters grouped by pack.'
+			},
+			{
+				image: 'packs',
+				title: 'Packs',
+				text: 'Your packs and their characters. Tap one to hear it.',
+				alt: 'The Packs screen with the Chiptune critters and Kitchen orchestra demo packs.'
+			}
+		] satisfies Shot[] as Shot[],
 		requirementsTitle: 'Requirements',
 		requirementsLead:
 			'Cucuto is a power-user tool. Check that your phone has all of these before you install it.',
@@ -188,7 +234,7 @@ export const en = {
 			{
 				q: 'Can I make my own packs?',
 				aHtml:
-					'Yes. The pack format is open and documented, and anyone can host a pack repository on a static website. See the <a href="{authors}">guide for pack authors</a>. A pack creator in the app and on this website is planned.'
+					'Yes. The pack format is open and documented, and anyone can host a pack repository on a static website. See the <a href="{authors}">guide for pack authors</a>. Make one in your browser on the <a href="{create}">Create page</a>; a pack creator in the app is planned.'
 			},
 			{
 				q: 'Why isn’t it on Google Play?',
@@ -358,7 +404,7 @@ export const en = {
 			{
 				title: 'With the pack creator',
 				textHtml:
-					'Pick pictures, record or import clips, trim them and export, in the app or on this website, no tools needed. <strong>Planned.</strong>'
+					'Pick pictures, record or import clips, trim them and download the pack on the <a href="{create}">Create page</a>, right in your browser, no tools needed. In the app: planned.'
 			},
 			{
 				title: 'By hand',
@@ -426,6 +472,7 @@ export const en = {
 		siteTitle: 'This website',
 		site: [
 			'Every page, font, image and sample clip is served from this site; it makes no requests to other services. To work offline and load faster, your browser keeps a copy of the site in its cache (a service worker). That copy stays on your device, and you can clear it in your browser settings.',
+			'The <a href="{create}">Create page</a> uses your microphone only while you record, and only if you allow it. Pictures and sounds you add there are processed in your browser and never leave your device.',
 			'The site is hosted on GitHub Pages, and the APK and pack downloads are GitHub release files. Like any web host, GitHub receives technical data such as your IP address when it serves a file; see the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="external">GitHub General Privacy Statement</a>.'
 		],
 		appTitle: 'The app',
@@ -464,7 +511,7 @@ export const en = {
 		title: 'Open a pack',
 		description: 'Open .soundpack.zip files with the Cucuto web app.',
 		leadHtml:
-			'Cucuto checks the pack files you open here (<code>.soundpack.zip</code>, or any pack <code>.zip</code>) with the same rules as the app, on your device. Previewing and editing them comes with the pack creator; to install a pack, import it in the Cucuto app on your phone.',
+			'Cucuto checks the pack files you open here (<code>.soundpack.zip</code>, or any pack <code>.zip</code>) with the same rules as the app, on your device. To make your own, use the <a href="{create}">Create page</a>; to install a pack, import it in the Cucuto app on your phone.',
 		opened: 'You opened:',
 		browse: 'Browse free packs'
 	},
@@ -482,6 +529,140 @@ export const en = {
 			'Every code is explained in the <a href="{packFormat}#error-codes">pack format</a>. Details are in English.',
 		failed: 'The file could not be checked ({error}).',
 		unavailable: 'The pack checker is not part of this build of the site.'
+	},
+	create: {
+		title: 'Create a pack',
+		description:
+			'Make a Cucuto sound pack in your browser: pictures, recorded or imported clips, trimmed and evened out, checked and downloaded as a .soundpack.zip. Nothing is uploaded.',
+		leadHtml:
+			'Pick pictures, record or import sounds, and download a <code>.soundpack.zip</code> that the app imports. It runs the app’s own rules, so what you make here imports everywhere.',
+		privacy: 'Everything happens on this device: pictures and sounds are never uploaded.',
+		offline:
+			'Works offline: install this site as an app from your browser’s menu and create packs without a connection.',
+		loading: 'Loading the pack creator…',
+		unavailable: 'The pack creator is not part of this build of the site.',
+		loadFailed: 'The pack creator could not load ({error}). Reload the page to try again.',
+		wavNotice:
+			'This browser cannot encode Opus, so clips are saved as WAV. They are bigger but work the same. Chrome, Edge and Firefox on a computer save Opus.',
+		details: {
+			title: 'Pack details',
+			name: 'Pack name',
+			author: 'Author',
+			authorHint: 'Your name or nickname, shown in the app.',
+			license: 'License',
+			licenses: {
+				'Personal use only':
+					'Personal use only: right for clips and pictures you did not make yourself',
+				'CC0-1.0': 'CC0 1.0: anyone may use it, no conditions',
+				'CC-BY-4.0': 'CC BY 4.0: anyone may use it, with credit',
+				other: 'Another license'
+			} as Record<string, string>,
+			licenseOther: 'Your license',
+			licenseOtherHintHtml:
+				'An <a href="https://spdx.org/licenses/" rel="external">SPDX identifier</a> such as <code>MIT</code>, or your own words such as “Personal use only”.',
+			descriptionLabel: 'Description (optional)',
+			packId: 'Pack ID',
+			packIdHint: 'Made from the author and name; it stays the same for this draft.'
+		},
+		characters: {
+			title: 'Characters',
+			intro:
+				'Each character is a picture and one or more clips. The app picks one of a character’s clips at random for every message.',
+			add: 'Add a character',
+			empty: 'No characters yet.',
+			heading: 'Character {n}',
+			name: 'Name',
+			remove: 'Remove character',
+			color: 'Color',
+			colorHint: 'Suggested from the picture. The app themes this character with it.'
+		},
+		picture: {
+			choose: 'Choose a picture',
+			change: 'Change picture',
+			alt: 'Picture of {name}',
+			none: 'No picture yet',
+			failed: 'This picture could not be opened ({error}).'
+		},
+		crop: {
+			title: 'Frame the picture',
+			help: 'Drag the picture or use the arrow keys to move it. Zoom with the slider, the mouse wheel, or the + and − keys.',
+			area: 'Picture framing area',
+			zoom: 'Zoom',
+			use: 'Use picture',
+			cancel: 'Cancel'
+		},
+		clips: {
+			title: 'Clips',
+			record: 'Record',
+			stop: 'Stop recording',
+			recording: 'Recording: {time} s of {max} s',
+			upload: 'Add audio files',
+			play: 'Play',
+			stopPlaying: 'Stop',
+			edit: 'Edit',
+			remove: 'Remove',
+			label: 'Label',
+			weight: 'Weight',
+			weightHint: 'How often it plays compared with the other clips (1 is normal).',
+			seconds: '{s} s',
+			longHint:
+				'Longer than 5 s. Android plays notification sounds to the end and lowers other audio meanwhile: fine for a jingle, but short clips feel snappier.',
+			micFailed:
+				'The microphone is not available ({error}). Check the site’s microphone permission.',
+			noMic: 'This browser cannot record. Add audio files instead.',
+			decodeFailed: '{name} could not be opened: this browser cannot play it.',
+			tooLong: '{name} is longer than 6 minutes, the longest audio the creator opens.',
+			recordingLabel: 'Recording {n}'
+		},
+		clipEditor: {
+			title: 'Edit clip',
+			source: 'From {name}, {s} s',
+			start: 'Start',
+			end: 'End',
+			selection: 'Selected: {s} s',
+			hook: 'Find the hook',
+			hookHint: 'Selects the loudest {s} s, usually the chorus.',
+			trimSilence: 'Trim silence at both ends',
+			normalize: 'Even out the loudness, like packer does',
+			play: 'Play selection',
+			save: 'Save clip',
+			cancel: 'Cancel',
+			processing: 'Processing…',
+			tooShort: 'After trimming, this clip lasts {s} s. Clips need at least 0.2 s.',
+			tooLong: 'Clips can last up to 30 s. Make the selection shorter.',
+			silent: 'This part is silent. Pick another part or record again.',
+			failed: 'The clip could not be saved ({error}).'
+		},
+		haptics: {
+			title: 'Vibration',
+			text: 'Each character vibrates along with its voice: the app works the pattern out from every clip when it imports the pack. Make custom patterns in the app, because browsers cannot play them.'
+		},
+		build: {
+			title: 'Check and download',
+			intro: 'Cucuto checks the pack with the same rules as the app before you download it.',
+			check: 'Check pack',
+			checking: 'Building and checking…',
+			incomplete: 'Almost there:',
+			download: 'Download pack',
+			share: 'Send to an app',
+			shareHint: 'Opens your phone’s share sheet, where you can pick Cucuto.',
+			installHtml:
+				'To install it, open the file on your phone with the Cucuto app, or import it from the Packs screen. You can also <a href="{authors}#host">host it in a pack repository</a>.',
+			stale: 'You changed the pack since this check. Check it again before downloading.',
+			failed: 'The pack could not be built ({error}).',
+			problems: {
+				PACK_NAME_MISSING: 'Give the pack a name.',
+				AUTHOR_MISSING: 'Add an author.',
+				LICENSE_MISSING: 'Pick a license.',
+				NO_CHARACTERS: 'Add at least one character.',
+				TOO_MANY_CHARACTERS: 'A pack can have up to 500 characters.',
+				CHARACTER_NAME_MISSING: 'Name character {n}.',
+				SPRITE_MISSING: 'Choose a picture for {name}.',
+				NO_CLIPS: 'Add at least one clip to {name}.',
+				TOO_MANY_CLIPS: '{name} has more than 200 clips.',
+				UNSUPPORTED_FILE: '{name} has a file the pack format does not accept.'
+			} as Record<string, string>
+		}
 	},
 	error: {
 		notFoundTitle: 'Page not found',

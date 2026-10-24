@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.hilt.gradlePlugin)
     implementation(libs.room3.gradlePlugin)
     implementation(libs.spotless.gradlePlugin)
+    implementation(libs.roborazzi.gradlePlugin)
 }
 
 gradlePlugin {
@@ -40,6 +41,10 @@ gradlePlugin {
         register("androidHilt") {
             id = "cucuto.android.hilt"
             implementationClass = "app.mauri.cucuto.buildlogic.AndroidHiltConventionPlugin"
+        }
+        register("androidScreenshots") {
+            id = "cucuto.android.screenshots"
+            implementationClass = "app.mauri.cucuto.buildlogic.AndroidScreenshotsConventionPlugin"
         }
         register("androidRoom") {
             id = "cucuto.android.room"
