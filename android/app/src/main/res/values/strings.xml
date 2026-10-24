@@ -407,6 +407,74 @@
     <string name="import_failure_not_prepared">This import expired. Choose the file again.</string>
     <string name="import_failure_unexpected">Something went wrong. Try again, and if it keeps happening, report it with the details below.</string>
 
+    <!-- Haptic editor (#32) -->
+    <string name="haptic_editor_title">Vibration pattern</string>
+    <string name="haptic_editor_loading">Loading the pattern</string>
+    <string name="haptic_editor_undo">Undo</string>
+    <string name="haptic_editor_save">Save</string>
+    <string name="haptic_editor_failed">Couldn\'t save the pattern. Try again.</string>
+    <string name="haptic_editor_no_voice">This chat has no voice yet, so the pattern can\'t be saved. Give it a voice first.</string>
+    <string name="haptic_editor_discard_title">Discard your changes?</string>
+    <string name="haptic_editor_discard_body">The pattern isn\'t saved yet.</string>
+    <string name="haptic_editor_discard">Discard</string>
+    <string name="haptic_editor_keep_editing">Keep editing</string>
+    <string name="haptic_editor_timeline_empty">Empty timeline</string>
+    <plurals name="haptic_editor_timeline_summary">
+        <item quantity="one">Timeline: %1$d event, %2$s seconds</item>
+        <item quantity="other">Timeline: %1$d events, %2$s seconds</item>
+    </plurals>
+    <string name="haptic_editor_timeline_hint">Tap here to drop a vibration, or tap the rhythm below.</string>
+    <string name="haptic_editor_tools">Tap the timeline to drop</string>
+    <string name="haptic_preset_click">Click</string>
+    <string name="haptic_preset_tick">Tick</string>
+    <string name="haptic_preset_low_tick">Low tick</string>
+    <string name="haptic_tool_envelope">Swell</string>
+    <string name="haptic_editor_select_hint">Tap a vibration on the timeline to change it. Drag it to move it.</string>
+    <string name="haptic_editor_preset_at">%1$s at %2$d ms</string>
+    <string name="haptic_editor_envelope_at">Swell at %1$d ms, %2$d ms long</string>
+    <string name="haptic_editor_previous_event">Previous vibration</string>
+    <string name="haptic_editor_next_event">Next vibration</string>
+    <string name="haptic_editor_strength">Strength</string>
+    <string name="haptic_editor_sharpness">Sharpness</string>
+    <string name="haptic_editor_percent">%d%%</string>
+    <string name="haptic_editor_points_hint">Drag the dots on the timeline to shape the swell.</string>
+    <string name="haptic_editor_add_point">Add a dot</string>
+    <string name="haptic_editor_remove_point">Remove a dot</string>
+    <string name="haptic_editor_earlier">%d ms earlier</string>
+    <string name="haptic_editor_later">%d ms later</string>
+    <string name="haptic_editor_delete">Delete</string>
+    <string name="haptic_editor_rhythm_title">Tap the rhythm</string>
+    <string name="haptic_editor_rhythm_body">Tap a pad to record a pattern of up to 5 seconds. Quick taps become ticks, firmer taps clicks, and holds become swells as long as your finger stays down. It replaces the timeline; Undo brings it back.</string>
+    <string name="haptic_editor_rhythm_start">Start recording</string>
+    <string name="haptic_editor_rhythm_pad">Rhythm pad. Tap or hold to record.</string>
+    <string name="haptic_editor_rhythm_pad_hint">Tap or hold here</string>
+    <plurals name="haptic_editor_rhythm_progress">
+        <item quantity="one">%1$d tap, %2$s of 5 seconds</item>
+        <item quantity="other">%1$d taps, %2$s of 5 seconds</item>
+    </plurals>
+    <string name="haptic_editor_rhythm_stop">Done</string>
+    <string name="haptic_editor_play">Play</string>
+    <string name="haptic_editor_play_with_clip">Play with %s</string>
+    <string name="haptic_editor_clear">Clear</string>
+
+    <!-- Per-contact vibration (#33), a card on the contact detail screen -->
+    <string name="haptic_override_title">Vibration</string>
+    <string name="haptic_override_no_voice">Give this chat a voice to choose how it vibrates.</string>
+    <string name="haptic_override_pack">Pack</string>
+    <string name="haptic_override_auto">Auto</string>
+    <string name="haptic_override_off">Off</string>
+    <string name="haptic_override_custom">Custom</string>
+    <string name="haptic_override_pack_auto">The character\'s vibration from its pack: it rises and falls with each clip.</string>
+    <string name="haptic_override_pack_custom">The character\'s vibration from its pack: its own pattern.</string>
+    <string name="haptic_override_pack_keep">The character\'s pack has no vibration, so WhatsApp\'s own vibration stays.</string>
+    <string name="haptic_override_pack_missing">The character\'s vibration from its pack.</string>
+    <string name="haptic_override_auto_body">The vibration rises and falls with each clip.</string>
+    <string name="haptic_override_off_body">Messages from this chat don\'t vibrate.</string>
+    <string name="haptic_override_custom_body">Your own pattern plays with every message.</string>
+    <string name="haptic_override_preview">Preview</string>
+    <string name="haptic_override_create">Make a pattern</string>
+    <string name="haptic_override_edit">Edit pattern</string>
+
     <!-- Pack format problems in plain words, one per code of spec/error-codes.json -->
     <string name="error_archive_unreadable">The file is damaged or isn\'t a zip file. Try downloading it again.</string>
     <string name="error_archive_unsupported">The zip uses something packs can\'t, such as a password or an unusual compression.</string>
