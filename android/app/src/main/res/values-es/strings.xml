@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Spanish (Spain, informal "tú"), same voice as the website's /es/ pages (web/src/lib/i18n/es.ts) and brand/README.md:
+    sentence case, friendly, plain in setup and errors. Keep every key, placeholder and plural of values/ (Lint
+    MissingTranslation/ExtraTranslation and LocaleParityTest fail the build otherwise). Spanish plurals need "one",
+    "many" (round millions) and "other".
+    Shared terms: voz, personaje, pack (de sonidos), colección (bundle), ámbito (scope), Diagnóstico,
+    Enviar notificación de prueba, interruptor de voces, gorjeo (chirp), clic (click-tick), reiniciar (reboot).
+-->
+<resources>
+    <string name="module_description">Da voz a cada contacto de WhatsApp: sonidos y vibraciones de notificación por contacto, sacados de tus packs de sonidos. Ámbito: solo System Framework.</string>
+
+    <string name="navigate_back">Atrás</string>
+
+    <!-- Diagnostics -->
+    <string name="screen_diagnostics">Diagnóstico</string>
+    <string name="diag_framework">Framework de Xposed</string>
+    <string name="diag_framework_disconnected">Sin conexión. Activa Cucuto en LSPosed (ámbito: System Framework) y reinicia.</string>
+    <string name="diag_framework_connected">Conectado: %1$s, API %2$d</string>
+    <string name="diag_framework_unsupported">%1$s no admite Remote Preferences</string>
+    <string name="diag_routing">Tabla de enrutamiento</string>
+    <string name="diag_routing_idle">Aún no se ha publicado</string>
+    <string name="diag_routing_published">Generación %1$d: %2$d claves, %3$d voces</string>
+    <string name="diag_routing_too_large">Demasiado grande para publicarla (%1$d caracteres)</string>
+    <string name="diag_routing_failed">No se ha podido publicar: %1$s</string>
+    <string name="diag_module">Módulo en system_server</string>
+    <string name="diag_module_never">Aún no hay informes. El módulo informa tras su primer aviso; envía una notificación de prueba.</string>
+    <string name="diag_module_report">Último informe: %1$s. Hooks: %2$s. Faltan: %3$s</string>
+    <string name="diag_module_table">Tabla en el módulo</string>
+    <string name="diag_module_table_value">Generación %1$d, %2$d claves</string>
+    <string name="diag_module_table_same">Generación %1$d, %2$d claves: la más reciente de la app</string>
+    <string name="diag_module_table_behind">Generación %1$d, %2$d claves. Aún no es la más reciente de la app (%3$d): el módulo informa de una tabla nueva en unos 15 segundos.</string>
+    <string name="diag_module_table_previous_boot">Generación %1$d, %2$d claves, informada antes del último reinicio</string>
+    <string name="diag_module_timing">Desde el arranque</string>
+    <string name="diag_module_timing_value">%1$d decisiones, %2$d de más de 5 ms, la más lenta %3$d µs, %4$d eventos descartados</string>
+    <string name="diag_post_test">Enviar notificación de prueba</string>
+    <string name="diag_post_test_hint">Con el módulo activo oirás un gorjeo de dos tonos y notarás un clic en lugar del sonido predeterminado. Su decisión aparecerá abajo en unos 10 segundos.</string>
+    <string name="diag_post_test_posted">Enviada. Escucha el gorjeo (suena más bajo si hace menos de un minuto de la última prueba); la decisión aparecerá abajo en unos 10 segundos.</string>
+    <string name="diag_post_test_blocked">Las notificaciones de Cucuto están bloqueadas. Permítelas en los ajustes del sistema.</string>
+    <plurals name="diag_too_soon">
+        <item quantity="one">Espera %d segundo: Android silencia las notificaciones que una app envía con menos de 10 segundos de diferencia.</item>
+        <item quantity="many">Espera %d segundos: Android silencia las notificaciones que una app envía con menos de 10 segundos de diferencia.</item>
+        <item quantity="other">Espera %d segundos: Android silencia las notificaciones que una app envía con menos de 10 segundos de diferencia.</item>
+    </plurals>
+    <string name="diag_switch">Voces de Cucuto</string>
+    <string name="diag_switch_body">El interruptor de voces. Apagado: todos los chats mantienen el tono de WhatsApp.</string>
+    <string name="diag_test_voice">Dar una voz de prueba al último remitente</string>
+    <string name="diag_test_voice_no_sender">Aún no ha escrito nadie por WhatsApp. Primero recibe un mensaje de WhatsApp.</string>
+    <string name="diag_test_voice_assigned">Voz de prueba asignada a %1$s. Su próximo mensaje sonará con un gorjeo.</string>
+    <string name="diag_failed">Error: %1$s</string>
+    <string name="diag_decisions_header">Últimas 50 decisiones</string>
+    <string name="diag_decisions_empty">Aún no hay decisiones.</string>
+    <string name="selftest_channel_name">Autoprueba</string>
+    <string name="selftest_channel_description">La notificación de prueba de Diagnóstico. Deja activados su sonido y su vibración.</string>
+    <string name="selftest_notification_title">Autoprueba de Cucuto</string>
+    <string name="selftest_notification_text">Si el módulo está activo, ha sonado el gorjeo de Cucuto en lugar del sonido predeterminado.</string>
+
+    <!-- Status -->
+    <string name="status_title">Estado</string>
+    <string name="status_hero_loading">Comprobando Cucuto…</string>
+    <string name="status_hero_title">Preparando Cucuto</string>
+    <plurals name="status_hero_progress">
+        <item quantity="one">Comprobaciones superadas: %1$d de %2$d. La tarjeta se pone verde cuando se superan todas.</item>
+        <item quantity="many">Comprobaciones superadas: %1$d de %2$d. La tarjeta se pone verde cuando se superan todas.</item>
+        <item quantity="other">Comprobaciones superadas: %1$d de %2$d. La tarjeta se pone verde cuando se superan todas.</item>
+    </plurals>
+    <string name="status_ready_title">¡Cu-cu! Todo listo</string>
+    <string name="status_ready_body">Se superan todas las comprobaciones. Los contactos con personaje ya suenan con él cuando te escriben.</string>
+    <string name="status_door_closed">La puerta del reloj de cuco está cerrada: Cucuto aún no está listo</string>
+    <string name="status_door_open">La puerta del reloj de cuco está abierta y el pájaro canta: Cucuto está listo</string>
+    <string name="status_checking">Comprobando…</string>
+    <string name="status_outcome_pass">Superada</string>
+    <string name="status_outcome_fail">Necesita atención</string>
+    <string name="status_outcome_unknown">No se puede comprobar desde la app</string>
+    <string name="status_check_module">Módulo activo en system_server</string>
+    <string name="status_check_scope">Ámbito de LSPosed: solo System Framework</string>
+    <string name="status_check_whatsapp">WhatsApp detectado</string>
+    <string name="status_check_packs">Al menos un pack instalado</string>
+    <string name="status_module_active">El módulo ha informado desde system_server en este arranque. Hooks: %1$s.</string>
+    <string name="status_module_active_update">El módulo está activo, pero aún ejecuta la versión anterior a tu última actualización de Cucuto. Reinicia para cargar la nueva.</string>
+    <string name="status_module_hooks_missing">El módulo está cargado, pero estos hooks no se han podido instalar en esta versión de Android: %1$s. Suena el tono de WhatsApp. Abre Diagnóstico e infórmalo en GitHub.</string>
+    <string name="status_module_awaiting">Activado, pero el módulo no ha informado en este arranque. Envía una notificación de prueba: con el módulo activo oirás un gorjeo de dos tonos en lugar del sonido predeterminado.</string>
+    <string name="status_module_reboot">Activado en LSPosed, pero aún no se ha cargado en el sistema. Reinicia el móvil.</string>
+    <string name="status_module_reboot_update">Cucuto se ha actualizado desde el último arranque y el sistema aún ejecuta el módulo antiguo. Reinicia el móvil.</string>
+    <string name="status_module_unsupported">%1$s no puede ejecutar Cucuto: no ofrece Remote Preferences. Cucuto necesita LSPosed con libxposed API 102.</string>
+    <string name="status_module_not_enabled">No está activado. En el gestor de LSPosed, activa Cucuto con System Framework como ámbito y reinicia.</string>
+    <string name="status_scope_ok">LSPosed indica System Framework y nada más.</string>
+    <string name="status_scope_inferred">El módulo funciona en system_server, así que System Framework está en su ámbito. LSPosed deja las demás apps fuera del ámbito de Cucuto.</string>
+    <string name="status_scope_missing">System Framework no está en el ámbito, así que el módulo nunca se carga. En LSPosed, abre Módulos y luego Cucuto, marca System Framework y reinicia.</string>
+    <string name="status_scope_missing_others">System Framework no está en el ámbito, así que el módulo nunca se carga. En LSPosed, abre Módulos y luego Cucuto, marca System Framework, desmarca %1$s y reinicia.</string>
+    <string name="status_scope_extra">El ámbito también incluye %1$s. Cucuto solo necesita System Framework y nunca debe enganchar otras apps: desmárcalas en LSPosed y reinicia.</string>
+    <string name="status_scope_unknown">Cucuto puede leer su ámbito cuando el módulo está activado. Para comprobarlo a mano: en LSPosed, abre Módulos y luego Cucuto. Solo debe estar marcado System Framework.</string>
+    <string name="status_whatsapp_found">Encontrado: %1$s.</string>
+    <string name="status_whatsapp_disabled">%1$s está instalado pero desactivado. Actívalo en los ajustes del sistema.</string>
+    <string name="status_whatsapp_missing">Instala WhatsApp o WhatsApp Business. Cucuto da voz a sus notificaciones.</string>
+    <string name="status_list_separator">, </string>
+    <plurals name="status_packs_installed">
+        <item quantity="one">%d pack instalado.</item>
+        <item quantity="many">%d packs instalados.</item>
+        <item quantity="other">%d packs instalados.</item>
+    </plurals>
+    <string name="status_packs_none">Cucuto viene vacío. Importa un archivo de pack o consigue packs gratis en la web.</string>
+    <string name="status_action_self_test">Enviar notificación de prueba</string>
+    <string name="status_action_diagnostics">Abrir Diagnóstico</string>
+    <string name="status_action_install_guide">Guía de instalación</string>
+    <string name="status_action_get_whatsapp">Descargar WhatsApp</string>
+    <string name="status_action_app_settings">Abrir ajustes de la app</string>
+    <string name="status_action_import_pack">Importar un pack</string>
+    <string name="status_action_get_packs">Packs gratis</string>
+    <string name="status_action_unavailable">Ninguna app de este móvil puede abrir eso.</string>
+    <string name="status_self_test_posted">Enviada. Escucha el gorjeo; esta comprobación se pondrá verde en unos 10 segundos.</string>
+    <string name="status_setup_guide">Guía de configuración</string>
+    <string name="status_screens_header">Pantallas de muestra</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_back">Atrás</string>
+    <string name="onboarding_done">Hecho</string>
+    <string name="onboarding_later">Terminar más tarde</string>
+    <string name="onboarding_step">Paso %1$d de %2$d</string>
+    <string name="onboarding_open_install_guide">Abrir la guía de instalación</string>
+    <string name="onboarding_door_play">Abrir la puerta</string>
+    <string name="onboarding_door_description">El reloj de cuco de Cucuto: se abre una puertecita y un pájaro canta</string>
+
+    <string name="onboarding_welcome_title">Dale voz a cada contacto</string>
+    <string name="onboarding_welcome_body">Cuando alguien te escribe por WhatsApp, tu móvil reproduce un clip del personaje que le elegiste, con su propia vibración.</string>
+    <string name="onboarding_welcome_point_packs">Los personajes vienen de los packs de sonidos que importas. Cucuto viene vacío.</string>
+    <string name="onboarding_welcome_point_android">Android sigue decidiendo cuándo suena: los chats silenciados, No molestar y el modo silencio funcionan como siempre.</string>
+    <string name="onboarding_welcome_point_private">Todo se queda en tu móvil. Sin cuentas ni analíticas.</string>
+
+    <string name="onboarding_requirements_title">Antes de empezar</string>
+    <string name="onboarding_requirements_body">Cucuto necesita:</string>
+    <string name="onboarding_requirement_android">Android 17</string>
+    <string name="onboarding_requirement_root">Un móvil con root. Cucuto no lo rootea por ti.</string>
+    <string name="onboarding_requirement_lsposed">LSPosed con libxposed API 102, ya funcionando</string>
+    <string name="onboarding_risks_title">La parte sincera: los riesgos</string>
+    <string name="onboarding_risks_body">Cucuto ejecuta un pequeño módulo dentro de system_server, el núcleo de Android. Eso es lo que lo hace fiable, y también lo que lo hace arriesgado.</string>
+    <string name="onboarding_risk_bootloop">Un fallo en un módulo del sistema puede bloquear Android o impedir que el móvil arranque. Cucuto captura todos los errores y vuelve al tono de WhatsApp, pero ningún código es perfecto.</string>
+    <string name="onboarding_risk_root">El root y LSPosed debilitan la seguridad de Android y pueden romper apps de bancos, Google Play Integrity y tu garantía. Pasa con cualquier módulo de LSPosed.</string>
+    <string name="onboarding_risk_updates">Una actualización de Android puede mover el código que engancha Cucuto. Entonces el módulo deja de cambiar los sonidos y suena el tono de WhatsApp hasta que Cucuto se actualice.</string>
+    <string name="onboarding_risk_privacy">Para elegir una voz, el módulo lee quién envió cada notificación de WhatsApp (nombre e ID del chat). Eso se queda en el almacenamiento privado de Cucuto en este móvil.</string>
+    <string name="onboarding_risk_recovery">Aprende a recuperarlo antes de activarlo: la guía de instalación explica cómo desactivar el módulo o LSPosed si el móvil no arranca.</string>
+
+    <string name="onboarding_enable_title">Activa el módulo</string>
+    <string name="onboarding_enable_body">Abre el gestor de LSPosed, ve a Módulos y activa Cucuto. Su ámbito es System Framework, que ya viene marcado. No añadas WhatsApp ni ninguna otra app: Cucuto nunca las engancha.</string>
+    <string name="onboarding_enable_hint">Estas comprobaciones se actualizan cuando vuelves a Cucuto. Puede que LSPosed no se lo diga a Cucuto hasta después de reiniciar.</string>
+
+    <string name="onboarding_reboot_title">Reinicia</string>
+    <string name="onboarding_reboot_body">El módulo se carga en Android al arrancar, así que reinicia el móvil ahora. Después, vuelve a abrir Cucuto: la configuración sigue aquí.</string>
+
+    <string name="onboarding_test_title">Envía la autoprueba</string>
+    <string name="onboarding_test_body">Toca el botón y escucha. Con el módulo activo oirás un gorjeo ascendente de dos tonos y notarás un clic corto en lugar del sonido predeterminado. Cucuto se pondrá verde en unos 10 segundos.</string>
+    <string name="onboarding_test_success">¡Cu-cu! Cucuto funciona. Ahora importa un pack y dale voz a tu primer contacto.</string>
+    <string name="onboarding_test_default_sound">¿Has oído el sonido predeterminado? El módulo aún no está activo: revisa los pasos anteriores o abre la guía de instalación.</string>
+
+    <!-- Screens -->
+    <string name="screen_home">Inicio</string>
+    <string name="screen_home_body">Tus chats con su personaje como avatar, y los remitentes recientes que esperan una voz.</string>
+    <string name="screen_picker">Selector de personajes</string>
+    <string name="screen_picker_body">Una cuadrícula de personajes agrupados por pack. Toca para escuchar y vuelve a tocar para asignar.</string>
+    <string name="screen_contact">Detalle del contacto</string>
+    <string name="screen_contact_body">El personaje asignado, sus clips, el tono de llamada, la vibración personalizada y un botón para simular un mensaje.</string>
+    <string name="screen_packs">Packs</string>
+    <string name="screen_packs_body">Packs instalados, importar desde un archivo, crear un pack, actualizar y quitar.</string>
+    <string name="screen_discover">Descubrir</string>
+    <string name="screen_discover_body">Explora repositorios de packs, escucha y descarga packs.</string>
+    <string name="screen_haptics">Editor de vibración</string>
+    <string name="screen_haptics_body">Coloca patrones predefinidos en una línea de tiempo, arrastra los puntos de la envolvente y pruébala con el clip.</string>
+    <string name="screen_settings">Ajustes</string>
+    <string name="screen_settings_body">Interruptor de voces, copia de seguridad y restauración, y el registro de decisiones de cada notificación reciente.</string>
+    <string name="placeholder_coming">Llegará en %1$s</string>
+
+    <!-- Chats (shared by Home and the character picker) -->
+    <string name="chat_unnamed">Chat sin nombre</string>
+    <string name="chat_unnamed_group">Grupo sin nombre</string>
+    <string name="chat_open_label">Elegir una voz</string>
+
+    <!-- Home -->
+    <string name="home_search_hint">Busca chats y personajes</string>
+    <string name="home_search_clear">Borrar búsqueda</string>
+    <string name="home_filter_header">Filtrar por pack</string>
+    <string name="home_recent_header">Remitentes recientes</string>
+    <string name="home_recent_body">Te han escrito y aún no tienen voz. Toca a alguien para elegirla.</string>
+    <string name="home_recent_hide">Ocultar</string>
+    <string name="home_recent_hide_label">Ocultar de remitentes recientes</string>
+    <string name="home_chats_header">Chats</string>
+    <string name="home_chat_voice">%1$s · %2$s</string>
+    <string name="home_chat_no_voice">Sin voz: tono de WhatsApp</string>
+    <string name="home_chat_voice_missing">Voz no disponible: se quitó su pack</string>
+    <string name="home_chat_group">Grupo · %1$s</string>
+    <string name="home_empty_title">Aún no hay chats</string>
+    <string name="home_empty_body">Cuando alguien te escriba por WhatsApp, aparecerá aquí. Tócalo para darle una voz.</string>
+    <string name="home_empty_door">Una puerta de reloj de cuco cerrada, esperando a que alguien llame</string>
+    <string name="home_no_matches">Ningún chat coincide</string>
+    <string name="home_no_packs_title">Aún no hay packs de sonidos</string>
+    <string name="home_no_packs_body">Importa un pack de sonidos para tener personajes entre los que elegir.</string>
+    <string name="home_open_packs">Abrir Packs</string>
+    <string name="home_fab">Asignar una voz</string>
+    <string name="home_sheet_title">¿Quién recibe una voz?</string>
+    <string name="home_sheet_empty">Todos los chats tienen voz. Quien te escriba por primera vez aparecerá aquí.</string>
+    <string name="home_loading">Cargando chats</string>
+
+    <!-- Character picker -->
+    <string name="picker_title">Elige una voz</string>
+    <string name="picker_subtitle_for">Para %1$s</string>
+    <string name="picker_subtitle_preview">Escucha los personajes</string>
+    <string name="picker_hint">Toca un personaje para oírlo. Vuelve a tocarlo para dárselo a este chat.</string>
+    <string name="picker_hint_preview">Toca un personaje para oírlo. Abre un chat desde Inicio para darle una voz.</string>
+    <string name="picker_speaks_as">Habla como %1$s</string>
+    <string name="picker_no_voice">Sin voz: tono de WhatsApp</string>
+    <string name="picker_assigned">%1$s ahora habla por %2$s</string>
+    <string name="picker_tap_again">Vuelve a tocar para asignar</string>
+    <string name="picker_current">Voz actual</string>
+    <string name="picker_state_selected">Seleccionado</string>
+    <string name="picker_state_playing">Sonando</string>
+    <string name="picker_preview_label">Escuchar</string>
+    <string name="picker_assign_label">Asignar</string>
+    <string name="picker_remove">Quitar voz</string>
+    <string name="picker_failed">No se ha podido guardar la voz. Inténtalo de nuevo.</string>
+    <string name="picker_empty_title">Aún no hay personajes</string>
+    <string name="picker_empty_body">Importa un pack de sonidos para llenar esta cuadrícula.</string>
+    <string name="picker_loading">Cargando personajes</string>
+
+    <!-- Design gallery (debug builds) -->
+    <string name="screen_gallery">Galería de diseño</string>
+    <string name="gallery_subtitle">Tema, formas y respuesta</string>
+    <string name="gallery_door_title">La puerta se abre de golpe</string>
+    <string name="gallery_door_body">Lanza Feedback.DoorOpen: el canto cu-cu, un tic y un clic, y la puerta, todo desde una misma marca de tiempo.</string>
+    <string name="gallery_door_description">Se abre la puerta de un reloj de cuco y un pájaro se asoma</string>
+    <string name="gallery_door_play">Abrir la puerta</string>
+    <string name="gallery_assign_title">Explosión al asignar</string>
+    <string name="gallery_assign_body">Toca el avatar: Feedback.Assign reproduce el canto y la vibración ascendente, el avatar cambia de forma y salen partículas con los colores del personaje.</string>
+    <string name="gallery_assign_avatar">Asignar este personaje</string>
+    <string name="gallery_characters_title">Colores de los personajes</string>
+    <string name="gallery_characters_body">Cada pantalla de personaje cambia de tema a partir de un color semilla: SchemeVibrant, especificación 2025, siguiendo el modo oscuro y el contraste.</string>
+    <string name="gallery_character_cucuto">Cucuto</string>
+    <string name="gallery_character_leaf">Hoja</string>
+    <string name="gallery_character_sky">Cielo</string>
+    <string name="gallery_character_berry">Baya</string>
+    <string name="gallery_character_plum">Ciruela</string>
+    <string name="gallery_character_sunny">Sol</string>
+    <string name="gallery_character_slate">Pizarra</string>
+    <string name="gallery_character_sprite">Desde un sprite</string>
+    <string name="gallery_sprite_description">Un sprite de ejemplo dibujado con código</string>
+    <string name="gallery_sprite_seed">Semilla extraída fuera del hilo principal: %1$s</string>
+    <string name="gallery_sprite_extracting">Extrayendo la semilla…</string>
+    <string name="gallery_events_title">Eventos de respuesta</string>
+    <string name="gallery_events_body">Sonido y vibración por evento, como en brand/sound-and-haptics.md. Los eventos ricos usan primitivas de composición cuando el dispositivo las tiene.</string>
+    <string name="gallery_event_tap">Toque</string>
+    <string name="gallery_event_confirm">Confirmar</string>
+    <string name="gallery_event_reject">Rechazar</string>
+    <string name="gallery_event_success">Éxito</string>
+    <string name="gallery_event_error">Error</string>
+    <string name="gallery_event_long_press">Pulsación larga</string>
+    <string name="gallery_event_tick">Tic de segmento</string>
+    <string name="gallery_event_toggle">Activar y desactivar</string>
+    <string name="gallery_settings_title">Ajustes en uso</string>
+    <string name="gallery_ui_sounds">Sonidos de la interfaz</string>
+    <string name="gallery_ui_sounds_off">Desactivados</string>
+    <string name="gallery_ui_sounds_quiet">Bajos</string>
+    <string name="gallery_ui_sounds_normal">Normales</string>
+    <string name="gallery_ui_haptics">Vibración de la interfaz</string>
+    <string name="gallery_ui_haptics_body">Los ajustes de vibración y respuesta táctil del sistema siguen aplicándose.</string>
+    <string name="gallery_dynamic_color">Color dinámico</string>
+    <string name="gallery_dynamic_color_body">Desactivado muestra los colores de la marca (solo en esta pantalla).</string>
+    <string name="gallery_reduced_motion">Quitar animaciones</string>
+    <string name="gallery_reduced_motion_on">Activado: sin partículas ni rebotes, la puerta aparece con un fundido</string>
+    <string name="gallery_reduced_motion_off">Desactivado</string>
+    <string name="gallery_rich_haptics">Vibración avanzada</string>
+    <string name="gallery_rich_haptics_yes">Compatible: suenan las composiciones</string>
+    <string name="gallery_rich_haptics_no">No compatible: suenan las alternativas estándar</string>
+    <string name="gallery_contrast">Nivel de contraste</string>
+    <string name="gallery_colors_title">Roles de color</string>
+    <string name="gallery_shapes_title">Formas</string>
+    <string name="gallery_shape_avatar">Avatar</string>
+    <string name="gallery_shape_avatar_active">Pulsado</string>
+    <string name="gallery_shape_tile">Pulsar casilla</string>
+    <string name="gallery_shape_badge">Insignia</string>
+    <string name="gallery_shape_door">Puerta</string>
+    <string name="gallery_shape_particles">Partículas</string>
+    <string name="gallery_type_title">Tipografía</string>
+    <string name="gallery_type_display">¡Cu-cu!</string>
+    <string name="gallery_type_headline">Marta ahora suena como una rana</string>
+    <string name="gallery_type_title_sample">Selector de personajes</string>
+    <string name="gallery_type_body">Toca un personaje para oírlo y vuelve a tocarlo para asignarlo. Google Sans Flex, más redondeada en los textos grandes.</string>
+    <string name="gallery_type_label">Importar pack</string>
+
+    <!-- Packs screen (#27) -->
+    <string name="packs_import">Importar</string>
+    <string name="packs_import_file">Importar un pack</string>
+    <string name="packs_discover">Descubrir</string>
+    <string name="packs_website">Web</string>
+    <string name="packs_play_character">Reproducir %1$s</string>
+    <string name="packs_summary">%1$s · %2$s</string>
+    <plurals name="packs_count">
+        <item quantity="one">%d pack</item>
+        <item quantity="many">%d packs</item>
+        <item quantity="other">%d packs</item>
+    </plurals>
+    <plurals name="packs_characters">
+        <item quantity="one">%d personaje</item>
+        <item quantity="many">%d personajes</item>
+        <item quantity="other">%d personajes</item>
+    </plurals>
+    <string name="packs_card_subtitle">%1$s · versión %2$s</string>
+    <string name="packs_card_subtitle_used">%1$s · versión %2$s · %3$s</string>
+    <plurals name="packs_used_by">
+        <item quantity="one">lo usa %d contacto</item>
+        <item quantity="many">lo usan %d contactos</item>
+        <item quantity="other">lo usan %d contactos</item>
+    </plurals>
+    <string name="packs_files_missing">Faltan los archivos de este pack. Vuelve a importarlo para arreglarlo.</string>
+    <string name="packs_empty_title">Aún no hay packs</string>
+    <string name="packs_empty_body">Los packs de sonidos traen los personajes que hablan por tus contactos. Importa un archivo .soundpack.zip desde tu móvil, Google Drive o cualquier otra app.</string>
+    <string name="packs_get_free">Consigue los packs de demostración gratis</string>
+    <string name="packs_more_title">Encuentra más packs</string>
+    <string name="packs_more_body">Explora repositorios de packs en Descubrir, o descarga packs gratis desde la web de Cucuto e impórtalos aquí.</string>
+    <string name="packs_by_author">de %1$s</string>
+    <string name="packs_fact_version">Versión</string>
+    <string name="packs_fact_license">Licencia</string>
+    <string name="packs_fact_size">Tamaño</string>
+    <string name="packs_fact_source">Origen</string>
+    <string name="packs_fact_contacts">Lo usan</string>
+    <string name="packs_source_local">Importado desde un archivo</string>
+    <string name="packs_source_url">Descargado desde un enlace</string>
+    <string name="packs_source_repository">Descargado de un repositorio de packs</string>
+    <string name="packs_contacts_none">Aún sin contactos</string>
+    <plurals name="packs_contacts">
+        <item quantity="one">%d contacto</item>
+        <item quantity="many">%d contactos</item>
+        <item quantity="other">%d contactos</item>
+    </plurals>
+    <plurals name="packs_names_and_more">
+        <item quantity="one">%1$s y %2$d más</item>
+        <item quantity="many">%1$s y %2$d más</item>
+        <item quantity="other">%1$s y %2$d más</item>
+    </plurals>
+    <string name="packs_update_hint">Para actualizar este pack, importa una versión más nueva de su archivo. Tus contactos conservan sus personajes.</string>
+    <string name="packs_remove">Quitar pack</string>
+    <string name="packs_remove_title">¿Quitar %1$s?</string>
+    <plurals name="packs_remove_body">
+        <item quantity="one">Su %d personaje y sus sonidos se borran de este móvil.</item>
+        <item quantity="many">Sus %d personajes y sus sonidos se borran de este móvil.</item>
+        <item quantity="other">Sus %d personajes y sus sonidos se borran de este móvil.</item>
+    </plurals>
+    <plurals name="packs_remove_contacts">
+        <item quantity="one">%1$d contacto usa sus personajes: %2$s.</item>
+        <item quantity="many">%1$d contactos usan sus personajes: %2$s.</item>
+        <item quantity="other">%1$d contactos usan sus personajes: %2$s.</item>
+    </plurals>
+    <string name="packs_remove_keep">Mantener sus personajes</string>
+    <string name="packs_remove_keep_body">Por ahora suenan con el tono de WhatsApp. Si vuelves a importar este pack, recuperan sus personajes.</string>
+    <string name="packs_remove_clear">Quitar sus personajes</string>
+    <string name="packs_remove_clear_body">Vuelven al tono de WhatsApp. Puedes elegirles personajes nuevos más tarde.</string>
+    <string name="packs_remove_confirm">Quitar</string>
+    <string name="packs_removed">Se ha quitado %1$s</string>
+    <string name="packs_remove_failed">No se ha podido quitar %1$s. Inténtalo de nuevo.</string>
+    <string name="packs_installed_none">No se ha instalado nada.</string>
+    <plurals name="packs_installed_one">
+        <item quantity="one">%1$s está instalado. Su %2$d personaje está listo para asignar.</item>
+        <item quantity="many">%1$s está instalado. Sus %2$d personajes están listos para asignar.</item>
+        <item quantity="other">%1$s está instalado. Sus %2$d personajes están listos para asignar.</item>
+    </plurals>
+    <plurals name="packs_installed_many">
+        <item quantity="one">%d pack instalado. Sus personajes están listos para asignar.</item>
+        <item quantity="many">%d packs instalados. Sus personajes están listos para asignar.</item>
+        <item quantity="other">%d packs instalados. Sus personajes están listos para asignar.</item>
+    </plurals>
+    <plurals name="packs_installed_skipped">
+        <item quantity="one">Se ha omitido %d pack.</item>
+        <item quantity="many">Se han omitido %d packs.</item>
+        <item quantity="other">Se han omitido %d packs.</item>
+    </plurals>
+
+    <!-- Import sheet (#27) -->
+    <string name="import_cancel">Cancelar</string>
+    <string name="import_ok">Aceptar</string>
+    <string name="import_pick_another">Elegir otro archivo</string>
+    <string name="import_step_reading">Leyendo el archivo…</string>
+    <string name="import_step_checking">Comprobando el pack…</string>
+    <string name="import_step_unpacking">Descomprimiendo…</string>
+    <string name="import_step_testing">Probando sonidos e imágenes…</string>
+    <string name="import_step_installing">Instalando…</string>
+    <plurals name="import_bundle_subtitle">
+        <item quantity="one">Colección de %d pack</item>
+        <item quantity="many">Colección de %d packs</item>
+        <item quantity="other">Colección de %d packs</item>
+    </plurals>
+    <string name="import_action_install">Nuevo · %1$s · %2$s</string>
+    <string name="import_action_update">Actualiza la versión %1$s a la %2$s. Los contactos conservan sus personajes.</string>
+    <string name="import_action_reinstall">La versión %1$s ya está instalada. Si instalas, se reemplaza.</string>
+    <string name="import_action_downgrade">Está instalada la versión %1$s. Este archivo trae la versión anterior %2$s.</string>
+    <plurals name="import_orphaned">
+        <item quantity="one">Esta versión quita un personaje que usa %d contacto. Ese contacto sonará con el tono de WhatsApp.</item>
+        <item quantity="many">Esta versión quita personajes que usan %d contactos. Sonarán con el tono de WhatsApp.</item>
+        <item quantity="other">Esta versión quita personajes que usan %d contactos. Sonarán con el tono de WhatsApp.</item>
+    </plurals>
+    <string name="import_install">Instalar</string>
+    <string name="import_update">Actualizar</string>
+    <string name="import_reinstall">Reemplazar</string>
+    <string name="import_downgrade">Instalar versión anterior</string>
+    <plurals name="import_install_packs">
+        <item quantity="one">Instalar %d pack</item>
+        <item quantity="many">Instalar %d packs</item>
+        <item quantity="other">Instalar %d packs</item>
+    </plurals>
+    <plurals name="import_more_problems">
+        <item quantity="one">Y %d problema más.</item>
+        <item quantity="many">Y %d problemas más.</item>
+        <item quantity="other">Y %d problemas más.</item>
+    </plurals>
+    <plurals name="import_file_and_more">
+        <item quantity="one">%1$s y %2$d archivo más</item>
+        <item quantity="many">%1$s y %2$d archivos más</item>
+        <item quantity="other">%1$s y %2$d archivos más</item>
+    </plurals>
+    <string name="import_details_show">Ver detalles para autores de packs</string>
+    <string name="import_details_hide">Ocultar detalles</string>
+    <string name="import_problem_backup_title">Esto es una copia de seguridad de Cucuto</string>
+    <string name="import_problem_backup_summary">Las copias de seguridad no son packs de sonidos. Restáurala desde Ajustes, en Copia de seguridad y restauración.</string>
+    <string name="import_problem_not_pack_title">Esto no es un pack de sonidos</string>
+    <string name="import_problem_not_pack_summary">Cucuto abre packs de sonidos: archivos zip con un pack.json o un bundle.json dentro, que suelen llamarse algo.soundpack.zip. Este zip no tiene ninguno de los dos.</string>
+    <string name="import_problem_newer_title">Hecho para un Cucuto más nuevo</string>
+    <string name="import_problem_newer_summary">Este pack usa un formato de pack más nuevo. Actualiza Cucuto y vuelve a importarlo.</string>
+    <string name="import_problem_invalid_title">Este pack no se puede importar</string>
+    <string name="import_problem_invalid_summary">No se ha instalado nada. Quien hizo el pack tiene que arreglar esto:</string>
+    <string name="import_problem_failed_title">No se ha podido importar el archivo</string>
+    <string name="import_failure_source_unreadable">Cucuto no ha podido leer el archivo. Si está en la nube, comprueba tu conexión y vuelve a intentarlo.</string>
+    <string name="import_failure_source_too_large">El archivo es más grande de lo que puede ser cualquier pack.</string>
+    <string name="import_failure_not_enough_storage">No hay espacio libre suficiente en este móvil para descomprimirlo.</string>
+    <string name="import_failure_storage_error">Cucuto no ha podido guardar el pack en el almacenamiento de este móvil.</string>
+    <string name="import_failure_not_prepared">Esta importación ha caducado. Vuelve a elegir el archivo.</string>
+    <string name="import_failure_unexpected">Algo ha fallado. Vuelve a intentarlo y, si sigue pasando, infórmalo con los detalles de abajo.</string>
+
+    <!-- Pack format problems in plain words, one per code of spec/error-codes.json -->
+    <string name="error_archive_unreadable">El archivo está dañado o no es un zip. Prueba a descargarlo otra vez.</string>
+    <string name="error_archive_unsupported">El zip usa algo que los packs no admiten, como una contraseña o una compresión poco común.</string>
+    <string name="error_compression_ratio_exceeded">El zip se descomprimiría a un tamaño sospechoso, así que se ha bloqueado por seguridad.</string>
+    <string name="error_duplicate_entry">Dos archivos del zip tienen el mismo nombre.</string>
+    <string name="error_unsafe_path">Un archivo del zip apunta fuera del pack, así que se ha bloqueado por seguridad.</string>
+    <string name="error_unsafe_entry">El zip contiene un enlace o un archivo especial. Los packs solo llevan archivos normales.</string>
+    <string name="error_invalid_file_name">Un nombre de archivo usa caracteres que los packs no admiten, o es demasiado largo.</string>
+    <string name="error_executable_file">El zip contiene un programa o un script. Los packs solo llevan sonidos, imágenes y texto.</string>
+    <string name="error_unknown_file_type">El zip contiene un tipo de archivo que los packs no admiten.</string>
+    <string name="error_file_too_large">Un archivo es más grande de lo que permiten los packs.</string>
+    <string name="error_too_many_files">El pack tiene demasiados archivos.</string>
+    <string name="error_unpacked_too_large">El pack es demasiado grande una vez descomprimido.</string>
+    <string name="error_manifest_missing">No hay ningún pack.json ni bundle.json dentro.</string>
+    <string name="error_manifest_ambiguous">El zip tiene un pack.json y un bundle.json, y no puede ser las dos cosas.</string>
+    <string name="error_ignored_entry">Se han omitido algunos archivos del sistema, como .DS_Store.</string>
+    <string name="error_large_pack">Es un pack grande. Ocupa mucho espacio en este móvil.</string>
+    <string name="error_manifest_invalid_json">El archivo de descripción del pack (pack.json) está dañado.</string>
+    <string name="error_format_version_unsupported">El pack se hizo para una versión más nueva de Cucuto.</string>
+    <string name="error_schema_violation">Al archivo de descripción del pack (pack.json) le falta un valor o tiene uno incorrecto.</string>
+    <string name="error_duplicate_id">Dos personajes o packs tienen el mismo ID.</string>
+    <string name="error_file_missing">Falta un sonido o una imagen que el pack incluye en su lista.</string>
+    <string name="error_file_type_mismatch">Un archivo se usa para lo que no es, como una imagen donde debería ir un sonido.</string>
+    <string name="error_bundle_pack_missing">Falta un pack que la colección incluye en su lista.</string>
+    <string name="error_bundle_layout_invalid">Las carpetas de la colección no están bien organizadas.</string>
+    <string name="error_haptic_invalid">Un patrón de vibración del pack está roto.</string>
+    <string name="error_when_invalid">La regla de hora o temporada de un tono de llamada está rota.</string>
+    <string name="error_loop_points_invalid">Los puntos de bucle de un tono de llamada son incorrectos.</string>
+    <string name="error_license_not_spdx">La licencia no es un nombre de licencia estándar, así que se muestra tal cual.</string>
+    <string name="error_unreferenced_file">Algunos archivos no los usa ningún personaje y se han dejado fuera.</string>
+    <string name="error_media_undecodable">Un sonido o una imagen está dañado o no se puede reproducir en este móvil.</string>
+    <string name="error_clip_duration_out_of_range">Un sonido de notificación es demasiado corto o demasiado largo. Tiene que durar entre 0,2 y 30 segundos.</string>
+    <string name="error_ringtone_duration_out_of_range">Un tono de llamada es demasiado corto o demasiado largo. Tiene que durar entre 5 segundos y 6 minutos.</string>
+    <string name="error_image_too_large">Una imagen es demasiado grande. Las imágenes pueden medir como máximo 512 píxeles por lado.</string>
+    <string name="error_svg_unsafe">Una imagen (SVG) contiene scripts o enlaces externos, así que se ha bloqueado por seguridad.</string>
+    <string name="error_download_size_mismatch">La descarga está incompleta o ha cambiado. Vuelve a intentarlo.</string>
+    <string name="error_download_hash_mismatch">La descarga no coincide con lo que prometía su origen. Vuelve a intentarlo.</string>
+    <string name="error_backup_decryption_failed">No se puede abrir la copia de seguridad. Comprueba la contraseña.</string>
+    <string name="error_pack_downgrade">Ya hay instalada una versión más nueva de este pack.</string>
+    <string name="error_pack_same_version">Esta versión del pack ya está instalada.</string>
+</resources>
