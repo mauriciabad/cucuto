@@ -279,6 +279,10 @@ private fun CharacterChoice(
 ) {
     val colors = MaterialTheme.colorScheme
     val selectedLabel = stringResource(R.string.picker_state_selected)
+    val playingLabel = stringResource(R.string.picker_state_playing)
+    // As in the picker: TalkBack (and the smoke tests) hear that the chosen character is speaking.
+    val stateLabel =
+        listOfNotNull(selectedLabel.takeIf { selected }, playingLabel.takeIf { speaking }).joinToString()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -296,7 +300,7 @@ private fun CharacterChoice(
             modifier =
                 Modifier.semantics {
                     this.selected = selected
-                    if (selected) stateDescription = selectedLabel
+                    if (stateLabel.isNotEmpty()) stateDescription = stateLabel
                 },
         )
         Text(

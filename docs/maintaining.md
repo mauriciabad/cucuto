@@ -59,6 +59,42 @@ Full requirements: [CONTRIBUTING.md](../CONTRIBUTING.md#building).
 Run Playwright with `CI=1`: without it, Playwright reuses whatever preview server already listens on port 4173.
 Run the builds for every area you touched before pushing.
 
+### End-to-end smoke tests (emulator)
+
+Before pushing any app change, run the smoke suite (#340). It drives the real app (Room database, importer,
+routing publisher, backups, navigation) through the main journeys with the CC0 demo packs. In about 2 minutes it
+tells you whether you broke one of them:
+
+| Test (`android/app/src/androidTest/.../smoke/`) | Journey |
+| --- | --- |
+| `FirstRunSmokeTest` | onboarding ends on Home; the demo pack imports from the file picker; "Open with" imports a `file:` URI |
+| `VoiceSmokeTest` | message voice then the optional ringtone step (#318), then "Android default" and "Leave as is"; own ringtone rules saved and reset; "Surprise me" in the picker; each change checked in the routing table the publisher writes for the module |
+| `SampleChatSmokeTest` | the sample chat plays a message and a call |
+| `BackupSmokeTest` | full backup export, wipe, restore from Home; the voice is back in the routing table |
+
+Pick one way to run it (both build the demo packs with the packer first, the `demoPacks` task):
+
+- **Gradle Managed Device:** `cd android && ./gradlew :app:smokeTest`. Gradle downloads the API 37 AOSP ATD image
+  once, then boots it, runs the suite and shuts it down.
+- **Any running emulator:** `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`. Always set
+  `ANDROID_SERIAL`: without it, Gradle installs on every device attached, the owner's phone included. Never run it on
+  the phone (`62240DLCH0005W`): the Orchestrator clears the app's data before each test.
+
+How it works, so you can extend it:
+
+- Each test runs in its own process on a cleared app (Android Test Orchestrator with `clearPackageData`). It starts
+  like a fresh install on Hilt's test application (`HiltTestRunner`). `SmokeTest.startApp` starts what
+  `CucutoApplication.onCreate` would (the routing publisher), then opens `MainActivity`.
+- Setup goes through the app's real classes: `installDemoPack` (the importer, as Install does) and `messageFrom` (a
+  sender, as the module reports one). System file pickers are answered with Espresso-Intents (`answerFilePicker`).
+- No sleeps. Compose idling covers the UI. `waitFor`, `waitForText` and `scrollListTo` wait for a node after
+  background work. `waitForPublishedTable` reads the publisher's own copy of the table.
+- Nodes are found by string resource (`R.string.…`), so a renamed string fails to compile and reworded text still
+  matches. If you change a journey on purpose, update its test in the same PR.
+- **Not in CI:** it needs the full APK (NDK and Rust for `:core:jxl`), an API 37 emulator image download and a boot
+  on every app PR, more than 10 minutes on a GitHub runner. A slow or flaky required check would also block
+  auto-merge with nobody around to retry it. Run it yourself before pushing app changes.
+
 ## 4. Screenshot goldens (Roborazzi)
 
 CI verifies the PNGs in `android/app/src/testDebug/screenshots/` (main screens, large fonts, Spanish; ADR 0032).

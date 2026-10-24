@@ -1,4 +1,6 @@
 import app.mauri.cucuto.buildlogic.BrandSoundsTask
+import app.mauri.cucuto.buildlogic.DemoPacksTask
+import com.android.build.api.dsl.ManagedVirtualDevice
 
 plugins {
     alias(libs.plugins.cucuto.android.application)
@@ -26,6 +28,11 @@ android {
         // versionCode = MAJOR * 1_000_000 + MINOR * 1_000 + PATCH (ADR 0021, docs/releasing.md).
         versionCode = 1
         versionName = "0.1.0"
+
+        // End-to-end smoke tests (src/androidTest, docs/maintaining.md): Hilt's test application, and every test in
+        // its own process on a cleared app (Orchestrator), so each one starts like a fresh install.
+        testInstrumentationRunner = "app.mauri.cucuto.smoke.HiltTestRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
     androidResources {
@@ -58,6 +65,19 @@ android {
     }
 
     testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        animationsDisabled = true
+        // `./gradlew :app:smokeTest` runs the smoke suite on this emulator, which Gradle downloads, boots and shuts
+        // down (an AOSP Automated Test Device image: headless and lean). Not in CI (docs/maintaining.md).
+        managedDevices {
+            allDevices {
+                create<ManagedVirtualDevice>("smokeApi37") {
+                    device = "Pixel 6"
+                    apiLevel = 37
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
         // Robolectric needs the merged resources (strings) for the Compose UI tests.
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
@@ -106,6 +126,30 @@ tasks.register("exportStoreScreenshots") {
     dependsOn("recordRoborazziDebug")
 }
 
+// The smoke suite in one command, on the managed emulator above. On a running emulator instead:
+// `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`.
+tasks.register("smokeTest") {
+    group = "verification"
+    description = "Runs the end-to-end smoke suite (src/androidTest) on a Gradle Managed Device (API 37)."
+    dependsOn("smokeApi37DebugAndroidTest")
+}
+
+// The CC0 demo packs, built by the packer, as the smoke tests' assets (never in the source tree: media guard).
+val demoPacks =
+    tasks.register<DemoPacksTask>("demoPacks") {
+        val packs = layout.projectDirectory.dir("../../packs")
+        val packer = layout.projectDirectory.dir("../../tools/packer")
+        packsDirectory.set(packs)
+        packerDirectory.set(packer)
+        packSources.from(fileTree(packs) { exclude("*.kts") })
+        packerSources.from(
+            fileTree(packer.dir("cli/src/main")),
+            fileTree(layout.projectDirectory.dir("../../shared/pack-spec/src/commonMain")),
+            fileTree(layout.projectDirectory.dir("../../shared/pack-spec/src/jvmMain")),
+        )
+        outputDirectory.set(layout.buildDirectory.dir("generated/demoPacks"))
+    }
+
 // Brand UI sounds (brand/sounds/*.ogg) become R.raw.ui_* through a generated resource directory.
 val brandSounds =
     tasks.register<BrandSoundsTask>("brandSounds") {
@@ -115,6 +159,10 @@ val brandSounds =
 androidComponents {
     onVariants { variant ->
         variant.sources.res?.addGeneratedSourceDirectory(brandSounds, BrandSoundsTask::outputDirectory)
+        variant.androidTest
+            ?.sources
+            ?.assets
+            ?.addGeneratedSourceDirectory(demoPacks, DemoPacksTask::outputDirectory)
     }
 }
 
@@ -176,6 +224,17 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver3)
     testImplementation(libs.okhttp.tls)
 
+    // End-to-end smoke tests (src/androidTest): the real app on Hilt's test application, one process per test.
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    // Answers the system file pickers (backup export and restore) with files the test owns.
+    androidTestImplementation(libs.androidx.test.espresso.intents)
+    androidTestImplementation(libs.hilt.android.testing)
+    // The backup journey wipes the real database, as a new phone starts.
+    androidTestImplementation(libs.androidx.room3.runtime)
+    kspAndroidTest(libs.hilt.compiler)
+    androidTestUtil(libs.androidx.test.orchestrator)
+    androidTestUtil(libs.androidx.test.services)
 }
