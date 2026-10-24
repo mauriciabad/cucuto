@@ -1,0 +1,8 @@
+# libxposed module descriptor (modern API). Name and description come from android:label / android:description.
+minApiVersion=102
+targetApiVersion=102
+# staticScope=true: scope.list is exhaustive, so LSPosed (Vector) refuses any other app, and a runtime
+# requestScope() may only ask for an entry of scope.list. Entries are "recommended", never ticked on their own:
+# the user ticks WhatsApp, approves a requestScope() prompt, or taps "Use recommended". See
+# docs/whatsapp-ringtone-spike.md, section 6.
+staticScope=true

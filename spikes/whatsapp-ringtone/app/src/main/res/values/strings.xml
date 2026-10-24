@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cucuto WhatsApp ringtone spike</string>
+    <string name="module_description">Throwaway spike (#215): observes how WhatsApp plays its incoming-call ringtone. In swap mode only, calls from one test contact ring with a chosen file. Reads no messages. Scope: WhatsApp.</string>
+</resources>
