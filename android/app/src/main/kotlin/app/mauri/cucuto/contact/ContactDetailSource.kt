@@ -65,7 +65,9 @@ class RoomContactDetailSource
             contactId: Long,
             clipPath: String,
             enabled: Boolean,
-        ) = assignments.setClipEnabled(contactId, clipPath, enabled)
+        ) {
+            assignments.setClipEnabled(contactId, clipPath, enabled)
+        }
     }
 
 @Module

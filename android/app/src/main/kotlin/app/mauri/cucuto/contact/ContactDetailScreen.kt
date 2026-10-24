@@ -82,8 +82,8 @@ import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.feedback.Feedback
-import app.mauri.cucuto.ui.haptics.HapticOverrideSection
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.haptics.HapticOverrideSection
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
