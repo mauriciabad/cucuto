@@ -4,8 +4,13 @@ plugins {
     alias(libs.plugins.cucuto.android.application)
     alias(libs.plugins.cucuto.android.compose)
     alias(libs.plugins.cucuto.android.hilt)
+    alias(libs.plugins.cucuto.android.screenshots)
     alias(libs.plugins.cucuto.kotlin.serialization)
 }
+
+// Where `exportWebScreenshots` writes the website's screenshots, and whether this build runs it.
+val webScreenshots: Directory = layout.projectDirectory.dir("../../web/src/lib/assets/images/screenshots")
+val exportWebScreenshots = gradle.startParameter.taskNames.any { it.substringAfterLast(':') == "exportWebScreenshots" }
 
 android {
     namespace = "app.mauri.cucuto"
@@ -37,6 +42,16 @@ android {
         unitTests.all {
             // Robolectric's Android 16+ runtime touches FileDescriptor internals that JDK 21 hides by default.
             it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+            // The screenshot tests draw the demo packs' sprites and covers straight from packs/ (ADR 0032).
+            it.inputs
+                .dir("../../packs")
+                .withPropertyName("demoPacks")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+            if (exportWebScreenshots) {
+                it.systemProperty("cucuto.screenshots.web", webScreenshots.asFile.absolutePath)
+                it.outputs.dir(webScreenshots)
+                it.outputs.upToDateWhen { false }
+            }
         }
     }
 
@@ -48,6 +63,14 @@ android {
             res.directories += "../../brand/app-icon/android-res"
         }
     }
+}
+
+// Website screenshots (ADR 0032): records the screenshot tests and also writes the images of the tests that name a
+// `web` image to the website, which encodes them to JPEG XL, AVIF and PNG at build time.
+tasks.register("exportWebScreenshots") {
+    group = "verification"
+    description = "Records the screenshot tests and writes the website's screenshots to web/src/lib/assets/images/."
+    dependsOn("recordRoborazziDebug")
 }
 
 // Brand UI sounds (brand/sounds/*.ogg) become R.raw.ui_* through a generated resource directory.

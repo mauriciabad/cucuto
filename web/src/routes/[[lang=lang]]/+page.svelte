@@ -4,9 +4,12 @@
 	import HeroClock from '#lib/components/HeroClock.svelte';
 	import Html from '#lib/components/Html.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import Picture from '#lib/components/Picture.svelte';
 	import Seo from '#lib/components/Seo.svelte';
+	import type { Shot } from '#lib/i18n/en.js';
 	import { localeFromPath, messages } from '#lib/i18n/index.js';
 	import { pageHref } from '#lib/i18n/links.js';
+	import type { PictureData } from '#lib/picture.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -16,7 +19,22 @@
 
 	// Character accents (brand/README.md) give each card its own color.
 	const stepAccents = ['leaf', 'sky', 'berry'];
-	const shotAccents = ['leaf', 'sky', 'berry', 'plum'];
+
+	// Screenshots rendered by the app's screenshot tests from the demo packs (#41, ADR 0032): `<name>-<theme>.png`,
+	// and `<locale>/<name>-<theme>.png` once the app is translated. A missing translation falls back to English.
+	const shotFiles = import.meta.glob<PictureData>('/src/lib/assets/images/screenshots/**/*.png', {
+		query: '?picture',
+		import: 'default',
+		eager: true
+	});
+	const shotDir = '/src/lib/assets/images/screenshots';
+	function shotPicture(image: Shot['image'], theme: 'light' | 'dark'): PictureData {
+		const file = `${image}-${theme}.png`;
+		const picture = shotFiles[`${shotDir}/${locale}/${file}`] ?? shotFiles[`${shotDir}/${file}`];
+		if (!picture)
+			throw new Error(`Missing screenshot ${file}: run ./gradlew :app:exportWebScreenshots`);
+		return picture;
+	}
 </script>
 
 <Seo />
@@ -90,28 +108,22 @@
 	</div>
 </section>
 
-<!--
-	Screenshot slots (#41). Placeholders until the scripted screenshots from the demo packs exist; each becomes a
-	<Picture> of the matching screen.
--->
+<!-- Screenshots (#41): rendered from the demo packs and made-up chats by `./gradlew :app:exportWebScreenshots`. -->
 <section class="section" aria-labelledby="screenshots-title">
 	<div class="container">
 		<h2 id="screenshots-title" class="headline-large">{t.screenshotsTitle}</h2>
 		<p class="section-lead on-surface-variant">{t.screenshotsLead}</p>
 		<ul class="shots">
-			{#each t.screenshots as shot, i (shot.title)}
+			{#each t.screenshots as shot (shot.image)}
 				<li>
 					<figure>
-						<div class="phone" data-character={shotAccents[i % shotAccents.length]}>
-							<div class="phone-screen" aria-hidden="true">
-								<span class="mock-bar"></span>
-								<span class="mock-avatar"></span>
-								<span class="mock-line wide"></span>
-								<span class="mock-line"></span>
-								<span class="mock-card"></span>
-								<span class="mock-card short"></span>
-							</div>
-							<span class="phone-badge label-medium">{t.screenshotSoon}</span>
+						<div class="phone">
+							<Picture
+								src={shotPicture(shot.image, 'light')}
+								dark={shotPicture(shot.image, 'dark')}
+								alt={shot.alt}
+								class="phone-screen"
+							/>
 						</div>
 						<figcaption>
 							<span class="title-medium">{shot.title}</span>
@@ -363,7 +375,7 @@
 		fill: var(--md-sys-color-primary);
 	}
 
-	/* Screenshot slots (#41) */
+	/* Screenshots (#41): a plain phone frame around each image. */
 
 	.shots {
 		display: grid;
@@ -375,8 +387,6 @@
 	}
 
 	.phone {
-		position: relative;
-		aspect-ratio: 9 / 19;
 		max-width: 15rem;
 		margin-inline: auto;
 		padding: 0.5rem;
@@ -385,67 +395,11 @@
 		box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant);
 	}
 
-	.phone-screen {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		height: 100%;
-		padding: 1.25rem 0.75rem;
-		border-radius: 1.5rem;
-		background: var(--md-sys-color-surface-container);
-	}
-
-	.phone-screen span {
+	.phone :global(.phone-screen) {
 		display: block;
-		border-radius: 0.5rem;
-		background: color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent);
-	}
-
-	.mock-bar {
-		height: 0.5rem;
-		width: 35%;
-		margin-bottom: 0.5rem;
-	}
-
-	.phone-screen .mock-avatar {
-		width: 3rem;
-		height: 3rem;
-		border-radius: 1.25rem;
-		background: var(--md-sys-color-primary-container);
-	}
-
-	.mock-line {
-		height: 0.625rem;
-		width: 50%;
-	}
-
-	.mock-line.wide {
-		width: 80%;
-		height: 0.875rem;
-	}
-
-	.phone-screen .mock-card {
-		height: 3.5rem;
-		margin-top: 0.5rem;
-		border-radius: 1rem;
-		background: color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent);
-	}
-
-	.mock-card.short {
-		height: 2.5rem;
-	}
-
-	.phone-badge {
-		position: absolute;
-		left: 50%;
-		bottom: 1.5rem;
-		translate: -50% 0;
-		padding: 0.25rem 0.75rem;
-		border-radius: 1rem;
-		background: var(--md-sys-color-surface);
-		color: var(--md-sys-color-on-surface);
-		font: 600 0.75rem/1rem var(--cucuto-font);
-		white-space: nowrap;
+		width: 100%;
+		height: auto;
+		border-radius: 1.5rem;
 	}
 
 	figcaption {

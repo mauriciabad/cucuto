@@ -169,9 +169,10 @@ fun OnboardingScreen(
     )
 }
 
+/** Stateless onboarding, for previews and the screenshot tests. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun OnboardingContent(
+internal fun OnboardingContent(
     step: OnboardingStep,
     report: StatusReport?,
     selfTest: SelfTestMessage,

@@ -51,6 +51,8 @@ jobs:
             android:
               - "android/**"
               - "shared/**"
+              # The screenshot tests draw the demo packs' sprites (ADR 0032).
+              - "packs/**"
               - "spec/**"
               - "brand/tokens/**"
               - "brand/app-icon/android-res/**"
@@ -80,7 +82,8 @@ jobs:
       - name: Check media paths
         run: |
           # Audio, image and zip files (packs are <name>.soundpack.zip, backups cucuto-backup-*.zip) may only live in these paths. Copyrighted content never enters the repo.
-          allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|android/core/[^/]+/src/[^/]+/(res|assets|resources)/|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
+          # android/app/src/testDebug/screenshots/: golden images of the screenshot tests, rendered from the CC0 demo packs and made-up chats (ADR 0032).
+          allow='^(packs/|brand/|spec/fixtures/|android/[^/]+/src/[^/]+/res/|android/[^/]+/src/[^/]+/assets/|android/core/[^/]+/src/[^/]+/(res|assets|resources)/|android/app/src/testDebug/screenshots/[^/]+\.png$|web/static/|web/src/lib/assets/|docs/images/|tools/packer/src/test/resources/)'
           ext='\.(ogg|opus|oga|mp3|m4a|aac|flac|wav|mid|midi|png|jpe?g|webp|gif|avif|jxl|svg|bmp|heic|heif|webm|mp4|mov|soundpack|zip)$'
           bad=$(git ls-files | grep -iE "$ext" | grep -vE "$allow" || true)
           if [ -n "$bad" ]; then
@@ -183,9 +186,11 @@ jobs:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
       # `check` minus Android Lint (own job): every module's unit tests (including every golden fixture in spec/
-      # through the pack importer) and ktlint (Spotless).
-      - name: Unit tests and ktlint
-        run: ./gradlew check -x lint --stacktrace
+      # through the pack importer), ktlint (Spotless) and the screenshot tests in verify mode: a screen that no longer
+      # matches its golden image in android/app/src/testDebug/screenshots/ fails (ADR 0032). The diff images are in
+      # the uploaded reports; re-record with `./gradlew :app:recordRoborazziDebug` when the change is intended.
+      - name: Unit tests, screenshot tests and ktlint
+        run: ./gradlew check -x lint -Proborazzi.test.verify=true --stacktrace
 
       - name: Upload reports
         if: failure()
@@ -195,6 +200,7 @@ jobs:
           path: |
             android/**/build/reports/
             android/**/build/test-results/
+            android/**/build/outputs/roborazzi/
           retention-days: 7
 
   android-lint:
