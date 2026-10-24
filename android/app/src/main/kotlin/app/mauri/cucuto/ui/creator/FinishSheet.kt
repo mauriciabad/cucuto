@@ -3,6 +3,7 @@ package app.mauri.cucuto.ui.creator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import app.mauri.cucuto.core.pack.ImportProgress
 import app.mauri.cucuto.packs.ImportProblem
 import app.mauri.cucuto.packs.ProblemItem
 import app.mauri.cucuto.packspec.authoring.DraftProblem
+import app.mauri.cucuto.ui.components.isLargeFont
 
 /**
  * "Check and finish": the pack is built and run through the same checks as the importer, packer and the website.
@@ -179,7 +181,13 @@ private fun ReadyContent(
             }
         }
         if (!ready.installing) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            // Side by side, or one under the other with large fonts, so "Share" is never cut mid-word (#226).
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxItemsInEachRow = if (isLargeFont()) 1 else 2,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 OutlinedButton(onClick = {
                     onExport(ready.fileName)
                 }, shapes = ButtonDefaults.shapes(), modifier = Modifier.weight(1f)) {
