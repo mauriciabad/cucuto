@@ -6,6 +6,7 @@ import app.mauri.cucuto.backup.AutoBackupResult
 import app.mauri.cucuto.backup.ExportOutcome
 import app.mauri.cucuto.backup.FakeBackupGateway
 import app.mauri.cucuto.core.data.settings.AutoBackupState
+import app.mauri.cucuto.core.data.settings.AutoBackupTargetKind
 import app.mauri.cucuto.core.data.settings.RoutingSettings
 import app.mauri.cucuto.core.data.settings.UiFeedbackSettings
 import app.mauri.cucuto.core.data.settings.UiSoundLevel
@@ -202,6 +203,31 @@ class SettingsViewModelTest {
             assertEquals(BackupMessage.FolderFailed, f.viewModel.message.value)
             assertFalse(autoBackup.state.value.enabled)
         }
+
+    @Test
+    fun `one file can hold the automatic backups, for Google Drive`() =
+        runTest {
+            val f = fixture()
+            assertEquals("cucuto-backup-latest.zip", f.viewModel.suggestedAutoFileName())
+            f.viewModel.chooseFile(null)
+            assertTrue(autoBackup.chosenFiles.isEmpty())
+
+            f.viewModel.chooseFile("content://drive/document/1")
+            val state = f.await { it.autoBackup.enabled }
+            assertEquals(listOf("content://drive/document/1"), autoBackup.chosenFiles)
+            assertEquals(AutoBackupTargetKind.FILE, state.autoBackup.targetKind)
+        }
+
+    @Test
+    fun `a file Cucuto cannot keep is reported`() =
+        runTest {
+            val f = fixture()
+            autoBackup.failChoose = true
+            f.viewModel.chooseFile("content://drive/document/readonly")
+            advanceUntilIdle()
+            assertEquals(BackupMessage.FileFailed, f.viewModel.message.value)
+            assertFalse(autoBackup.state.value.enabled)
+        }
 }
 
 class ExportFormTest {
@@ -252,6 +278,19 @@ class FakeAutoBackup : AutoBackupControl {
         if (failChoose) throw SecurityException("No persistable permission")
         chosen += treeUri
         state.value = state.value.copy(folderUri = treeUri, folderName = "backups")
+    }
+
+    val chosenFiles = mutableListOf<String>()
+
+    override suspend fun chooseFile(documentUri: String) {
+        if (failChoose) throw SecurityException("No persistable permission")
+        chosenFiles += documentUri
+        state.value =
+            state.value.copy(
+                folderUri = documentUri,
+                folderName = "cucuto-backup-latest.zip",
+                targetKind = AutoBackupTargetKind.FILE,
+            )
     }
 
     override suspend fun turnOff() {

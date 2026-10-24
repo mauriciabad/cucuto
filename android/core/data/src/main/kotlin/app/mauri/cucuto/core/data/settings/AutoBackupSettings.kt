@@ -12,12 +12,28 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** Where automatic backups go (ADR 0040). */
+enum class AutoBackupTargetKind {
+    /** A folder picked with `ACTION_OPEN_DOCUMENT_TREE`: one file per day, the newest 10 kept. */
+    FOLDER,
+
+    /**
+     * One document picked with `ACTION_CREATE_DOCUMENT`, rewritten by every backup. For cloud apps whose provider
+     * offers no folders to other apps (Google Drive): the cloud app uploads it and keeps the old versions.
+     */
+    FILE,
+}
+
 /** The automatic backup setup and what its last run did. */
 data class AutoBackupState(
-    /** The folder the user picked (an SAF tree URI with a persisted permission), or null when automatic backups are off. */
+    /**
+     * Where backups go, an SAF URI with a persisted permission: the folder (tree URI) or, with [targetKind]
+     * [AutoBackupTargetKind.FILE], the one document. Null when automatic backups are off.
+     */
     val folderUri: String? = null,
-    /** The folder's name as the document provider shows it, for the settings row. */
+    /** The folder's or the file's name as the document provider shows it, for the settings row. */
     val folderName: String? = null,
+    val targetKind: AutoBackupTargetKind = AutoBackupTargetKind.FOLDER,
     /** Whether automatic backups include the installed packs' files ("full backup"). Default on. */
     val includePacks: Boolean = true,
     /** When the last automatic backup was written (epoch milliseconds). */
@@ -48,6 +64,9 @@ class AutoBackupSettings
                     AutoBackupState(
                         folderUri = prefs[FOLDER_URI],
                         folderName = prefs[FOLDER_NAME],
+                        targetKind =
+                            AutoBackupTargetKind.entries.firstOrNull { it.name == prefs[TARGET_KIND] }
+                                ?: AutoBackupTargetKind.FOLDER,
                         includePacks = prefs[INCLUDE_PACKS] ?: true,
                         lastSuccessAt = prefs[LAST_SUCCESS_AT],
                         lastFileName = prefs[LAST_FILE_NAME],
@@ -57,14 +76,19 @@ class AutoBackupSettings
                     )
                 }.distinctUntilChanged()
 
-        /** Turns automatic backups on with [uri], or off with null. A new folder forgets the last fingerprint. */
+        /**
+         * Turns automatic backups on with [uri] (a folder or one file, see [kind]), or off with null. A new target
+         * forgets the last fingerprint.
+         */
         suspend fun setFolder(
             uri: String?,
             name: String?,
+            kind: AutoBackupTargetKind = AutoBackupTargetKind.FOLDER,
         ) {
             dataStore.edit {
                 if (uri == null) it.remove(FOLDER_URI) else it[FOLDER_URI] = uri
                 if (name == null) it.remove(FOLDER_NAME) else it[FOLDER_NAME] = name
+                it[TARGET_KIND] = kind.name
                 it.remove(LAST_FINGERPRINT)
                 it.remove(LAST_ERROR)
                 it.remove(LAST_ERROR_AT)
@@ -102,6 +126,7 @@ class AutoBackupSettings
         private companion object {
             val FOLDER_URI = stringPreferencesKey("auto_backup_folder_uri")
             val FOLDER_NAME = stringPreferencesKey("auto_backup_folder_name")
+            val TARGET_KIND = stringPreferencesKey("auto_backup_target_kind")
             val INCLUDE_PACKS = booleanPreferencesKey("auto_backup_include_packs")
             val LAST_SUCCESS_AT = longPreferencesKey("auto_backup_last_success_at")
             val LAST_FILE_NAME = stringPreferencesKey("auto_backup_last_file_name")

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backups to Google Drive and other cloud apps, Drive links in Discover (#163, #37, ADR 0040). In their own file so
+    parallel screen work does not collide.
+-->
+<resources>
+    <!-- Settings: automatic backups to one file -->
+    <string name="settings_auto_backup_cloud_hint">Using Google Drive or another cloud app? Choose a file instead: Cucuto replaces it after every change, and the app uploads it and keeps older versions.</string>
+    <string name="settings_auto_backup_choose_file">Choose file</string>
+    <string name="settings_auto_backup_change_file">Change file</string>
+    <string name="settings_auto_backup_on_file">To %1$s, replaced shortly after every change.</string>
+    <string name="settings_auto_backup_file_unknown">the chosen file</string>
+    <string name="backup_file_failed">Cucuto can\'t keep access to that file. Choose another one.</string>
+
+    <!-- Restore: carry on in the restored file -->
+    <string name="restore_keep_file_title">Keep backing up to this file</string>
+    <string name="restore_keep_file_body">Cucuto replaces it shortly after every change, so your next phone can restore from it too.</string>
+    <string name="restore_keep_file_action">Use this file</string>
+    <string name="restore_keep_file_done">Automatic backups now go to this file.</string>
+
+    <!-- Discover: Google Drive links -->
+    <string name="discover_link_drive_folder">Google Drive folders can\'t be added yet. Share each pack file with \"Anyone with the link\" and paste that link, or download the packs and open them in Cucuto.</string>
+</resources>

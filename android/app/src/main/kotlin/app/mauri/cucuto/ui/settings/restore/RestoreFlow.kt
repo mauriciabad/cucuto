@@ -127,6 +127,8 @@ internal data class RestoreActions(
     val onApplyConflicts: () -> Unit = {},
     val onOpenSetup: () -> Unit = {},
     val onOpenDiagnostics: () -> Unit = {},
+    /** Turns automatic backups on into the restored file (its URI). */
+    val onKeepForBackups: (String) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -157,7 +159,7 @@ internal fun RestoreContent(
                 is RestoreStep.Problem -> ProblemStep(step, actions)
                 is RestoreStep.Packs -> PacksStep(step, actions)
                 is RestoreStep.Conflicts -> ConflictsStep(step, actions)
-                is RestoreStep.Done -> DoneStep(step.summary, actions)
+                is RestoreStep.Done -> DoneStep(step, actions)
             }
         }
     }
@@ -493,9 +495,10 @@ private fun voiceText(label: VoiceLabel): String {
 
 @Composable
 private fun DoneStep(
-    summary: RestoreSummary,
+    step: RestoreStep.Done,
     actions: RestoreActions,
 ) {
+    val summary = step.summary
     Column(Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -532,6 +535,9 @@ private fun DoneStep(
                     }
                 }
             }
+            step.reusableSource?.let { source ->
+                item { KeepForBackupsCard(kept = step.keptForBackups, onKeep = { actions.onKeepForBackups(source) }) }
+            }
             item {
                 Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -566,6 +572,31 @@ private fun DoneStep(
                 onClick = actions.onClose,
                 shapes = ButtonDefaults.shapes(),
             ) { Text(stringResource(R.string.restore_finish)) }
+        }
+    }
+}
+
+/** After restoring from a plain backup file: keep backing up into it, so a phone in Drive carries on (ADR 0040). */
+@Composable
+private fun KeepForBackupsCard(
+    kept: Boolean,
+    onKeep: () -> Unit,
+) {
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.restore_keep_file_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (kept) {
+                Text(stringResource(R.string.restore_keep_file_done))
+            } else {
+                Text(stringResource(R.string.restore_keep_file_body))
+                FilledTonalButton(onClick = onKeep, shapes = ButtonDefaults.shapes()) {
+                    Text(stringResource(R.string.restore_keep_file_action))
+                }
+            }
         }
     }
 }

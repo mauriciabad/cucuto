@@ -273,6 +273,24 @@ after the last toggle. Also check `adb logcat -b crash -d` for anything from `sy
 **Never** restore on the owner's phone without asking: it adds contacts and repositories (it never overwrites voices
 without a tick, but it is still their data).
 
+## 4d. Google Drive (#163, #37, ADR 0040)
+
+Needs the Google Drive app signed in. Nothing here enables the module or touches LSPosed.
+
+- **Folder picker:** Settings → Choose folder. Note whether **Drive** appears in the picker's side menu and whether
+  "Use this folder" is enabled inside it. Report it on #163 (it decides whether Drive needs the file mode at all).
+- **One file in Drive:** Settings → Choose file → Drive → keep `cucuto-backup-latest.zip` → Save. The row says "To
+  cucuto-backup-latest.zip". Change a voice; about 10 s later "Last backup" updates. In Drive (web or app), the file
+  shows a new modified time and, under Manage versions, an older version. Turn on airplane mode, change a voice:
+  note what the row reports, then check that Drive uploads the file once the phone is back online.
+- **Shorter backup:** turn off "Include sound packs" and press Back up now. The Drive file must shrink and still open
+  as a zip (download it and restore from it), which proves the write mode truncates.
+- **New phone flow:** Settings → Restore from backup → Drive → `cucuto-backup-latest.zip`. The summary offers "Keep
+  backing up to this file"; tap it, and the automatic backup row switches to that file. An encrypted backup must
+  not offer it.
+- **Drive links in Discover:** share a `.soundpack.zip` in Drive with "Anyone with the link", paste the link in
+  Discover → Add: it downloads and opens the import sheet. A Drive folder link shows the "can't be added yet" message.
+
 ## 5. Report and clean up
 
 Record in issue #15 (redacted): hook lines, self-test result, the 1:1/group key domains, whether per-message clips

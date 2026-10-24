@@ -69,6 +69,25 @@ class RestoreViewModelTest {
             val done = step<RestoreStep.Done>()
             assertEquals(2, done.summary.voicesApplied)
             assertEquals(listOf(null, "battery staple", "correct horse"), gateway.openedWith)
+            // A plain automatic backup must never replace an encrypted file.
+            assertEquals(null, done.reusableSource)
+            viewModel.keepForBackups()
+            assertFalse(step<RestoreStep.Done>().keptForBackups)
+        }
+
+    @Test
+    fun `a plain backup file is offered for the next automatic backups`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports += BackupTestData.report(applied = listOf("1"))
+
+            viewModel.open("content://drive/backup")
+            val done = step<RestoreStep.Done>()
+            assertEquals("content://drive/backup", done.reusableSource)
+            assertFalse(done.keptForBackups)
+
+            viewModel.keepForBackups()
+            assertTrue(step<RestoreStep.Done>().keptForBackups)
         }
 
     @Test

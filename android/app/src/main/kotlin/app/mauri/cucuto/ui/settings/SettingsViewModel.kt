@@ -7,6 +7,7 @@ import app.mauri.cucuto.backup.AutoBackupResult
 import app.mauri.cucuto.backup.BackupGateway
 import app.mauri.cucuto.backup.ExportOutcome
 import app.mauri.cucuto.backup.ExportRequest
+import app.mauri.cucuto.core.backup.BackupFileNames
 import app.mauri.cucuto.core.data.settings.AutoBackupState
 import app.mauri.cucuto.core.data.settings.RoutingSettings
 import app.mauri.cucuto.core.data.settings.UiFeedbackSettings
@@ -49,6 +50,8 @@ sealed interface BackupMessage {
     ) : BackupMessage
 
     data object FolderFailed : BackupMessage
+
+    data object FileFailed : BackupMessage
 }
 
 /** The manual export dialog's fields. Pure, so its rules are unit-tested. */
@@ -158,6 +161,15 @@ class SettingsViewModel
             if (treeUri == null) return
             save(onError = { BackupMessage.FolderFailed }) { autoBackup.choose(treeUri) }
         }
+
+        /** The user created or picked the one automatic backup file ([documentUri], ADR 0040), or cancelled (null). */
+        fun chooseFile(documentUri: String?) {
+            if (documentUri == null) return
+            save(onError = { BackupMessage.FileFailed }) { autoBackup.chooseFile(documentUri) }
+        }
+
+        /** The name to suggest when creating the automatic backup file. */
+        fun suggestedAutoFileName(): String = BackupFileNames.AUTOMATIC_FILE
 
         fun turnOffAutoBackup() = save { autoBackup.turnOff() }
 

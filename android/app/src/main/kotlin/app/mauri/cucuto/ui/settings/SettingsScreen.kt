@@ -55,6 +55,7 @@ import app.mauri.cucuto.R
 import app.mauri.cucuto.backup.AutoBackupResult
 import app.mauri.cucuto.core.backup.BackupFileNames
 import app.mauri.cucuto.core.data.settings.AutoBackupState
+import app.mauri.cucuto.core.data.settings.AutoBackupTargetKind
 import app.mauri.cucuto.core.data.settings.UiSoundLevel
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.feedback.Feedback
@@ -92,6 +93,10 @@ fun SettingsScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             viewModel.chooseFolder(uri?.toString())
         }
+    val chooseFile =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFileNames.MIME_TYPE)) { uri ->
+            viewModel.chooseFile(uri?.toString())
+        }
     val pickBackup =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { restoreViewModel.open(it.toString()) }
@@ -117,6 +122,7 @@ fun SettingsScreen(
                 onExport = { exportDialog = true },
                 onRestore = { launchSafely { pickBackup.launch(ZIP_TYPES) } },
                 onChooseFolder = { launchSafely { chooseFolder.launch(null) } },
+                onChooseFile = { launchSafely { chooseFile.launch(viewModel.suggestedAutoFileName()) } },
                 onTurnOffAutoBackup = viewModel::turnOffAutoBackup,
                 onAutoIncludePacks = viewModel::setAutoIncludePacks,
                 onBackUpNow = viewModel::backUpNow,
@@ -161,6 +167,10 @@ fun SettingsScreen(
                     restoreViewModel.close()
                     onNavigate(CucutoDestination.Diagnostics)
                 },
+                onKeepForBackups = { uri ->
+                    viewModel.chooseFile(uri)
+                    restoreViewModel.keepForBackups()
+                },
             ),
         onPackFilePick = restoreViewModel::importPackFile,
     )
@@ -187,6 +197,7 @@ internal class SettingsActions(
     val onExport: () -> Unit = {},
     val onRestore: () -> Unit = {},
     val onChooseFolder: () -> Unit = {},
+    val onChooseFile: () -> Unit = {},
     val onTurnOffAutoBackup: () -> Unit = {},
     val onAutoIncludePacks: (Boolean) -> Unit = {},
     val onBackUpNow: () -> Unit = {},
@@ -344,18 +355,29 @@ private fun AutoBackupRows(
     actions: SettingsActions,
 ) {
     Column {
-        val folder = auto.folderName ?: stringResource(R.string.settings_auto_backup_folder_unknown)
+        val toFile = auto.enabled && auto.targetKind == AutoBackupTargetKind.FILE
+        val toFolder = auto.enabled && !toFile
         ListItem(
             headlineContent = { Text(stringResource(R.string.settings_auto_backup)) },
             supportingContent = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        if (auto.enabled) {
-                            stringResource(R.string.settings_auto_backup_on, folder)
-                        } else {
-                            stringResource(R.string.settings_auto_backup_off)
-                        },
-                    )
+                    when {
+                        toFile -> {
+                            val file = auto.folderName ?: stringResource(R.string.settings_auto_backup_file_unknown)
+                            Text(stringResource(R.string.settings_auto_backup_on_file, file))
+                        }
+
+                        toFolder -> {
+                            val folder =
+                                auto.folderName ?: stringResource(R.string.settings_auto_backup_folder_unknown)
+                            Text(stringResource(R.string.settings_auto_backup_on, folder))
+                        }
+
+                        else -> {
+                            Text(stringResource(R.string.settings_auto_backup_off))
+                            Text(stringResource(R.string.settings_auto_backup_cloud_hint))
+                        }
+                    }
                     if (auto.enabled) Text(lastBackupText(auto), color = lastBackupColor(auto))
                 }
             },
@@ -372,7 +394,11 @@ private fun AutoBackupRows(
         ) {
             FilledTonalButton(onClick = actions.onChooseFolder, shapes = ButtonDefaults.shapes()) {
                 val change = R.string.settings_auto_backup_change
-                Text(stringResource(if (auto.enabled) change else R.string.settings_auto_backup_choose))
+                Text(stringResource(if (toFolder) change else R.string.settings_auto_backup_choose))
+            }
+            FilledTonalButton(onClick = actions.onChooseFile, shapes = ButtonDefaults.shapes()) {
+                val change = R.string.settings_auto_backup_change_file
+                Text(stringResource(if (toFile) change else R.string.settings_auto_backup_choose_file))
             }
             if (auto.enabled) {
                 OutlinedButton(onClick = actions.onBackUpNow, enabled = !busy, shapes = ButtonDefaults.shapes()) {
@@ -542,6 +568,10 @@ private fun messageText(
 
         BackupMessage.FolderFailed -> {
             resources.getString(R.string.backup_folder_failed)
+        }
+
+        BackupMessage.FileFailed -> {
+            resources.getString(R.string.backup_file_failed)
         }
 
         is BackupMessage.AutoResult -> {
