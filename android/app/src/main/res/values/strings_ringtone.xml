@@ -2,7 +2,6 @@
 <!-- Phone ringtones (#52, ADR 0039). Kept apart from strings.xml so parallel UI work merges cleanly. -->
 <resources>
     <!-- Contact detail section -->
-    <string name="ringtone_title">Phone ringtone</string>
     <string name="ringtone_off_body">When this person calls you, their character can ring instead of your usual ringtone. Cucuto sets it in Android\'s Contacts.</string>
     <string name="ringtone_turn_on">Turn on phone ringtones</string>
     <string name="ringtone_no_ringtones">%1$s has no ringtone.</string>
@@ -23,8 +22,6 @@
     <string name="ringtone_rule_time_body">The day version from sunrise to sunset at your day and night place (7:00 to 19:00 until you choose one), the night version the rest of the time.</string>
     <string name="ringtone_rule_season_body">The version for the current season.</string>
     <string name="ringtone_rule_fixed_body">Always the version you pick.</string>
-    <string name="ringtone_status_ringing">Rings with %1$s</string>
-    <string name="ringtone_status_preparing">Preparing the ringtone…</string>
     <string name="ringtone_problem_contact_missing">The linked Android contact is gone. Link another one.</string>
     <string name="ringtone_problem_render">Cucuto couldn\'t prepare this ringtone. It tries again the next time you open the app.</string>
     <string name="ringtone_problem_write">Android didn\'t let Cucuto change this contact.</string>

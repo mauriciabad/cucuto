@@ -74,7 +74,7 @@ or the phone ringtone store, so the guarantees of point 1 hold, and `SampleChatI
 `sample` package. The pickers work as for a real chat: a first tap previews, a second tap (or "Use") gives the voice,
 with the burst and the cuckoo call; the ringtone picker offers the covers, search, folding, "Surprise me" and
 **Android default**. What the sample chat can't use is left out there: "Leave as is" (no Android contact to leave
-alone), the rule chips and the rules screen (ADR 0074; the sample call follows the pack's rule, point 2), removing
+alone), the "Which version rings" row and the rules screen (ADR 0074; the sample call follows the pack's rule, point 2), removing
 the voice, and step 2 after the voice (each row is chosen apart). The ringtone still defaults to **Same as the voice**
 when the message character has ringtones (ADR 0063's default). With **Android default**, the sample call can't ring
 the phone's own ringtone (that would need its URI, outside the pack previews), so the button is off and says so.
