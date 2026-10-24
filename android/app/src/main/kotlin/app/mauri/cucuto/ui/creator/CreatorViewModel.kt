@@ -11,6 +11,7 @@ import app.mauri.cucuto.core.creator.CreatorDraft
 import app.mauri.cucuto.core.creator.CreatorHaptics
 import app.mauri.cucuto.core.creator.DraftCharacter
 import app.mauri.cucuto.core.creator.HapticMode
+import app.mauri.cucuto.core.creator.RingtoneImport
 import app.mauri.cucuto.core.creator.SpriteCrop
 import app.mauri.cucuto.core.creator.WriteResult
 import app.mauri.cucuto.core.pack.FailureReason
@@ -24,6 +25,8 @@ import app.mauri.cucuto.packs.warningItems
 import app.mauri.cucuto.packspec.ErrorCode
 import app.mauri.cucuto.packspec.HapticEvent
 import app.mauri.cucuto.packspec.authoring.Authoring
+import app.mauri.cucuto.packspec.authoring.ConditionForm
+import app.mauri.cucuto.packspec.authoring.RingtoneForm
 import app.mauri.cucuto.ui.haptics.HapticEditorResults
 import app.mauri.cucuto.ui.haptics.HapticTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -146,7 +149,7 @@ class CreatorViewModel
                         draft = result.draft,
                         page = CreatorPage.Pack,
                         seedSuggestions = emptyMap(),
-                        message = CreatorMessage.Duplicated(result.keptRingtones, result.keptAnimations),
+                        message = CreatorMessage.Duplicated(result.keptAnimations),
                     )
                 }
             } catch (e: CancellationException) {
@@ -166,6 +169,7 @@ class CreatorViewModel
             when (pages.last()) {
                 CreatorPage.Recorder -> cancelRecording()
                 CreatorPage.ClipEditor -> stopPlayback()
+                CreatorPage.RingtoneEditor -> stopRingtone()
                 else -> Unit
             }
             pop()
@@ -190,6 +194,8 @@ class CreatorViewModel
                     cropper = if (leaving == CreatorPage.Cropper) null else cropper,
                     recorder = if (leaving == CreatorPage.Recorder) null else recorder,
                     clipEditor = if (leaving == CreatorPage.ClipEditor) null else clipEditor,
+                    conditionEditor = if (leaving == CreatorPage.ClipConditions) null else conditionEditor,
+                    ringtoneEditor = if (leaving == CreatorPage.RingtoneEditor) null else ringtoneEditor,
                 )
             }
         }
@@ -213,6 +219,13 @@ class CreatorViewModel
 
         fun removeCover() = edit { copy(cover = null) }
 
+        /** Kept as typed; a homepage that is not an https URL stays out of the pack (the page says so). */
+        fun setHomepage(homepage: String) =
+            edit { copy(homepage = homepage.take(MAX_HOMEPAGE).takeIf { it.isNotBlank() }) }
+
+        /** Tags typed as text (`Animals, 8-bit games`), stored as the format's tags. */
+        fun setTags(text: String) = edit { copy(tags = Authoring.tags(text)) }
+
         // endregion
 
         // region Characters
@@ -232,6 +245,11 @@ class CreatorViewModel
             key: String,
             name: String,
         ) = editCharacter(key) { copy(name = name.take(MAX_NAME)) }
+
+        fun setCharacterDescription(
+            key: String,
+            description: String,
+        ) = editCharacter(key) { copy(description = description.take(MAX_DESCRIPTION).takeIf { it.isNotBlank() }) }
 
         /** [argb] null lets apps extract the color from the sprite. */
         fun setSeedColor(
@@ -303,6 +321,7 @@ class CreatorViewModel
         ) {
             val character = state.value.draft?.character(characterKey) ?: return
             val clip = character.clips.firstOrNull { it.key == clipKey } ?: return
+            setState { copy(playingRingtone = null) }
             viewModelScope.launch { preview.play(tools.media(clip.file), character) }
         }
 
@@ -588,6 +607,200 @@ class CreatorViewModel
 
         // endregion
 
+        // region Clip conditions
+
+        /** Opens "When it plays" for a clip (#322). */
+        fun openClipConditions(
+            characterKey: String,
+            clipKey: String,
+        ) {
+            val clip =
+                state.value.draft
+                    ?.character(characterKey)
+                    ?.clips
+                    ?.firstOrNull { it.key == clipKey } ?: return
+            val form = ConditionForm.of(clip.`when`, clip.oneIn)
+            setState { copy(conditionEditor = ConditionEditorUi(characterKey, clipKey, clip.label, form)) }
+            push(CreatorPage.ClipConditions)
+        }
+
+        fun setConditionForm(form: ConditionForm) =
+            mutableState.update { s -> s.conditionEditor?.let { s.copy(conditionEditor = it.copy(form = form)) } ?: s }
+
+        /** Writes the condition to the clip and closes the page. Does nothing while the form has problems. */
+        fun saveClipConditions() {
+            val editor = state.value.conditionEditor ?: return
+            if (editor.problems.isNotEmpty()) return
+            val condition = editor.form.toWhen(clip = true)
+            val oneIn = editor.form.oneIn
+            editCharacter(editor.characterKey) {
+                copy(
+                    clips =
+                        clips.map {
+                            if (it.key ==
+                                editor.clipKey
+                            ) {
+                                it.copy(`when` = condition, oneIn = oneIn)
+                            } else {
+                                it
+                            }
+                        },
+                )
+            }
+            if (pages.last() == CreatorPage.ClipConditions) pop()
+        }
+
+        // endregion
+
+        // region Ringtones
+
+        /** Adds a picked song as a new ringtone version of the character, then opens it (#322). */
+        fun addRingtone(
+            characterKey: String,
+            uri: Uri,
+        ) {
+            workJob?.cancel()
+            setState { copy(busy = Busy(Busy.Kind.OPENING_AUDIO)) }
+            workJob =
+                viewModelScope.launch {
+                    val message =
+                        try {
+                            when (val result = tools.importRingtone(uri)) {
+                                is RingtoneImport.Result.Added -> {
+                                    editCharacter(characterKey) { copy(ringtones = ringtones + result.ringtone) }
+                                    setState { copy(busy = null) }
+                                    openRingtone(characterKey, result.ringtone.key)
+                                    CreatorMessage.RingtoneAdded
+                                }
+
+                                is RingtoneImport.Result.OutOfRange -> {
+                                    CreatorMessage.RingtoneOutOfRange(result.durationMs)
+                                }
+
+                                RingtoneImport.Result.Unsupported, RingtoneImport.Result.Undecodable -> {
+                                    CreatorMessage.RingtoneUnsupported
+                                }
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: CreatorTools.SourceTooLargeException) {
+                            CreatorMessage.AudioTooLarge
+                        } catch (e: Exception) {
+                            CreatorMessage.AudioFailed
+                        }
+                    setState { copy(busy = null, message = message) }
+                }
+        }
+
+        /** Opens a ringtone version's editor. */
+        fun openRingtone(
+            characterKey: String,
+            ringtoneKey: String,
+        ) {
+            val ringtone =
+                state.value.draft
+                    ?.character(characterKey)
+                    ?.ringtones
+                    ?.firstOrNull { it.key == ringtoneKey } ?: return
+            val editor =
+                RingtoneEditorUi(
+                    characterKey = characterKey,
+                    ringtoneKey = ringtoneKey,
+                    file = ringtone.file,
+                    durationMs = ringtone.durationMs,
+                    form = RingtoneForm.of(ringtone.entry),
+                )
+            setState { copy(ringtoneEditor = editor) }
+            push(CreatorPage.RingtoneEditor)
+        }
+
+        fun setRingtoneForm(form: RingtoneForm) =
+            mutableState.update { s -> s.ringtoneEditor?.let { s.copy(ringtoneEditor = it.copy(form = form)) } ?: s }
+
+        /** Writes the version back and closes the page. Does nothing while the form has problems. */
+        fun saveRingtone() {
+            val editor = state.value.ringtoneEditor ?: return
+            if (editor.problems.isNotEmpty()) return
+            val form = editor.form.copy(label = editor.form.label.take(MAX_NAME))
+            editCharacter(editor.characterKey) {
+                copy(
+                    ringtones =
+                        ringtones.map {
+                            if (it.key == editor.ringtoneKey) it.copy(entry = form.toEntry(it.file)) else it
+                        },
+                )
+            }
+            stopRingtone()
+            if (pages.last() == CreatorPage.RingtoneEditor) pop()
+        }
+
+        /** "Add a version": another entry for the same song, right after it, opened for editing. */
+        fun addRingtoneVersion(
+            characterKey: String,
+            ringtoneKey: String,
+        ) {
+            val character = state.value.draft?.character(characterKey) ?: return
+            val index = character.ringtones.indexOfFirst { it.key == ringtoneKey }
+            if (index < 0) return
+            val source = character.ringtones[index]
+            val version = source.copy(key = CreatorDraft.newKey(), entry = source.entry.copy(`when` = null))
+            editCharacter(characterKey) {
+                copy(ringtones = ringtones.toMutableList().apply { add(index + 1, version) })
+            }
+            openRingtone(characterKey, version.key)
+        }
+
+        fun removeRingtone(
+            characterKey: String,
+            ringtoneKey: String,
+        ) {
+            if (state.value.playingRingtone == ringtoneKey) stopRingtone()
+            editCharacter(characterKey) { copy(ringtones = ringtones.filterNot { it.key == ringtoneKey }) }
+        }
+
+        /** Plays a version from the list, or stops it. */
+        fun toggleRingtone(
+            characterKey: String,
+            ringtoneKey: String,
+        ) {
+            val ringtone =
+                state.value.draft
+                    ?.character(characterKey)
+                    ?.ringtones
+                    ?.firstOrNull { it.key == ringtoneKey } ?: return
+            playRingtone(ringtoneKey, ringtone.file)
+        }
+
+        /** Plays the version being edited, or stops it. */
+        fun toggleEditorRingtone() {
+            val editor = state.value.ringtoneEditor ?: return
+            playRingtone(RingtoneEditorUi.PLAYING_EDITOR, editor.file)
+        }
+
+        private fun playRingtone(
+            playing: String,
+            file: String,
+        ) {
+            if (state.value.playingRingtone == playing) {
+                stopRingtone()
+                return
+            }
+            setState { copy(playingRingtone = playing) }
+            viewModelScope.launch {
+                preview.playRingtone(tools.media(file)) {
+                    mutableState.update { s -> if (s.playingRingtone == playing) s.copy(playingRingtone = null) else s }
+                }
+            }
+        }
+
+        fun stopRingtone() {
+            if (state.value.playingRingtone == null) return
+            preview.stop()
+            setState { copy(playingRingtone = null) }
+        }
+
+        // endregion
+
         // region Finish
 
         /** Builds the pack and checks it with every rule: the "Check and finish" screen. */
@@ -783,6 +996,7 @@ class CreatorViewModel
             private const val MAX_AUTHOR = 120
             private const val MAX_LICENSE = 200
             private const val MAX_DESCRIPTION = 2_000
+            private const val MAX_HOMEPAGE = 2_000
             const val MIN_WEIGHT = 0.1
             const val MAX_WEIGHT = 100.0
             private const val LEVEL_HISTORY = 48

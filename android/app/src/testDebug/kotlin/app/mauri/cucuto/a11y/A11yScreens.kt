@@ -15,6 +15,10 @@ import app.mauri.cucuto.core.audio.PcmAudio
 import app.mauri.cucuto.core.creator.CreatorDraft
 import app.mauri.cucuto.core.creator.DraftCharacter
 import app.mauri.cucuto.core.creator.DraftClip
+import app.mauri.cucuto.core.creator.DraftRingtone
+import app.mauri.cucuto.packspec.Ringtone
+import app.mauri.cucuto.packspec.When
+import kotlinx.serialization.json.JsonPrimitive
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
@@ -155,8 +159,24 @@ internal object A11yScreens {
             seedColor = "#3A7D44",
             clips =
                 listOf(
-                    DraftClip(key = "a", file = "a.ogg", label = "Croak", durationMs = 1_200),
+                    DraftClip(
+                        key = "a",
+                        file = "a.ogg",
+                        label = "Croak",
+                        durationMs = 1_200,
+                        `when` = When(time = JsonPrimitive("night")),
+                        oneIn = 25,
+                    ),
                     DraftClip(key = "b", file = "b.ogg", label = "", weight = 2.0, durationMs = 2_400),
+                ),
+            ringtones =
+                listOf(
+                    DraftRingtone(
+                        file = "pond.ogg",
+                        entry = Ringtone("pond.ogg", label = "Pond song", `when` = When(time = JsonPrimitive("day"))),
+                        key = "pond",
+                        durationMs = 32_000,
+                    ),
                 ),
         )
 

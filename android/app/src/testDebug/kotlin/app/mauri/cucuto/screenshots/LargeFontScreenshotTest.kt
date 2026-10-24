@@ -63,6 +63,10 @@ class LargeFontScreenshotTest(
 
     @Test fun creatorCropper() = largeFont("creator-cropper")
 
+    @Test fun creatorClipConditions() = largeFont("creator-clip-conditions")
+
+    @Test fun creatorRingtone() = largeFont("creator-ringtone")
+
     @Test fun diagnostics() = largeFont("diagnostics")
 
     @Test fun dayNight() = largeFont("day-night")

@@ -62,6 +62,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
@@ -92,6 +93,8 @@ internal fun PackPage(
     onCheck: () -> Unit,
     onStartOver: () -> Unit,
     modifier: Modifier = Modifier,
+    onHomepage: (String) -> Unit = {},
+    onTags: (String) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var menu by remember { mutableStateOf(false) }
@@ -178,6 +181,7 @@ internal fun PackPage(
             item(key = "details") {
                 DetailsCard(draft, media, onName, onAuthor, onLicense, onDescription, onPickCover, onRemoveCover)
             }
+            item(key = "more") { MoreDetailsCard(draft, onHomepage, onTags) }
             item(key = "characters-title") {
                 Text(
                     pluralStringResource(R.plurals.creator_characters, draft.characters.size, draft.characters.size),
@@ -386,7 +390,64 @@ private fun DetailsCard(
     }
 }
 
-/** A character on the pack page: its picture in its colors, its name and how many clips it has. */
+/** "More details" (#322): the pack's homepage and tags, for people who share packs in a repository. */
+@Composable
+private fun MoreDetailsCard(
+    draft: CreatorDraft,
+    onHomepage: (String) -> Unit,
+    onTags: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // The tags as typed; the draft keeps them as the format's tags.
+    var tagsText by rememberSaveable { mutableStateOf(draft.tags.joinToString(", ")) }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.creator_more_details), style = MaterialTheme.typography.titleSmall)
+            val homepage = draft.homepage.orEmpty()
+            val badHomepage = homepage.isNotBlank() && !Authoring.isHomepage(homepage)
+            OutlinedTextField(
+                value = homepage,
+                onValueChange = onHomepage,
+                label = { Text(stringResource(R.string.creator_homepage)) },
+                supportingText = {
+                    Text(
+                        stringResource(
+                            if (badHomepage) R.string.creator_homepage_invalid else R.string.creator_homepage_hint,
+                        ),
+                    )
+                },
+                isError = badHomepage,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = tagsText,
+                onValueChange = {
+                    tagsText = it
+                    onTags(it)
+                },
+                label = { Text(stringResource(R.string.creator_tags)) },
+                supportingText = { Text(stringResource(R.string.creator_tags_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (draft.tags.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.creator_tags_result, draft.tags.joinToString(", ")),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** A character on the pack page: its picture in its colors, its name and how many clips and ringtones it has. */
 @Composable
 private fun CharacterCard(
     character: DraftCharacter,
@@ -418,7 +479,9 @@ private fun CharacterCard(
                         characterSummary(character),
                         style = MaterialTheme.typography.bodyMedium,
                         color =
-                            if (character.sprite == null || character.clips.isEmpty()) {
+                            if (character.sprite == null ||
+                                (character.clips.isEmpty() && character.ringtones.isEmpty())
+                            ) {
                                 MaterialTheme.colorScheme.error
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
@@ -434,9 +497,24 @@ private fun CharacterCard(
 @Composable
 private fun characterSummary(character: DraftCharacter): String =
     when {
-        character.sprite == null -> stringResource(R.string.creator_character_needs_picture)
-        character.clips.isEmpty() -> stringResource(R.string.creator_character_needs_clips)
-        else -> pluralStringResource(R.plurals.creator_clips, character.clips.size, character.clips.size)
+        character.sprite == null -> {
+            stringResource(R.string.creator_character_needs_picture)
+        }
+
+        character.clips.isEmpty() && character.ringtones.isEmpty() -> {
+            stringResource(R.string.creator_character_needs_clips)
+        }
+
+        else -> {
+            listOfNotNull(
+                character.clips.size
+                    .takeIf { it > 0 }
+                    ?.let { pluralStringResource(R.plurals.creator_clips, it, it) },
+                character.ringtones.size.takeIf { it > 0 }?.let {
+                    pluralStringResource(R.plurals.creator_ringtones, it, it)
+                },
+            ).joinToString(", ")
+        }
     }
 
 private fun licenseLabel(license: String): Int =
