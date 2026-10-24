@@ -73,4 +73,5 @@ StrongBox, not exportable). HTTP tests run against OkHttp's MockWebServer over r
 - Uninstalling the app or clearing its data deletes the key; users re-enter credentials or restore an encrypted
   backup that has them.
 - Seeding the default repository into `:core:data`'s table and the Discover UI (warning for unknown sources, host
-  display) come with the UI work; this module provides the URL parsing, client and stores they call.
+  display) come with the UI work; this module provides the URL parsing, client and stores they call. Done in
+  [ADR 0029](0029-discover-screen.md).

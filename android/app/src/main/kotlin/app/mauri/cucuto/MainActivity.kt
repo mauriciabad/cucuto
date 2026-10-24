@@ -8,6 +8,8 @@ import androidx.activity.enableEdgeToEdge
 import app.mauri.cucuto.navigation.CucutoNavDisplay
 import app.mauri.cucuto.packs.IncomingImports
 import app.mauri.cucuto.packs.importSourceOf
+import app.mauri.cucuto.ui.discover.IncomingRepoLinks
+import app.mauri.cucuto.ui.discover.repoLinkOf
 import app.mauri.cucuto.ui.feedback.FeedbackEngine
 import app.mauri.cucuto.ui.feedback.ProvideFeedback
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -21,6 +23,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var incomingImports: IncomingImports
 
+    @Inject lateinit var incomingRepoLinks: IncomingRepoLinks
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -29,7 +33,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             CucutoTheme {
                 ProvideFeedback(feedbackEngine) {
-                    CucutoNavDisplay(pendingImport = incomingImports.pending)
+                    CucutoNavDisplay(
+                        pendingImport = incomingImports.pending,
+                        pendingRepoLink = incomingRepoLinks.pending,
+                    )
                 }
             }
         }
@@ -43,5 +50,7 @@ class MainActivity : ComponentActivity() {
     /** "Open with" and the share sheet: queue the zip for the Packs screen (#27). */
     private fun offerImport(intent: Intent?) {
         importSourceOf(this, intent)?.let(incomingImports::offer)
+        // "Add to app" links (cucuto://repo/add?url=…) go to Discover (#36).
+        repoLinkOf(intent)?.let(incomingRepoLinks::offer)
     }
 }

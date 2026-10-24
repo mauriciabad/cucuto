@@ -214,6 +214,81 @@
     <string name="picker_empty_body">Import a sound pack to fill this grid.</string>
     <string name="picker_loading">Loading characters</string>
 
+    <!-- Contact detail (#26) -->
+    <string name="contact_loading">Loading chat</string>
+    <string name="contact_subtitle_chat">WhatsApp chat</string>
+    <string name="contact_subtitle_group">WhatsApp group</string>
+    <string name="contact_subtitle_business_chat">WhatsApp Business chat</string>
+    <string name="contact_subtitle_business_group">WhatsApp Business group</string>
+    <string name="contact_speaks_as">Speaks as %1$s</string>
+    <string name="contact_from_pack">From %1$s</string>
+    <string name="contact_no_voice">No voice yet: WhatsApp\'s tone plays.</string>
+    <string name="contact_voice_missing">Its character came from a pack that is no longer installed. WhatsApp\'s tone plays until you choose another.</string>
+    <string name="contact_change">Change character</string>
+    <string name="contact_choose">Choose a character</string>
+    <string name="contact_remove">Remove voice</string>
+    <string name="contact_remove_title">Remove this voice?</string>
+    <string name="contact_remove_body">Messages from %1$s will play WhatsApp\'s tone again. You can choose a character any time.</string>
+    <string name="contact_remove_confirm">Remove</string>
+    <string name="contact_remove_cancel">Keep</string>
+    <string name="contact_failed">Couldn\'t save. Try again.</string>
+
+    <string name="contact_simulate">Simulate message</string>
+    <string name="contact_simulate_label">Play what this chat\'s next message will do</string>
+    <string name="contact_simulate_checking">Checking the module…</string>
+    <string name="contact_simulate_needs_voice">Choose a character to simulate a message.</string>
+    <string name="contact_simulate_module">Through the module: a real notification plays this chat\'s next clip and vibration, exactly like a WhatsApp message.</string>
+    <string name="contact_simulate_inapp_reboot">In-app preview: the module runs older code until the next reboot. Same clip rules, played by Cucuto.</string>
+    <string name="contact_simulate_inapp_off">In-app preview: the module isn\'t active. Same clip rules, played by Cucuto.</string>
+    <string name="contact_simulate_inapp_hooks">In-app preview: the module couldn\'t hook this Android version. Same clip rules, played by Cucuto.</string>
+    <string name="contact_simulate_inapp_unconfirmed">In-app preview: Cucuto can\'t confirm the module runs this version. The Diagnostics self-test checks it.</string>
+    <string name="contact_sim_sent">Sent through the module. Its report arrives in a few seconds.</string>
+    <string name="contact_sim_report">The module played %1$s.</string>
+    <string name="contact_sim_report_whatsapp">The module kept WhatsApp\'s tone: %1$s.</string>
+    <string name="contact_sim_inapp">Played %1$s in the app. %2$s</string>
+    <string name="contact_sim_haptic_custom">Its vibration played too.</string>
+    <string name="contact_sim_haptic_whatsapp">A real message keeps WhatsApp\'s own vibration.</string>
+    <string name="contact_sim_haptic_off">No vibration for this chat.</string>
+    <string name="contact_sim_whatsapp_tone">A message would play WhatsApp\'s own tone: %1$s.</string>
+    <string name="contact_sim_too_soon">Wait %1$d s: Android mutes an app\'s second alert this soon.</string>
+    <string name="contact_sim_blocked">Notifications are off for Cucuto. Turn them on to simulate through the module.</string>
+    <string name="contact_sim_failed">Couldn\'t play the simulation.</string>
+    <string name="contact_reason_unassigned">this chat has no voice</string>
+    <string name="contact_reason_disabled">Cucuto is switched off</string>
+    <string name="contact_reason_no_key">the chat couldn\'t be identified</string>
+    <string name="contact_reason_error">something went wrong</string>
+
+    <string name="contact_clips_header">Clips</string>
+    <string name="contact_clips_hint">Messages rotate through the clips that are on, never the same one twice in a row.</string>
+    <string name="contact_clip_play">Play %1$s</string>
+    <string name="contact_clip_last">At least one clip stays on</string>
+
+    <string name="contact_haptic_header">Vibration</string>
+    <string name="contact_haptic_character">The character\'s vibration</string>
+    <string name="contact_haptic_follow">Follows the voice</string>
+    <string name="contact_haptic_off">No vibration</string>
+    <string name="contact_haptic_custom">A custom pattern for this chat</string>
+    <string name="contact_haptic_editor">Vibration patterns for a single chat come with the haptic editor.</string>
+
+
+    <string name="contact_decisions_header">Recent alerts</string>
+    <string name="contact_decisions_empty">No alerts from this chat yet. Simulate a message, or wait for the next one.</string>
+    <string name="contact_decision_played">Played %1$s</string>
+    <string name="contact_decision_played_voice">Played its voice</string>
+    <string name="contact_decision_unassigned">WhatsApp\'s tone: no voice</string>
+    <string name="contact_decision_disabled">WhatsApp\'s tone: Cucuto was off</string>
+    <string name="contact_decision_no_key">WhatsApp\'s tone: chat not identified</string>
+    <string name="contact_decision_error">WhatsApp\'s tone: something went wrong</string>
+    <string name="contact_decision_simulated">Simulated</string>
+    <string name="contact_decision_message">Message</string>
+    <string name="contact_decision_per_sender">sender\'s voice</string>
+
+    <!-- The "Simulate message" notification (contact detail) -->
+    <string name="simulate_channel_name">Simulate message</string>
+    <string name="simulate_channel_description">Test alerts from a chat\'s detail screen. Keep its sound and vibration on.</string>
+    <string name="simulate_notification_title">Simulated message from %1$s</string>
+    <string name="simulate_notification_text">Cucuto played what this chat\'s next message will sound and feel like.</string>
+
     <!-- Design gallery (debug builds): the theme, shape and feedback building blocks for screen work. -->
     <string name="screen_gallery">Design gallery</string>
     <string name="gallery_subtitle">Theme, shapes and feedback</string>
@@ -410,6 +485,74 @@
     <string name="import_failure_not_prepared">This import expired. Choose the file again.</string>
     <string name="import_failure_unexpected">Something went wrong. Try again, and if it keeps happening, report it with the details below.</string>
 
+    <!-- Haptic editor (#32) -->
+    <string name="haptic_editor_title">Vibration pattern</string>
+    <string name="haptic_editor_loading">Loading the pattern</string>
+    <string name="haptic_editor_undo">Undo</string>
+    <string name="haptic_editor_save">Save</string>
+    <string name="haptic_editor_failed">Couldn\'t save the pattern. Try again.</string>
+    <string name="haptic_editor_no_voice">This chat has no voice yet, so the pattern can\'t be saved. Give it a voice first.</string>
+    <string name="haptic_editor_discard_title">Discard your changes?</string>
+    <string name="haptic_editor_discard_body">The pattern isn\'t saved yet.</string>
+    <string name="haptic_editor_discard">Discard</string>
+    <string name="haptic_editor_keep_editing">Keep editing</string>
+    <string name="haptic_editor_timeline_empty">Empty timeline</string>
+    <plurals name="haptic_editor_timeline_summary">
+        <item quantity="one">Timeline: %1$d event, %2$s seconds</item>
+        <item quantity="other">Timeline: %1$d events, %2$s seconds</item>
+    </plurals>
+    <string name="haptic_editor_timeline_hint">Tap here to drop a vibration, or tap the rhythm below.</string>
+    <string name="haptic_editor_tools">Tap the timeline to drop</string>
+    <string name="haptic_preset_click">Click</string>
+    <string name="haptic_preset_tick">Tick</string>
+    <string name="haptic_preset_low_tick">Low tick</string>
+    <string name="haptic_tool_envelope">Swell</string>
+    <string name="haptic_editor_select_hint">Tap a vibration on the timeline to change it. Drag it to move it.</string>
+    <string name="haptic_editor_preset_at">%1$s at %2$d ms</string>
+    <string name="haptic_editor_envelope_at">Swell at %1$d ms, %2$d ms long</string>
+    <string name="haptic_editor_previous_event">Previous vibration</string>
+    <string name="haptic_editor_next_event">Next vibration</string>
+    <string name="haptic_editor_strength">Strength</string>
+    <string name="haptic_editor_sharpness">Sharpness</string>
+    <string name="haptic_editor_percent">%d%%</string>
+    <string name="haptic_editor_points_hint">Drag the dots on the timeline to shape the swell.</string>
+    <string name="haptic_editor_add_point">Add a dot</string>
+    <string name="haptic_editor_remove_point">Remove a dot</string>
+    <string name="haptic_editor_earlier">%d ms earlier</string>
+    <string name="haptic_editor_later">%d ms later</string>
+    <string name="haptic_editor_delete">Delete</string>
+    <string name="haptic_editor_rhythm_title">Tap the rhythm</string>
+    <string name="haptic_editor_rhythm_body">Tap a pad to record a pattern of up to 5 seconds. Quick taps become ticks, firmer taps clicks, and holds become swells as long as your finger stays down. It replaces the timeline; Undo brings it back.</string>
+    <string name="haptic_editor_rhythm_start">Start recording</string>
+    <string name="haptic_editor_rhythm_pad">Rhythm pad. Tap or hold to record.</string>
+    <string name="haptic_editor_rhythm_pad_hint">Tap or hold here</string>
+    <plurals name="haptic_editor_rhythm_progress">
+        <item quantity="one">%1$d tap, %2$s of 5 seconds</item>
+        <item quantity="other">%1$d taps, %2$s of 5 seconds</item>
+    </plurals>
+    <string name="haptic_editor_rhythm_stop">Done</string>
+    <string name="haptic_editor_play">Play</string>
+    <string name="haptic_editor_play_with_clip">Play with %s</string>
+    <string name="haptic_editor_clear">Clear</string>
+
+    <!-- Per-contact vibration (#33), a card on the contact detail screen -->
+    <string name="haptic_override_title">Vibration</string>
+    <string name="haptic_override_no_voice">Give this chat a voice to choose how it vibrates.</string>
+    <string name="haptic_override_pack">Pack</string>
+    <string name="haptic_override_auto">Auto</string>
+    <string name="haptic_override_off">Off</string>
+    <string name="haptic_override_custom">Custom</string>
+    <string name="haptic_override_pack_auto">The character\'s vibration from its pack: it rises and falls with each clip.</string>
+    <string name="haptic_override_pack_custom">The character\'s vibration from its pack: its own pattern.</string>
+    <string name="haptic_override_pack_keep">The character\'s pack has no vibration, so WhatsApp\'s own vibration stays.</string>
+    <string name="haptic_override_pack_missing">The character\'s vibration from its pack.</string>
+    <string name="haptic_override_auto_body">The vibration rises and falls with each clip.</string>
+    <string name="haptic_override_off_body">Messages from this chat don\'t vibrate.</string>
+    <string name="haptic_override_custom_body">Your own pattern plays with every message.</string>
+    <string name="haptic_override_preview">Preview</string>
+    <string name="haptic_override_create">Make a pattern</string>
+    <string name="haptic_override_edit">Edit pattern</string>
+
     <!-- Pack format problems in plain words, one per code of spec/error-codes.json -->
     <string name="error_archive_unreadable">The file is damaged or isn\'t a zip file. Try downloading it again.</string>
     <string name="error_archive_unsupported">The zip uses something packs can\'t, such as a password or an unusual compression.</string>
@@ -450,4 +593,80 @@
     <string name="error_backup_decryption_failed">The backup can\'t be opened. Check the password.</string>
     <string name="error_pack_downgrade">A newer version of this pack is installed.</string>
     <string name="error_pack_same_version">This version of the pack is already installed.</string>
+
+    <!-- Discover (#36, ADR 0029): pack repositories. -->
+    <string name="discover_subtitle">Packs from the web, checked before they install</string>
+    <string name="discover_add">Add a repository</string>
+    <string name="discover_repositories">Repositories</string>
+    <string name="discover_search">Search packs and characters</string>
+    <string name="discover_search_clear">Clear search</string>
+    <string name="discover_signed_in_icon">Signed in</string>
+    <string name="discover_stale">Showing the last copy</string>
+    <string name="discover_sign_in">Sign in</string>
+    <string name="discover_sign_in_to">Sign in to %1$s</string>
+    <string name="discover_retry">Try again</string>
+    <plurals name="discover_bundle_packs">
+        <item quantity="one">Bundle with %1$d pack: %2$s</item>
+        <item quantity="other">Bundle with %1$d packs: %2$s</item>
+    </plurals>
+    <string name="discover_version">version %1$s</string>
+    <string name="discover_needs_newer">Needs a newer Cucuto</string>
+    <string name="discover_update_available">Update available</string>
+    <string name="discover_installed">Installed</string>
+    <string name="discover_install">Install</string>
+    <string name="discover_update">Update</string>
+    <string name="discover_install_again">Install again</string>
+    <string name="discover_repository_empty">This repository has no packs yet.</string>
+    <string name="discover_no_matches">No packs match your search.</string>
+    <string name="discover_clear_filters">Clear search</string>
+    <string name="discover_empty_title">No repositories turned on</string>
+    <string name="discover_empty_body">Turn one on in Repositories, or add one with a link from a website or a friend.</string>
+    <string name="discover_add_card_title">More packs elsewhere?</string>
+    <string name="discover_add_card_body">Anyone can share packs from a website or a cloud folder. Paste its link, or tap "Add to app" on the website.</string>
+    <string name="discover_added">%1$s added</string>
+    <string name="discover_signed_in">Signed in to %1$s</string>
+    <string name="discover_removed">%1$s removed. Its packs stay installed.</string>
+    <string name="discover_already_added">%1$s is already in your repositories</string>
+    <string name="discover_bad_link">This link can\'t add a repository. Ask whoever shared it for a new one.</string>
+    <string name="discover_remove">Remove %1$s</string>
+    <string name="discover_repository_default">%1$s · the Cucuto website</string>
+    <string name="discover_repository_signed_in">Signed in</string>
+    <string name="discover_repository_show">Show %1$s</string>
+    <string name="discover_form_add_title">Add a repository</string>
+    <string name="discover_form_link_title">Add this repository?</string>
+    <string name="discover_form_sign_in_title">Sign in to %1$s</string>
+    <string name="discover_form_add_body">Paste the link to a pack repository (a folder or its repository.json) or to one .soundpack.zip file.</string>
+    <string name="discover_form_link_body">A website or a QR code wants to add this to Cucuto. Nothing is downloaded until you say so.</string>
+    <string name="discover_form_url">Link</string>
+    <string name="discover_form_url_hint">example.com/packs/</string>
+    <string name="discover_form_host">Packs come from</string>
+    <string name="discover_form_host_pack">The pack comes from</string>
+    <string name="discover_form_unknown_source">Only add packs from people you trust. Cucuto checks every file before installing, but anyone can publish anything on %1$s.</string>
+    <string name="discover_form_sign_in">Sign-in</string>
+    <string name="discover_auth_none">None</string>
+    <string name="discover_auth_basic">Password</string>
+    <string name="discover_auth_bearer">Token</string>
+    <string name="discover_form_username">Username</string>
+    <string name="discover_form_password">Password</string>
+    <string name="discover_form_token">Token</string>
+    <string name="discover_form_sign_in_privacy">Saved encrypted on this phone and sent only to %1$s.</string>
+    <string name="discover_form_invalid_credentials">Check the sign-in: the username can\'t be empty or contain a colon, and tokens can\'t contain spaces.</string>
+    <string name="discover_form_unauthorized">This repository needs a sign-in, or the one you entered is wrong. Choose Password or Token and try again.</string>
+    <string name="discover_form_add">Add</string>
+    <string name="discover_form_download">Download</string>
+    <string name="discover_link_not_url">That doesn\'t look like a link.</string>
+    <string name="discover_link_not_https">Cucuto only uses secure links (https://).</string>
+    <string name="discover_link_credentials">Remove the username and password from the link and enter them under Sign-in instead.</string>
+    <string name="import_step_downloading">Downloading %1$s…</string>
+    <string name="import_download_size">%1$s of %2$s</string>
+    <string name="download_problem_title">Couldn\'t download the pack</string>
+    <string name="repo_error_insecure">The server tried to use an insecure address (http://). Cucuto only uses https://.</string>
+    <string name="repo_error_redirects">The server keeps sending Cucuto somewhere else. Try again later.</string>
+    <string name="repo_error_unauthorized">This repository needs a sign-in, or the saved one no longer works.</string>
+    <string name="repo_error_not_found">Nothing was found at this address. Check the link.</string>
+    <string name="repo_error_server">The server has a problem right now. Try again later.</string>
+    <string name="repo_error_http">The server refused the request. Try again later.</string>
+    <string name="repo_error_too_large">The file is larger than Cucuto allows.</string>
+    <string name="repo_error_invalid_index">This address doesn\'t have a valid pack repository (repository.json).</string>
+    <string name="repo_error_network">Can\'t reach the server. Check your internet connection and try again.</string>
 </resources>

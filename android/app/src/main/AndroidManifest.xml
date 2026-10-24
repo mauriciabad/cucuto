@@ -7,6 +7,12 @@
     <!-- The Feedback engine's rich haptics (VibrationEffect compositions with USAGE_TOUCH). -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!--
+        Pack repositories (Discover, ADR 0029): only while Discover is open or the user adds a repository. No
+        background work, no analytics. The module in system_server never uses the network. Restoring a backup also
+        downloads its packs again from their repositories or links (ADR 0028).
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!--
         Day and night clips (ADR 0037): one approximate location fix, only when the user taps "Use my location once"
         on the Day and night screen. Never fine location, never background location, never location updates.
     -->
@@ -75,7 +81,34 @@
                 <data android:mimeType="application/octet-stream" />
                 <data android:pathAdvancedPattern=".*\\.[zZ][iI][pP]" />
             </intent-filter>
+            <!--
+                "Add to app" links from websites and QR codes: cucuto://repo/add?url=… (ADR 0011, ADR 0029). The link
+                only fills in Discover's add sheet; the user sees the host and confirms before anything is fetched.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="cucuto" />
+                <data android:host="repo" />
+                <data android:path="/add" />
+            </intent-filter>
         </activity>
+
+        <!-- The "Cucuto voices" Quick Settings tile: the global switch (#28). Only the system binds to it. -->
+        <service
+            android:name=".tile.VoicesTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_cucuto"
+            android:label="@string/tile_voices"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
 
         <!--
             Clip provider (#16). Exported because SystemUI's ringtone player opens the clip URI the module swaps in;

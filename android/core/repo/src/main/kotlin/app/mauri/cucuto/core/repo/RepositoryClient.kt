@@ -130,6 +130,26 @@ class RepositoryClient(
         }
 
     /**
+     * The copy of [access]'s index that [cache] holds, validated again, or null when there is none or it no longer
+     * passes. No network: the Discover screen shows it when the server cannot be reached.
+     */
+    suspend fun cachedIndex(
+        access: RepositoryAccess,
+        cache: IndexCache,
+    ): RepositorySnapshot? =
+        withContext(ioDispatcher) {
+            val cached = cache.read(access.indexUrl.toString()) ?: return@withContext null
+            val base = cached.finalUrl.toHttpUrlOrNull()?.takeIf { it.isHttps } ?: access.indexUrl
+            try {
+                parseIndex(access.indexUrl, base, cached.body, cached.etag)
+            } catch (e: RepoException) {
+                null
+            } catch (e: IOException) {
+                null
+            }
+        }
+
+    /**
      * Downloads [url] to [destination] (replaced only on success). With [expected] (an index entry) the size and
      * SHA-256 must match; without it (a direct link) the file is capped at [RepoLimits.maxDownloadBytes] and its
      * hash is only reported. [access] supplies credentials, sent only if [url] has the repository's origin.

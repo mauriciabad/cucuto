@@ -6,7 +6,7 @@ sounds are synthesized with ffmpeg, pictures are hand-written SVG.
 | Pack | ID | Characters |
 | --- | --- | --- |
 | [Chiptune critters](chiptune-critters) | `app.mauri.demo.chiptune-critters` | frog (with a day/night ringtone), bird, cat, bee |
-| [Kitchen orchestra](kitchen-orchestra) | `app.mauri.demo.kitchen-orchestra` | pot, glass, whisk, kettle |
+| [Kitchen orchestra](kitchen-orchestra) | `app.mauri.demo.kitchen-orchestra` | pot, glass, whisk, kettle (with a ringtone that has an intro, a loop and an outro, and a clip cut from it) |
 
 CI (the `packs` job in `.github/workflows/ci.yml`) also builds them into one bundle, `app.mauri.demo.all`, and a repository index.
 
@@ -25,10 +25,14 @@ $packer index -o dist/repo --name "Cucuto demo packs" --homepage https://cucuto.
 ## Regenerate the sounds
 
 ```sh
+(cd tools/packer && ./gradlew installDist)
 kotlin packs/generate.main.kts      # from the repository root; needs ffmpeg with libopus and the kotlin CLI
 ```
 
 The script overwrites the `.ogg` files from ffmpeg expressions; edit the expressions there, never the audio files.
+Auto-cut clips (the kettle's "reel hook") are then cut from the ringtones with `packer cut` and committed, so building
+the packs never needs ffmpeg. `packer ring packs/kitchen-orchestra -o rings/` renders the ring files a phone would
+play.
 
 ## Adding a pack
 
