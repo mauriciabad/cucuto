@@ -26,10 +26,14 @@ class ClipPlayer internal constructor() {
     private var player: MediaPlayer? = null
     private val turns = mutableMapOf<String, Int>()
 
-    /** Plays the next of [clips] for [key] (taps cycle through the pool), stopping whatever was playing. */
+    /**
+     * Plays the next of [clips] for [key] (taps cycle through the pool), stopping whatever was playing. [onStart] runs
+     * right after the clip starts, for a vibration that starts with it (Discover's haptic previews, ADR 0069).
+     */
     fun play(
         key: String,
         clips: List<File>,
+        onStart: (() -> Unit)? = null,
     ) {
         stop()
         if (clips.isEmpty()) return
@@ -46,7 +50,10 @@ class ClipPlayer internal constructor() {
                     .build(),
             )
             FileInputStream(clip).use { media.setDataSource(it.fd) }
-            media.setOnPreparedListener { it.start() }
+            media.setOnPreparedListener {
+                it.start()
+                onStart?.invoke()
+            }
             media.setOnCompletionListener { if (player === it) stop() }
             media.setOnErrorListener { mp, _, _ ->
                 if (player === mp) stop()
