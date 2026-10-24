@@ -45,7 +45,8 @@ Discover: "explore") are drawn from the Material Icons path data instead of addi
 `SettingsScreen(onNavigate)`; its status row opens Setup and its debug-only row opens Developer. The contact detail
 (#26) is pushed on Home for chats that have a voice. Discover (#36) is the tab root as
 `DiscoverScreen()` (no back arrow); an "Add to app" link opens the Discover tab, as an incoming pack opens Packs.
-The haptic editor (#32) is pushed on the current tab. Status becomes **Settings → Setup** (`SetupScreen`).
+The haptic editor (#32) is pushed on the current tab. Screens that work on their parent's view model (the import review over Packs, "Check and finish" over the
+creator) declare it with `childOf` and share its store (ADR 0055). Status becomes **Settings → Setup** (`SetupScreen`).
 Diagnostics stays reachable in release builds (Settings and the setup checks link to it; the brief wants the
 decision log for debugging). **Settings → Developer** (design gallery, Diagnostics with the debug test voice, and
 "Start over as a new user") and the gallery are registered only when `BuildConfig.DEBUG`. The placeholder screen,

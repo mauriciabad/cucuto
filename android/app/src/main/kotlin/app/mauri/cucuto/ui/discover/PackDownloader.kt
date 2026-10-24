@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Downloads a repository entry or a direct pack link (size and SHA-256 checked by [RepositoryClient]) to a temporary
  * file in [workDir], then hands it to the same import pipeline as local files ([PackCatalog.prepare], ADR 0011): the
- * user reviews and confirms in the import sheet as usual. The temporary file is deleted once the importer has its own
+ * user reviews and confirms in the import review as usual. The temporary file is deleted once the importer has its own
  * copy, or when the download fails or is cancelled.
  */
 class PackDownloader(

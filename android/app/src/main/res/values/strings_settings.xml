@@ -65,7 +65,6 @@
     <string name="export_credentials">Include repository passwords</string>
     <string name="export_credentials_body">Only possible in a password-protected backup.</string>
     <string name="export_choose_place">Choose where to save</string>
-    <string name="export_cancel">Cancel</string>
     <string name="export_show_password">Show password</string>
     <string name="export_hide_password">Hide password</string>
 
@@ -208,7 +207,6 @@
     <string name="settings_licenses">Licenses</string>
     <string name="settings_licenses_body">Cucuto is free software under the GPL, version 3 or later.</string>
     <string name="licenses_title">Licenses</string>
-    <string name="licenses_close">Close</string>
     <string name="licenses_app" translatable="false">Cucuto</string>
     <string name="licenses_app_body">GNU General Public License, version 3 or later. You may share and change it under the same terms.</string>
     <string name="licenses_font" translatable="false">Google Sans Flex</string>

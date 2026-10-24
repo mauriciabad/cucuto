@@ -62,7 +62,6 @@
     <string name="export_credentials">Incluir las contraseñas de los repositorios</string>
     <string name="export_credentials_body">Solo es posible en una copia protegida con contraseña.</string>
     <string name="export_choose_place">Elegir dónde guardarla</string>
-    <string name="export_cancel">Cancelar</string>
     <string name="export_show_password">Mostrar contraseña</string>
     <string name="export_hide_password">Ocultar contraseña</string>
 
@@ -215,7 +214,6 @@
     <string name="settings_licenses">Licencias</string>
     <string name="settings_licenses_body">Cucuto es software libre con licencia GPL, versión 3 o posterior.</string>
     <string name="licenses_title">Licencias</string>
-    <string name="licenses_close">Cerrar</string>
     <string name="licenses_app_body">Licencia Pública General de GNU, versión 3 o posterior. Puedes compartirlo y modificarlo en las mismas condiciones.</string>
     <string name="licenses_font_body">SIL Open Font License 1.1.</string>
     <string name="licenses_packs">Packs de sonidos de demostración</string>
