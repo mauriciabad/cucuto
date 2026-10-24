@@ -1,4 +1,5 @@
-// Builds the Google Play feature graphic (1024 × 500, ADR 0071) in English and Spanish: brand/store/feature-graphic-*.
+// Builds the store feature graphic (1024 × 500; made for Google Play, ADR 0071, and still read by F-Droid and
+// IzzyOnDroid, ADR 0080) in English and Spanish: brand/store/feature-graphic-*.
 // The same layout as the Open Graph image (build-preview.mjs), tightened for Play's banner: the clock and the words
 // stay inside the middle of the canvas, which Play never crops, and the background reaches every edge (no alpha).
 // No "WhatsApp" here: Play's IP policy and Meta's brand guidelines keep other brands out of the feature graphic.

@@ -80,8 +80,9 @@ handed out to work that never merged or is still in a PR (0049 is in #225, 0059 
 | [0064](0064-bundles-in-discover.md) | Bundles in Discover: one card with its packs inside | accepted |
 | [0065](0065-chats-before-they-message.md) | Chats before they message: Android contacts, not WhatsApp's database | accepted by the owner on #254 (2026-10-24); built in #292 |
 | [0069](0069-haptic-previews-in-discover.md) | Haptic previews in Discover: the pack's haptic in the index, auto envelopes on the phone | accepted; amended for drawn previews (#301) |
-| [0071](0071-google-play-bundle-and-listing.md) | Google Play: app bundle, signing, listing and review notes | accepted; owner updates #287 (Play signs with the release key via PEPK, release key uploads) |
+| [0071](0071-google-play-bundle-and-listing.md) | Google Play: app bundle, signing, listing and review notes | superseded by 0080 |
 | [0072](0072-picker-folding-and-surprise-me.md) | Folded pack sections and "Surprise me" in the character pickers | accepted; defaults open in #297 |
 | [0073](0073-sound-flow-message-then-ringtone.md) | The sound flow: the message sound, then the ringtone, with "Android default" and "Leave as is" | accepted; owner update #298, defaults open in #282 |
 | [0074](0074-ringtone-rules-screen.md) | Ringtone rules: the pack's rules in plain words, and your own rules per contact | accepted; defaults open in #303 |
 | [0079](0079-security-review-hardening.md) | Security review before the Play release: content: intake only, byte-checked clip mirror, bounded table counts | accepted; default open in #341 |
+| [0080](0080-no-google-play.md) | No Google Play: the closed test is too hard to meet; Play bundle and checks removed | accepted |

@@ -38,8 +38,8 @@ Cucuto is an early test version: see the [changelog](CHANGELOG.md) for what each
 5. Import a pack and give a contact a character.
 
 Details, troubleshooting and recovery: [install guide](docs/install.md) (also on the
-[website](https://cucuto.mauri.app/install/)). Cucuto never checks for updates itself: watch the releases, or let [Obtainium](https://github.com/ImranR98/Obtainium) do it (the website's Install page has a one-tap setup). Where else it is distributed: [docs/distribution.md](docs/distribution.md). A Google Play listing is being prepared;
-Play and GitHub installs share one signing certificate, so they update each other.
+[website](https://cucuto.mauri.app/install/)). Cucuto never checks for updates itself: watch the releases, or let [Obtainium](https://github.com/ImranR98/Obtainium) do it (the website's Install page has a one-tap setup). Where else it is distributed: [docs/distribution.md](docs/distribution.md). Cucuto isn't on Google Play
+([ADR 0080](docs/decisions/0080-no-google-play.md)).
 
 ## Build
 

@@ -655,11 +655,16 @@ Rules:
   Redirects are capped, and credentials are never sent to a different host than the repository's.
 - **Previews** are small files (covers, sprites and one short sample clip per character) so browsing stays fast. They
   follow the same media rules as pack files.
+- **Samples.** A character's `sample` is its first clip, copied as is. A ringtone-only character (no clips, a song)
+  gets a clip cut from its first ringtone instead, as an [auto-cut clip](#auto-cut-clips) is: the hook of the song,
+  searched within the ringtone's loop (the whole file for `loop: false`), 2.5 s, Ogg Opus. `packer index` cuts it with
+  ffmpeg and, without ffmpeg, leaves that `sample` out with a warning. Tools without an audio encoder (the website's
+  "Host your own repository" helper) leave it out. Apps play every sample the same way.
 - **Haptic previews.** A character preview may carry `x-haptic`, the character's [`haptic`](#haptics) object from
   `pack.json` as is, so apps can play the vibration with the sample. `packer index` writes it for every character with
   a sample: the pattern for `custom`, `{ "mode": "none" }`, and `{ "mode": "auto" }` when the pack uses auto (explicit
-  or by default). For `auto`, apps compute the envelope from the sample clip (the character's first clip) as they would
-  at install, so the index carries no envelopes. Absent means unknown, not auto: apps play the sample without
+  or by default). For `auto`, apps compute the envelope from the sample clip (the character's first clip, or the cut
+  from its ringtone) as they would at install, so the index carries no envelopes. Absent means unknown, not auto: apps play the sample without
   vibration. The `x-` name is deliberate. Apps released before it validate indexes strictly and accept only `x-` keys
   beyond the known fields, so they keep reading indexes that have it. The schema checks its shape; the [timeline rules](#haptics)
   are checked when the pack is imported ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).

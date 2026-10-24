@@ -216,6 +216,43 @@ class PackerTest {
     }
 
     @Test
+    fun `index cuts a sample for ringtone-only characters`(@TempDir tmp: Path) {
+        assumeTrue(hasFfmpeg, "needs ffmpeg")
+        val src = tmp.resolve("src").createDirectories()
+        demoPacks[1].resolve("kettle/ringtones/kettle-reel.ogg").copyTo(src.resolve("song.ogg"))
+        demoPacks[1].resolve("kettle/sprite.svg").copyTo(src.resolve("sprite.svg"))
+        src.resolve("pack.yaml").writeText(
+            """
+            id: io.example.song
+            name: Song
+            version: 1.0.0
+            author: Tests
+            license: CC0-1.0
+            characters:
+              - name: Song
+                sprite: sprite.svg
+                ringtones:
+                  - file: song.ogg
+                    loop: { startMs: 4000, endMs: 12000 }
+            """.trimIndent(),
+        )
+        val packs = tmp.resolve("packs")
+        assertEquals(0, packer("build", src.toString(), "-o", packs.toString()).statusCode)
+        val out = tmp.resolve("repo")
+        val result = packer("index", "-o", out.toString(), "--name", "Songs", packs.toString())
+        assertEquals(0, result.statusCode, result.output)
+        val json = out.resolve("repository.json")
+        assertTrue(DocumentValidator.validate(DocumentKind.REPOSITORY, json.readBytes()).isValid)
+        val song = SpecJson.parseToJsonElement(json.readText()).jsonObject["packs"]!!.jsonArray[0].jsonObject["characters"]!!.jsonArray[0].jsonObject
+        assertEquals("previews/io.example.song/song-sample.ogg", song["sample"]!!.jsonPrimitive.content)
+        assertEquals("auto", song["x-haptic"]!!.jsonObject["mode"]!!.jsonPrimitive.content)
+        assertNear(Limits.CUT_CLIP_DEFAULT_MS, durationMs(out.resolve("previews/io.example.song/song-sample.ogg")))
+        // The hook is searched within the loop, the song's body.
+        val (start, end) = Regex("""\((\d+)\.\.(\d+) ms\)""").find(result.output)!!.destructured.toList().map { it.toLong() }
+        assertTrue(start >= 4000 && end <= 12000, result.output)
+    }
+
+    @Test
     fun `pack yaml writes every condition, special clips and ringtone-only characters`(@TempDir tmp: Path) {
         val src = tmp.resolve("src").createDirectories()
         val frog = demoPacks[0].resolve("frog")

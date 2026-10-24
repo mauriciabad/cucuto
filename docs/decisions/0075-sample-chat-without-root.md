@@ -1,7 +1,9 @@
 # 0075. A sample chat to try a voice without root
 
 - Status: accepted, amended 2026-10-24 (#346: contact detail's layout and the real pickers; "Hear the characters"
-  removed). The defaults the owner may override are in #308.
+  removed). The defaults the owner may override are in #308. Amended 2026-10-24: Cucuto won't be on Google Play
+  ([ADR 0080](0080-no-google-play.md)); the sample chat stays, for anyone trying a character before setting up the
+  module.
 - Date: 2026-10-24
 - Issues: #285 (this work), #346 (the amendment), #274 and ADR 0071 (Google Play review notes), ADR 0025 (Simulate message), ADR 0063
   (independent voice and ringtone)
@@ -86,8 +88,7 @@ visit; that's all the sample chat stores.
 
 - A reviewer without root can go from install to hearing and feeling a character for a chat in under two minutes:
   Skip, Get the demo packs, Try a sample chat, Messages, pick a character (tap, then tap again), Play a sample
-  message. The review notes in
-  [google-play.md](../google-play.md#review-notes) and the App access text describe that path.
+  message. The Play review notes that described that path were removed with ADR 0080.
 - The sample chat is a preview, not Simulate message: it doesn't run the router, so it ignores day-and-night clip
   rules and per-contact clip toggles and haptic overrides, which it doesn't offer. Simulate message (ADR 0025) stays
   the faithful test for real chats.

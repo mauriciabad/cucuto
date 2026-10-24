@@ -54,7 +54,7 @@ alert: the module only reports when it handles a notification, so post the test 
 Before the module is set up (or on a phone without root), **Try a sample chat** on Home plays a character's message
 sound, vibration and ringtone in the app. It shows while you have packs and no chats yet.
 
-## Updates and Google Play
+## Updates
 
 Cucuto never checks for updates and never goes online to look for them. New versions appear on
 [GitHub Releases](https://github.com/mauriciabad/cucuto/releases); [Obtainium](https://github.com/ImranR98/Obtainium)
@@ -62,9 +62,8 @@ can install them for you (the website's [Install page](https://cucuto.mauri.app/
 setup). After every update, reboot: the module loads the new version at boot.
 
 Every Cucuto APK is signed with the same certificate, SHA-256 `6ded92bf…` (the full value is on every release and on
-the Install page). A Google Play listing is being prepared. Play will install Cucuto with that same certificate
-([google-play.md › Signing](google-play.md#signing)), so a copy from Play and a copy from GitHub or Obtainium update
-each other without uninstalling.
+the Install page), so a copy from GitHub and a copy from Obtainium update each other without uninstalling. Cucuto
+isn't on Google Play ([ADR 0080](decisions/0080-no-google-play.md)).
 
 ## Troubleshooting
 

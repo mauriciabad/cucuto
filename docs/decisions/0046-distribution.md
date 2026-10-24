@@ -2,7 +2,8 @@
 
 - Status: accepted; amended by the owner's answer on #211 (Google Play added, F-Droid after v1, see
   [Owner update](#owner-update-2026-10-24-211-google-play-too-f-droid-after-v1)); the Play
-  bundle, listing format and Console answers are ADR 0071
+  bundle, listing format and Console answers are ADR 0071. **Amended 2026-10-24 by [ADR 0080](0080-no-google-play.md):
+  no Google Play** (the owner dropped it over the closed testing requirement)
 - Date: 2026-10-24
 - Issues: #206 (this work), #44 / ADR 0021 (signed release on tag), #41 / ADR 0032 (screenshot tests)
 
@@ -76,6 +77,10 @@ costs one release build (about 5 minutes) per release and never blocks one. Deta
   checked by hand only.
 
 ## Owner update 2026-10-24 (#211): Google Play too, F-Droid after v1
+
+> **Amended the same day ([ADR 0080](0080-no-google-play.md)):** the owner decided against Google Play ("the closed
+> testing requirement is too hard to meet"). The Play decisions below are history; F-Droid after v1 stands.
+> Developer verification goes through the Android Developer Console instead (#358).
 
 > Google Play Store is not an option? i thought we would publish it there too. I'll make a developer account if necesary
 > f-droid would be nice, we can do it after v1.
