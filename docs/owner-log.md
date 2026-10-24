@@ -198,3 +198,7 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 > unfortunately it is late at night and noone will probably text me
 
 (Lead left a passive log watch for the first real alert and started #26 "Simulate message", so voices can be tested without incoming messages, plus #139.)
+
+> right now the app feels like it is fragmented. when do you plan to make it a complete experience? please, make sure you have more agents working in paralel all time
+
+(Lead opened #153 "App shell: one coherent experience", wrote the app structure contract (Home, Packs, Discover, Settings) and started 5 more parallel agents: shell #153, Settings + backup UI #28/#43, Discover #36, haptic editor #32/#33, groups + Business #20/#21.)

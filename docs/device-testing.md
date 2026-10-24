@@ -129,6 +129,38 @@ its silent channel; that is expected and not a bug).
 - Another, unassigned chat still plays WhatsApp's tone (`UNASSIGNED`).
 - Note the `NNus` values; record the slowest.
 
+## 3b. Group messages and per-sender voices (#20), WhatsApp Business (#21)
+
+Design: [ADR 0031](decisions/0031-group-policy-and-whatsapp-business.md). You need a group with at least two other
+members (A and B) who agree to send a few messages. Keep messages a few seconds apart, as in section 3.
+
+1. **Does the summary carry the sender?** A sends a message to the group. Module log:
+   `alert com.whatsapp UNASSIGNED key=@g.us group=true sender=<shape>`. Record the shape:
+   - `@lid` (or `@s.whatsapp.net`): the sender is there and keyed like a 1:1 chat. Per-sender voices work.
+   - `<other>`: a sender key that is not a JID. Per-sender still routes, but members do not appear in recent senders.
+   - `<name only>` or `<none>`: the alerting summary has no usable sender. Per-sender groups fall back to the group's
+     voice; record it in the follow-up issue (reading the child notification would need another hook point).
+2. **Default policy.** Give the group a voice (Home → the group → a character). A writes: the group's voice plays
+   (`SWAPPED key=@g.us … contact=#<group>` with no `per-sender` detail), even if A has a voice of their own.
+3. **Per sender.** On the group's detail screen, switch "Who speaks in this group" to **Each sender** (the setting sits on
+   the contact detail screen, #26; run this step once that screen has shipped). The routing table moves to a new
+   generation. Then:
+   - A writes again. Within ~10 s A appears in Home's recent senders (if step 1 showed `@lid`). Give A a different
+     character.
+   - A writes: A's voice plays; log detail `(per-sender)`, `contact=#<A>`.
+   - B (no voice) writes: the group's voice plays; detail `(per-sender, sender has no voice: group voice)`.
+   - Remove the group's voice and have B write again: WhatsApp's tone; detail `(per-sender, sender has no voice)`.
+   - If A also has a 1:1 chat with the phone, A's direct messages now play the same voice, and the clips never repeat
+     back to back across the two chats.
+4. **Back to the group.** Switch to **The group**: A's group messages play the group's voice again (or WhatsApp's tone
+   if it has none).
+5. **WhatsApp Business** (only if it is installed and has a chat): a 1:1 or group message logs
+   `alert com.whatsapp.w4b …`. The chat appears on Home as "Business · …". Giving it a voice does not change the
+   WhatsApp chat of the same person, and the other way round.
+
+**Look for:** `NNus` stays in the same range as 1:1 alerts (the sender read adds one Bundle lookup), no `Slow
+playSound`, and no key or name in the module log (only `@g.us`, `@lid` and `<shape>` forms).
+
 ## 4. Global switch and parity
 
 - Diagnostics → switch **Cucuto voices** off. Module log: a new routing table generation. The assigned contact now
@@ -138,6 +170,41 @@ its silent channel; that is expected and not a bug).
   `set_dnd off`.
 - **Ringer silent / vibrate**: silent plays nothing; vibrate plays the click-tick only.
 - **WaEnhancer X** still works; WhatsApp does not crash (`adb logcat -b crash -d`).
+
+## 4b. Live table updates, with and without an app update since boot (#154)
+
+The module must follow every publication within seconds, also after the app was reinstalled since the last boot
+([ADR 0024](decisions/0024-routing-updates-after-app-update.md)). Run part A first, then part B. Module code
+changes need a reboot (`system_server` keeps the module it loaded at boot); app-only changes do not.
+
+Watch the module log in a second terminal:
+
+```
+adb shell su -c "tail -f /data/adb/lspd/log/modules_*.log" | grep --line-buffered -F 'app.mauri.cucuto,cucuto,'
+```
+
+**After the boot** (once per boot), expect `Routing table attached (generation …)` and `Listening for new routing
+tables` within about 20 s.
+
+**A. No app update since boot.** Open Cucuto → **Diagnostics** and toggle **Cucuto voices** off, then on.
+
+- Each toggle logs exactly one `Routing table <gen>: N keys, M voices` line within 2 s, with a new, larger `<gen>`.
+- Within about 15 s, Diagnostics → "Table in the module" reads `Generation <gen>, N keys: the app's latest` (the same
+  generation as the "Routing table" row).
+
+**B. After an app update.** Without rebooting, reinstall the app (`adb install -r app-debug.apk`, a newer build or the
+same one), open **Diagnostics** and toggle the switch again.
+
+- Same expectations as A: one `Routing table <gen>` line within 2 s per toggle, and Diagnostics catches up within
+  about 15 s. Here the line comes from the nudge and the remote file; LSPosed no longer notifies preferences.
+- Optional, to see the transport: `adb shell su -c 'find /data/misc /data/adb -name routing.table -exec ls -l {} +'`
+  shows the remote file with a fresh timestamp (LSPosed keeps it under `<base>/<user>/app.mauri.cucuto/`).
+
+**Fail if:** no `Routing table` line after a toggle; `Ignored a routing nudge from …` (the sender's identity did not
+arrive: record what it says); `Registering the routing nudge receiver failed` or `Could not listen for new routing
+tables`; `Ignoring an incomplete routing file` on every toggle (an occasional one during rapid toggling is fine:
+the next nudge reads the complete file); or "Table in the module" still says "Not yet the app's latest" a minute
+after the last toggle. Also check `adb logcat -b crash -d` for anything from `system_server`.
 
 ## 5. Report and clean up
 

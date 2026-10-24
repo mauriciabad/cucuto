@@ -21,6 +21,9 @@
     <string name="diag_module_report">Reported %1$s. Hooks: %2$s. Missing: %3$s</string>
     <string name="diag_module_table">Table in the module</string>
     <string name="diag_module_table_value">Generation %1$d, %2$d keys</string>
+    <string name="diag_module_table_same">Generation %1$d, %2$d keys: the app\'s latest</string>
+    <string name="diag_module_table_behind">Generation %1$d, %2$d keys. Not yet the app\'s latest (%3$d): the module reports a new table within about 15 seconds.</string>
+    <string name="diag_module_table_previous_boot">Generation %1$d, %2$d keys, reported before the last reboot</string>
     <string name="diag_module_timing">Since boot</string>
     <string name="diag_module_timing_value">%1$d decisions, %2$d over 5 ms, slowest %3$d µs, %4$d events dropped</string>
     <string name="diag_post_test">Post test notification</string>

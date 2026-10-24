@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
+import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
@@ -99,6 +100,14 @@ class FakeChatDirectory(
         chat: ChatKey,
         voice: ChatVoice?,
     ) = chats.update { list -> list.map { if (it.key == chat) it.copy(voice = voice) else it } }
+
+    override suspend fun setGroupPolicy(
+        chat: ChatKey,
+        policy: GroupPolicy,
+    ): Long {
+        chats.update { list -> list.map { if (it.key == chat) it.copy(groupPolicy = policy) else it } }
+        return 1
+    }
 
     override suspend fun dismissRecent(chat: ChatKey) {
         dismissed += chat

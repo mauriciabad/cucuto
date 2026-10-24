@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.haptics.forClip
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
+import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.xposed.events.Outcome
 
@@ -106,19 +107,43 @@ class AlertRouter(
                 contactId = speaker.contactId,
                 clipUri = clip.uri,
                 haptic = haptic,
-                detail = if (speaker !== match.conversation) "per-sender" else null,
+                detail = groupDetail(match.conversation, speaker, identity.senderKey),
             )
         }
         val known = identity.keys.firstOrNull { table.route(pkg, it) != null }
+        val knownRoute = known?.let { table.route(pkg, it) }
         return Decision(
             Outcome.UNASSIGNED,
             pkg,
             identity,
             matchedKey = known,
-            contactId = known?.let { table.route(pkg, it)?.contactId },
-            detail = if (known != null) "contact has no voice" else null,
+            contactId = knownRoute?.contactId,
+            detail =
+                when {
+                    knownRoute == null -> null
+                    !knownRoute.isPerSender -> DETAIL_NO_VOICE
+                    identity.senderKey == null -> DETAIL_NO_SENDER_NO_GROUP_VOICE
+                    else -> DETAIL_SENDER_UNASSIGNED_NO_GROUP_VOICE
+                },
         )
     }
+
+    /**
+     * Why a per-sender group sounded the way it did, for the decision log and the device check (#20): whether the
+     * alerting record carried a sender at all, and whether that sender has a voice. Constant strings: nothing is
+     * allocated on the notification path. Null for everything that is not a per-sender group.
+     */
+    private fun groupDetail(
+        conversation: Route,
+        speaker: Route,
+        senderKey: String?,
+    ): String? =
+        when {
+            !conversation.isPerSender -> null
+            speaker !== conversation -> DETAIL_PER_SENDER
+            senderKey == null -> DETAIL_NO_SENDER
+            else -> DETAIL_SENDER_UNASSIGNED
+        }
 
     private fun selfTest(snapshot: NotificationSnapshot): Decision? {
         if (snapshot.channelId != Targets.SELF_TEST_CHANNEL) return null
@@ -135,5 +160,23 @@ class AlertRouter(
 
     companion object {
         const val SELF_TEST_KEY: String = "cucuto:self-test"
+
+        /** A per-sender group played its sender's own voice. */
+        const val DETAIL_PER_SENDER: String = "per-sender"
+
+        /** A per-sender group played its own voice because the notification named no sender. */
+        const val DETAIL_NO_SENDER: String = "per-sender, no sender on the notification: group voice"
+
+        /** A per-sender group played its own voice because the sender has none. */
+        const val DETAIL_SENDER_UNASSIGNED: String = "per-sender, sender has no voice: group voice"
+
+        /** A per-sender group without a voice of its own, and the notification named no sender. */
+        const val DETAIL_NO_SENDER_NO_GROUP_VOICE: String = "per-sender, no sender on the notification"
+
+        /** A per-sender group without a voice of its own, and the sender has none either. */
+        const val DETAIL_SENDER_UNASSIGNED_NO_GROUP_VOICE: String = "per-sender, sender has no voice"
+
+        /** A contact (or a default-policy group) that is known but has no voice. */
+        const val DETAIL_NO_VOICE: String = "contact has no voice"
     }
 }

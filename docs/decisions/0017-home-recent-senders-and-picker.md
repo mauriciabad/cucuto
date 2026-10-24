@@ -50,7 +50,8 @@ chat (`Picker(null)`) the grid only previews.
 
 **Preview audio and haptics.** Clips play through `MediaPlayer` with `USAGE_NOTIFICATION` audio attributes, like
 Android's own notification sound picker, so the preview follows the notification volume and the ringer mode. The
-haptic is built with `:core:haptics` (`HapticEffects.create`, the same code as the module) and played with
+haptic is built with `:core:haptics` (`PublicHapticEffects.create`, the module's planner with public APIs only,
+[ADR 0026](0026-app-haptics-public-apis-only.md)) and played with
 `VibrationAttributes.USAGE_NOTIFICATION`. `Keep`, `Off` and `Auto` play no preview haptic: `Auto` needs the per-clip
 envelopes of #97.
 
