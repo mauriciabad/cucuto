@@ -11,7 +11,8 @@ import kotlin.random.Random
 
 /**
  * A large pack shaped like the one in #241 (98 characters with a clip, two ringtones and a JPEG sprite each, about
- * 290 MB), built without external tools so the benchmark runs anywhere. The Ogg Opus files have real Ogg pages,
+ * 290 MB), and one shaped like the one in #279 ([writeManyClips]), built without external tools so the benchmarks run
+ * anywhere. The Ogg Opus files have real Ogg pages,
  * Opus headers and granule positions, which is all the header probes read; their packets are random bytes, so only
  * the JVM stand-in decoders accept them. Media is stored and manifests deflated, as `packer build` writes them.
  */
@@ -95,11 +96,76 @@ object SyntheticPack {
         closeEntry()
     }
 
-    /** An Ogg Opus stream of [durationMs] and about [bytes] bytes: real pages and headers, random packets. */
+    /**
+     * A pack shaped like the owner's in #279: [MANY_CHARACTERS] characters with [MANY_CLIPS] short clips in all (about
+     * 16 KB and 1.2 s each, as in that pack) and an SVG sprite of about 28 KB each, no ringtones: about 32 MB.
+     */
+    fun writeManyClips(target: File): File {
+        val random = Random(279)
+        val clips = List(8) { ogg(random, MANY_CLIP_MS, MANY_CLIP_BYTES, pagePayloadBytes = MANY_CLIP_BYTES - 200) }
+        val sprites = List(8) { svg(random) }
+        val counts =
+            List(MANY_CHARACTERS) {
+                MANY_CLIPS / MANY_CHARACTERS +
+                    if (it < MANY_CLIPS % MANY_CHARACTERS) 1 else 0
+            }
+        val characters =
+            (0 until MANY_CHARACTERS).joinToString(",\n") { i ->
+                val list = (0 until counts[i]).joinToString(", ") { """{ "file": "characters/c$i/clips/$it.ogg" }""" }
+                """{ "id": "c$i", "name": "Character $i", "sprite": "characters/c$i/sprite.svg", "clips": [$list] }"""
+            }
+        val manifest =
+            """
+            {
+              "formatVersion": 1, "type": "pack", "id": "app.mauri.benchmark.many", "name": "Many clips",
+              "version": "1.0.0", "author": "Cucuto benchmark", "license": "CC0-1.0",
+              "characters": [
+            $characters
+              ]
+            }
+            """.trimIndent()
+        target.parentFile?.mkdirs()
+        var clip = 0
+        ZipOutputStream(target.outputStream().buffered(1 shl 20)).use { zip ->
+            zip.put("pack.json", manifest.encodeToByteArray(), deflate = true)
+            for (i in 0 until MANY_CHARACTERS) {
+                zip.put("characters/c$i/sprite.svg", sprites[i % sprites.size], deflate = true)
+                repeat(counts[i]) { zip.put("characters/c$i/clips/$it.ogg", clips[clip++ % clips.size], false) }
+            }
+        }
+        return target
+    }
+
+    const val MANY_CHARACTERS = 268
+    const val MANY_CLIPS = 1_541
+    const val MANY_CLIP_MS = 1_200L
+    const val MANY_CLIP_BYTES = 16_000
+
+    /** Number of media files the importer test-decodes in [writeManyClips]. */
+    const val MANY_MEDIA_FILES = MANY_CHARACTERS + MANY_CLIPS
+
+    /** A 64x64 pixel-art SVG of about 28 KB: one small rectangle per pixel, nothing the SVG safety rules reject. */
+    private fun svg(random: Random): ByteArray =
+        buildString {
+            append("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">""")
+            var n = 0
+            while (length < 28_000) {
+                val color = random.nextInt(0x1000000).toString(16).padStart(6, '0')
+                append("""<rect x="${n % 64}" y="${n / 64 % 64}" width="1" height="1" fill="#$color"/>""")
+                n++
+            }
+            append("</svg>")
+        }.encodeToByteArray()
+
+    /**
+     * An Ogg Opus stream of [durationMs] and about [bytes] bytes: real pages and headers, random packets, at most
+     * [pagePayloadBytes] per page.
+     */
     fun ogg(
         random: Random,
         durationMs: Long,
         bytes: Int,
+        pagePayloadBytes: Int = 255 * 255,
     ): ByteArray {
         val out = ByteArrayOutputStream(bytes + 4096)
         val serial = random.nextInt()
@@ -126,7 +192,7 @@ object SyntheticPack {
                 }.toByteArray()
         out.write(page(serial, sequence++, 0, FLAG_BOS, head))
         out.write(page(serial, sequence++, 0, 0, tags))
-        val pageBytes = 255 * 255
+        val pageBytes = pagePayloadBytes.coerceIn(1, 255 * 255)
         val pages = maxOf(1, (bytes - out.size()) / (pageBytes + 27 + 255))
         val samples = durationMs * 48 + preSkip
         for (p in 1..pages) {

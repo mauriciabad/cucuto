@@ -10,7 +10,9 @@ import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.PackRepositoryEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.repo.RepositoryCredentials
 import app.mauri.cucuto.core.repo.credentials.CredentialStore
@@ -223,6 +225,7 @@ class BackupRestorer(
         contact: ContactRestoreOutcome,
         options: RestoreOptions,
     ): RingtoneRestoreOutcome? {
+        backup.ringtoneChoice?.let { return restoreRingtoneChoice(backup, contact, options, it) }
         val ringtone = backup.ringtone ?: return null
         val dao = db.phoneRingtoneDao()
         val current = dao.get(contact.contactId)
@@ -230,7 +233,11 @@ class BackupRestorer(
         val namesVoice =
             backup.message?.let { it.packId == ringtone.packId && it.characterId == ringtone.characterId } == true
         val own = !follows || !namesVoice
-        val mode = ringtone.rule.mode.toEntity()
+        // Own rules without entries are the pack's rules (the schema requires them; ADR 0074).
+        val mode =
+            ringtone.rule.mode
+                .toEntity()
+                .takeUnless { it == RingtoneMode.CUSTOM && ringtone.rule.rules.isNullOrEmpty() } ?: RingtoneMode.PACK
         val wanted =
             PhoneRingtoneEntity(
                 contactId = contact.contactId,
@@ -240,6 +247,10 @@ class BackupRestorer(
                 variant = if (mode == RingtoneMode.FIXED) ringtone.rule.variant else null,
                 updatedAt = clock.now(),
                 followsVoice = follows,
+                rules =
+                    ringtone.rule.rules
+                        .takeIf { mode == RingtoneMode.CUSTOM }
+                        ?.let(RingtoneRules::encode),
             )
         val outcome =
             when {
@@ -263,6 +274,56 @@ class BackupRestorer(
             displayName = backup.displayName,
             androidContact = backup.androidContact,
             undo = ringtone.undo,
+        )
+    }
+
+    /**
+     * "Android default" or "Leave as is" (ADR 0073), with the same rule as a character ringtone. Only Android default
+     * goes on to find its Android contact on this phone (to clear a ringtone of its own there); Leave as is writes
+     * nothing to Android contacts, so it is not reported.
+     */
+    private suspend fun restoreRingtoneChoice(
+        backup: BackupContact,
+        contact: ContactRestoreOutcome,
+        options: RestoreOptions,
+        choice: BackupRingtoneChoice,
+    ): RingtoneRestoreOutcome? {
+        val dao = db.phoneRingtoneDao()
+        val current = dao.get(contact.contactId)
+        val wanted =
+            PhoneRingtoneEntity(
+                contactId = contact.contactId,
+                updatedAt = clock.now(),
+                followsVoice = false,
+                choice =
+                    when (choice) {
+                        BackupRingtoneChoice.ANDROID_DEFAULT -> RingtoneChoice.ANDROID_DEFAULT
+                        BackupRingtoneChoice.UNCHANGED -> RingtoneChoice.UNCHANGED
+                    },
+            )
+        val outcome =
+            when {
+                current != null && current.copy(updatedAt = 0) == wanted.copy(updatedAt = 0) -> {
+                    RingtoneOutcome.UNCHANGED
+                }
+
+                current != null && contact.match != ContactMatch.CREATED && backup.id !in options.overwrite -> {
+                    RingtoneOutcome.KEPT
+                }
+
+                else -> {
+                    dao.upsert(wanted)
+                    RingtoneOutcome.APPLIED
+                }
+            }
+        if (choice == BackupRingtoneChoice.UNCHANGED) return null
+        return RingtoneRestoreOutcome(
+            backupId = backup.id,
+            contactId = contact.contactId,
+            outcome = outcome,
+            displayName = backup.displayName,
+            androidContact = backup.androidContact,
+            undo = null,
         )
     }
 
@@ -484,6 +545,7 @@ class BackupRestorer(
             BackupRingtoneMode.TIME -> RingtoneMode.TIME
             BackupRingtoneMode.SEASON -> RingtoneMode.SEASON
             BackupRingtoneMode.PACK -> RingtoneMode.PACK
+            BackupRingtoneMode.CUSTOM -> RingtoneMode.CUSTOM
         }
 
     private fun BackupGroupPolicy?.toEntity(): GroupPolicy =

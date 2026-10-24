@@ -43,6 +43,7 @@ class ChatHapticOverridesTest {
                 assignments,
                 SeenSenderRepository(db.seenSenderDao()),
                 PhoneRingtoneFollow(db.phoneRingtoneDao(), { false }, clock),
+                db.phoneRingtoneDao(),
             )
         overrides = RoomChatHapticOverrides(contacts, assignments)
     }

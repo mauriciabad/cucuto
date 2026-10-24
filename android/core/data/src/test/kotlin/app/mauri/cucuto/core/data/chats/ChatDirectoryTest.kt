@@ -2,6 +2,7 @@ package app.mauri.cucuto.core.data.chats
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.FakeClock
+import app.mauri.cucuto.core.data.NoContacts
 import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.inMemoryDatabase
@@ -36,7 +37,13 @@ class ChatDirectoryTest {
         assignments = AssignmentRepository(db, db.assignmentDao(), clock)
         seen = SeenSenderRepository(db.seenSenderDao())
         directory =
-            RoomChatDirectory(contacts, assignments, seen, PhoneRingtoneFollow(db.phoneRingtoneDao(), { false }, clock))
+            RoomChatDirectory(
+                contacts,
+                assignments,
+                seen,
+                PhoneRingtoneFollow(db.phoneRingtoneDao(), { false }, clock),
+                db.phoneRingtoneDao(),
+            )
     }
 
     @After
@@ -209,7 +216,7 @@ class ChatDirectoryTest {
     @Test
     fun perSenderGroupMembersBecomeRecentSenders() =
         runTest {
-            val sightings = AlertSightings(seen, contacts)
+            val sightings = AlertSightings(seen, contacts, ChatLinker(contacts, seen, NoContacts))
             directory.setGroupPolicy(ChatKey(WA, CLUB), GroupPolicy.PER_SENDER)
 
             sightings.record(WA, CLUB, "Book club", isGroup = true, seenAt = 1_000, senderKey = ADA, senderName = "Ada")
@@ -229,7 +236,7 @@ class ChatDirectoryTest {
     @Test
     fun onlyPerSenderGroupsAddTheirMembers() =
         runTest {
-            val sightings = AlertSightings(seen, contacts)
+            val sightings = AlertSightings(seen, contacts, ChatLinker(contacts, seen, NoContacts))
             // Default policy, seen only.
             sightings.record(WA, CLUB, "Club", isGroup = true, seenAt = 1_000, senderKey = ADA, senderName = "Ada")
             // Default policy, with a voice.

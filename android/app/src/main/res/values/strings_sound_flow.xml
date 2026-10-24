@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The sound flow: the message sound, then the ringtone, with "Android default" and "Leave as is" (#298, ADR 0073).
+     Kept apart from strings.xml so parallel UI work merges cleanly. -->
+<resources>
+    <!-- Ringtone picker: the choices that are not a pack character -->
+    <string name="ringtone_choice_section">Other choices</string>
+    <string name="ringtone_choice_default">Android default</string>
+    <string name="ringtone_choice_default_body">Rings with your phone\'s default ringtone. If the contact has a ringtone of its own, Cucuto clears it and gives it back if you change your mind.</string>
+    <string name="ringtone_choice_unchanged">Leave as is</string>
+    <string name="ringtone_choice_unchanged_body">Cucuto doesn\'t touch this contact\'s ringtone. If it changed it before, the contact gets its own back.</string>
+    <string name="ringtone_save_default">Use Android\'s default</string>
+    <string name="ringtone_save_unchanged">Leave the ringtone as is</string>
+
+    <!-- Ringtone picker as step 2 after the message sound -->
+    <string name="ringtone_picker_step">Step 2 of 2 · optional</string>
+    <string name="ringtone_picker_skip">Skip</string>
+    <string name="ringtone_picker_step_hint">Messages are set. Now pick what rings when %1$s phones you, or skip this step.</string>
+
+    <!-- Contact detail: the Phone calls row and the header -->
+    <string name="ringtone_row_default">Android default</string>
+    <string name="ringtone_row_default_detail">The phone\'s own ringtone</string>
+    <string name="ringtone_row_unchanged">Left as is</string>
+    <string name="ringtone_row_unchanged_detail">Cucuto doesn\'t touch it</string>
+    <string name="contact_rings_with">Rings with %1$s</string>
+    <string name="contact_rings_default">Rings with the phone\'s default ringtone</string>
+
+    <!-- Contact detail: the set-up card for Android default -->
+    <string name="ringtone_default_off_body">To clear a ringtone this contact has of its own, Cucuto changes it in Android\'s Contacts.</string>
+    <string name="ringtone_status_default">Rings with the phone\'s default ringtone.</string>
+
+    <!-- Home: the ringtone on each row, for TalkBack -->
+    <string name="home_chat_ringtone_a11y">Ringtone: %1$s</string>
+    <string name="home_chat_ringtone_default_a11y">Ringtone: phone default</string>
+</resources>

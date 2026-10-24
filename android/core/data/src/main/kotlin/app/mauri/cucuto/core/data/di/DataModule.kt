@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatHapticOverrides
+import app.mauri.cucuto.core.data.chats.ChatLinker
+import app.mauri.cucuto.core.data.chats.ContactChats
 import app.mauri.cucuto.core.data.chats.InstalledRingtoneCapability
 import app.mauri.cucuto.core.data.chats.RingtoneCapability
 import app.mauri.cucuto.core.data.chats.RoomChatDirectory
@@ -115,6 +117,8 @@ interface DataBindings {
     @Binds fun characterCatalog(catalog: PackManifestCatalog): CharacterCatalog
 
     @Binds fun chatDirectory(directory: RoomChatDirectory): ChatDirectory
+
+    @Binds fun contactChats(linker: ChatLinker): ContactChats
 
     @Binds fun chatHapticOverrides(overrides: RoomChatHapticOverrides): ChatHapticOverrides
 

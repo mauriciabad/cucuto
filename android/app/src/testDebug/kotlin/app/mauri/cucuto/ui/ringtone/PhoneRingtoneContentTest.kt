@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.sync.RingtoneProblem
@@ -31,7 +32,6 @@ class PhoneRingtoneContentTest {
             onPickContact = { events += "pick" },
             onUse = { events += "use" },
             onChoose = { events += "choose" },
-            onStop = { events += "stop" },
             onTakeOver = { events += "takeover" },
         )
 
@@ -95,8 +95,8 @@ class PhoneRingtoneContentTest {
         compose.onNodeWithText("Android contact: Ada").assertIsDisplayed()
         compose.onNodeWithText("Rings with Radio").assertIsDisplayed()
         compose.onNodeWithText("“K.K. Slider · Radio”", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Stop using for calls").performClick()
-        assertEquals(listOf("stop"), events)
+        // "Leave as is" in the ringtone picker replaced "Stop using for calls" (ADR 0073).
+        compose.onNodeWithText("Stop using for calls").assertDoesNotExist()
     }
 
     @Test
@@ -203,6 +203,81 @@ class PhoneRingtoneContentTest {
         showRow(base.copy(contactId = null, hasCharacter = false, characterName = null, variants = emptyList()))
         compose.onNodeWithText("No ringtone yet. Tap to choose one.").performClick()
         assertEquals(listOf("choose"), events)
+    }
+
+    @Test
+    fun theRowOpensTheRulesOfACharacterWithSeveralVersions() {
+        val kk =
+            app.mauri.cucuto.core.data.voices.VoiceCharacter(
+                "app.mauri.songs",
+                "kk",
+                "K.K. Slider",
+                null,
+                null,
+                null,
+                emptyList(),
+                app.mauri.cucuto.core.routing.Haptic.Keep,
+                ringtoneCount = 2,
+            )
+        var opened: app.mauri.cucuto.core.data.chats.ChatVoice? = null
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) {
+                PhoneCallsRowContent(
+                    base.copy(ringingCharacter = kk, modes = listOf(RingtoneMode.PACK, RingtoneMode.FIXED)),
+                    onChoose = {},
+                    onTogglePreview = {},
+                    onOpenRules = { opened = it },
+                )
+            }
+        }
+        compose.onNodeWithText("See and edit the rules").performClick()
+        assertEquals(kk.voice, opened)
+    }
+
+    @Test
+    fun androidDefaultSaysSoOnTheRowAndTheCardSetsItUp() {
+        val default =
+            base.copy(
+                characterName = null,
+                hasCharacter = false,
+                variants = emptyList(),
+                choice = RingtoneChoice.ANDROID_DEFAULT,
+            )
+        showRow(default)
+        compose.onNodeWithText("Android default").assertIsDisplayed()
+        compose.onNodeWithText("The phone's own ringtone").performClick()
+        assertEquals(listOf("choose"), events)
+    }
+
+    @Test
+    fun androidDefaultNeedsTheLinkedContactToClearItsRingtone() {
+        show(
+            base.copy(
+                characterName = null,
+                hasCharacter = false,
+                variants = emptyList(),
+                choice = RingtoneChoice.ANDROID_DEFAULT,
+                linked = true,
+                linkedName = "Ada",
+                using = true,
+            ),
+        )
+        compose.onNodeWithText("Rings with the phone's default ringtone.").assertIsDisplayed()
+        compose.onNodeWithText("WhatsApp calls ring on their own", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun leaveAsIsSaysSoAndHasNothingToSetUp() {
+        val unchanged = base.copy(choice = RingtoneChoice.UNCHANGED, linked = true, using = false)
+        showRow(unchanged)
+        compose.onNodeWithText("Left as is").assertIsDisplayed()
+        compose.onNodeWithText("Cucuto doesn't touch it").assertIsDisplayed()
+    }
+
+    @Test
+    fun leaveAsIsHidesTheCard() {
+        show(base.copy(choice = RingtoneChoice.UNCHANGED, linked = true, using = false))
+        compose.onNodeWithText("Phone ringtone").assertDoesNotExist()
     }
 
     @Test

@@ -260,6 +260,10 @@ the end of Friday night).
 without `when` always matches), keep those with the most condition keys (the most specific), and play the first of
 them in manifest order. If nothing matches, play the first entry. The other per-contact rules (one fixed variant,
 random per call by `weight`, by time of day, by season) ignore `when` and use `tags` and labels to present choices.
+A contact can also have **its own rules** ([ADR 0074](decisions/0074-ringtone-rules-screen.md)): a copy of the
+entries' conditions that the user edits in the app (versions turned off, other conditions, another fallback). They
+are resolved with the same algorithm, over the contact's list instead of the manifest; entries whose file the pack no
+longer has are skipped, and an empty list falls back to the pack's conditions.
 
 ### Ring files
 
@@ -661,12 +665,20 @@ authority: readers detect the type from the contents.
   SHA-256) and asks for the files of local-only packs.
 - `contacts`: every known contact with all the messenger keys seen for it (`package` + `conversationKey`), phone
   numbers in E.164, the linked Android contact lookup key, group policy, the message assignment (pack ID, character
-  ID, disabled clip paths, haptic override) and the phone ringtone (pack ID, character ID, variant rule).
+  ID, disabled clip paths, haptic override) and the phone ringtone (pack ID, character ID, variant rule, or a
+  ringtone choice).
   Contact IDs are unique within a backup (`DUPLICATE_ID`).
+  - `ringtone.rule.mode` is `fixed` (with `variant`), `random`, `time`, `season`, `pack`, or `custom` with `rules`:
+    the contact's own rules, 1 to 50 entries of `{ "variant": <ringtone file>, "when"?: <condition> }` resolved like
+    the pack's `when` conditions, the first entry being the fallback ([ADR 0074](decisions/0074-ringtone-rules-screen.md)).
   - The message character and the ringtone character are independent; a contact can have either one, or both.
   - `ringtone.followsVoice: true` means the ringtone follows the message character whenever that character has
     ringtones. Its pack and character IDs name the character that rang at backup time: the voice's, or the one it
     kept while the voice had no ringtones ([ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
+  - `ringtoneChoice` replaces `ringtone` for a ringtone that is not a pack character
+    ([ADR 0073](decisions/0073-sound-flow-message-then-ringtone.md)): `"android-default"` (the phone's default
+    ringtone; Cucuto clears a ringtone of the contact's own) or `"unchanged"` (Cucuto never touches the contact's
+    ringtone). A contact has at most one of the two. Older readers ignore it and leave the contact's ringtone alone.
   - `ringtone.undo` is device-local: the Android contact's own ringtone before Cucuto (`originalRingtone`, absent for
     the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
     contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later
@@ -675,6 +687,9 @@ authority: readers detect the type from the contents.
     without a phone ringtone) is matched again by phone number, then by lookup key, then by exact name. A contact with
     no match on the new phone is unlinked, keeps its voice and ringtone choice, and waits for the user to pick its
     contact.
+  - A 1:1 contact whose only keys are phone JIDs (`…@s.whatsapp.net`) was added from Android's contacts and is waiting
+    for its first message, which links its `@lid` ([ADR 0065](decisions/0065-chats-before-they-message.md)). A
+    restore keeps it waiting; the `@lid` is linked on the new phone.
 
 Restore is idempotent: running it twice gives the same result, and it never overwrites assignments made on the new
 phone without asking.

@@ -50,6 +50,57 @@ class PlatformProbesTest {
     }
 
     @Test
+    fun oneSessionDecodesEveryFormatLikeFreshProbes() {
+        // One session keeps its decoder between files (ADR 0077): mixed formats, the same file twice in a row, clips
+        // and ringtones, and a broken file in the middle must give the same results as a new probe for every file,
+        // with batches and one packet at a time.
+        val files =
+            listOf(
+                "valid/all-formats/characters/avif/clip.ogg",
+                "valid/all-formats/characters/avif/clip.ogg",
+                "valid/full-pack/characters/song/ringtones/day.ogg",
+                "valid/all-formats/characters/jxl/clip.mp3",
+                "invalid/audio-undecodable/characters/beep/clips/beep.ogg",
+                "valid/all-formats/characters/svg/clip.opus",
+                "valid/all-formats/characters/jpeg/clip.m4a",
+                "valid/all-formats/characters/webp/clip.aac",
+                "valid/all-formats/characters/gif/clip.flac",
+                "valid/all-formats/characters/png/clip.wav",
+                "valid/all-formats/characters/avif/clip.ogg",
+            ).mapIndexed { i, path -> DeviceFixtures.file(path, java.io.File(dir, "s$i").apply { mkdirs() }) to path }
+        for (batches in listOf(true, false)) {
+            val probe = PlatformAudioProbe(batches = batches)
+            for (full in listOf(true, false)) {
+                val fresh = files.map { (file, path) -> probe.probe(file, FileFormat.of(path)!!, full) }
+                val reused =
+                    probe.session().use { s ->
+                        files.map { (file, path) -> s.probe(file, FileFormat.of(path)!!, full) }
+                    }
+
+                // Reasons may be worded differently; what counts is decoded or not, and the duration.
+                fun List<AudioProbeResult>.outcomes() = map { (it as? AudioProbeResult.Decoded)?.durationMs ?: -1L }
+                assertEquals("batches=$batches full=$full", fresh.outcomes(), reused.outcomes())
+                fresh.forEachIndexed { i, r ->
+                    val undecodable = "audio-undecodable" in files[i].second
+                    assertEquals("${files[i].second}: $r", undecodable, r is AudioProbeResult.Undecodable)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun batchesAndOnePacketAtATimeAgree() {
+        val path = "valid/full-pack/characters/song/ringtones/day.ogg"
+        val file = DeviceFixtures.file(path, dir)
+        for (full in listOf(true, false)) {
+            assertEquals(
+                PlatformAudioProbe(batches = false).probe(file, FileFormat.OGG, full),
+                PlatformAudioProbe(batches = true).probe(file, FileFormat.OGG, full),
+            )
+        }
+    }
+
+    @Test
     fun rejectsAudioThatIsNotAudio() {
         val path = "invalid/audio-undecodable/characters/beep/clips/beep.ogg"
         val result = audio.probe(DeviceFixtures.file(path, dir), FileFormat.OGG, true)

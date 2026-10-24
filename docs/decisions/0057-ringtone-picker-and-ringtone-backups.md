@@ -2,7 +2,10 @@
 
 - Status: accepted (defaults the owner may override: #242); previews amended by the owner (#242 item 3, see
   [Owner update](#owner-update-2026-10-24-242-previews-play-like-the-call)); mixing and the meaning of
-  `followsVoice` amended by [ADR 0063](0063-independent-voice-and-ringtone.md) (owner update 2026-10-24, #245)
+  `followsVoice` amended by [ADR 0063](0063-independent-voice-and-ringtone.md) (owner update 2026-10-24, #245); the rules gain a
+  screen and "your own rules" in [ADR 0074](0074-ringtone-rules-screen.md) (#288); "Stop using for calls" replaced by
+  the picker's "Leave as is", "Android default" added, and `ringtoneChoice` in backups by
+  [ADR 0073](0073-sound-flow-message-then-ringtone.md) (owner update 2026-10-24, #298)
 - Date: 2026-10-24
 - Issues: #53 (ringtone picker UI), #198 (back up and restore phone ringtones)
 
@@ -66,7 +69,9 @@ contact. Amended by ADR 0063 (owner update 2026-10-24, #245): the voice and the 
 following ringtone keeps the character that rang last while the voice has no ringtones, removing the voice keeps the
 ringtone, and saving a ringtone for a chat without a contact creates the contact.
 
-**Rules** keep the current choice when the new character offers it, else the pack's rules. A character with one
+**Rules** keep the current choice when the new character offers it, else the pack's rules. Since ADR 0074 (#288),
+"See and edit the rules" under the chips opens the rules screen: the pack's rules in plain words, and the contact's
+own rules, which the picker shows as a "Your own rules" chip. A character with one
 version saves the pack's rule. "Random per call" asks for the phone permission before saving and saves either way,
 as the card did.
 

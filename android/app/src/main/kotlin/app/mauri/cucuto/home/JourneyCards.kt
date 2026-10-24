@@ -59,14 +59,29 @@ internal fun JourneyCard(
     onDismissCelebration: () -> Unit,
     modifier: Modifier = Modifier,
     onRestoreBackup: () -> Unit = {},
+    onAddFromContacts: () -> Unit = {},
     onTrySampleChat: () -> Unit = {},
 ) {
     when (step) {
-        JourneyStep.None -> Unit
-        JourneyStep.ImportPacks -> ImportPacksCard(onGetDemoPacks, onImportDemoPacks, onRestoreBackup, modifier)
-        JourneyStep.WaitForMessages -> WaitForMessagesCard(onTrySampleChat, onPreviewCharacters, modifier)
-        is JourneyStep.GiveFirstVoice -> GiveFirstVoiceCard(step.chat, onOpen = { onOpenChat(step.chat.key) }, modifier)
-        is JourneyStep.FirstVoice -> FirstVoiceCard(step.chat, onDismissCelebration, modifier)
+        JourneyStep.None -> {
+            Unit
+        }
+
+        JourneyStep.ImportPacks -> {
+            ImportPacksCard(onGetDemoPacks, onImportDemoPacks, onRestoreBackup, modifier)
+        }
+
+        JourneyStep.WaitForMessages -> {
+            WaitForMessagesCard(onTrySampleChat, onPreviewCharacters, onAddFromContacts, modifier)
+        }
+
+        is JourneyStep.GiveFirstVoice -> {
+            GiveFirstVoiceCard(step.chat, onOpen = { onOpenChat(step.chat.key) }, modifier)
+        }
+
+        is JourneyStep.FirstVoice -> {
+            FirstVoiceCard(step.chat, onDismissCelebration, modifier)
+        }
     }
 }
 
@@ -113,12 +128,14 @@ private fun ImportPacksCard(
 
 /**
  * Packs are in, nobody has messaged since: say what happens next, offer the sample chat (ADR 0075: a demo that plays a
- * voice in the app, without the module) and let the user hear the characters.
+ * voice in the app, without the module), let the user hear the characters, or add someone from contacts before they
+ * message (ADR 0065).
  */
 @Composable
 private fun WaitForMessagesCard(
     onTrySampleChat: () -> Unit,
     onPreviewCharacters: () -> Unit,
+    onAddFromContacts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     JourneySurface(modifier) {
@@ -139,6 +156,7 @@ private fun WaitForMessagesCard(
             shapes = ButtonDefaults.shapes(),
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.home_journey_preview)) }
+        AddFromContactsButton(onAddFromContacts, Modifier.fillMaxWidth())
     }
 }
 
@@ -168,7 +186,16 @@ private fun GiveFirstVoiceCard(
                     modifier = Modifier.semantics { heading() },
                 )
                 Text(
-                    text = stringResource(R.string.home_journey_first_body, name),
+                    // Someone added from contacts has not messaged yet (ADR 0065).
+                    text =
+                        stringResource(
+                            if (row.chat.awaitingLink) {
+                                R.string.home_journey_first_body_waiting
+                            } else {
+                                R.string.home_journey_first_body
+                            },
+                            name,
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }

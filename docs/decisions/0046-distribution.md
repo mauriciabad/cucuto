@@ -92,10 +92,9 @@ covers apps that generate content. Three review risks remain:
 
 Decisions:
 
-- ~~**One signing identity.** Play App Signing uses Cucuto's existing release key (uploaded with PEPK), and CI signs
-  bundles with a separate upload key. Play, GitHub, Obtainium and F-Droid installs can update each other, and the
-  Obtainium pin keeps working.~~ Owner update 2026-10-24 (#287, ADR 0071): Play signs with a Google-generated key
-  and the release key is the upload key. Play installs and the owner-signed APKs can't update each other.
+- **One signing identity.** Play App Signing uses Cucuto's existing release key (uploaded with PEPK), and CI signs
+  bundles with ~~a separate upload key~~ the same release key (owner updates 2026-10-24, #287, ADR 0071). Play,
+  GitHub, Obtainium and F-Droid installs can update each other, and the Obtainium pin keeps working.
 - **The listing never leads with WhatsApp.** The name stays Cucuto. "WhatsApp" stays out of the title, icon,
   developer name and feature graphic, and out of the first words of the short description. The full description
   says it works with WhatsApp's notifications and isn't affiliated with WhatsApp or Meta (Meta's brand guidelines,

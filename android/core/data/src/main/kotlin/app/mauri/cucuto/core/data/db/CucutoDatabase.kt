@@ -47,7 +47,7 @@ abstract class CucutoDatabase : RoomDatabase() {
     abstract fun phoneRingtoneDao(): PhoneRingtoneDao
 
     companion object {
-        const val VERSION: Int = 4
+        const val VERSION: Int = 6
         const val NAME: String = "cucuto.db"
 
         /** Opens the on-disk database with the platform SQLite (no bundled native library needed). */
@@ -108,5 +108,26 @@ object CucutoMigrations {
             }
         }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /** 4 to 5: a contact's own ringtone rules, an edited copy of the pack's (#288, ADR 0074). */
+    val MIGRATION_4_5: Migration =
+        object : Migration(4, 5) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE `phone_ringtones` ADD COLUMN `rules` TEXT")
+            }
+        }
+
+    /**
+     * 5 to 6: a phone ringtone can be the phone's default or left as is, besides a pack character (#298, ADR 0073).
+     * Every existing row is a character.
+     */
+    val MIGRATION_5_6: Migration =
+        object : Migration(5, 6) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "ALTER TABLE `phone_ringtones` ADD COLUMN `choice` TEXT NOT NULL DEFAULT 'CHARACTER'",
+                )
+            }
+        }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }

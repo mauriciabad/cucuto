@@ -76,5 +76,5 @@ this workflow handles the key; Dependabot's `github-actions` updates keep them c
 - Losing the key cannot be repaired. Key rotation (APK Signature Scheme v3 lineage) is possible only while the old key
   exists and would need an `apksigner` step in the workflow; not built.
 - ~~No AAB, no Play signing: the brief rules out the Play Store.~~ Superseded by ADR 0071 (owner, #211): releases also
-  attach a bundle signed with this release key, which is Play's upload key; Play App Signing uses a
-  Google-generated app signing key (owner update #287).
+  attach a bundle signed with this release key, which is Play's upload key; Play App Signing signs with this
+  release key too, given to Play with PEPK (owner update #287, second answer).

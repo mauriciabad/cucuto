@@ -38,10 +38,14 @@ sealed interface CucutoDestination : NavKey {
     @Serializable
     data object Onboarding : CucutoDestination
 
-    /** Character picker assigning a voice to [chat], or only previewing characters when it is null. */
+    /**
+     * Character picker assigning a voice to [chat], or only previewing characters when it is null. With
+     * [ringtoneNext] (assigning from Home), a 1:1 chat goes on to the ringtone picker as step 2 (ADR 0073).
+     */
     @Serializable
     data class Picker(
         val chat: ChatKey? = null,
+        val ringtoneNext: Boolean = false,
     ) : CucutoDestination
 
     /** Detail of one chat, keyed by `package + conversation key` (#26). */
@@ -50,10 +54,25 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey,
     ) : CucutoDestination
 
-    /** The ringtone picker (#53) for [chat]'s phone ringtone, opened from its contact detail. */
+    /**
+     * The ringtone picker (#53) for [chat]'s phone ringtone, opened from its contact detail, or as the optional
+     * [step] 2 after assigning a voice from Home (ADR 0073).
+     */
     @Serializable
     data class RingtonePicker(
         val chat: ChatKey,
+        val step: Boolean = false,
+    ) : CucutoDestination
+
+    /**
+     * The rules of a character's ringtone versions (#288, ADR 0074): from the ringtone picker for [chat], where they
+     * can be changed for it, or from Packs with no chat, where they are only shown.
+     */
+    @Serializable
+    data class RingtoneRules(
+        val packId: String,
+        val characterId: String,
+        val chat: ChatKey? = null,
     ) : CucutoDestination
 
     /** The pack creator (#47); with [sourcePackId], a copy of that installed pack to edit ("duplicate and edit"). */
@@ -131,6 +150,16 @@ sealed interface CucutoDestination : NavKey {
     /** Home → Assign a voice: every chat without a voice, to pick one for the character picker. */
     @Serializable
     data object AssignVoice : CucutoDestination
+
+    /** "Add a chat from contacts" (ADR 0065): the explainer, then the WhatsApp entries of Android's contacts. */
+    @Serializable
+    data object AddFromContacts : CucutoDestination
+
+    /** Home → "Who is this?" (ADR 0065): which person added from contacts the recent sender [chat] is. */
+    @Serializable
+    data class ConfirmLink(
+        val chat: ChatKey,
+    ) : CucutoDestination
 
     /** Home → Try a sample chat: a demo chat that plays a voice in the app, never reaching the module (ADR 0075). */
     @Serializable

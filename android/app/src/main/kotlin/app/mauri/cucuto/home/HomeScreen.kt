@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -42,6 +44,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
@@ -78,7 +81,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.chats.ChatRingtone
 import app.mauri.cucuto.core.data.chats.ChatVoice
+import app.mauri.cucuto.core.data.chats.LinkCandidate
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.core.routing.Haptic
@@ -88,9 +93,12 @@ import app.mauri.cucuto.ui.chat.chatSupportingText
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
+import app.mauri.cucuto.ui.contacts.PersonAddIcon
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
+import app.mauri.cucuto.ui.ringtone.RingtoneBadge
+import app.mauri.cucuto.ui.ringtone.ringtoneDescription
 import app.mauri.cucuto.ui.settings.restore.rememberBackupPicker
 import app.mauri.cucuto.ui.status.SetupCardSection
 import app.mauri.cucuto.ui.theme.CucutoTheme
@@ -132,7 +140,8 @@ fun HomeScreen(
         onQueryChange = viewModel::setQuery,
         onTogglePack = viewModel::togglePackFilter,
         onDismissRecent = viewModel::dismissRecent,
-        onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat)) },
+        // Assigning from Home: the message sound, then the ringtone as an optional step 2 (ADR 0073).
+        onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat, ringtoneNext = true)) },
         onOpenPacks = { onNavigate(CucutoDestination.Packs) },
         modifier = modifier,
         onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
@@ -149,6 +158,8 @@ fun HomeScreen(
         onRestoreBackup = pickBackup,
         onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
         onDismissCelebration = journeyViewModel::dismissCelebration,
+        onAddFromContacts = { onNavigate(CucutoDestination.AddFromContacts) },
+        onOpenQuestion = { chat -> onNavigate(CucutoDestination.ConfirmLink(chat)) },
         setupCard = { SetupCardSection(onNavigate = onNavigate) },
         // A demo chat that plays in the app, for reviewers and anyone without the module yet (ADR 0075).
         onTrySampleChat = { onNavigate(CucutoDestination.SampleChat) },
@@ -174,6 +185,8 @@ fun HomeContent(
     onRestoreBackup: () -> Unit = {},
     onPreviewCharacters: () -> Unit = {},
     onDismissCelebration: () -> Unit = {},
+    onAddFromContacts: () -> Unit = {},
+    onOpenQuestion: (ChatKey) -> Unit = {},
     setupCard: @Composable () -> Unit = {},
     onTrySampleChat: () -> Unit = {},
 ) {
@@ -242,6 +255,7 @@ fun HomeContent(
                         onOpenChat = open,
                         onPreviewCharacters = onPreviewCharacters,
                         onDismissCelebration = onDismissCelebration,
+                        onAddFromContacts = onAddFromContacts,
                         onTrySampleChat = onTrySampleChat,
                         modifier = Modifier.animateItem(),
                     )
@@ -251,8 +265,37 @@ fun HomeContent(
             if (state.packs.size > 1) {
                 item(key = "filters") { PackFilters(state, onTogglePack) }
             }
+            if (state.showQuestions) {
+                item(key = "questions-header") { SectionHeader(stringResource(R.string.home_questions_header)) }
+                items(
+                    state.questions,
+                    key = { "question/${it.key.packageName}/${it.key.conversationKey}" },
+                ) { question ->
+                    QuestionItem(question) {
+                        feedback.fire(Feedback.Tap)
+                        onOpenQuestion(question.key)
+                    }
+                }
+            }
             if (state.showRecent) {
                 item(key = "recent") { RecentSenders(state.recent, onOpen = open, onDismiss = onDismissRecent) }
+            }
+            if (state.waiting.isNotEmpty()) {
+                item(key = "waiting-header") {
+                    Column {
+                        SectionHeader(stringResource(R.string.home_waiting_header))
+                        Text(
+                            text = stringResource(R.string.home_waiting_body),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+                }
+                // Waiting chats open their contact detail: the voice and the phone ringtone are both one tap away.
+                items(state.waiting, key = { "waiting/${it.key.packageName}/${it.key.conversationKey}" }) { row ->
+                    ChatListItem(row = row, shared = row.key !in stripKeys, onClick = { openDetail(row.key) })
+                }
             }
             when {
                 state.chats.isNotEmpty() -> {
@@ -268,8 +311,10 @@ fun HomeContent(
 
                 state.totalChats == 0 -> {
                     // The journey card already says what to do while there are no chats.
-                    if (journey == JourneyStep.None) item(key = "empty") { EmptyChats() }
+                    if (journey == JourneyStep.None) item(key = "empty") { EmptyChats(onAddFromContacts) }
                 }
+
+                state.waiting.isNotEmpty() -> {}
 
                 else -> {
                     item(key = "no-matches") {
@@ -470,7 +515,7 @@ internal fun ChatListItem(
     shared: Boolean,
     onClick: () -> Unit,
 ) {
-    val supporting =
+    val voice =
         when {
             row.character != null -> {
                 stringResource(
@@ -485,8 +530,14 @@ internal fun ChatListItem(
             }
 
             else -> {
-                stringResource(R.string.home_chat_no_voice)
+                null
             }
+        }
+    val supporting =
+        when {
+            row.chat.awaitingLink && voice != null -> stringResource(R.string.home_chat_voice_not_linked, voice)
+            row.chat.awaitingLink -> stringResource(R.string.home_chat_not_linked)
+            else -> voice ?: stringResource(R.string.home_chat_no_voice)
         }
     ListItem(
         headlineContent = { Text(row.chat.name(), maxLines = adaptiveMaxLines(1), overflow = TextOverflow.Ellipsis) },
@@ -498,8 +549,23 @@ internal fun ChatListItem(
             )
         },
         leadingContent = {
-            SharedElement(if (shared) ChatAvatarKey(row.key) else null) {
-                VoiceAvatar(character = row.character, name = row.chat.displayName, contentDescription = null)
+            // The ringtone's cover tucked against the avatar, like contact detail's header (ADR 0073), so the text
+            // keeps its width. TalkBack reads it with the row.
+            Box {
+                SharedElement(if (shared) ChatAvatarKey(row.key) else null) {
+                    VoiceAvatar(character = row.character, name = row.chat.displayName, contentDescription = null)
+                }
+                row.ringtone?.let { ringtone ->
+                    val description = ringtoneDescription(ringtone)
+                    RingtoneBadge(
+                        ringtone,
+                        RINGTONE_BADGE_SIZE,
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 6.dp, y = 4.dp)
+                            .semantics { contentDescription = description },
+                    )
+                }
             }
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
@@ -510,8 +576,48 @@ internal fun ChatListItem(
     )
 }
 
+/** A recent sender that may be someone added from contacts (ADR 0065): a tap opens "Who is this?". */
 @Composable
-private fun EmptyChats() {
+private fun QuestionItem(
+    question: LinkQuestion,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(question.chat.chat.name(), maxLines = adaptiveMaxLines(1), overflow = TextOverflow.Ellipsis)
+        },
+        supportingContent = { Text(stringResource(R.string.home_question_body)) },
+        leadingContent = {
+            VoiceAvatar(character = null, name = question.chat.chat.displayName, contentDescription = null)
+        },
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.confirm_link_title), onClick = onClick),
+    )
+}
+
+/** "Add a chat from contacts" (ADR 0065), offered where someone looks for a person who is not there yet. */
+@Composable
+internal fun AddFromContactsButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val feedback = LocalFeedback.current
+    OutlinedButton(
+        onClick = {
+            feedback.fire(Feedback.Tap)
+            onClick()
+        },
+        shapes = ButtonDefaults.shapes(),
+        modifier = modifier,
+    ) {
+        Icon(PersonAddIcon, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+        Text(stringResource(R.string.contacts_add))
+    }
+}
+
+@Composable
+private fun EmptyChats(onAddFromContacts: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -533,6 +639,7 @@ private fun EmptyChats() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        AddFromContactsButton(onAddFromContacts)
     }
 }
 
@@ -543,6 +650,7 @@ internal fun Chat.name(): String =
         ?: stringResource(if (isGroup) R.string.chat_unnamed_group else R.string.chat_unnamed)
 
 private val FAB_CLEARANCE = 96.dp
+private val RINGTONE_BADGE_SIZE = 24.dp
 private val RECENT_ITEM_WIDTH = 88.dp
 
 @Preview(showBackground = true)
@@ -592,6 +700,21 @@ internal fun previewHomeState(now: Long = PREVIEW_NOW): HomeState {
     val pack =
         app.mauri.cucuto.core.data.voices
             .VoicePack("app.mauri.demo.critters", "Chiptune critters", listOf(frog))
+    val song =
+        VoiceCharacter(
+            packId = "app.mauri.demo.songs",
+            id = "bubblegum",
+            name = "Bubblegum K.K.",
+            sprite = null,
+            spriteAnimated = null,
+            seedColor = null,
+            clips = emptyList(),
+            haptic = Haptic.Keep,
+            ringtoneCount = 2,
+        )
+    val songs =
+        app.mauri.cucuto.core.data.voices
+            .VoicePack(song.packId, "Songs", listOf(song))
     val chats =
         listOf(
             Chat(ChatKey(WA, "100000000000001@lid"), null, "Ada", false, null, now - 60_000, 2),
@@ -604,9 +727,62 @@ internal fun previewHomeState(now: Long = PREVIEW_NOW): HomeState {
                 ChatVoice(frog.packId, frog.id),
                 now - 86_400_000,
                 9,
+                ringtone = ChatRingtone.Character(song.voice, followsVoice = false),
             ),
         )
-    return buildHomeState(chats, listOf(pack), query = "", packFilter = null, now = now)
+    return buildHomeState(chats, listOf(pack, songs), query = "", packFilter = null, now = now)
+}
+
+/**
+ * Made-up chats with someone added from contacts waiting for a first message, and a recent sender whose name matches
+ * two people added from contacts ("Who is this?").
+ */
+internal fun previewHomeStateWithQuestion(now: Long = PREVIEW_NOW): HomeState {
+    fun candidate(
+        id: Long,
+        number: String,
+    ) = LinkCandidate(id, ChatKey(WA, "${number.removePrefix("+")}@s.whatsapp.net"), "Leo", listOf(number), null)
+    val leo1 = candidate(8, "+34600000008")
+    val leo2 = candidate(9, "+34600000009")
+    val chats =
+        listOf(
+            Chat(ChatKey(WA, "100000000000001@lid"), null, "Ada", false, null, now - 60_000, 2),
+            Chat(
+                ChatKey(WA, "100000000000005@lid"),
+                null,
+                "Leo",
+                false,
+                null,
+                now - 120_000,
+                1,
+                linkCandidates = listOf(leo1, leo2),
+            ),
+            Chat(
+                ChatKey(WA, "34600000007@s.whatsapp.net"),
+                7,
+                "Marta",
+                false,
+                null,
+                null,
+                0,
+                awaitingLink = true,
+                phoneNumbers = listOf("+34600000007"),
+            ),
+        ) +
+            listOf(leo1, leo2).map {
+                Chat(
+                    it.key,
+                    it.contactId,
+                    "Leo",
+                    false,
+                    null,
+                    null,
+                    0,
+                    awaitingLink = true,
+                    phoneNumbers = it.phoneNumbers,
+                )
+            }
+    return buildHomeState(chats, packs = emptyList(), query = "", packFilter = null, now = now)
 }
 
 private const val WA = "com.whatsapp"

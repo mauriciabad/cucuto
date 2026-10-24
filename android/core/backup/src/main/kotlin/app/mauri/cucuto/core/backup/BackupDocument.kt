@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.backup
 
+import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -142,7 +143,21 @@ data class BackupContact(
     val groupPolicy: BackupGroupPolicy? = null,
     val message: BackupMessageAssignment? = null,
     val ringtone: BackupRingtoneAssignment? = null,
+    /** A phone ringtone that is not a pack character, in place of [ringtone] (ADR 0073). */
+    val ringtoneChoice: BackupRingtoneChoice? = null,
 )
+
+/** `contacts[].ringtoneChoice` (ADR 0073). */
+@Serializable
+enum class BackupRingtoneChoice {
+    /** The phone's default ringtone: Cucuto clears a ringtone of the contact's own. */
+    @SerialName("android-default")
+    ANDROID_DEFAULT,
+
+    /** Leave as is: Cucuto never touches the contact's ringtone. */
+    @SerialName("unchanged")
+    UNCHANGED,
+}
 
 @Serializable
 data class BackupContactKey(
@@ -206,6 +221,8 @@ data class BackupRingtoneRule(
     val mode: BackupRingtoneMode,
     /** Ringtone file (path from `pack.json`) for [BackupRingtoneMode.FIXED]. */
     val variant: String? = null,
+    /** The contact's own rules for [BackupRingtoneMode.CUSTOM] (ADR 0074), the first entry being the fallback. */
+    val rules: List<RingtoneRuleEntry>? = null,
 )
 
 @Serializable
@@ -224,6 +241,9 @@ enum class BackupRingtoneMode {
 
     @SerialName("pack")
     PACK,
+
+    @SerialName("custom")
+    CUSTOM,
 }
 
 /** The JSON settings for backup documents: readable output, defaults written, nulls omitted. */

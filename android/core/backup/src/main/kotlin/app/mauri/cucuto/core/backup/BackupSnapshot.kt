@@ -11,7 +11,9 @@ import app.mauri.cucuto.core.data.db.PackRepositoryEntity
 import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.packspec.SemVer
 import kotlinx.serialization.json.JsonElement
 
@@ -29,6 +31,7 @@ internal object BackupSnapshot {
     private const val MAX_PACK_NAME = 80
     private const val MAX_URI = 2048
     private const val MAX_PATH = 255
+    private const val MAX_RULES = 50
     private val packagePattern = Regex("^[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+$")
     private val sha256Pattern = Regex("^[0-9a-f]{64}$")
     private val httpsPattern = Regex("^https://[^\\s/?#]+\\S*$")
@@ -66,7 +69,16 @@ internal object BackupSnapshot {
                 },
             groupPolicy = if (c.isGroup) groupPolicy(c.groupPolicy) else null,
             message = assignment?.let(::message),
-            ringtone = ringtone?.let { ringtone(it, assignment, ringtoneWrite) },
+            ringtone =
+                ringtone
+                    ?.takeIf { it.choice == RingtoneChoice.CHARACTER }
+                    ?.let { ringtone(it, assignment, ringtoneWrite) },
+            ringtoneChoice =
+                when (ringtone?.choice) {
+                    RingtoneChoice.ANDROID_DEFAULT -> BackupRingtoneChoice.ANDROID_DEFAULT
+                    RingtoneChoice.UNCHANGED -> BackupRingtoneChoice.UNCHANGED
+                    RingtoneChoice.CHARACTER, null -> null
+                },
         )
     }
 
@@ -92,10 +104,18 @@ internal object BackupSnapshot {
                 RingtoneMode.TIME -> BackupRingtoneMode.TIME
                 RingtoneMode.SEASON -> BackupRingtoneMode.SEASON
                 RingtoneMode.PACK -> BackupRingtoneMode.PACK
+                RingtoneMode.CUSTOM -> BackupRingtoneMode.CUSTOM
             }
         // A fixed rule needs its variant (schema): without one the first variant rang, which "pack" also gives when
         // the pack has no conditions; keep it fixed only when the variant is known.
         val variant = row.variant?.takeIf { mode == BackupRingtoneMode.FIXED && it.length <= MAX_PATH }
+        // Own rules (ADR 0074) within the schema's limits; without any left they are the pack's rules.
+        val rules =
+            RingtoneRules
+                .decode(row.rules)
+                .filter { it.variant.isNotEmpty() && it.variant.length <= MAX_PATH }
+                .take(MAX_RULES)
+                .takeIf { mode == BackupRingtoneMode.CUSTOM && it.isNotEmpty() }
         val undo =
             write
                 ?.takeIf { !it.userChanged }
@@ -112,10 +132,10 @@ internal object BackupSnapshot {
             characterId = characterId,
             followsVoice = if (follows) true else null,
             rule =
-                if (mode == BackupRingtoneMode.FIXED && variant == null) {
-                    BackupRingtoneRule(BackupRingtoneMode.PACK)
-                } else {
-                    BackupRingtoneRule(mode, variant)
+                when {
+                    mode == BackupRingtoneMode.FIXED && variant == null -> BackupRingtoneRule(BackupRingtoneMode.PACK)
+                    mode == BackupRingtoneMode.CUSTOM && rules == null -> BackupRingtoneRule(BackupRingtoneMode.PACK)
+                    else -> BackupRingtoneRule(mode, variant, rules)
                 },
             undo = undo,
         )

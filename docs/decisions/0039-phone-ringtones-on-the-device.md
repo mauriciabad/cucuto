@@ -1,7 +1,9 @@
 # 0039. Phone ringtones: ring files rendered on the phone, MediaStore, contact undo record, re-roll receiver
 
 - Status: accepted (defaults; the owner may override them in #196); the "follow the voice" data is amended by
-  [ADR 0063](0063-independent-voice-and-ringtone.md)
+  [ADR 0063](0063-independent-voice-and-ringtone.md); the rule modes gain "your own rules" in
+  [ADR 0074](0074-ringtone-rules-screen.md) (#288); the `choice` column (Android default, Leave as is) and the
+  `cucuto:default` undo marker come from [ADR 0073](0073-sound-flow-message-then-ringtone.md)
 - Date: 2026-10-24
 - Issue: #52 (picker UI: #53; device run: #143)
 
@@ -46,7 +48,7 @@ how every change can be undone.
    - `phone_ringtones`, one row per Cucuto contact: character (null means "follow the voice"), rule mode, fixed
      variant. Database version 4 adds `followsVoice`: the voice and the ringtone are independent choices, and a
      following row keeps the character that rang last while the voice has no ringtones
-     ([ADR 0063](0063-independent-voice-and-ringtone.md), owner update 2026-10-24, #245). Modes are the backup schema's: `fixed`, `random`, `time`, `season`, `pack`. The default is `pack`, which
+     ([ADR 0063](0063-independent-voice-and-ringtone.md), owner update 2026-10-24, #245). Modes are the backup schema's: `fixed`, `random`, `time`, `season`, `pack`, and since database version 5 `custom`, the contact's own copy of the pack's rules in the `rules` column ([ADR 0074](0074-ringtone-rules-screen.md), #288). The default is `pack`, which
      with no `when` conditions is the first variant.
    - `contact_ringtone_writes`, the **undo record**, keyed by the Android contact's lookup key with no foreign key. It
      holds the contact's own ringtone before Cucuto, what Cucuto last wrote, and the current variant.
@@ -90,6 +92,8 @@ how every change can be undone.
      a contact's detail screen. The dialog says what is read, what is changed, that contacts never leave the phone,
      and that the code is open source at github.com/mauriciabad/cucuto (the owner, #145).
    - `READ_PHONE_STATE` is asked only when the user picks "Random per call".
+   - "Add a chat from contacts" asks for `READ_CONTACTS` alone, after its own explainer screen
+     ([ADR 0065](0065-chats-before-they-message.md)). A chat added that way is already linked to its Android contact.
    - Denial leaves everything as it was and offers Android's app settings.
 8. **UI** (the full picker is #53; it landed in [ADR 0057](0057-ringtone-picker-and-ringtone-backups.md), which moved
    the rule chips from the card into it):

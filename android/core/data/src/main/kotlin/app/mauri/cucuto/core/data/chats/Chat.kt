@@ -5,6 +5,8 @@ import app.mauri.cucuto.core.data.db.ContactKeyEntity
 import app.mauri.cucuto.core.data.db.ContactKeyKind
 import app.mauri.cucuto.core.data.db.ContactWithKeys
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.SeenSenderEntity
 import kotlinx.serialization.Serializable
 
@@ -55,6 +57,14 @@ data class ChatVoice(
  * @property keys Every messenger key of the chat ([key] included).
  * @property groupPolicy Groups only: one voice for the whole group, or each sender's own voice (#20). A group that is
  *   not a contact yet has the default, [GroupPolicy.GROUP].
+ * @property awaitingLink Added from Android's contacts and waiting for its first message: its only keys are phone
+ *   JIDs, which never reach the module, so its voice plays once that first message links its `@lid` (ADR 0065).
+ * @property linkCandidates A recent sender that is not a contact yet, whose name matches chats waiting for their first
+ *   message but not uniquely enough to link by itself: the user picks which one it is ([ChatLinkRules]).
+ * @property phoneNumbers E.164 numbers of the chat's contact (from its Android contact or phone JIDs), to tell people
+ *   with the same name apart.
+ * @property ringtone The stored phone ringtone choice, or null when none is stored (ADR 0073); [ringingVoice] says
+ *   which character rings.
  */
 data class Chat(
     val key: ChatKey,
@@ -66,15 +76,124 @@ data class Chat(
     val messageCount: Int,
     val keys: List<ChatKey> = listOf(key),
     val groupPolicy: GroupPolicy = GroupPolicy.GROUP,
+    val awaitingLink: Boolean = false,
+    val linkCandidates: List<LinkCandidate> = emptyList(),
+    val phoneNumbers: List<String> = emptyList(),
+    val ringtone: ChatRingtone? = null,
 ) {
     /** Whether the chat lives in WhatsApp Business rather than WhatsApp; its keys and voices are its own (#21). */
     val isBusiness: Boolean get() = key.packageName == ChatKey.WHATSAPP_BUSINESS
+
+    /**
+     * The character that would ring for calls: the ringtone's own, else the message voice while the ringtone follows
+     * it (nothing stored yet, ADR 0063). Null for "Android default" and "Leave as is" (ADR 0073). Whether that
+     * character has ringtones is the caller's to check.
+     */
+    val ringingVoice: ChatVoice?
+        get() =
+            when (val r = ringtone) {
+                null -> voice
+                is ChatRingtone.Character -> r.own ?: voice
+                ChatRingtone.AndroidDefault, ChatRingtone.Unchanged -> null
+            }
+}
+
+/** A chat's stored phone ringtone (ADR 0063, ADR 0073). */
+sealed interface ChatRingtone {
+    /**
+     * A pack character: [own] is the one stored (picked, or kept while the voice has no ringtones), null for the
+     * message voice's. [followsVoice] is false once the user picked it.
+     */
+    data class Character(
+        val own: ChatVoice?,
+        val followsVoice: Boolean,
+    ) : ChatRingtone
+
+    /** The phone's default ringtone. */
+    data object AndroidDefault : ChatRingtone
+
+    /** Leave as is: Cucuto doesn't touch the contact's ringtone. */
+    data object Unchanged : ChatRingtone
+
+    companion object {
+        /** The choice stored in [row]. */
+        fun of(row: PhoneRingtoneEntity): ChatRingtone =
+            when (row.choice) {
+                RingtoneChoice.ANDROID_DEFAULT -> {
+                    AndroidDefault
+                }
+
+                RingtoneChoice.UNCHANGED -> {
+                    Unchanged
+                }
+
+                RingtoneChoice.CHARACTER -> {
+                    val own =
+                        if (row.packId != null && row.characterId != null) {
+                            ChatVoice(row.packId, row.characterId)
+                        } else {
+                            null
+                        }
+                    Character(own, row.followsVoice || own == null)
+                }
+            }
+    }
 }
 
 /**
+ * A chat waiting for its first message that a recent sender may be ([Chat.linkCandidates]).
+ *
+ * @property key The waiting chat's key (a phone JID).
+ */
+data class LinkCandidate(
+    val contactId: Long,
+    val key: ChatKey,
+    val displayName: String?,
+    val phoneNumbers: List<String>,
+    val voice: ChatVoice?,
+)
+
+/** Whether [contact] is a chat waiting for its first message ([Chat.awaitingLink]). */
+internal fun isWaiting(contact: ContactWithKeys): Boolean {
+    if (contact.contact.isGroup) return false
+    val keys = contact.keys.filter { it.packageName != ContactKeyEntity.NO_PACKAGE }
+    return keys.isNotEmpty() && keys.all { it.kind == ContactKeyKind.PHONE_JID }
+}
+
+/** [contact] as a [WaitingChat], or null when it is not waiting. */
+internal fun waitingChat(contact: ContactWithKeys): WaitingChat? =
+    if (!isWaiting(contact)) {
+        null
+    } else {
+        WaitingChat(
+            contactId = contact.contact.id,
+            packageName = contact.keys.first { it.packageName != ContactKeyEntity.NO_PACKAGE }.packageName,
+            name = contact.contact.displayName,
+            lookupKey = contact.contact.androidLookupKey,
+        )
+    }
+
+/** E.164 numbers of [contact]: its phone number keys, else its phone JIDs. */
+internal fun phoneNumbersOf(contact: ContactWithKeys): List<String> {
+    val numbers = contact.keys.filter { it.kind == ContactKeyKind.PHONE_NUMBER }.map { it.value }
+    val fromJids =
+        contact.keys
+            .filter { it.kind == ContactKeyKind.PHONE_JID }
+            .map { "+" + it.value.substringBefore('@') }
+            .filter { ContactKeyKind.classify(it) == ContactKeyKind.PHONE_NUMBER }
+    return (numbers + fromJids).distinct()
+}
+
+/** Whether a sighting is a 1:1 chat a waiting chat could be (not a group). */
+internal fun SeenSenderEntity.isPerson(): Boolean =
+    !isGroup && ContactKeyKind.classify(conversationKey) != ContactKeyKind.GROUP_JID
+
+/**
  * Joins contacts, their assignments and the recent senders feed into chats, most recently seen first (chats never
- * seen, such as restored contacts, go last, by name). Contacts with no messenger key (only a phone number) are not
- * chats and are left out.
+ * seen, such as restored contacts and chats waiting for their first message, go last, by name). Contacts with no
+ * messenger key (only a phone number) are not chats and are left out. Recent senders that match waiting chats by name
+ * carry them as [Chat.linkCandidates] ([ChatLinkRules], without the namesake check: whatever has not linked by itself
+ * is asked).
  */
 internal fun mergeChats(
     contacts: List<ContactWithKeys>,
@@ -110,8 +229,42 @@ internal fun mergeChats(
                 messageCount = seenRows.sumOf { it.messageCount },
                 keys = chatKeys,
                 groupPolicy = contact.contact.groupPolicy,
+                awaitingLink = isWaiting(contact),
+                phoneNumbers = phoneNumbersOf(contact),
             )
     }
+    val waiting = contacts.mapNotNull(::waitingChat)
+    val questions =
+        ChatLinkRules
+            .plan(
+                waiting = waiting,
+                sightings =
+                    sightings
+                        .filter { (key, row) -> key !in claimed && row.isPerson() }
+                        .map { (key, row) -> UnlinkedSighting(key, row.displayName) },
+                namesakes = null,
+            ).questions
+    val candidates =
+        if (questions.isEmpty()) {
+            emptyMap()
+        } else {
+            contacts.filter(::isWaiting).associate { contact ->
+                contact.contact.id to
+                    LinkCandidate(
+                        contactId = contact.contact.id,
+                        key =
+                            contact.keys.first { it.kind == ContactKeyKind.PHONE_JID }.let {
+                                ChatKey(
+                                    it.packageName,
+                                    it.value,
+                                )
+                            },
+                        displayName = contact.contact.displayName,
+                        phoneNumbers = phoneNumbersOf(contact),
+                        voice = voices[contact.contact.id],
+                    )
+            }
+        }
     for ((key, row) in sightings) {
         if (key in claimed) continue
         chats +=
@@ -123,6 +276,7 @@ internal fun mergeChats(
                 voice = null,
                 lastSeenAt = row.lastSeenAt,
                 messageCount = row.messageCount,
+                linkCandidates = questions[key].orEmpty().mapNotNull { candidates[it] },
             )
     }
     return chats.sortedWith(ChatOrder)

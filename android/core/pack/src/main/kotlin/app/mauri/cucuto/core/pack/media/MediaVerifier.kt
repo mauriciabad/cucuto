@@ -29,14 +29,38 @@ class MediaVerifier(
         format: FileFormat,
         references: List<MediaReference>,
         manifestFile: String,
-    ): List<Issue> =
-        when (format.kind) {
-            FileKind.AUDIO -> verifyAudio(file, path, format, references, manifestFile)
-            FileKind.IMAGE -> verifyImage(file, path, format)
-            else -> emptyList()
+    ): List<Issue> = session().use { it.verify(file, path, format, references, manifestFile) }
+
+    /**
+     * A verifier for one worker that checks files one after another and may keep decoders between them (#279, ADR
+     * 0077). Not thread-safe; close it when done.
+     */
+    fun session(): Session = Session(audio.session())
+
+    inner class Session internal constructor(
+        private val audioSession: AudioProbe.Session,
+    ) : AutoCloseable {
+        /** The same as [MediaVerifier.verify]. */
+        fun verify(
+            file: File,
+            path: String,
+            format: FileFormat,
+            references: List<MediaReference>,
+            manifestFile: String,
+        ): List<Issue> =
+            when (format.kind) {
+                FileKind.AUDIO -> verifyAudio(audioSession, file, path, format, references, manifestFile)
+                FileKind.IMAGE -> verifyImage(file, path, format)
+                else -> emptyList()
+            }
+
+        override fun close() {
+            safely { audioSession.close() }
         }
+    }
 
     private fun verifyAudio(
+        audio: AudioProbe.Session,
         file: File,
         path: String,
         format: FileFormat,

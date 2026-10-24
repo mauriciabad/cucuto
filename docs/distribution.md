@@ -146,11 +146,11 @@ Releases and Obtainium stay the main channel either way.
 ### Technical requirements
 
 - **App bundle and Play App Signing.** New apps upload an `.aab`, and Google signs what it serves. **Owner update
-  2026-10-24 (#287):** Play uses its own Google-generated app signing key, and the release key is the upload key
-  ("the app is not in any device yet, so changing the key now may not have any big impact"). So Play installs and
-  the APKs from GitHub, Obtainium and F-Droid can't update each other: switching channels means a backup, an
-  uninstall and a restore, and the Obtainium certificate pin refuses an app installed from Play. Play builds split
-  APKs from the bundle, so they aren't byte-identical to the reproducible GitHub APK either. `release.yml` attaches
+  2026-10-24 (#287, second answer):** Play signs with the owner's release key, given to Play once with PEPK ("i
+  preffer to give Play my own key, it is a small step i can do"), and the release key is also the upload key. So Play
+  installs and the APKs from GitHub, Obtainium and F-Droid share one certificate and update each other, and the
+  Obtainium certificate pin accepts an app installed from Play. Play builds split APKs from the bundle, so they
+  aren't byte-identical to the reproducible GitHub APK. `release.yml` attaches
   the bundle, signed with the release key, to every release ([google-play.md → Signing](google-play.md#signing),
   ADR 0071).
 - **Target API and 16 KB pages** (checked 2026-10-24, ADR 0071): Play needs API 36 since 31 August 2026, and Cucuto

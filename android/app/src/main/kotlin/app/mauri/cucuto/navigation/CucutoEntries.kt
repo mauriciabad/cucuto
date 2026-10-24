@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import app.mauri.cucuto.BuildConfig
 import app.mauri.cucuto.contact.ContactDetailScreen
+import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.daynight.DayNightScreen
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.AssignVoiceScreen
@@ -14,6 +15,8 @@ import app.mauri.cucuto.packs.ui.PacksImportReview
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
 import app.mauri.cucuto.sample.SampleChatScreen
+import app.mauri.cucuto.ui.contacts.AddFromContactsScreen
+import app.mauri.cucuto.ui.contacts.ConfirmLinkScreen
 import app.mauri.cucuto.ui.creator.CreatorFinishScreen
 import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.developer.DeveloperScreen
@@ -26,6 +29,7 @@ import app.mauri.cucuto.ui.haptics.HapticEditorScreen
 import app.mauri.cucuto.ui.haptics.HapticTarget
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
 import app.mauri.cucuto.ui.ringtone.RingtonePickerScreen
+import app.mauri.cucuto.ui.ringtone.rules.RingtoneRulesScreen
 import app.mauri.cucuto.ui.settings.BackupExportScreen
 import app.mauri.cucuto.ui.settings.LicensesScreen
 import app.mauri.cucuto.ui.settings.SettingsScreen
@@ -62,8 +66,16 @@ fun cucutoEntries(
             PickerScreen(
                 chat = key.chat,
                 onBack = goBack,
-                // Only this picker, and only if the user has not left it already.
-                onDone = { navigator.remove(key) },
+                // Only this picker, and only if the user has not left it already. From Home, a 1:1 chat goes on to
+                // its ringtone (step 2, ADR 0073); groups have no phone ringtone.
+                onDone = {
+                    val chat = key.chat
+                    if (key.ringtoneNext && chat != null && !chat.isGroupKey && navigator.current == key) {
+                        navigator.replace(key, CucutoDestination.RingtonePicker(chat, step = true))
+                    } else {
+                        navigator.remove(key)
+                    }
+                },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
@@ -105,6 +117,9 @@ fun cucutoEntries(
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
                 onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
                 onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
+                onOpenRules = { voice ->
+                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
+                },
             )
         }
         entry<CucutoDestination.RingtonePicker>(
@@ -116,6 +131,22 @@ fun cucutoEntries(
                 onDone = { navigator.remove(key) },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onOpenDiscover = { navigate(CucutoDestination.Discover) },
+                step = key.step,
+                onOpenRules = { voice ->
+                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
+                },
+            )
+        }
+        entry<CucutoDestination.RingtoneRules>(
+            clazzContentKey = {
+                "rules/${it.packId}/${it.characterId}/${it.chat?.packageName}/${it.chat?.conversationKey}"
+            },
+        ) { key ->
+            RingtoneRulesScreen(
+                voice = ChatVoice(key.packId, key.characterId),
+                chat = key.chat,
+                onBack = goBack,
+                onDone = { navigator.remove(key) },
             )
         }
 
@@ -153,6 +184,7 @@ fun cucutoEntries(
                 onBack = goBack,
                 onPackMissing = { navigator.remove(key) },
                 onDuplicate = { id -> navigate(CucutoDestination.Creator(id)) },
+                onOpenRules = { characterId -> navigate(CucutoDestination.RingtoneRules(key.packId, characterId)) },
             )
         }
         entry<CucutoDestination.RepositoryForm>(metadata = childOf(CucutoDestination.Discover)) { key ->
@@ -166,8 +198,29 @@ fun cucutoEntries(
         entry<CucutoDestination.AssignVoice>(metadata = childOf(CucutoDestination.Home)) { key ->
             AssignVoiceScreen(
                 onBack = goBack,
-                onPick = { chat -> navigator.replace(key, CucutoDestination.Picker(chat)) },
+                onPick = { chat -> navigator.replace(key, CucutoDestination.Picker(chat, ringtoneNext = true)) },
+                onAddFromContacts = { navigate(CucutoDestination.AddFromContacts) },
             )
+        }
+        // Chats from contacts (ADR 0065): one person saved opens their contact detail; several go back to the list.
+        entry<CucutoDestination.AddFromContacts> { key ->
+            AddFromContactsScreen(
+                onBack = goBack,
+                onDone = { saved ->
+                    val only = saved.singleOrNull()
+                    if (only != null) {
+                        navigator.replace(key, CucutoDestination.ContactDetail(only))
+                    } else {
+                        navigator.remove(key)
+                    }
+                },
+            )
+        }
+        entry<CucutoDestination.ConfirmLink>(
+            clazzContentKey = { "confirm-link/${it.chat.packageName}/${it.chat.conversationKey}" },
+            metadata = childOf(CucutoDestination.Home),
+        ) { key ->
+            ConfirmLinkScreen(chat = key.chat, onBack = goBack, onDone = { navigator.remove(key) })
         }
 
         // Home: the sample chat, a demo that plays in the app without the module (ADR 0075).
