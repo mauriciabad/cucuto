@@ -451,3 +451,10 @@ GitHub, Obtainium and F-Droid APKs can't update each other.)
 > there are fer agents running in paralel, i expect a bit more, so we can finish earlier
 
 (The lead added six agents: bug hunts on the ringtone flow and on contacts, sample chat, pickers and clip conditions; a UX coherence pass on the emulator; the website and user guide for the new features; creator and packer parity with the pack format; and accessibility for the new screens.)
+
+## 2026-10-24 — Testing v0.2.0 on the phone (ringtone badge in the Home → contact detail transition, #339)
+
+> the animation that moves the character from the list to the contact detail is smooth but the image of the ringtone has an issue with the zposition, while moving charavter is avobe but when stops (begining and end) the ringtone pops avobe the character. i think it should move along with the character as a group
+
+(#339: the ringtone cover became a shared element of its own, drawn above the avatar's, so the pair flies as one
+group; ADR 0073 and brand/motion.md updated.)

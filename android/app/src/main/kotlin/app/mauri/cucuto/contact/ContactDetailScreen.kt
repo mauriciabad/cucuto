@@ -85,6 +85,7 @@ import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.home.ChatAvatarKey
+import app.mauri.cucuto.home.ChatRingtoneBadgeKey
 import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
 import app.mauri.cucuto.ui.components.VoiceAvatar
@@ -92,6 +93,7 @@ import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.haptics.HapticOverrideSection
+import app.mauri.cucuto.ui.motion.SharedCompanion
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.ringtone.PhoneCallsRow
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSection
@@ -342,12 +344,15 @@ private fun Header(
                         onBitmap = onBitmap,
                     )
                 }
-                state.ringtone?.let {
-                    RingtoneBadge(
-                        it,
-                        RINGTONE_BADGE_SIZE,
+                // Its own shared element above the avatar's, so the pair flies as one group (#339).
+                val ringtone = state.ringtone
+                if (ringtone != null) {
+                    SharedCompanion(
+                        ChatRingtoneBadgeKey(state.chatKey),
                         Modifier.align(Alignment.BottomEnd).offset(x = 12.dp, y = 4.dp),
-                    )
+                    ) { RingtoneBadge(ringtone, RINGTONE_BADGE_SIZE) }
+                } else {
+                    SharedCompanion(ChatRingtoneBadgeKey(state.chatKey), Modifier.align(Alignment.BottomEnd))
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
