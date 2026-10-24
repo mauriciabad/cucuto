@@ -156,6 +156,8 @@ fun HomeScreen(
         onAddFromContacts = { onNavigate(CucutoDestination.AddFromContacts) },
         onOpenQuestion = { chat -> onNavigate(CucutoDestination.ConfirmLink(chat)) },
         setupCard = { SetupCardSection(onNavigate = onNavigate) },
+        // A demo chat that plays in the app, for reviewers and anyone without the module yet (ADR 0075).
+        onTrySampleChat = { onNavigate(CucutoDestination.SampleChat) },
     )
 }
 
@@ -181,6 +183,7 @@ fun HomeContent(
     onAddFromContacts: () -> Unit = {},
     onOpenQuestion: (ChatKey) -> Unit = {},
     setupCard: @Composable () -> Unit = {},
+    onTrySampleChat: () -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf(state.query) }
     val latestOnQueryChange by rememberUpdatedState(onQueryChange)
@@ -248,6 +251,7 @@ fun HomeContent(
                         onPreviewCharacters = onPreviewCharacters,
                         onDismissCelebration = onDismissCelebration,
                         onAddFromContacts = onAddFromContacts,
+                        onTrySampleChat = onTrySampleChat,
                         modifier = Modifier.animateItem(),
                     )
                 }

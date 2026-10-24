@@ -117,6 +117,9 @@ backups and Diagnostics, but no chat to assign a voice to, since chats come from
 so plainly, list what to try, and link a demo video recorded on a rooted phone (#286, `needs-device`). The app
 change that closes the gap, a local **sample chat** that never reaches the module and plays through Simulate
 message's in-app preview, is #285. It's kept out of this PR because it touches Home and the routing table builder.
+Update 2026-10-24 (#285): the sample chat shipped as ADR 0075, outside the database, so it never reaches the
+module, and it plays with the app's own previews instead of Simulate message. The review notes now walk reviewers
+through it.
 
 **8. Upload tooling: `fastlane supply`, owner-run, not wired to CI.** `fastlane/Supplyfile` sets the package, the
 metadata path, the internal track and `release_status("draft")`. A draft is the only status Play accepts for an app
@@ -139,6 +142,7 @@ language for tools. A later CI step would run `fastlane supply` on the release's
 - Store screenshots now have a peach border on F-Droid and Obtainium too.
 - The descriptions lose their HTML lists. F-Droid shows the same content with bullets.
 - A new permission or library permission fails CI until the privacy page and `docs/google-play.md` are updated.
-- Reviewers still can't see the core feature without root until #285 ships. The video (#286) is the stopgap.
+- Reviewers can try the core feature without root in the sample chat (#285, ADR 0075). The video (#286) shows it
+  through the module on a rooted phone.
 - When the optional WhatsApp hook (#273, ADR 0052) ships, the description's "never hooks the WhatsApp app" line,
   the privacy page and the review notes must change in that PR. google-play.md has the prepared wording.

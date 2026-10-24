@@ -71,7 +71,7 @@ internal object A11yPushedScreens {
                     onNone = {},
                 )
             },
-            "home-waiting" to {
+            "home-from-contacts" to {
                 HomeContent(
                     state = previewHomeStateWithQuestion(),
                     onQueryChange = {},

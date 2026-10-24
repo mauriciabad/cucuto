@@ -15,6 +15,7 @@ import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
 import app.mauri.cucuto.ui.contacts.AddFromContactsScreen
 import app.mauri.cucuto.ui.contacts.ConfirmLinkScreen
+import app.mauri.cucuto.sample.SampleChatScreen
 import app.mauri.cucuto.ui.creator.CreatorFinishScreen
 import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.developer.DeveloperScreen
@@ -188,6 +189,11 @@ fun cucutoEntries(
             metadata = childOf(CucutoDestination.Home),
         ) { key ->
             ConfirmLinkScreen(chat = key.chat, onBack = goBack, onDone = { navigator.remove(key) })
+        }
+
+        // Home: the sample chat, a demo that plays in the app without the module (ADR 0075).
+        entry<CucutoDestination.SampleChat> {
+            SampleChatScreen(onBack = goBack, onOpenDiscover = { navigate(CucutoDestination.Discover) })
         }
 
         // Debug builds only: R8 drops these screens from release builds.

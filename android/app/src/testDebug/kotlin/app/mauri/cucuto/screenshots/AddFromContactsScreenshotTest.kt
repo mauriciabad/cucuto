@@ -24,8 +24,8 @@ class AddFromContactsScreenshotTest(
         screenshot("add-from-contacts-list") { AddFromContactsContent(previewContactsState(), {}, {}, {}, {}, {}, {}) }
 
     @Test
-    fun homeWaiting() =
-        screenshot("home-waiting") {
+    fun homeFromContacts() =
+        screenshot("home-from-contacts") {
             InShell(TopLevelTab.Home) {
                 HomeContent(
                     state = previewHomeStateWithQuestion(),

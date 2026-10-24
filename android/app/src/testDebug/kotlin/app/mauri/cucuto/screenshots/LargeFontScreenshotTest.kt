@@ -81,7 +81,9 @@ class LargeFontScreenshotTest(
 
     @Test fun confirmLink() = largeFont("confirm-link")
 
-    @Test fun homeWaiting() = largeFont("home-waiting")
+    @Test fun homeFromContacts() = largeFont("home-from-contacts")
+
+    @Test fun sampleChat() = largeFont("sample-chat")
 
     private fun largeFont(screen: String) =
         // The onboarding's wavy progress bar never stops moving.

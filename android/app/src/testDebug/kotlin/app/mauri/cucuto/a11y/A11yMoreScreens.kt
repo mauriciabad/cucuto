@@ -26,6 +26,8 @@ import app.mauri.cucuto.diagnostics.DiagnosticsContent
 import app.mauri.cucuto.diagnostics.DiagnosticsMessage
 import app.mauri.cucuto.diagnostics.DiagnosticsState
 import app.mauri.cucuto.provider.ReceivedStatus
+import app.mauri.cucuto.sample.SampleChatContent
+import app.mauri.cucuto.screenshots.demoSampleChatState
 import app.mauri.cucuto.ui.creator.CropperPage
 import app.mauri.cucuto.ui.creator.CropperUi
 import app.mauri.cucuto.ui.creator.PictureTarget
@@ -54,7 +56,23 @@ internal object A11yMoreScreens {
             "restore-passphrase" to { Restore(RestoreStep.Passphrase(wrong = true)) },
             "restore-packs" to { Restore(restorePacks) },
             "restore-conflicts" to { Restore(restoreConflicts) },
+            "sample-chat" to { SampleChat() },
         )
+
+    /** The sample chat (ADR 0075) with the demo packs: Bleep the frog's voice and pond song. */
+    @Composable
+    private fun SampleChat() {
+        SampleChatContent(
+            state = demoSampleChatState(),
+            ringing = null,
+            onBack = {},
+            onChooseVoice = {},
+            onChooseRingtone = {},
+            onPlayMessage = {},
+            onToggleCall = {},
+            onGetDemoPacks = {},
+        )
+    }
 
     @Composable
     private fun Diagnostics() {
