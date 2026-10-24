@@ -565,6 +565,10 @@ Rules:
 - **IDs** are unique within an index (`DUPLICATE_ID`); an index lists only the latest version of each pack.
 - **`type: "bundle"`** entries list their `packs` (with character previews) so apps can show the contents before
   downloading; `type: "pack"` entries may list `characters`. Bundle entries must not have `characters`.
+- **Packs alone and in a bundle.** An index may list a pack on its own and inside a bundle (the default repository does,
+  so the demo packs install one by one or in one tap). Apps match them by pack ID and show each pack once: Cucuto shows
+  the bundle as one card with its packs inside, and a pack also listed on its own is installable from its row
+  ([ADR 0064](decisions/0064-bundles-in-discover.md)). Give a bundle its own cover, not one of its packs' covers.
 - **`packFormatVersion`** (default 1) lets apps hide entries they cannot read yet.
 - **Downloads.** Apps check the advertised `size` before downloading and stop if the transfer exceeds it, then check
   the exact size (`DOWNLOAD_SIZE_MISMATCH`) and SHA-256 (`DOWNLOAD_HASH_MISMATCH`), then run the normal importer.

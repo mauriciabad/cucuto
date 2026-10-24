@@ -74,27 +74,49 @@ enum class InstallState {
     UPDATE,
 }
 
-/** One repository entry (a pack or a bundle) as a card. */
+/**
+ * One card: a pack, or a bundle with its packs inside (ADR 0064). A pack the repository also lists inside a bundle is
+ * not a card of its own but that bundle's [members] row, so each pack shows once.
+ */
 data class PackCard(
     /** Unique on the screen: repository ID and entry ID. */
     val key: String,
     val repositoryId: Long,
     val entry: ResolvedEntry,
     val cover: HttpUrl?,
-    /** The pack's characters, or every character of a bundle's packs. */
+    /** The pack's characters; empty for a bundle (each of its [members] has its own). */
     val characters: List<RemoteCharacter>,
-    /** Names of a bundle's packs; empty for a pack. */
-    val bundlePacks: List<String>,
+    /** A bundle's packs, in its order; empty for a pack. */
+    val members: List<BundleMember> = emptyList(),
     val state: InstallState,
 ) {
     val id: String get() = entry.entry.id
     val name: String get() = entry.entry.name
     val isBundle: Boolean get() = entry.entry.type == TYPE_BUNDLE
 
+    /** How many of a bundle's packs are on the phone, in any version. */
+    val installedMembers: Int get() = members.count { it.state != InstallState.NEW }
+
     companion object {
         const val TYPE_BUNDLE = "bundle"
     }
 }
+
+/** One pack inside a bundle card, with its own install state. */
+data class BundleMember(
+    /** Unique on the screen: the bundle card's key and the pack ID. */
+    val key: String,
+    val id: String,
+    val name: String,
+    /** The version inside the bundle. */
+    val version: String,
+    val cover: HttpUrl?,
+    val characters: List<RemoteCharacter>,
+    /** Against the pack listed on its own when there is one (the newest the repository has), else the bundle's. */
+    val state: InstallState,
+    /** The same pack listed on its own in this repository, to install it alone; null when only bundles have it. */
+    val card: PackCard?,
+)
 
 /** A character preview: picture and sample clip are fetched only when shown or tapped. */
 data class RemoteCharacter(
@@ -230,34 +252,90 @@ internal fun sections(
         )
     }
 
-/** The cards of [snapshot], in the index's order (the repository author's choice). */
+/**
+ * The cards of [snapshot], in the index's order (the repository author's choice). A pack that a bundle of the same
+ * index contains is a row of the first such bundle instead of a card of its own (ADR 0064).
+ */
 internal fun cards(
     repositoryId: Long,
     snapshot: RepositorySnapshot,
     installed: List<InstalledRef>,
-): List<PackCard> =
-    snapshot.entries.map { resolved ->
-        val entry = resolved.entry
-        val key = "$repositoryId/${entry.id}"
-        val bundled = entry.packs.orEmpty()
-        val characters =
-            if (bundled.isEmpty()) {
-                entry.characters.orEmpty().map { remoteCharacter("$key/${it.id}", it, snapshot) }
-            } else {
-                bundled.flatMap { pack ->
-                    pack.characters.orEmpty().map { remoteCharacter("$key/${pack.id}/${it.id}", it, snapshot) }
-                }
-            }
-        PackCard(
-            key = key,
-            repositoryId = repositoryId,
-            entry = resolved,
-            cover = resolved.coverUrl,
-            characters = characters,
-            bundlePacks = bundled.map { it.name },
-            state = installState(resolved, installed),
-        )
+): List<PackCard> {
+    val packs =
+        snapshot.entries
+            .filter { it.entry.type != PackCard.TYPE_BUNDLE }
+            .associate { it.entry.id to packCard(repositoryId, it, snapshot, installed) }
+    val bundles =
+        snapshot.entries
+            .filter { it.entry.type == PackCard.TYPE_BUNDLE }
+            .associate { it.entry.id to bundleCard(repositoryId, it, snapshot, installed, packs) }
+    val inBundles = bundles.values.flatMap { bundle -> bundle.members.map { it.id } }.toSet()
+    return snapshot.entries.mapNotNull { resolved ->
+        val id = resolved.entry.id
+        bundles[id] ?: packs[id]?.takeUnless { id in inBundles }
     }
+}
+
+private fun packCard(
+    repositoryId: Long,
+    resolved: ResolvedEntry,
+    snapshot: RepositorySnapshot,
+    installed: List<InstalledRef>,
+): PackCard {
+    val entry = resolved.entry
+    val key = "$repositoryId/${entry.id}"
+    return PackCard(
+        key = key,
+        repositoryId = repositoryId,
+        entry = resolved,
+        cover = resolved.coverUrl,
+        characters = entry.characters.orEmpty().map { remoteCharacter("$key/${it.id}", it, snapshot) },
+        state = installState(entry.id, entry.version, installed),
+    )
+}
+
+/** A bundle with its packs as rows; [packs] are the index's pack entries, to install a member alone. */
+private fun bundleCard(
+    repositoryId: Long,
+    resolved: ResolvedEntry,
+    snapshot: RepositorySnapshot,
+    installed: List<InstalledRef>,
+    packs: Map<String, PackCard>,
+): PackCard {
+    val entry = resolved.entry
+    val key = "$repositoryId/${entry.id}"
+    val bundled = entry.packs.orEmpty()
+    val members =
+        bundled.map { pack ->
+            val alone = packs[pack.id]
+            BundleMember(
+                key = "$key/${pack.id}",
+                id = pack.id,
+                name = pack.name,
+                version = pack.version,
+                cover = pack.cover?.let(snapshot::resolve),
+                characters =
+                    pack.characters.orEmpty().map {
+                        remoteCharacter(
+                            "$key/${pack.id}/${it.id}",
+                            it,
+                            snapshot,
+                        )
+                    },
+                state = alone?.state ?: installState(pack.id, pack.version, installed),
+                card = alone,
+            )
+        }
+    return PackCard(
+        key = key,
+        repositoryId = repositoryId,
+        entry = resolved,
+        cover = resolved.coverUrl,
+        characters = emptyList(),
+        members = members,
+        state = bundleState(bundled.map { installState(it.id, it.version, installed) }),
+    )
+}
 
 private fun remoteCharacter(
     key: String,
@@ -272,43 +350,57 @@ private fun remoteCharacter(
 )
 
 /**
- * A pack is installed when a pack with its ID is; a bundle when packs installed from it (same bundle ID) are. Older
- * installed versions mean an update; versions that do not parse count as installed (no badge promises an update).
+ * Pack [packId] is installed when a pack with its ID is, whatever file it came from. An older installed version than
+ * [available] means an update; versions that do not parse count as installed (no badge promises an update).
  */
 internal fun installState(
-    resolved: ResolvedEntry,
+    packId: String,
+    available: String,
     installed: List<InstalledRef>,
 ): InstallState {
-    val entry = resolved.entry
-    val version =
-        if (entry.type == PackCard.TYPE_BUNDLE) {
-            installed.filter { it.bundleId == entry.id }.mapNotNull { it.bundleVersion }
-        } else {
-            installed.filter { it.packId == entry.id }.map { it.version }
-        }
-    if (version.isEmpty()) return InstallState.NEW
-    val available = SemVer.parse(entry.version) ?: return InstallState.INSTALLED
-    val newest = version.mapNotNull(SemVer::parse).maxOrNull() ?: return InstallState.INSTALLED
-    return if (newest < available) InstallState.UPDATE else InstallState.INSTALLED
+    val versions = installed.filter { it.packId == packId }.map { it.version }
+    if (versions.isEmpty()) return InstallState.NEW
+    val offered = SemVer.parse(available) ?: return InstallState.INSTALLED
+    val newest = versions.mapNotNull(SemVer::parse).maxOrNull() ?: return InstallState.INSTALLED
+    return if (newest < offered) InstallState.UPDATE else InstallState.INSTALLED
 }
 
-/** Search matches the name, author, description, tags and character names; [tag] must be one of the entry's tags. */
+/**
+ * A bundle's state from its packs' states against the versions inside it (ADR 0064): new while any pack is missing,
+ * an update when one is older, otherwise installed.
+ */
+internal fun bundleState(members: List<InstallState>): InstallState =
+    when {
+        InstallState.NEW in members -> InstallState.NEW
+        InstallState.UPDATE in members -> InstallState.UPDATE
+        else -> InstallState.INSTALLED
+    }
+
+/**
+ * Search matches the name, author, description, tags and character names; [tag] must be one of the tags. A bundle
+ * matches when it or any of its packs does (a pack listed on its own adds its author, description and tags).
+ */
 internal fun PackCard.matches(
     query: String,
     tag: String?,
 ): Boolean {
-    val entry = entry.entry
-    if (tag != null && entry.tags.none { it.equals(tag, ignoreCase = true) }) return false
+    val entries = listOf(entry.entry) + members.mapNotNull { it.card?.entry?.entry }
+    if (tag != null && entries.none { e -> e.tags.any { it.equals(tag, ignoreCase = true) } }) return false
     val words = query.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
     if (words.isEmpty()) return true
     val haystack =
         buildList {
-            add(entry.name)
-            entry.author?.let(::add)
-            entry.description?.let(::add)
-            addAll(entry.tags)
-            addAll(bundlePacks)
+            entries.forEach { e ->
+                add(e.name)
+                e.author?.let(::add)
+                e.description?.let(::add)
+                addAll(e.tags)
+            }
             characters.forEach { add(it.name) }
+            members.forEach { member ->
+                add(member.name)
+                member.characters.forEach { add(it.name) }
+            }
         }
     return words.all { word -> haystack.any { it.contains(word, ignoreCase = true) } }
 }
