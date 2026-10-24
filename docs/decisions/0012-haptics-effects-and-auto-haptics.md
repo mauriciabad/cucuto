@@ -87,7 +87,8 @@ after a better analyser ships or after a restore on a phone with a smaller budge
 ## Consequences
 
 - The module (#15) needs only `HapticCapabilities` (once) and `HapticEffects.create`, which can be cached per haptic.
-  Wiring is #96. The importer and catalog integration (analyse at import, read the file into
+  Wiring is #96; the capabilities are read at boot, off the notification path
+  ([ADR 0044](0044-vibrator-capabilities-at-boot.md)). The importer and catalog integration (analyse at import, read the file into
   `CatalogClip.autoHaptic`) is #97, done in [ADR 0020](0020-auto-haptics-at-import.md).
 - A clip's auto envelope takes about 100–200 characters in the routing table. Clip haptics are not deduplicated
   across voices, so a heavy user with many distinct voices of 12 clips could get close to the 256 Ki-character limit.

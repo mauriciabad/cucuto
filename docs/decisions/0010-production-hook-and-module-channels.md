@@ -39,9 +39,10 @@ across a table republish (the bag remembers the last clip by URI).
 **Haptics.** `Haptic.Custom` presets and basic envelopes are built by `:core:haptics`
 (`HapticEffects.create`, [ADR 0012](0012-haptics-effects-and-auto-haptics.md); wired in #96): `VibrationEffect.Builder`
 when it is available (probed by reflection, so it also works on the owner's 37.1 build inside `system_server`),
-otherwise a basic envelope, a `Composition` or a waveform. The vibrator's `HapticCapabilities` are read once, through
-`NotificationAttentionHelper`'s Context, on the first custom haptic; each effect is cached per haptic (bounded LRU,
-failures included). `Keep` and unbuildable effects keep WhatsApp's vibration; `Auto` uses the envelope of the clip
+otherwise a basic envelope, a `Composition` or a waveform. The vibrator's `HapticCapabilities` are read once per
+boot, on the background thread as soon as the vibrator service is ready
+([ADR 0044](0044-vibrator-capabilities-at-boot.md), #190; the first version read them on the first custom haptic,
+inside `playVibration`); each effect is cached per haptic (bounded LRU, failures included). `Keep` and unbuildable effects keep WhatsApp's vibration; `Auto` uses the envelope of the clip
 `playSound` played (`forClip` on the shared decision); `Off` (per-contact override, ADR 0009) skips the vibration.
 
 **Clip provider (#16).** `content://app.mauri.cucuto.clips/<packId>/<characterId>/<path>` serves audio files from the
