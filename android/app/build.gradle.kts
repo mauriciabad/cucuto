@@ -24,10 +24,12 @@ android {
 
     defaultConfig {
         applicationId = "app.mauri.cucuto"
-        // Defaults for local and CI builds. Releases take both from the tag (`-Pcucuto.version`, release.yml):
+        // The latest release, set by the release PR (tools/release/release-notes.main.kts), so a tag's source names
+        // its own version for F-Droid's update check (fdroid/README.md). Release builds also take both from the tag
+        // (`-Pcucuto.version`, release.yml and the F-Droid recipe):
         // versionCode = MAJOR * 1_000_000 + MINOR * 1_000 + PATCH (ADR 0021, docs/releasing.md).
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2003
+        versionName = "0.2.3"
 
         // End-to-end smoke tests (src/androidTest, docs/maintaining.md): Hilt's test application, and every test in
         // its own process on a cleared app (Orchestrator), so each one starts like a fresh install.

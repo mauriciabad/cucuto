@@ -108,16 +108,28 @@ releases; IzzyOnDroid then pins the signing certificate from the first APK it se
 
 ## F-Droid
 
-F-Droid builds every app from source on its own servers. Cucuto could build there in principle (Gradle, a pinned
-Rust toolchain through rustup, NDK r30, no proprietary dependencies), and reproducible builds would let F-Droid ship
-the APK signed with Cucuto's own key. The recipe (an `fdroiddata` merge request with Rust and cargo-ndk setup) is
-extra maintenance, and F-Droid would likely flag the app with the `NonFreeDep` anti-feature, since it is useless
-without WhatsApp.
+F-Droid builds every app from source on its own servers.
 
 **Owner update 2026-10-24 (#211):** "f-droid would be nice, we can do it after v1." Planned after the first `v1.0.0`
-release: #275. Use F-Droid's reproducible-build route (`Binaries:` and `AllowedAPKSigningKeys:`), so F-Droid ships
-the APK signed with Cucuto's own key. Users can then move between GitHub, Obtainium, F-Droid and Play without
-reinstalling. The package also stays registered to the owner under Android developer verification (below).
+release: #275. It uses F-Droid's reproducible-build route (`Binaries:` and `AllowedAPKSigningKeys:`), so F-Droid ships
+the APK signed with Cucuto's own key. Users can then move between GitHub, Obtainium and F-Droid without reinstalling,
+and one developer verification registration covers all three (below).
+
+**Ready to submit (2026-10-24).** The recipe is [`fdroid/app.mauri.cucuto.yml`](../fdroid/app.mauri.cucuto.yml),
+with what it does and what was checked in [`fdroid/README.md`](../fdroid/README.md):
+
+- It builds a `v*` tag with JDK 21, rustup and the pinned Rust toolchain, `cargo-ndk` 4.1.2 and NDK r30.
+- F-Droid publishes its build only if it matches the GitHub release APK, signed with the release certificate.
+- It updates itself on new `v*` tags. F-Droid reads `versionCode` and `versionName` from
+  `android/app/build.gradle.kts`, which the release PR now sets ([releasing.md](releasing.md)).
+- **No inclusion blockers.** The release APK has no Google Play services, Firebase, GMS, Google sign-in, trackers or
+  proprietary libraries. `:core:drive` isn't part of it. `fdroid scanner` and `fdroid lint` pass with the recipe.
+- **Anti-feature `NonFreeDep`:** Cucuto is only useful with WhatsApp. `NonFreeNet` doesn't fit, because Cucuto never
+  talks to WhatsApp's servers.
+- Still untested: a full `fdroid build` on F-Droid's Debian image. The merge request's CI runs it.
+
+**Owner steps** (GitLab account, fork, merge request): #275. Once F-Droid publishes Cucuto, add it to the website's
+Install page.
 
 ## Google Play
 

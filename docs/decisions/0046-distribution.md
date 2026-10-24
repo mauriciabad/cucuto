@@ -3,7 +3,7 @@
 - Status: accepted; amended by the owner's answer on #211 (Google Play added, F-Droid after v1, see
   [Owner update](#owner-update-2026-10-24-211-google-play-too-f-droid-after-v1)); the Play
   bundle, listing format and Console answers are ADR 0071. **Amended 2026-10-24 by [ADR 0080](0080-no-google-play.md):
-  no Google Play** (the owner dropped it over the closed testing requirement)
+  no Google Play** (the owner dropped it over the closed testing requirement); F-Droid recipe ready ([update](#update-2026-10-24-275-f-droid-recipe-ready), #275)
 - Date: 2026-10-24
 - Issues: #206 (this work), #44 / ADR 0021 (signed release on tag), #41 / ADR 0032 (screenshot tests)
 
@@ -116,3 +116,15 @@ Decisions:
 **F-Droid after v1** (#275), through F-Droid's reproducible-build route, so it ships the APK signed with Cucuto's
 key. **IzzyOnDroid** stays not submitted, and the optional Obtainium directory listing stays optional (the
 defaults in #211 the owner didn't change).
+
+## Update 2026-10-24 (#275): F-Droid recipe ready
+
+The recipe is in [`fdroid/`](../../fdroid/README.md), ready for the owner to submit after v1. It builds the tag with
+JDK 21, the pinned Rust toolchain through rustup, cargo-ndk and NDK r30, and uses `Binaries:` with
+`AllowedAPKSigningKeys:` so F-Droid publishes the GitHub APK's signature on its own build. It declares `NonFreeDep`
+(F-Droid's anti-feature for apps that need a non-free app, WhatsApp being their example). It has no inclusion
+blockers: no Play services, Firebase, trackers or proprietary libraries in the release APK.
+
+For F-Droid's update check, a tag's source must name its version, so the release PR now also sets `versionCode` and
+`versionName` in `android/app/build.gradle.kts` (`release-notes.main.kts` writes them, `release.yml` warns when they
+don't match the tag). Releases still pass `-Pcucuto.version`, so the APK is unchanged.

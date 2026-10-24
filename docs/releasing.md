@@ -65,7 +65,9 @@ gh variable set RELEASE_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprin
 
    It reads the Conventional Commits since the previous `v*` tag and writes
    `fastlane/metadata/android/en-US/changelogs/2000.txt` (the versionCode) and a `## [0.2.0]` section at the top of
-   `CHANGELOG.md`. Edit both into words for users: say what changed for them, merge related lines, drop what nobody
+   `CHANGELOG.md`. It also sets `versionCode = 2000` and `versionName = "0.2.0"` in `android/app/build.gradle.kts`:
+   F-Droid's update check reads them from the tag ([fdroid/README.md](../fdroid/README.md)), and `release.yml` warns
+   when a tag lacks them. Edit the changelog and the `CHANGELOG.md` section into words for users: say what changed for them, merge related lines, drop what nobody
    notices, mention anything broken (a known issue) or anything they must do. Add
    `fastlane/metadata/android/es-ES/changelogs/2000.txt` if you can (otherwise clients show the English one). Check
    the limits with `kotlin tools/release/release-notes.main.kts --check`, then merge the PR as
