@@ -55,7 +55,7 @@ handed out to work that never merged or is still in a PR (0049 is in #225, 0059 
 | [0037](0037-day-and-night-clips.md) | Day and night clips from sunrise and sunset | accepted |
 | [0038](0038-web-pack-creator.md) | The website's pack creator: shared Kotlin for layout and clips, browser APIs for media | accepted |
 | [0039](0039-phone-ringtones-on-the-device.md) | Phone ringtones: ring files rendered on the phone, MediaStore, contact undo record, re-roll receiver | accepted |
-| [0040](0040-google-drive-backups-and-pack-folders.md) | Google Drive: one SAF file for automatic backups now, the Drive API behind an interface | accepted; Drive sign-in waits for the owner (#188) |
+| [0040](0040-google-drive-backups-and-pack-folders.md) | Google Drive: one SAF file for automatic backups now, the Drive API behind an interface | accepted; the Cloud project for Drive sign-in exists (#188) |
 | [0041](0041-accessibility-pass.md) | Accessibility pass | accepted |
 | [0042](0042-explainer-video-and-slot.md) | Explainer video: brief, files and the Home player | accepted; amended by the owner on #194 (rework #271) |
 | [0043](0043-framework-service-lost-after-app-update.md) | Framework service lost after an app update: tell the user to reboot | accepted |
