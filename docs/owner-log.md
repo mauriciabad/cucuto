@@ -365,3 +365,15 @@ Applied: a ringtone preview plays exactly what a call would (the same ring file,
 the call), with no 30 s cut, until the user pauses or stops it or leaves the screen. It has play/pause. Updated
 ADR 0057 and the brief. The work goes into #246, whose description now carries this answer (no PR for #245/#246 was
 open yet). The other defaults stand. The two later defaults from #266 on that issue are still open for the owner.
+
+> the kk pack should be updated to use the new ringtone packs
+
+(Already done: the private K.K. pack 1.1.0 is ringtone-only and in the phone's Download folder.)
+
+> and where is the pokemon pack? is it at least planed?
+
+(Already built: the private Pokémon pack, 268 characters and 1,541 clips, is in the phone's Download folder.)
+
+> testing sounds and pictures is taking more than i would expect. but dont fix it asap
+
+(Filed as roadmap issue #279. The speedups from #269 and #277 ship in v0.1.7.)

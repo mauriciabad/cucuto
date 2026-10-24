@@ -147,7 +147,7 @@ The feature switch itself is not in backups: turning it on needs the permission 
 > that (wich i doubt is cut at 30s). we may need a way to pause.
 
 - **A ringtone preview plays what a call plays.** That is the ring file Telecom would get ([ADR 0033](0033-ring-files-and-auto-cut-clips.md)):
-  from 0 ms, the intro, the loop section repeated, the outro, or a play-once version padded with silence. It loops
+  from 0 ms, the intro, then the loop section repeated (the outro after `endMs` is left out), or a play-once version padded with silence. It loops
   the whole file the way Telecom does, with the same ringtone audio attributes, so the ring volume and ringer mode
   still apply.
 - **No time limit.** A call rings until it is answered or declined, so a preview plays until the user pauses or
