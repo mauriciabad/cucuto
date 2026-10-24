@@ -799,7 +799,18 @@ public object RoutingCodec {
 
         private fun long(): Long = field().toLong()
 
-        private fun count(): Int = int().also { if (it < 0) throw RoutingFormatException("Negative count") }
+        /**
+         * A count of lines or clips still to come. Each takes at least one character, so a count above the characters
+         * left is malformed: rejecting it keeps a corrupt or hostile header from sizing a list of up to 2^31 entries
+         * in `system_server` before the body proves it wrong.
+         */
+        private fun count(): Int {
+            val count = int()
+            val left = s.length - pos
+            if (count < 0) throw RoutingFormatException("Negative count")
+            if (count > left) throw RoutingFormatException("Count $count exceeds the $left characters left")
+            return count
+        }
 
         /** A header count added after the first version of the format: 0 when the line ends before it. */
         private fun optionalCount(): Int = if (pos < s.length && s[pos] != '\n') count() else 0

@@ -223,6 +223,19 @@ class RoutingCodecTest {
     }
 
     @Test
+    fun rejectsCountsLargerThanTheTextBeforeAllocating() {
+        // Without the bound these size lists of two billion entries (an OutOfMemoryError in system_server).
+        val hugeHeader = "cucuto-routing\t1\t5\t1\t1\t2000000000\t0\nP\tcom.whatsapp\n"
+        val hugeClipCount =
+            "cucuto-routing\t1\t5\t1\t1\t1\t0\nP\tcom.whatsapp\nV\tp.a\tc\tk\tbase/\t2000000000\n"
+        val hugeDictionary = "cucuto-routing\t1\t5\t1\t0\t0\t0\t2147483647\n"
+        for (input in listOf(hugeHeader, hugeClipCount, hugeDictionary)) {
+            assertDecodeFails(input)
+            assertNull(RoutingCodec.decodeOrNull(input))
+        }
+    }
+
+    @Test
     fun resolvesConversationsAndGroupPolicy() {
         val table = RoutingCodec.decode(RoutingCodec.encode(sample))
 

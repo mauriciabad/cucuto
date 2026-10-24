@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.backup
 
+import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.packspec.DocumentKind
 import app.mauri.cucuto.packspec.DocumentValidator
 import kotlinx.coroutines.test.runTest
@@ -16,6 +17,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.InputStream
 
 /** The golden fixtures (spec/fixtures/fixtures.json) and the zip layer of backups. */
 class BackupReaderTest {
@@ -186,6 +188,34 @@ class BackupReaderTest {
             opened.close()
             assertEquals(0, work.listFiles()!!.size)
             reader.open(fileSource(tmp.newFile().apply { writeText("x") }))
+            assertEquals(0, work.listFiles()!!.size)
+        }
+
+    @Test
+    fun `a source that never ends stops before it fills the phone`() =
+        runTest {
+            val work = tmp.newFolder("endless")
+            // Plenty of room for the first 8 MiB, then the disk is "full".
+            var checks = 0
+            val reader = BackupReader(work, freeSpace = { if (++checks <= 1) Long.MAX_VALUE else 0L })
+            val endless =
+                object : ImportSource {
+                    override fun describe() = ImportSource.Description("endless.zip", null)
+
+                    override fun open(): InputStream =
+                        object : InputStream() {
+                            override fun read(): Int = 0
+
+                            override fun read(
+                                b: ByteArray,
+                                off: Int,
+                                len: Int,
+                            ): Int = len
+                        }
+                }
+            val result = reader.open(endless)
+            assertTrue("Expected Failed, got $result", result is BackupOpenResult.Failed)
+            assertEquals(2, checks)
             assertEquals(0, work.listFiles()!!.size)
         }
 

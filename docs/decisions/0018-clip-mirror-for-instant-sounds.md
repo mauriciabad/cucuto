@@ -3,6 +3,8 @@
 - Status: accepted; the owner kept the shared-storage default on #150 (hook alternative re-checked in #216, [ADR 0062](0062-hook-vs-clip-mirror.md))
 - Date: 2026-10-24
 - Issues: #121 (follow-up to #88)
+- Amended: 2026-10-24 (#335, [ADR 0079](0079-security-review-hardening.md): a copy is current only with the
+  source's exact bytes)
 
 ## Context
 
@@ -69,8 +71,9 @@ Option 5, entirely in the app. The module needs no new code for pack clips.
   copies the clip to `Android/media/app.mauri.cucuto/clips/<packId>/<version>/<path>`. It writes a temporary file
   and renames it, so SystemUI never reads half a file. It then returns `file:///storage/emulated/0/…`. Each
   installed version is an immutable folder (ADR 0008), so a pack update changes the URIs, republishes the table and
-  copies the new files. A copy is current when it has the source's size and is not older than it. Each copy is
-  checked once per process, so rebuilding the table does not stat every clip again.
+  copies the new files. A copy is current only when it holds exactly the source's bytes (amended by ADR 0079: it
+  used to be the same size and not older, which let a planted same-size file stay). Each copy is checked once per
+  process, so rebuilding the table does not read every clip again.
 - **`ClipMirrorStore.retain`** runs after every publication. It deletes copies the published table no longer
   references, but keeps anything handed out since the previous publication. So a table that is still being built
   never loses a file it already points at.

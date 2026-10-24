@@ -18,6 +18,7 @@ import java.io.Closeable
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.util.UUID
 
 /** How opening a backup ended. */
@@ -101,6 +102,8 @@ class BackupReader(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     /** Highest Argon2id memory cost accepted, so a crafted file cannot exhaust the app's memory. */
     private val maxKdfMemoryKiB: Int = MAX_KDF_MEMORY_KIB,
+    /** Free bytes left where [workDir] lives; the copy of the source stops before it fills the phone. */
+    private val freeSpace: (File) -> Long = File::getUsableSpace,
 ) {
     suspend fun open(
         source: ImportSource,
@@ -113,7 +116,11 @@ class BackupReader(
                 if (!workDir.isDirectory && !workDir.mkdirs()) throw IOException("Cannot create $workDir")
                 val copy = File(workDir, "${UUID.randomUUID()}.zip").also(scratch::add)
                 try {
-                    source.open().use { input -> copy.outputStream().use { input.copyTo(it) } }
+                    val copied =
+                        source.open().use { input ->
+                            copy.outputStream().use { copyWhileSpaceLeft(input, it) }
+                        }
+                    if (!copied) return@withContext BackupOpenResult.Failed("Not enough free space to open the backup")
                 } catch (e: IOException) {
                     return@withContext BackupOpenResult.Failed("Could not read the file: ${e.message}", e)
                 } catch (e: SecurityException) {
@@ -129,6 +136,29 @@ class BackupReader(
                 if (!keep) withContext(NonCancellable) { scratch.forEach(File::delete) }
             }
         }
+
+    /**
+     * Copies [input] (a file another app hands over, which may never end) into the scratch [output], checking every
+     * [SPACE_CHECK_BYTES] that at least [FREE_SPACE_MARGIN_BYTES] stay free. Returns false when it stopped for space.
+     */
+    private suspend fun copyWhileSpaceLeft(
+        input: InputStream,
+        output: OutputStream,
+    ): Boolean {
+        val buffer = ByteArray(COPY_BUFFER_BYTES)
+        var sinceCheck = SPACE_CHECK_BYTES
+        while (true) {
+            if (sinceCheck >= SPACE_CHECK_BYTES) {
+                currentCoroutineContext().ensureActive()
+                if (freeSpace(workDir) < FREE_SPACE_MARGIN_BYTES) return false
+                sinceCheck = 0L
+            }
+            val n = input.read(buffer)
+            if (n < 0) return true
+            output.write(buffer, 0, n)
+            sinceCheck += n
+        }
+    }
 
     private suspend fun openFile(
         file: File,
@@ -191,7 +221,7 @@ class BackupReader(
             return invalid(listOf(Issue(ErrorCode.SCHEMA_VIOLATION, message, file = ENVELOPE)))
         }
         val payload = zip.record(BackupEnvelope.PAYLOAD)!!
-        if (workDir.usableSpace < payload.uncompressedSize + FREE_SPACE_MARGIN_BYTES) {
+        if (freeSpace(workDir) < payload.uncompressedSize + FREE_SPACE_MARGIN_BYTES) {
             return BackupOpenResult.Failed("Not enough free space to decrypt the backup")
         }
         val plain = File(workDir, "${UUID.randomUUID()}-plain.zip").also(scratch::add)
@@ -264,6 +294,8 @@ class BackupReader(
         const val MAX_KDF_MEMORY_KIB = 262_144
         private const val ENVELOPE_BYTES = 64L * 1024
         private const val FREE_SPACE_MARGIN_BYTES = 32L * 1024 * 1024
+        private const val SPACE_CHECK_BYTES = 8L * 1024 * 1024
+        private const val COPY_BUFFER_BYTES = 64 * 1024
 
         /** The app's reader: scratch files in `cache/backup/`. */
         fun create(cacheDir: File): BackupReader = BackupReader(File(cacheDir, "backup"))
