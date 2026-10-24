@@ -1,7 +1,7 @@
 # 0031. Group policy and WhatsApp Business
 
-- Status: accepted (the owner may override the "members show up in recent senders" default, see the `question` issue
-  linked from the PR)
+- Status: accepted (the owner may override the "members show up in recent senders" default, #158; device check
+  pending, #157)
 - Date: 2026-10-24
 - Issues: #20 (group policy: one character per group, or per sender), #21 (WhatsApp Business support)
 
@@ -77,4 +77,4 @@ say so ("Business · …", "Business group · …", `chatSupportingText`).
   chats), the same person becomes two chats until the user merges them. The `sender=` log shape shows which case
   applies.
 - The device check is supervised: steps in [`device-testing.md`](../device-testing.md) section 3b, follow-up issue
-  labeled `needs-device`.
+  #157 (`needs-device`).
