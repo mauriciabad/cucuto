@@ -354,7 +354,7 @@ Authentication:
 In the app (Discover screen):
 
 1. **Repositories:** the default one plus user-added ones. Add by URL, QR code, or the deep link `cucuto://repo/add?url=…` from a website.
-2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges.
+2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges. A bundle is one card with its packs inside, each with its own badge, and a pack the repository also lists on its own shows only there, so nothing appears twice (owner report 2026-10-24, #247, [ADR 0064](decisions/0064-bundles-in-discover.md)).
 3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched.
 4. **Download:** animated progress, then size and SHA-256 checks, then the standard importer (bundles show their pack checklist).
 5. **Updates:** repositories are checked when the app opens, with ETag caching. No background jobs.

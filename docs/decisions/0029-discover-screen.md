@@ -1,6 +1,6 @@
 # 0029. Discover screen: browsing repositories, previews, installs and adding repositories
 
-- Status: accepted (defaults open for the owner in #175)
+- Status: accepted (defaults open for the owner in #175); bundles amended by [ADR 0064](0064-bundles-in-discover.md)
 - Date: 2026-10-24
 - Issue: #36
 
@@ -52,8 +52,9 @@ The review remembers the origin (`PackOrigin.Repository` with the registered ind
 direct link), which `installed_packs` records for update badges and backups. A failed download ends in the sheet's
 problem view ("Couldn't download the pack") and never reaches the importer.
 
-**Install state.** A pack entry is installed when a pack with its ID is; a bundle entry when packs installed from it
-(same bundle ID) are. An older installed version (SemVer) shows "Update available"; the same or a newer one shows
+**Install state.** A pack entry is installed when a pack with its ID is. A bundle entry's state comes from its packs
+(amended by [ADR 0064](0064-bundles-in-discover.md), #247: it was "when packs installed from it, same bundle ID, are").
+An older installed version (SemVer) shows "Update available"; the same or a newer one shows
 "Installed" with an "Install again" button, which the review turns into Replace or Install older version. Entries
 that need a newer pack format are shown with "Needs a newer Cucuto" and cannot be installed.
 
