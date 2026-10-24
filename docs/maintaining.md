@@ -35,8 +35,7 @@ how-to.
 - **Never block.** For a decision the owner should own, apply a sensible default, document it, and open a
   `question` issue that states the default (format in `CLAUDE.md`).
 - **Minimum intrusion** (owner, #67): fewest hooks, permissions and reads. New permissions also need the CI
-  allowlist (`ALLOWED_PERMISSIONS` in `ci.yml`), the website's privacy page and the Data safety answers in
-  [`google-play.md`](google-play.md).
+  allowlist (`ALLOWED_PERMISSIONS` in `ci.yml`) and the website's privacy page.
 
 ## 3. Build and test
 
@@ -114,7 +113,7 @@ Details: [releasing.md](releasing.md). In short:
   It publishes the packs in `packs/`, the demo bundle and `repository.zip`, and the website serves the newest one at
   `/repo/index.json`, the app's default repository. Do this after changing `packs/` or the index format (for
   example `x-haptic`, ADR 0069).
-- **Google Play** uploads are the owner's (#276).
+- **Google Play:** none. Cucuto isn't on Play (ADR 0080).
 
 The owner allows agents to make releases ("i allow you making releases", owner log) and expects one whenever
 `main` has user-visible progress and CI is green. Installing a release on the phone is fine; the module side
@@ -180,7 +179,7 @@ updates; what stays open carries `deps:major` (ADR 0004).
 
 ## 11. What only the owner can do
 
-`gh issue list --label owner-action` lists it: Google Play account and signing (#276), the Google Cloud project for
+`gh issue list --label owner-action` lists it: Android developer verification (#358), the Google Cloud project for
 Drive sign-in (#188), supervised device runs that need a second phone or LSPosed changes (#143, #228), and checks
 that need real incoming messages or a wiped phone (#12, #157, #43, #46). Leave these alone unless the owner is
 present and says go. When your work creates a new one, label it `owner-action` and write the exact steps in the

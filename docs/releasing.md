@@ -81,8 +81,8 @@ gh variable set RELEASE_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprin
 
 4. The workflow checks the tag and the secrets, builds `:app:assembleRelease` with the key, verifies the signature
    (one signer, not a debug key, the pinned certificate) and the version with `apksigner` and `aapt2`, then publishes
-   the release `Cucuto 0.2.0` with `cucuto-0.2.0.apk` and `cucuto-0.2.0.apk.sha256`, plus `cucuto-0.2.0.aab` and
-   its checksum for Google Play (see [Google Play bundle](#google-play-bundle)). The notes start with the AI
+   the release `Cucuto 0.2.0` with `cucuto-0.2.0.apk` and `cucuto-0.2.0.apk.sha256`. No
+   Google Play bundle: Cucuto isn't on Play (ADR 0080). The notes start with the AI
    banner, list the checksum and the certificate fingerprint, and end with the changes since the previous tag,
    grouped into New, Fixes and Docs, from the same script (`--notes`). If the tag has no store changelog for its
    versionCode (step 2 skipped), the run warns and puts the generated files in its summary as a patch to commit.
@@ -92,8 +92,6 @@ gh variable set RELEASE_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprin
 6. The `reproducible` job rebuilds the tag unsigned on a fresh runner and compares it with the published APK
    ([reproducible-builds.md](reproducible-builds.md)). A red result doesn't undo the release; open an issue with the
    job summary.
-7. Google Play (owner, optional): upload `cucuto-0.2.0.aab` to the internal testing track and promote it in Play
-   Console ([Upload to Google Play](#upload-to-google-play)).
 
 ### Release notes
 
@@ -140,67 +138,10 @@ cd android && ./gradlew :app:assembleRelease -Pcucuto.version=0.1.0 --no-configu
 Without `CUCUTO_RELEASE_KEYSTORE` the release build stays unsigned (`app-release-unsigned.apk`), as in CI. With it set
 but one of the other three missing, the build stops with a message naming them.
 
-## Google Play bundle
-
-Google Play takes an app bundle, not an APK ([google-play.md](google-play.md), ADR 0071). Every release also gets
-`cucuto-<version>.aab` and its `.sha256`: the same Gradle run, R8 output and version as the APK, signed with the same
-release key. Nothing to set up in the repository: no extra keystore or secret (owner updates 2026-10-24, #287).
-
-For Play, the release key is both the **app signing key** and the **upload key** (#287, second answer). The owner
-gives Play a copy of it once with PEPK, before the first upload ([google-play.md → Signing](google-play.md#signing)).
-Play App Signing re-signs what it serves with that same key, so **Play installs and GitHub, Obtainium or F-Droid
-installs update each other** ([Sign your app](https://developer.android.com/studio/publish/app-signing): "If you do
-not generate a new upload key, you continue to use your app signing key as your upload key to sign each release").
-
-What the workflow checks before attaching the bundle: exactly one signer, not a debug key, the same certificate as
-the APK (so the upload key never changes by accident), the version (bundletool), Play's 16 KB setting and the
-LSPosed metadata.
-
-If the release key ever leaked or got lost, Play and the GitHub APKs would both need a new key ([If the signing key
-changes](#if-the-signing-key-changes)): with one key in both roles, an upload key reset alone doesn't help.
-
-A bundle on your machine: the same variables as [A signed build on your machine](#a-signed-build-on-your-machine),
-then `./gradlew :app:bundleRelease -Pcucuto.version=0.1.0 --no-configuration-cache`.
-
-## Upload to Google Play
-
-Nothing in CI uploads to Play. Either way, the release starts as a draft on the **internal testing** track, and
-promotion (closed testing for the 14-day, 12-tester test, then production) is a click in Play Console.
-
-**By hand:** download `cucuto-<version>.aab` from the GitHub release, then in Play Console open Test and release →
-Testing → Internal testing → Create new release, upload it, and paste the store changelog
-(`fastlane/metadata/android/<locale>/changelogs/<versionCode>.txt`) as the release notes. The first time, also copy
-the listing from `fastlane/metadata/android/` and the App content answers from [google-play.md](google-play.md).
-
-**With fastlane** (optional, the owner's machine). `fastlane/Supplyfile` sets the package, the metadata folder, the
-internal track and draft status:
-
-1. Once: `brew install fastlane` (2.241.1 or later). In Google Cloud (the Cucuto project from #188), create a service
-   account and a JSON key, and keep the key outside the repository (for example in `~/cucuto-release-key/`). Enable
-   the Google Play Android Developer API. In Play Console → Users and permissions, invite the service account's
-   email with release permissions for Cucuto only.
-2. Each release, from the repository root on the tagged commit (so the listing matches the release):
-
-   ```sh
-   gh release download v1.0.0 --pattern 'cucuto-1.0.0.aab*' --dir /tmp/cucuto
-   (cd /tmp/cucuto && sha256sum -c cucuto-1.0.0.aab.sha256)   # macOS: shasum -a 256 -c
-   SUPPLY_JSON_KEY=~/cucuto-release-key/play-service-account.json fastlane supply --aab /tmp/cucuto/cucuto-1.0.0.aab
-   ```
-
-   It uploads the bundle, the release notes for its versionCode, the titles, descriptions and images in both
-   languages, as a draft. `--skip_upload_images true --skip_upload_screenshots true` keeps the current images;
-   `--validate_only true` checks without changing anything.
-
-**Later, from CI** (not wired; only if the owner asks): a step after "Publish the release" would install fastlane
-(`ruby/setup-ruby` and `gem install fastlane -v 2.241.1`) and run the command above with
-`SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}`, skipped when the secret is empty. Drafts only, so a
-bad upload never reaches anyone.
-
 ## If the signing key changes
 
 This happens when moving from a debug build to the first release, or if the release key is ever lost. Switching
-between Google Play and the APK from GitHub, Obtainium or F-Droid is not a key change: Play signs with the release key
-too (ADR 0071).
+between the APK from GitHub, Obtainium or F-Droid is not a key change: they all carry the release key's signature.
 
 **Android.** An APK signed by a different certificate is not an update: installing it fails with
 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. The old app has to be uninstalled first, which deletes its data: assignments,

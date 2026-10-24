@@ -460,6 +460,17 @@ Android's settings once Android stops asking. ADR 0065's design details updated.
 
 > add from contact shoudl not show the warning every time, just the first time
 
+## 2026-10-24 — Chat with an agent (no Google Play)
+
+> I decided i wont publish to the Play store because of the closed testing requirement is too hard to meet. close all isues that now are not needed and comment the ones related, and document this decision
+
+(ADR 0080: Cucuto is not published on Google Play, which reverts the #211 plan and supersedes ADR 0071. The Play
+bundle in `release.yml`, `:app:bundleRelease` in CI, `docs/google-play.md`, `fastlane/Supplyfile` and the Gradle
+`bundle {}` block were removed; CI keeps the 16 KB, target SDK and permission checks, now on the APK. #276 and #286
+closed as not planned; #275, #308, #274 and #211 commented. Android developer verification, which #276 covered
+through Play Console, is now #358 (Android Developer Console). The brief, distribution.md, releasing.md, install.md,
+maintaining.md, the README and ADRs 0021, 0046 and 0075 updated.)
+
 ## 2026-10-24 — Testing v0.2.0 on the phone (ringtone badge in the Home → contact detail transition, #339)
 
 > the animation that moves the character from the list to the contact detail is smooth but the image of the ringtone has an issue with the zposition, while moving charavter is avobe but when stops (begining and end) the ringtone pops avobe the character. i think it should move along with the character as a group

@@ -77,4 +77,5 @@ this workflow handles the key; Dependabot's `github-actions` updates keep them c
   exists and would need an `apksigner` step in the workflow; not built.
 - ~~No AAB, no Play signing: the brief rules out the Play Store.~~ Superseded by ADR 0071 (owner, #211): releases also
   attach a bundle signed with this release key, which is Play's upload key; Play App Signing signs with this
-  release key too, given to Play with PEPK (owner update #287, second answer).
+  release key too, given to Play with PEPK (owner update #287, second answer). Reverted by ADR 0080: no Google
+  Play, so no bundle; releases attach the APK only.

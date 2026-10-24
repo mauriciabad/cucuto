@@ -1,6 +1,7 @@
 # 0071. Google Play: app bundle, signing, listing and review notes
 
-- Status: accepted. Owner update 2026-10-24 (#287): the release key is the upload key (decision 1 amended). Second
+- Status: **superseded by [ADR 0080](0080-no-google-play.md)** (owner, 2026-10-24: no Google Play; the bundle, Play
+  checks, `docs/google-play.md` and `fastlane/Supplyfile` were removed). Before that: accepted. Owner update 2026-10-24 (#287): the release key is the upload key (decision 1 amended). Second
   owner answer the same day (#287): Play signs with the owner's release key, given to Play with PEPK, so decision 2
   stands again with the release key as the upload key (see the sections at the end).
 - Date: 2026-10-24
@@ -80,7 +81,7 @@ OAuth client for Drive (ADR 0040) keep working. This must happen **before the fi
 enrolls new apps in Google-generated keys on the first upload, and the change is only allowed until a release
 reaches open testing or production. Any closed-test install made with Google's key would then stop updating. The
 release key is also the upload key (owner update, #287), which Google allows. The exact flow is in #276 and
-[google-play.md](../google-play.md#signing).
+[google-play.md](https://github.com/mauriciabad/cucuto/blob/6e156bc1/docs/google-play.md#signing).
 
 **3. No language splits.** `bundle { language { enableSplit = false } }`. Cucuto picks its language per app
 (ADR 0036). Third-party Play clients, common on rooted phones, may only fetch the phone language's split, which
@@ -112,7 +113,7 @@ F-Droid, IzzyOnDroid and Obtainium read it, and `fastlane supply` uploads it to 
 - `kotlin tools/release/release-notes.main.kts --check` (CI's `store-metadata` job) enforces all of it: Play's
   lengths, allowed tags, the WhatsApp rules, the disclaimer, and image sizes, ratios and alpha.
 
-**6. The Play Console answers are drafted in [google-play.md](../google-play.md).** That covers App access (review
+**6. The Play Console answers are drafted in [google-play.md](https://github.com/mauriciabad/cucuto/blob/6e156bc1/docs/google-play.md).** That covers App access (review
 notes), Ads, Content rating, Target audience (18+), Data safety ("no data collected, no data shared", matching the
 privacy page), sensitive permissions (none restricted, with an explanation for each one) and the listing fields.
 The owner copies them in. Any change to permissions or network use updates the privacy page and these answers in the
