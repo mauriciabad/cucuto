@@ -39,6 +39,16 @@ sealed interface ImportProgress {
         val total: Int,
     ) : ImportProgress
 
+    /**
+     * Preparing [packId] for installation with the [PackAnalyzer] (auto haptics: [done] of [total] clips), once the
+     * user has confirmed. Part of installing from the user's point of view.
+     */
+    data class Analyzing(
+        val packId: String,
+        val done: Int,
+        val total: Int,
+    ) : ImportProgress
+
     /** Moving verified packs into place. */
     data class Installing(
         val done: Int,

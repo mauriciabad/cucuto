@@ -44,12 +44,14 @@ fun testImporter(
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     audio: AudioProbe = headerAudioProbe,
     image: ImageProbe = headerImageProbe,
+    analyzer: PackAnalyzer? = null,
 ): PackImporter =
     PackImporter(
         store = PackStore(File(root, "files/packs")),
         workDir = File(root, "cache/pack-import"),
         verifier = MediaVerifier(audio, image),
         ioDispatcher = dispatcher,
+        analyzer = analyzer,
     )
 
 /** Zips a fixture folder (every regular file, sorted, deflated) the way a user's zip tool would. */

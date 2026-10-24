@@ -4,12 +4,14 @@ import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
 
 class AutoHapticFileTest {
     @get:Rule
@@ -93,5 +95,18 @@ class AutoHapticFileTest {
 
         File(packDir, AutoHapticFile.RELATIVE_PATH).writeText("garbage")
         assertNull(AutoHapticFile.read(packDir))
+    }
+
+    @Test
+    fun neverRecreatesAPackFolderThatIsGone() {
+        // A background analysis that finishes after the version was replaced or removed.
+        val gone = File(temp.root, "app.mauri.demo.critters/1.0.0")
+        try {
+            AutoHapticFile.write(gone, set)
+            fail("Expected an IOException")
+        } catch (_: IOException) {
+            // Expected.
+        }
+        assertFalse(gone.exists())
     }
 }

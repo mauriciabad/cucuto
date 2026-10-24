@@ -36,7 +36,8 @@ class PackImporterTest {
     private fun importer(
         audio: app.mauri.cucuto.core.pack.media.AudioProbe = headerAudioProbe,
         image: app.mauri.cucuto.core.pack.media.ImageProbe = headerImageProbe,
-    ) = testImporter(root, audio = audio, image = image)
+        analyzer: PackAnalyzer? = null,
+    ) = testImporter(root, audio = audio, image = image, analyzer = analyzer)
 
     private val store get() = PackStore(File(root, "files/packs"))
 
@@ -148,6 +149,78 @@ class PackImporterTest {
 
             store.activate(minimalId, "2.0.0-beta.1")
             assertEquals(InstalledPackInfo(minimalId, "2.0.0-beta.1", listOf("2.0.0-beta.1")), store.info(minimalId))
+        }
+
+    /** Writes the clips it was asked about to `.cucuto/analysis.txt`, like auto haptics writes its file. */
+    private class RecordingAnalyzer(
+        private val fail: Boolean = false,
+    ) : PackAnalyzer {
+        val packs = mutableListOf<String>()
+
+        override suspend fun analyze(
+            packDir: File,
+            manifest: app.mauri.cucuto.packspec.PackManifest,
+            progress: suspend (done: Int, total: Int) -> Unit,
+        ) {
+            packs += manifest.id
+            if (fail) throw IllegalStateException("analysis bug")
+            val clips = manifest.characters.flatMap { c -> c.clips.map { it.file } }
+            clips.indices.forEach { progress(it, clips.size) }
+            progress(clips.size, clips.size)
+            File(packDir, ".cucuto").mkdir()
+            File(packDir, ".cucuto/analysis.txt").writeText(clips.joinToString("\n"))
+        }
+    }
+
+    @Test
+    fun `the analysis is installed together with its pack`() =
+        runTest {
+            val analyzer = RecordingAnalyzer()
+            val importer = importer(analyzer = analyzer)
+            val prepared = importer.ready(fixtureArchive("valid/full-pack", archives))
+            // Nothing is analysed before the user confirms.
+            assertTrue(analyzer.packs.isEmpty())
+
+            val events = importer.install(prepared).toList()
+            val pack = ((events.last() as ImportEvent.Finished).result as ImportResult.Installed).packs.single()
+            val clips =
+                prepared.packs
+                    .single()
+                    .manifest.characters
+                    .flatMap { c -> c.clips.map { it.file } }
+            assertEquals(clips.joinToString("\n"), File(pack.directory, ".cucuto/analysis.txt").readText())
+            val analyzing = events.mapNotNull { (it as? ImportEvent.Progress)?.progress as? ImportProgress.Analyzing }
+            assertEquals(ImportProgress.Analyzing(pack.id, clips.size, clips.size), analyzing.last())
+            // Analysis comes before the packs move into place.
+            val steps = events.filterIsInstance<ImportEvent.Progress>().map { it.progress::class }.distinct()
+            assertEquals(listOf(ImportProgress.Analyzing::class, ImportProgress.Installing::class), steps)
+            assertNoLeftovers()
+        }
+
+    @Test
+    fun `a failing analysis never fails the import`() =
+        runTest {
+            val analyzer = RecordingAnalyzer(fail = true)
+            val result = importer(analyzer = analyzer).installAll(minimal("1.0.0"))
+            assertEquals(listOf(minimalId), analyzer.packs)
+            assertTrue(result.packs.single().active)
+            assertFalse(File(result.packs.single().directory, ".cucuto").exists())
+        }
+
+    @Test
+    fun `packs that will not be installed are not analysed`() =
+        runTest {
+            importer().installAll(minimal("1.0.0"))
+            val analyzer = RecordingAnalyzer()
+            val importer = importer(analyzer = analyzer)
+            // An unconfirmed reinstall is skipped.
+            val result = importer.install(importer.ready(minimal("1.0.0"))).result() as ImportResult.Installed
+            assertTrue(result.packs.isEmpty())
+            // A bundle pack the user left out.
+            val bundle = importer.ready(fixtureArchive("valid/bundle", archives))
+            val ids = bundle.packs.map { it.id }
+            importer.install(bundle, PackSelection.default(bundle).with(ids[1], selected = false)).result()
+            assertEquals(listOf(ids[0]), analyzer.packs)
         }
 
     @Test

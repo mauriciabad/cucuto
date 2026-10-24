@@ -28,12 +28,17 @@ sealed interface PublishState {
         val framework: String,
     ) : PublishState
 
-    /** The module has [generation], covering [routes] keys and [voices] voices. */
+    /**
+     * The module has [generation], covering [routes] keys and [voices] voices. With [clipHapticsLeftOut], the full
+     * table was over [RoutingContract.MAX_ENCODED_CHARS], so it went without clip envelopes: sounds still change,
+     * but `auto` haptics keep WhatsApp's vibration.
+     */
     data class Published(
         val generation: Long,
         val routes: Int,
         val voices: Int,
         val encodedChars: Int,
+        val clipHapticsLeftOut: Boolean = false,
     ) : PublishState
 
     /** The table is over [RoutingContract.MAX_ENCODED_CHARS]; the module keeps the previous one. */
@@ -96,20 +101,28 @@ class RoutingPublisher
         private suspend fun publish(table: RoutingTable) {
             try {
                 val published = RoutingCodec.decodeOrNull(sink.read())
-                if (published != null && published.copy(generation = 0) == table.copy(generation = 0)) {
-                    _state.value = published.toState(RoutingCodec.encode(published).length)
-                    return
-                }
                 val generation = maxOf(clock.now(), (published?.generation ?: 0) + 1)
-                val stamped = table.copy(generation = generation)
-                val encoded = RoutingCodec.encode(stamped)
+                var stamped = table.copy(generation = generation)
+                var encoded = RoutingCodec.encode(stamped)
+                var leftOut = false
+                if (encoded.length > RoutingContract.MAX_ENCODED_CHARS) {
+                    // Sounds matter more than vibrations: try again without the clip envelopes (issue #98).
+                    stamped = stamped.withoutClipHaptics()
+                    encoded = RoutingCodec.encode(stamped)
+                    leftOut = true
+                    Log.w(TAG, "Routing table too large with clip haptics; publishing without them")
+                }
                 if (encoded.length > RoutingContract.MAX_ENCODED_CHARS) {
                     Log.w(TAG, "Routing table too large to publish: ${encoded.length} chars")
                     _state.value = PublishState.TooLarge(encoded.length)
                     return
                 }
+                if (published != null && published.copy(generation = 0) == stamped.copy(generation = 0)) {
+                    _state.value = published.toState(RoutingCodec.encode(published).length, leftOut)
+                    return
+                }
                 sink.write(encoded, generation)
-                _state.value = stamped.toState(encoded.length)
+                _state.value = stamped.toState(encoded.length, leftOut)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -118,8 +131,13 @@ class RoutingPublisher
             }
         }
 
-        private fun RoutingTable.toState(encodedChars: Int) =
-            PublishState.Published(generation, routes.size, voices.size, encodedChars)
+        private fun RoutingTable.toState(
+            encodedChars: Int,
+            clipHapticsLeftOut: Boolean,
+        ) = PublishState.Published(generation, routes.size, voices.size, encodedChars, clipHapticsLeftOut)
+
+        private fun RoutingTable.withoutClipHaptics() =
+            copy(voices = voices.map { voice -> voice.copy(clips = voice.clips.map { it.copy(haptic = null) }) })
 
         private companion object {
             const val TAG = "cucuto"

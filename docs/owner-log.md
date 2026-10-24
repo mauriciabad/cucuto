@@ -190,3 +190,15 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 > the most important is to get the app working first
 
 (Lead focused the critical path: screen PRs #128/#132, then the end-to-end loop on the phone.)
+
+> do you really need to reboot? i dont think so
+
+(Right: the module already held the assignment loaded at boot, so the end-to-end check only needed an incoming message. The live-update bug went to a debug agent instead.)
+
+> unfortunately it is late at night and noone will probably text me
+
+(Lead left a passive log watch for the first real alert and started #26 "Simulate message", so voices can be tested without incoming messages, plus #139.)
+
+> right now the app feels like it is fragmented. when do you plan to make it a complete experience? please, make sure you have more agents working in paralel all time
+
+(Lead opened #153 "App shell: one coherent experience", wrote the app structure contract (Home, Packs, Discover, Settings) and started 5 more parallel agents: shell #153, Settings + backup UI #28/#43, Discover #36, haptic editor #32/#33, groups + Business #20/#21.)
