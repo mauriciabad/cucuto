@@ -146,6 +146,8 @@ class PhoneRingtoneContentTest {
     @Test
     fun aRingingPreviewOffersPauseAndStop() {
         val sound = RingSound(java.io.File("live.ogg"))
+        // The progress ring redraws every frame while it rings: drive the clock by hand.
+        compose.mainClock.autoAdvance = false
         showRow(
             base.copy(
                 using = true,
@@ -156,6 +158,21 @@ class PhoneRingtoneContentTest {
         compose.onNodeWithContentDescription("Pause K.K. Slider").assertIsDisplayed()
         compose.onNodeWithContentDescription("Stop K.K. Slider").performClick()
         assertEquals(listOf("stop-preview"), events)
+    }
+
+    @Test
+    fun aPausedPreviewOffersPlayAndStop() {
+        val sound = RingSound(java.io.File("live.ogg"))
+        showRow(
+            base.copy(
+                using = true,
+                previewSound = sound,
+                preview = PreviewPlaying(sound, cycleMs = 90_000, paused = true, playedMs = 30_000),
+            ),
+        )
+        compose.onNodeWithContentDescription("Play K.K. Slider").performClick()
+        compose.onNodeWithContentDescription("Stop K.K. Slider").assertIsDisplayed()
+        assertEquals(listOf("preview"), events)
     }
 
     @Test

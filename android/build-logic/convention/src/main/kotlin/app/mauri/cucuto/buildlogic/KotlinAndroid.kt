@@ -8,10 +8,14 @@ import org.gradle.kotlin.dsl.dependencies
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 /**
- * Configuration shared by every Android module (app and libraries): Android 17 only (min = target = 37), compiled
- * against the newest 37.x platform, Java/Kotlin on the project JDK toolchain, and the common test stack.
+ * Configuration shared by every Android module (app, libraries and the Baseline Profile generator): Android 17 only
+ * (min = target = 37), compiled against the newest 37.x platform, Java/Kotlin on the project JDK toolchain, and the
+ * common unit-test stack ([withUnitTests]; `com.android.test` modules have no unit tests).
  */
-internal fun Project.configureKotlinAndroid(extension: CommonExtension) {
+internal fun Project.configureKotlinAndroid(
+    extension: CommonExtension,
+    withUnitTests: Boolean = true,
+) {
     val jdk = libs.version("jdk").toInt()
 
     extension.apply {
@@ -70,6 +74,7 @@ internal fun Project.configureKotlinAndroid(extension: CommonExtension) {
         }
     }
 
+    if (!withUnitTests) return
     dependencies {
         add("testImplementation", libs.library("junit4"))
         add("testImplementation", libs.library("turbine"))

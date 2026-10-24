@@ -77,21 +77,26 @@ to `clips`).
 
 ### Ringtone previews (#246; owner update 2026-10-24, #242)
 
-A ringtone preview **rings the way the call rings** and keeps ringing until the user stops it. It starts **at 0 ms**
-(never at a loop point, and never an auto-cut clip) and follows the same ring file layout every renderer uses
-(`RingFilePlan`, [pack format](../pack-format.md#ring-files)): the intro once, the loop section over and over, the
-silence after a `loop: false` ringtone, and the fade-in at the start of each ring file, round and round as Telecom
-loops the file. There is no 30 s cut. `RingTimeline` turns the plan into what plays when, and `MediaRingtonePreview`
-follows it with one `MediaPlayer` (seeking back at each loop end). The version is the one the rule picks now, as in
-ADR 0057.
+ADR 0057's owner update (#242 item 3) sets the rule: a preview plays what a call plays, from the beginning, with no
+time limit, and can be paused. This ADR builds it:
 
-The controls are **play, pause and stop**, with a ring around the button that goes round once per ring file. Pause
-keeps the place; play resumes it. Previews use ringtone audio attributes, as in ADR 0057, and stop when the screen
-stops. This applies everywhere a ringtone plays:
+- **The ring file's timeline.** `RingTimeline` turns the ringtone's `RingFilePlan` (the plan every renderer uses,
+  [ADR 0033](0033-ring-files-and-auto-cut-clips.md), [pack format](../pack-format.md#ring-files)) into what sounds
+  when: from 0 ms (never a loop point, never an auto-cut clip), the intro once, the loop section repeated (a looping
+  ring file leaves the outro out, as ADR 0033 says), the silence after a `loop: false` version, and the fade-in at the
+  start of each ring file, round and round as Telecom loops the file.
+- **One `MediaPlayer`** (`MediaRingtonePreview`) follows that timeline: it seeks back at each loop end, pauses for the
+  silence, and steps the volume up for the fade-in. It holds transient audio focus and stops when it loses it.
+- **Play, pause and stop.** `RingtonePlayback` keeps one preview at a time. Pause keeps the place and play resumes it;
+  stop goes back to the start. A ring around the play button goes round once per ring file, and holds still while
+  paused. The version is the one the rule picks now, as in ADR 0057.
+
+It applies everywhere a ringtone plays:
 
 - the ringtone picker (each version, and a tap on a cover);
 - the Phone calls row on contact detail (the version that rings now);
-- the character list of a pack's detail screen on Packs.
+- the character list of a pack's detail screen on Packs, and the badge of a ringtone-only character on the Packs list
+  and the import review.
 
 Notification clip previews stay short and unchanged (ADR 0017).
 
@@ -119,7 +124,8 @@ which rings nothing until the voice has ringtones.
 - `RingtonePreview` rings a `RingSound` (file, loop, fade-in) and can pause, resume and stop; `RingtonePlayback` keeps
   the state the buttons and the progress ring read.
 - The preview's loop seam is a `MediaPlayer` seek, so it can be a few milliseconds less seamless than the rendered
-  ring file the phone rings with. Telecom plays the real file (ADR 0033, ADR 0039).
+  ring file the phone rings with; Telecom plays the real file (ADR 0033, ADR 0039). Rendering a ring file for every
+  preview would take seconds per tap.
 - Tests: the filters (`PickerFiltersTest`), the follow and override rules (`PhoneRingtoneFollowTest` on Room), the
   picker's selection rules, the ring timeline from 0 ms with the pack format's examples (`RingTimelineTest`), ringing
   until stopped with pause and progress (`RingtonePlaybackTest`), backup export and restore of kept ringtones, and the

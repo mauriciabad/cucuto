@@ -5,6 +5,7 @@ import app.mauri.cucuto.core.data.di.ApplicationScope
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.routing.RoutingCodec
 import app.mauri.cucuto.core.routing.RoutingContract
+import app.mauri.cucuto.core.routing.RoutingFile
 import app.mauri.cucuto.core.routing.RoutingTable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -31,9 +32,11 @@ sealed interface PublishState {
 
     /**
      * The module has [generation], covering [routes] keys and [voices] voices. With [clipHapticsLeftOut], the full
-     * table was over [RoutingContract.MAX_ENCODED_CHARS], so it went without clip envelopes: sounds still change,
-     * but `auto` haptics keep WhatsApp's vibration. With [throughProvider], there was no framework service: the table
-     * is only in the app, and the module pulls it from the app's provider when nudged (ADR 0048).
+     * table was over [RoutingContract.MAX_TABLE_BYTES], so it went without clip envelopes: sounds still change, but
+     * `auto` haptics keep WhatsApp's vibration. With [tooLargeForPreferences], it was over
+     * [RoutingContract.MAX_PREFERENCES_CHARS]: the module reads it from the remote file or the app's provider, and
+     * Remote Preferences hold a copy without clip envelopes (ADR 0054). With [throughProvider], there was no framework
+     * service: the table is only in the app, and the module pulls it from the app's provider when nudged (ADR 0048).
      */
     data class Published(
         val generation: Long,
@@ -42,9 +45,10 @@ sealed interface PublishState {
         val encodedChars: Int,
         val clipHapticsLeftOut: Boolean = false,
         val throughProvider: Boolean = false,
+        val tooLargeForPreferences: Boolean = false,
     ) : PublishState
 
-    /** The table is over [RoutingContract.MAX_ENCODED_CHARS]; the module keeps the previous one. */
+    /** The table is over [RoutingContract.MAX_TABLE_BYTES], even without clip envelopes; the module keeps its own. */
     data class TooLarge(
         val encodedChars: Int,
     ) : PublishState
@@ -58,8 +62,13 @@ sealed interface PublishState {
 /**
  * Keeps the module's copy of the routing table in sync with the database: every time [RoutingTableSource] emits a
  * different table, or the framework (re)connects, the table is stamped with a new generation, encoded and written
- * to Remote Preferences. A table equal to what is already published is not written again, so app restarts do not
- * make the module reparse.
+ * to Remote Preferences and the remote file. A table equal to what is already published is not written again, so app
+ * restarts do not make the module reparse.
+ *
+ * Remote Preferences travel through Binder, so a table over [RoutingContract.MAX_PREFERENCES_CHARS] goes in full only
+ * to the remote file and the app's copy (up to [RoutingContract.MAX_TABLE_BYTES]), at the next generation; Remote
+ * Preferences get the same table without clip envelopes, or keep theirs when even that is too large. Every module
+ * installs only newer generations, so it ends on the full table whichever copy arrives first (ADR 0054).
  *
  * Every new table also goes to [store], the app's own copy, and every publication ends with a nudge to the module,
  * with or without the framework service. Without the service (LSPosed sometimes drops it after an app update, ADR
@@ -120,36 +129,61 @@ class RoutingPublisher
             try {
                 val local = RoutingCodec.decodeOrNull(store.read())
                 val remote = if (throughService) RoutingCodec.decodeOrNull(sink.read()) else null
+                val remoteGeneration = if (throughService) sink.publishedGeneration() ?: remote?.generation else null
                 // Generations only grow, whichever copy saw the last publication.
-                val generation = maxOf(clock.now(), (remote?.generation ?: 0) + 1, (local?.generation ?: 0) + 1)
+                val generation = maxOf(clock.now(), (remoteGeneration ?: 0) + 1, (local?.generation ?: 0) + 1)
                 var stamped = table.copy(generation = generation)
                 var encoded = RoutingCodec.encode(stamped)
                 var leftOut = false
-                if (encoded.length > RoutingContract.MAX_ENCODED_CHARS) {
+                if (!RoutingFile.fits(encoded)) {
                     // Sounds matter more than vibrations: try again without the clip envelopes (issue #98).
                     stamped = stamped.withoutClipHaptics()
                     encoded = RoutingCodec.encode(stamped)
                     leftOut = true
                     Log.w(TAG, "Routing table too large with clip haptics; publishing without them")
                 }
-                if (encoded.length > RoutingContract.MAX_ENCODED_CHARS) {
+                if (!RoutingFile.fits(encoded)) {
                     Log.w(TAG, "Routing table too large to publish: ${encoded.length} chars")
                     PublishState.TooLarge(encoded.length)
                 } else {
-                    val published = if (throughService) remote else local
+                    val published =
+                        when {
+                            !throughService -> local
+
+                            // Remote Preferences hold the latest table.
+                            remote != null && remote.generation == remoteGeneration -> remote
+
+                            // They hold a reduced copy: the latest table is the one the app kept (ADR 0054).
+                            local != null && local.generation == remoteGeneration -> local
+
+                            else -> null
+                        }
                     if (published != null && published.copy(generation = 0) == stamped.copy(generation = 0)) {
                         unchanged(published, local, throughService, leftOut)
                     } else {
-                        val stored = keep(encoded, generation)
+                        var forPreferences: String? = encoded
+                        if (throughService && encoded.length > RoutingContract.MAX_PREFERENCES_CHARS) {
+                            // Too large for Binder: Remote Preferences get a copy without clip envelopes, and the
+                            // full table moves to the next generation, so every module replaces that copy with it
+                            // from the remote file or the provider (ADR 0054).
+                            forPreferences =
+                                RoutingCodec
+                                    .encode(stamped.withoutClipHaptics())
+                                    .takeIf { it.length <= RoutingContract.MAX_PREFERENCES_CHARS }
+                            stamped = stamped.copy(generation = generation + 1)
+                            encoded = RoutingCodec.encode(stamped)
+                            Log.i(TAG, "Routing table too large for Remote Preferences; the full table is in the file")
+                        }
+                        val stored = keep(encoded, stamped.generation)
                         try {
                             if (throughService) {
-                                sink.write(encoded, generation)
+                                sink.write(encoded, stamped.generation, forPreferences)
                             } else {
                                 check(stored) { "Saving the routing table failed" }
                             }
                         } finally {
                             // Also after a failed write: the module may still find the table in the other copy.
-                            sink.nudge(generation)
+                            sink.nudge(stamped.generation)
                         }
                         if (throughService) mirror.retain(stamped)
                         stamped.toState(encoded.length, leftOut, throughProvider = !throughService)
@@ -202,6 +236,7 @@ class RoutingPublisher
             encodedChars,
             clipHapticsLeftOut,
             throughProvider,
+            tooLargeForPreferences = encodedChars > RoutingContract.MAX_PREFERENCES_CHARS,
         )
 
         private fun RoutingTable.withoutClipHaptics() =

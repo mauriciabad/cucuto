@@ -310,3 +310,58 @@ every page in both languages at 320, 360 and 656 px so the overflow cannot come 
 > and also, i didnt expect you to do them now. the app has a roadmap for something
 
 (Lead stopped the two agents. #245, #246 and #247 stay in their milestones, to be done in roadmap order.)
+
+## 2026-10-24 — Answer on #175 (Discover defaults: when repositories are checked, QR codes, default repository, previews)
+
+> 7. it has to be done eventually, make sure this is not forgotten
+>
+> other lgtm
+
+Defaults 1 to 6 and 8 stand (ADR 0029). Item 7 (haptic previews in Discover, which need haptic data in
+`repository.json`) is now tracked in #272 (milestone M5), and the brief's M5 checklist and ADR 0029 point to it.
+
+## 2026-10-24 — Answer on #194 (explainer video defaults: voice, cuts, autoplay, test accounts, poster)
+
+> dont involve humans, AI voice.
+> Dont use the real app ui not phone recordings, you can make a simplified version for the video.
+> Only english video
+
+> just a note, the point of not using real screenshots is to make the video evergreen, so if i update the ui the video doesnt get outdated.
+> would be nice that the video project files were saved so if i want to add a new feature to the video it is doable, but this is NOT a priority, just a optional nice to have.
+
+Applied: one English cut with an AI voice-over, no people, and an illustrated, evergreen UI instead of real screens
+or phone recordings. Spanish captions stay for `/es/`. The video's scenes, timeline, voice script and cues live in
+the repository as its project files. Updated `docs/explainer-video.md`, the brief, ADR 0042 and ADR 0060. The draft
+pipeline from #195 renders real screens, so its rework is #271 (M6). Muted autoplay (item 3) and the poster (item 5)
+stand. Item 4 (WhatsApp test accounts) is moot.
+
+## 2026-10-24 — Answer on #211 (owner action: app store submissions)
+
+> Google Play Store is not an option? i thought we would publish it there too. I'll make a developer account if necesary
+> f-droid would be nice, we can do it after v1.
+
+Applied: Google Play is no longer a non-goal (brief). The honest assessment is in `docs/distribution.md` (Google
+Play) and ADR 0046. Play is possible but not guaranteed: no policy bans root, LSPosed modules or AI-written code,
+but the review risks are the optional WhatsApp hook, a reviewer who can't test it, and the WhatsApp trademark. The
+owner's steps (account, one signing key via PEPK, a 12-tester closed test for 14 days) are #276. Agent work (app
+bundle, listing, review notes) is #274. F-Droid after v1 is #275. Android developer verification (2027, GitHub
+installs too) is covered by the same account. IzzyOnDroid stays not submitted.
+
+## 2026-10-24 — Answer on #229 (WhatsApp call ringtones: 1:1 calls only, com.whatsapp only, match the caller by name?)
+
+> I expect WhatsApp Business  to also be fully compatible, unless there's a clear difficulty or downside.
+
+Applied: WhatsApp Business gets automatic call ringtones too. `scope.list` lists `com.whatsapp.w4b` as a second
+optional, opt-in entry, with callers matched only against Business contacts. The static spike found no clear
+difficulty, and the device run checks it. Updated ADR 0052, ADR 0051, `docs/whatsapp-ringtone-spike.md`, the brief and
+`CLAUDE.md`. The device run #228 now covers Business. The build is #273 (M9, blocked on #228). Defaults 1 (1:1
+calls only) and 3 (caller by name) stand.
+
+## 2026-10-24 — Answer on #242 (ringtone picker and ringtone backups: defaults to confirm)
+
+> 3. preview should use the same logic as the actuall ringtone when they call, so the stopping should be the same as that (wich i doubt is cut at 30s). we may need a way to pause.
+
+Applied: a ringtone preview plays exactly what a call would (the same ring file, from the beginning, looping like
+the call), with no 30 s cut, until the user pauses or stops it or leaves the screen. It has play/pause. Updated
+ADR 0057 and the brief. The work goes into #246, whose description now carries this answer (no PR for #245/#246 was
+open yet). The other defaults stand. The two later defaults from #266 on that issue are still open for the owner.

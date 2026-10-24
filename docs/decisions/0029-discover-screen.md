@@ -1,6 +1,7 @@
 # 0029. Discover screen: browsing repositories, previews, installs and adding repositories
 
-- Status: accepted (defaults open for the owner in #175)
+- Status: accepted (defaults settled by the owner in #175: all stand, and haptic previews must be built eventually,
+  #272); bundles amended by [ADR 0064](0064-bundles-in-discover.md)
 - Date: 2026-10-24
 - Issue: #36
 
@@ -42,7 +43,9 @@ before it is written: an image or audio extension from pack-spec's allowlist, a 
 `ImageProbe` and `AudioProbe`), bitmaps at most 512 px per side, and SVGs that pass `SvgSafety`. Coil only ever
 decodes local files, so no network fetcher is added to the image loader. Character badges look and behave like the
 Packs screen's: tap to hear, the cookie avatar morphs while the clip loads and plays. Haptic previews need data the
-index does not have yet; they are left for later.
+index does not have yet; they are left for later. Owner update 2026-10-24 (#175, item 7): "it has to be done
+eventually, make sure this is not forgotten". Tracked in #272 (M5): haptic data in `repository.json`, written by
+`RepositoryIndexer`, played by Discover.
 
 **Installs go through the existing review.** The import state machine moved out of `PacksViewModel` into
 `ImportController`, shared by both screens, so Discover shows the same `ImportSheet`: download progress (eased, with
@@ -52,8 +55,9 @@ The review remembers the origin (`PackOrigin.Repository` with the registered ind
 direct link), which `installed_packs` records for update badges and backups. A failed download ends in the sheet's
 problem view ("Couldn't download the pack") and never reaches the importer.
 
-**Install state.** A pack entry is installed when a pack with its ID is; a bundle entry when packs installed from it
-(same bundle ID) are. An older installed version (SemVer) shows "Update available"; the same or a newer one shows
+**Install state.** A pack entry is installed when a pack with its ID is. A bundle entry's state comes from its packs
+(amended by [ADR 0064](0064-bundles-in-discover.md), #247: it was "when packs installed from it, same bundle ID, are").
+An older installed version (SemVer) shows "Update available"; the same or a newer one shows
 "Installed" with an "Install again" button, which the review turns into Replace or Install older version. Entries
 that need a newer pack format are shown with "Needs a newer Cucuto" and cannot be installed.
 
@@ -83,4 +87,5 @@ packs stay). Sections show each repository's name and host, with a lock when it 
 - `ImportSheet.onPickAnother` is optional (Discover has no file to pick again), and `ImportUi.Working` carries an
   optional download.
 - Previews in the cache folder can be cleared by Android at any time; that only costs another fetch.
-- Haptic previews, an in-app QR scanner and Google Drive folders (v1.1) are not built.
+- Haptic previews (#272, the owner wants them eventually), an in-app QR scanner and Google Drive folders (v1.1)
+  are not built.

@@ -1,6 +1,9 @@
 package app.mauri.cucuto.ui.ringtone
 
+import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
@@ -10,6 +13,7 @@ import androidx.compose.runtime.Immutable
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +43,9 @@ interface RingtonePreview {
     fun resume()
 
     fun stop()
+
+    /** [listener] runs when the preview stops by itself (another app took the audio focus); null forgets it. */
+    fun onInterrupted(listener: (() -> Unit)?) {}
 }
 
 /**
@@ -105,6 +112,12 @@ class RingtonePlayback<K>(
         job?.cancel()
         val id = ++next
         state.value = PreviewPlaying(key, id = id)
+        preview.onInterrupted {
+            if (state.value?.id == id) {
+                job?.cancel()
+                state.value = null
+            }
+        }
         job =
             scope.launch {
                 var started = false
@@ -152,14 +165,30 @@ object PreviewClock {
  * [RingtonePreview] with `MediaPlayer` and ringtone audio attributes, like Android's own ringtone picker: the preview
  * follows the ring volume and the ringer mode. It plays the pack's file along its [RingTimeline], so what you hear is
  * what a call will sound like: the intro, then the loop over and over (seeking back at each loop end), the silence
- * after a `loop: false` ringtone, and the fade-in at the start of each ring file. Files come from the installed pack
- * folders, never from the network.
+ * after a `loop: false` ringtone, and the fade-in at the start of each ring file. It holds transient audio focus while
+ * it rings and stops when another app takes it (ADR 0057's owner update). Files come from the installed pack folders,
+ * never from the network.
  */
 @Singleton
 class MediaRingtonePreview
     @Inject
-    constructor() : RingtonePreview {
+    constructor(
+        @ApplicationContext context: Context,
+    ) : RingtonePreview {
+        private val audio = context.getSystemService(AudioManager::class.java)
         private val handler = Handler(Looper.getMainLooper())
+        private var interrupted: (() -> Unit)? = null
+        private val focus: AudioFocusRequest =
+            AudioFocusRequest
+                .Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(RINGTONE_AUDIO)
+                .setOnAudioFocusChangeListener({ change ->
+                    if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                        stop()
+                        interrupted?.invoke()
+                    }
+                }, handler)
+                .build()
         private val advance = Runnable { onBoundary() }
         private var player: MediaPlayer? = null
         private var timeline: RingTimeline? = null
@@ -192,6 +221,10 @@ class MediaRingtonePreview
             }
             stop()
             val ring = RingTimeline.of(sound, duration)
+            if (!requestFocus()) {
+                prepared.release()
+                return null
+            }
             player = prepared
             timeline = ring
             paused = false
@@ -206,6 +239,7 @@ class MediaRingtonePreview
             if (paused) return
             paused = true
             handler.removeCallbacksAndMessages(null)
+            abandonFocus()
             if (current() is RingTimeline.Segment.Silence) {
                 silenceLeft = (silenceEndsAt - SystemClock.uptimeMillis()).coerceAtLeast(0)
             } else {
@@ -216,6 +250,7 @@ class MediaRingtonePreview
         override fun resume() {
             val p = player ?: return
             if (!paused) return
+            if (!requestFocus()) return
             paused = false
             when (val segment = current()) {
                 is RingTimeline.Segment.Silence -> {
@@ -241,6 +276,19 @@ class MediaRingtonePreview
             player = null
             timeline = null
             paused = false
+            abandonFocus()
+        }
+
+        override fun onInterrupted(listener: (() -> Unit)?) {
+            interrupted = listener
+        }
+
+        private fun requestFocus(): Boolean =
+            runCatching { audio?.requestAudioFocus(focus) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED }
+                .getOrDefault(false)
+
+        private fun abandonFocus() {
+            runCatching { audio?.abandonAudioFocusRequest(focus) }
         }
 
         private fun current(): RingTimeline.Segment? = timeline?.segments?.getOrNull(index)
