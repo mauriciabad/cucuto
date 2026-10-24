@@ -182,6 +182,27 @@ class MomentClipsTest {
     }
 
     @Test
+    fun aVoiceOfOnlySpecialClipsNeverRepeatsAClip() {
+        // Every ordinary clip switched off: the bag holds the special clips too, and must not repeat the one a moment
+        // or a roll just played (the brief's no-repeat rule, ADR 0059).
+        val specials = bird.copy(clips = bird.clips.filter { it.moment.isSpecial })
+        val table = table(specials)
+        clock = start - 5 * hour // 05:00, a morning
+        var last = ""
+        var lastDay = Long.MIN_VALUE
+        val gaps = longArrayOf(20_000, 20_000, 20_000, 3 * hour, 20_000, 20_000, 9 * hour, 90_000, 20_000)
+        repeat(5_000) { i ->
+            clock += gaps[i % gaps.size]
+            val clip = alert(table = table)
+            val day = days.dayOf(clock)
+            // The one exception: the day's greeting, when its moment comes again.
+            if (!(clip == "dawn" && day != lastDay)) assertNotEquals("message $i", last, clip)
+            last = clip
+            lastDay = day
+        }
+    }
+
+    @Test
     fun localDaysDecideWhenADayStarts() {
         val anytime =
             bird.copy(
