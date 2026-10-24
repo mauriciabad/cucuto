@@ -1,7 +1,7 @@
 # Install guide
 
 This is the website's [Install guide](https://cucuto.mauri.app/install/) ([Spanish](https://cucuto.mauri.app/es/install/))
-plus the details that only matter on GitHub: building the APK before the first release, recovery and bug reports. The
+plus the details that only matter on GitHub: building the APK yourself, recovery and bug reports. The
 website copy lives in `web/src/lib/i18n/en.ts` and `es.ts`; change both pages and this file together.
 
 > [!WARNING]

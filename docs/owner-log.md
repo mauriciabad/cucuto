@@ -692,3 +692,17 @@ flavor with Play services, a deprecated workaround, or no Drive sign-in.)
 Asked whether to shut down the Google Cloud project `cucuto-app`, the owner picked "Shut down project (Recommended)".
 
 (The project was shut down, `:core:drive` deleted, ADR 0040 amended and #188 closed as not planned.)
+
+## 2026-10-25: v1 is released (#387)
+
+Relayed by the lead session, after v1.0.1 shipped and the F-Droid merge request passed CI:
+
+> okay now i consider v1 released. the app is no longer "Cucuto is an early test version" update the texts. also, in the readme add screenshots and video. and make the web url get more attention
+
+Then:
+
+> not only that exact string, also imilar sentences that say the same
+
+(The early, test and pre-release wording went from the README, the store descriptions, the website's download
+fallbacks, the install guide and the brief's status. The README now opens with the website, a download badge,
+screenshots and the explainer video.)

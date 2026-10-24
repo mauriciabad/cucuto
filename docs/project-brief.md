@@ -537,7 +537,7 @@ Ten milestones, each ending in something the owner can install and try. M0 is a 
 
 ### Status (2026-10-24)
 
-Development is near the end (owner, 2026-10-24). From now on, occasional single agents do small features ([maintaining.md](maintaining.md)). Signed test releases (v0.1.x) ship from `main`, and the website is live. `owner-action` marks what only the owner can do.
+Development is near the end (owner, 2026-10-24). From now on, occasional single agents do small features ([maintaining.md](maintaining.md)). Version 1 is released (owner update 2026-10-25 (#387): "okay now i consider v1 released"): signed releases ship from `main` to GitHub and the website, and F-Droid is in review. `owner-action` marks what only the owner can do.
 
 | Milestone | Done | Left |
 | --- | --- | --- |

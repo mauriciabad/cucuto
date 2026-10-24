@@ -11,7 +11,7 @@ function readJson<T>(file: string, fallback: T): T {
 	return JSON.parse(readFileSync(path, 'utf8')) as T;
 }
 
-/** The latest app release, or null before the first one ("coming soon"). */
+/** The latest app release, or null when the build had no release data (the button links to the releases page). */
 export function appRelease(): AppRelease | null {
 	return readJson<AppRelease | null>('.build-data/app-release.json', null);
 }

@@ -106,7 +106,9 @@ test('the Packs page lists every pack in the index', async ({ page, request }) =
 	);
 });
 
-test('Download APK uses the latest app release, or says it is coming soon', async ({ page }) => {
+test('Download APK uses the latest app release, or links to the releases page', async ({
+	page
+}) => {
 	const file = join(import.meta.dirname, '..', '.build-data', 'app-release.json');
 	const release = existsSync(file) ? readJson(file) : null;
 	await page.goto('/');
@@ -117,7 +119,7 @@ test('Download APK uses the latest app release, or says it is coming soon', asyn
 		);
 		await expect(page.locator('main')).toContainText(`Version ${release.version}`);
 	} else {
-		await expect(page.getByRole('link', { name: 'APK coming soon' })).toHaveAttribute(
+		await expect(page.getByRole('link', { name: 'Download from GitHub' })).toHaveAttribute(
 			'href',
 			'https://github.com/mauriciabad/cucuto/releases'
 		);
