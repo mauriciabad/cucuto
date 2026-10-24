@@ -206,6 +206,35 @@ class PhoneRingtoneContentTest {
     }
 
     @Test
+    fun theRowOpensTheRulesOfACharacterWithSeveralVersions() {
+        val kk =
+            app.mauri.cucuto.core.data.voices.VoiceCharacter(
+                "app.mauri.songs",
+                "kk",
+                "K.K. Slider",
+                null,
+                null,
+                null,
+                emptyList(),
+                app.mauri.cucuto.core.routing.Haptic.Keep,
+                ringtoneCount = 2,
+            )
+        var opened: app.mauri.cucuto.core.data.chats.ChatVoice? = null
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) {
+                PhoneCallsRowContent(
+                    base.copy(ringingCharacter = kk, modes = listOf(RingtoneMode.PACK, RingtoneMode.FIXED)),
+                    onChoose = {},
+                    onTogglePreview = {},
+                    onOpenRules = { opened = it },
+                )
+            }
+        }
+        compose.onNodeWithText("See and edit the rules").performClick()
+        assertEquals(kk.voice, opened)
+    }
+
+    @Test
     fun androidDefaultSaysSoOnTheRowAndTheCardSetsItUp() {
         val default =
             base.copy(

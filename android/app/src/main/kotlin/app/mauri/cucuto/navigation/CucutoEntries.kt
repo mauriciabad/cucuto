@@ -117,6 +117,9 @@ fun cucutoEntries(
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
                 onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
                 onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
+                onOpenRules = { voice ->
+                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
+                },
             )
         }
         entry<CucutoDestination.RingtonePicker>(

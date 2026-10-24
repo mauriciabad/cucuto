@@ -71,8 +71,9 @@ class RingtonePickerContentTest {
     fun androidDefaultAndLeaveAsIsSitAboveTheCovers() {
         show(state())
         compose.onNodeWithText("Other choices").assertIsDisplayed()
-        compose.onNodeWithText("Android default").performClick()
-        compose.onNodeWithText("Leave as is").performClick()
+        // The chips can sit behind the save bar on the small test screen: click through semantics.
+        compose.onNodeWithText("Android default").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Leave as is").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(listOf("other:ANDROID_DEFAULT", "other:UNCHANGED"), events)
     }
 

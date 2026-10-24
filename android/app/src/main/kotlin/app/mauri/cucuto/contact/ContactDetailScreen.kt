@@ -118,6 +118,7 @@ fun ContactDetailScreen(
     onEditPattern: () -> Unit,
     modifier: Modifier = Modifier,
     onChooseRingtone: () -> Unit = {},
+    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<ContactDetailViewModel, ContactDetailViewModel.Factory>(
@@ -138,7 +139,7 @@ fun ContactDetailScreen(
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
         hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
-        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone) },
+        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone, onOpenRules = onOpenRules) },
         phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone, Modifier.padding(top = 16.dp)) },
         onUnassign = viewModel::unassign,
         onSimulate = {

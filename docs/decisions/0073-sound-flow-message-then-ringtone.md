@@ -103,7 +103,8 @@ ringtone back, as for ring files (ADR 0039).
   for Android default, as in the header, so the row's text keeps its width. TalkBack reads it with the row
   ("Ringtone: K.K. Slider", "Ringtone: phone default").
 - The **Phone calls** row says what rings: the character with its rule, "Android default", "Left as is", or "No
-  ringtone yet".
+  ringtone yet". For a character with several versions, "See and edit the rules" under it opens the rules screen of
+  [ADR 0074](0074-ringtone-rules-screen.md).
 
 ### Pickers
 

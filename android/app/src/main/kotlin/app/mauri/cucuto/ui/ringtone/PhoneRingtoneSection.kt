@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.sync.RingtoneProblem
@@ -259,6 +260,7 @@ fun PhoneCallsRow(
     chat: ChatKey,
     onChoose: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel = phoneRingtoneViewModel(chat)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -281,6 +283,11 @@ fun PhoneCallsRow(
             viewModel.stopPreview()
         },
         modifier = modifier,
+        onOpenRules = { voice ->
+            feedback.fire(Feedback.Tap)
+            viewModel.stopPreview()
+            onOpenRules(voice)
+        },
     )
 }
 
@@ -292,6 +299,7 @@ fun PhoneCallsRowContent(
     onTogglePreview: () -> Unit,
     modifier: Modifier = Modifier,
     onStopPreview: () -> Unit = {},
+    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val character = state.ringingCharacter
     val name = state.characterName.takeIf { state.hasRingtone && !state.isDefault && !state.isUnchanged }
@@ -314,31 +322,39 @@ fun PhoneCallsRowContent(
             state.kept -> null
             else -> stringResource(R.string.ringtone_row_follows)
         }
-    SoundRow(
-        label = stringResource(R.string.contact_row_calls),
-        value = value,
-        detail = relation,
-        clickLabel = stringResource(R.string.ringtone_choose),
-        onClick = onChoose,
-        leading = {
-            if (character != null && name != null) {
-                RecordCover(character, size = 48.dp, pulledOut = state.preview != null, spinning = state.previewing)
-            } else {
-                SoundRowIcon(state.choice?.icon ?: CallIcon)
-            }
-        },
-        trailing = {
-            if (state.previewSound != null && name != null) {
-                RingtonePlayButton(
-                    preview = state.preview,
-                    name = name,
-                    onToggle = onTogglePreview,
-                    onStop = onStopPreview,
-                )
-            }
-        },
-        modifier = modifier,
-    )
+    Column(modifier) {
+        SoundRow(
+            label = stringResource(R.string.contact_row_calls),
+            value = value,
+            detail = relation,
+            clickLabel = stringResource(R.string.ringtone_choose),
+            onClick = onChoose,
+            leading = {
+                if (character != null && name != null) {
+                    RecordCover(character, size = 48.dp, pulledOut = state.preview != null, spinning = state.previewing)
+                } else {
+                    SoundRowIcon(state.choice?.icon ?: CallIcon)
+                }
+            },
+            trailing = {
+                if (state.previewSound != null && name != null) {
+                    RingtonePlayButton(
+                        preview = state.preview,
+                        name = name,
+                        onToggle = onTogglePreview,
+                        onStop = onStopPreview,
+                    )
+                }
+            },
+        )
+        // The rules of a character with several versions, in plain words and editable (ADR 0074).
+        if (character != null && name != null && state.modes.isNotEmpty()) {
+            TextButton(
+                onClick = { onOpenRules(character.voice) },
+                modifier = Modifier.padding(start = 76.dp),
+            ) { Text(stringResource(R.string.ringtone_rules_open)) }
+        }
+    }
 }
 
 /** How the version is picked, as the row says it. */
