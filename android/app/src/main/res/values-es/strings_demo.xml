@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Los packs de demostración en un toque desde Inicio, a través de Descubrir (#179). -->
+<resources>
+    <string name="home_get_demo_packs">Consigue los packs de demostración</string>
+    <string name="discover_demo_focus">Solo los packs de demostración</string>
+    <string name="discover_demo_show_all">Mostrar todos los packs</string>
+    <string name="discover_demo_finding">Buscando los packs de demostración…</string>
+    <string name="discover_demo_failed_title">No se han podido conseguir los packs de demostración</string>
+    <string name="discover_demo_not_listed">Ahora mismo los packs de demostración no están en el repositorio de Cucuto.</string>
+    <string name="discover_demo_fallback">También puedes descargarlos de cucuto.mauri.app y elegir el archivo.</string>
+    <string name="discover_demo_pick_file">Elegir un archivo</string>
+</resources>
