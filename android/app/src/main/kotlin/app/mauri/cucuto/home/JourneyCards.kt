@@ -250,7 +250,7 @@ private val DOOR_SIZE = 140.dp
 @Composable
 private fun ImportPacksPreview() {
     CucutoTheme(dynamicColor = false) {
-        JourneyCard(JourneyStep.ImportPacks, {}, {}, {}, {})
+        JourneyCard(JourneyStep.ImportPacks, {}, {}, {}, {}, {})
     }
 }
 
@@ -258,7 +258,7 @@ private fun ImportPacksPreview() {
 @Composable
 private fun GiveFirstVoicePreview() {
     CucutoTheme(dynamicColor = false) {
-        JourneyCard(JourneyStep.GiveFirstVoice(previewHomeState().recent.first()), {}, {}, {}, {})
+        JourneyCard(JourneyStep.GiveFirstVoice(previewHomeState().recent.first()), {}, {}, {}, {}, {})
     }
 }
 
@@ -266,6 +266,6 @@ private fun GiveFirstVoicePreview() {
 @Composable
 private fun FirstVoicePreview() {
     CucutoTheme(dynamicColor = false) {
-        JourneyCard(JourneyStep.FirstVoice(previewHomeState().voiced.first()), {}, {}, {}, {})
+        JourneyCard(JourneyStep.FirstVoice(previewHomeState().voiced.first()), {}, {}, {}, {}, {})
     }
 }

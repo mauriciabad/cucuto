@@ -30,6 +30,7 @@ class HomeContentTest {
     private val details = mutableListOf<ChatKey>()
     private val queries = mutableListOf<String>()
 
+    private var demoRequests = 0
     private var demoImports = 0
 
     private fun show(
@@ -47,6 +48,7 @@ class HomeContentTest {
                     onOpenPacks = {},
                     onOpenDetail = { details += it },
                     journey = journey,
+                    onGetDemoPacks = { demoRequests++ },
                     onImportDemoPacks = { demoImports++ },
                 )
             }
@@ -99,7 +101,10 @@ class HomeContentTest {
         show(HomeState(loading = false), JourneyStep.ImportPacks)
         compose.onNodeWithText("Give your chats a voice").assertIsDisplayed()
         compose.onNodeWithText("No chats yet").assertDoesNotExist()
-        compose.onNodeWithText("Import the demo packs").performClick()
+        compose.onNodeWithText("Get the demo packs").performClick()
+        assertEquals(1, demoRequests)
+        // Offline fallback: a demo packs file already in Downloads.
+        compose.onNodeWithText("Pick a file from Downloads").performClick()
         assertEquals(1, demoImports)
     }
 

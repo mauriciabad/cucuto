@@ -25,8 +25,8 @@ class ImportReviewScreenshotTest(
             val imported = DemoContent.kitchen
             PacksContent(
                 state = PacksUiState(packs = listOf(installed.libraryPack())),
-                onBack = {},
                 onDiscover = {},
+                onAssignVoices = {},
                 onImport = {},
                 onRemove = {},
                 onConsumeMessage = {},

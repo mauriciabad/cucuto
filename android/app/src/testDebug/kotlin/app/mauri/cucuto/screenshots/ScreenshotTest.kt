@@ -50,7 +50,7 @@ import kotlin.math.roundToInt
  * ```kotlin
  * class PacksScreenshotTest(variant: Variant) : ScreenshotTest(variant) {
  *     @Test
- *     fun packs() = screenshot("packs") { PacksContent(state = …, onBack = {}, …) }
+ *     fun packs() = screenshot("packs") { PacksContent(state = …, onDiscover = {}, …) }
  * }
  * ```
  *
@@ -63,8 +63,8 @@ import kotlin.math.roundToInt
  * - `./gradlew :app:exportWebScreenshots` also writes the website's images (the tests with a `web` name) to
  *   `web/src/lib/assets/images/screenshots/`, in English and, once the app is translated, in Spanish (`es/`).
  *
- * Screens still to cover, one subclass each, as soon as they are on `main`:
- * - TODO(#153): the app shell (navigation bar with Home, Packs, Discover and Settings) around Home.
+ * Tab roots (Home, Packs, Settings) are captured inside the app shell with [InShell], so the navigation bar shows;
+ * [ShellScreenshotTest] covers the first-run journey on Home (#153).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

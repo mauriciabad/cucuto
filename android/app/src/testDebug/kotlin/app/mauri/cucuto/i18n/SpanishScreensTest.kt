@@ -72,7 +72,8 @@ class SpanishScreensTest {
     fun homeFirstRunOffersTheDemoPacks() {
         show { HomeUnderTest(HomeState(loading = false), JourneyStep.ImportPacks) }
         compose.onNodeWithText("Dale voz a tus chats").assertIsDisplayed()
-        compose.onNodeWithText("Importar los packs de demostración").assertExists()
+        compose.onNodeWithText("Consigue los packs de demostración").assertExists()
+        compose.onNodeWithText("Elegir un archivo de Descargas").assertExists()
         assertNoClippedText()
     }
 
