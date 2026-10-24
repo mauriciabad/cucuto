@@ -94,8 +94,8 @@ Filled in when it was built. These are defaults the owner may override on #309.
 
 "Add a chat from contacts" appears where someone looks for a person who is not there yet:
 
-- **Home, with packs and no chats:** the journey card "Your characters are ready" offers it next to "Hear the
-  characters", and the plain empty state (shown once the journey is over) has it too.
+- **Home, with packs and no chats:** the journey card "Your characters are ready" offers it below "Try a sample
+  chat" (ADR 0075) and "Hear the characters", and the plain empty state (shown once the journey is over) has it too.
 - **"Who gets a voice?"**, the chat picker behind Home's "Assign a voice" button: a row at the top of the list, and
   a button in its empty state.
 

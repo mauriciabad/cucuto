@@ -63,12 +63,25 @@ internal fun JourneyCard(
     onTrySampleChat: () -> Unit = {},
 ) {
     when (step) {
-        JourneyStep.None -> Unit
-        JourneyStep.ImportPacks -> ImportPacksCard(onGetDemoPacks, onImportDemoPacks, onRestoreBackup, modifier)
-        JourneyStep.WaitForMessages ->
+        JourneyStep.None -> {
+            Unit
+        }
+
+        JourneyStep.ImportPacks -> {
+            ImportPacksCard(onGetDemoPacks, onImportDemoPacks, onRestoreBackup, modifier)
+        }
+
+        JourneyStep.WaitForMessages -> {
             WaitForMessagesCard(onTrySampleChat, onPreviewCharacters, onAddFromContacts, modifier)
-        is JourneyStep.GiveFirstVoice -> GiveFirstVoiceCard(step.chat, onOpen = { onOpenChat(step.chat.key) }, modifier)
-        is JourneyStep.FirstVoice -> FirstVoiceCard(step.chat, onDismissCelebration, modifier)
+        }
+
+        is JourneyStep.GiveFirstVoice -> {
+            GiveFirstVoiceCard(step.chat, onOpen = { onOpenChat(step.chat.key) }, modifier)
+        }
+
+        is JourneyStep.FirstVoice -> {
+            FirstVoiceCard(step.chat, onDismissCelebration, modifier)
+        }
     }
 }
 
