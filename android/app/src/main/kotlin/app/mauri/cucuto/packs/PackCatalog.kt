@@ -7,6 +7,7 @@ import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.core.pack.InstalledPack
 import app.mauri.cucuto.core.pack.PackCandidate
 import app.mauri.cucuto.core.pack.PackSelection
+import app.mauri.cucuto.core.repo.RepoError
 import app.mauri.cucuto.packspec.BundleManifest
 import app.mauri.cucuto.packspec.Issue
 import app.mauri.cucuto.packspec.ValidationReport
@@ -23,6 +24,15 @@ interface PackCatalog {
 
     /** Copies, validates, unpacks and test-decodes [source]. Emits [ImportStep.Working], then one final step. */
     fun prepare(source: ImportSource): Flow<ImportStep>
+
+    /**
+     * Like [prepare], for a file that did not come from a local file (a repository download or a link): installing
+     * the review records [origin] with the packs, for update badges and backups.
+     */
+    fun prepare(
+        source: ImportSource,
+        origin: PackOrigin,
+    ): Flow<ImportStep> = prepare(source)
 
     /** Installs the packs of [review] chosen in [selection]. Ends with [ImportStep.Installed] or a failure. */
     fun install(
@@ -83,6 +93,18 @@ data class AssignedContact(
 
 /** One step of an import, as the screen sees it. */
 sealed interface ImportStep {
+    /** Downloading [name] from a repository or a link: [bytes] of [total] (null when unknown). Before [Working]. */
+    data class Downloading(
+        val name: String,
+        val bytes: Long,
+        val total: Long?,
+    ) : ImportStep
+
+    /** The download failed before anything reached the importer. */
+    data class DownloadFailed(
+        val error: RepoError,
+    ) : ImportStep
+
     data class Working(
         val progress: ImportProgress,
     ) : ImportStep
@@ -133,6 +155,8 @@ class ImportReview(
     /** Warnings to show, without the per-pack version notes (those are in [ReviewPack.candidate]). */
     val warnings: List<Issue>,
     internal val handle: Any?,
+    /** Where the file came from, recorded with the installed packs; null means a local file. */
+    internal val origin: PackOrigin? = null,
 ) {
     val isBundle: Boolean get() = bundle != null
 }
@@ -147,4 +171,29 @@ data class ReviewPack(
 ) {
     val id: String get() = candidate.id
     val name: String get() = candidate.manifest.name
+}
+
+/** Where an imported file came from (backup schema `packReference.source`). */
+sealed interface PackOrigin {
+    val source: PackSource
+
+    data class Local(
+        val fileName: String?,
+    ) : PackOrigin {
+        override val source = PackSource.LOCAL
+    }
+
+    /** A direct link to one pack file. */
+    data class Url(
+        val url: String,
+    ) : PackOrigin {
+        override val source = PackSource.URL
+    }
+
+    /** An entry of a pack repository; [url] is the repository's registered index URL. */
+    data class Repository(
+        val url: String,
+    ) : PackOrigin {
+        override val source = PackSource.REPOSITORY
+    }
 }

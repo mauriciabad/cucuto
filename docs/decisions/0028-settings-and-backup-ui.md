@@ -61,15 +61,15 @@ they are unit-tested with a fake.
   with the same ID (same version preferred) and are verified against the index's SHA-256; direct links are verified
   against the backup's SHA-256. After installing a pack from a full backup, its row records the **original** file's
   hash from the reference instead of the re-zipped one, so later backups still point at what repositories serve.
-  This needs the `INTERNET` permission, added here.
+  They use the `INTERNET` permission Discover added.
 
 **About** shows the version, website, source and a licenses dialog: GPL-3.0-or-later for Cucuto, OFL 1.1 for Google
 Sans Flex, CC0 1.0 for the demo packs, and the libraries' licenses.
 
 ## Consequences
 
-- `AppBackupGateway` opens its own `EncryptedCredentialStore` (same file and Keystore key as the repository code)
-  instead of adding a Hilt binding another stream may add too; two instances only race if both write at once.
+- `AppBackupGateway` uses the app's `RepositoryClient` and `CredentialStore` singletons (Discover's
+  `RepositoryModule`, ADR 0029), injected lazily so app start touches neither the network nor the Keystore.
 - Full automatic backups re-zip every pack on each change. With large private packs this costs time and space in the
   chosen folder (10 copies at most, and only when something changed); the switch to leave packs out is next to it.
 - Re-linking Android contacts on a new phone, and Google Drive backups (the owner's request on #108, now #163), are separate

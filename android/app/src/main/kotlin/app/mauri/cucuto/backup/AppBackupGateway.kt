@@ -38,9 +38,10 @@ import app.mauri.cucuto.core.repo.RepoResult
 import app.mauri.cucuto.core.repo.RepositoryAccess
 import app.mauri.cucuto.core.repo.RepositoryClient
 import app.mauri.cucuto.core.repo.credentials.CredentialStore
-import app.mauri.cucuto.core.repo.credentials.EncryptedCredentialStore
 import app.mauri.cucuto.packs.ImportStep
 import app.mauri.cucuto.packs.PackLibrary
+import app.mauri.cucuto.packs.PackOrigin
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -76,12 +77,14 @@ class AppBackupGateway
         routing: RoutingSettings,
         private val library: PackLibrary,
         private val clock: WallClock,
+        // The app's repository client and Keystore-encrypted credential store (ADR 0011, RepositoryModule), created
+        // only when a backup or restore needs them.
+        credentialStore: Lazy<CredentialStore>,
+        repositoryClient: Lazy<RepositoryClient>,
     ) : BackupGateway {
         private val settingsBackup = AppSettingsBackup(routing)
 
-        // The same Keystore-encrypted file the repository screens use (ADR 0011); opened lazily, it costs a Keystore
-        // round trip.
-        private val credentials: CredentialStore by lazy { EncryptedCredentialStore.create(context) }
+        private val credentials: CredentialStore by lazy { credentialStore.get() }
 
         /** Also used by [AutoBackup] for the automatic backups. */
         val exporter: BackupExporter by lazy {
@@ -101,7 +104,7 @@ class AppBackupGateway
         }
         private val reader by lazy { BackupReader.create(context.cacheDir) }
         private val restorer by lazy { BackupRestorer(db, settingsBackup, credentials, clock) }
-        private val client by lazy { RepositoryClient() }
+        private val client by lazy { repositoryClient.get() }
         private val downloads: File get() = File(context.cacheDir, "backup-restore")
 
         override fun suggestedFileName(): String = BackupFileNames.forDate(today())
@@ -208,7 +211,7 @@ class AppBackupGateway
             channelFlow {
                 val file = ImportSource.of(context.contentResolver, Uri.parse(source))
                 val name = item.reference.source.fileName ?: file.describe().displayName
-                install(file, item, PackLibrary.Origin.Local(name))
+                install(file, item, PackOrigin.Local(name))
             }.flowOn(Dispatchers.IO)
 
         private suspend fun ProducerScope<PackProgress>.downloadFromRepository(item: PackRestoreItem) {
@@ -237,7 +240,7 @@ class AppBackupGateway
                 entry.expected,
                 access,
                 item,
-                PackLibrary.Origin.Repository(repositoryUrl),
+                PackOrigin.Repository(repositoryUrl),
             )
         }
 
@@ -251,7 +254,7 @@ class AppBackupGateway
             }
             // The backup's hash is the file that was imported: a link that now serves another file is refused.
             val expected = ExpectedFile(ref.size ?: -1, ref.sha256).takeIf { ref.size != null }
-            downloadAndInstall(url, expected, null, item, PackLibrary.Origin.Url(link), checkHash = ref.sha256)
+            downloadAndInstall(url, expected, null, item, PackOrigin.Url(link), checkHash = ref.sha256)
         }
 
         private suspend fun ProducerScope<PackProgress>.downloadAndInstall(
@@ -259,7 +262,7 @@ class AppBackupGateway
             expected: ExpectedFile?,
             access: RepositoryAccess?,
             item: PackRestoreItem,
-            origin: PackLibrary.Origin,
+            origin: PackOrigin,
             checkHash: String? = null,
         ) {
             val file = File(downloads, "${UUID.randomUUID()}.soundpack.zip")
@@ -296,7 +299,7 @@ class AppBackupGateway
         private suspend fun ProducerScope<PackProgress>.install(
             source: ImportSource,
             item: PackRestoreItem,
-            origin: PackLibrary.Origin,
+            origin: PackOrigin,
         ): Boolean {
             send(PackProgress.Working(null))
             val prepared =
@@ -368,24 +371,24 @@ class AppBackupGateway
             }
         }
 
-        private fun originOf(ref: BackupPackReference): PackLibrary.Origin {
+        private fun originOf(ref: BackupPackReference): PackOrigin {
             val source = ref.source
             return when {
                 source.type == BackupPackSourceType.REPOSITORY && source.repositoryUrl != null -> {
-                    PackLibrary.Origin
+                    PackOrigin
                         .Repository(
                             source.repositoryUrl!!,
                         )
                 }
 
                 source.type == BackupPackSourceType.URL && source.downloadUrl != null -> {
-                    PackLibrary.Origin.Url(
+                    PackOrigin.Url(
                         source.downloadUrl!!,
                     )
                 }
 
                 else -> {
-                    PackLibrary.Origin.Local(source.fileName)
+                    PackOrigin.Local(source.fileName)
                 }
             }
         }

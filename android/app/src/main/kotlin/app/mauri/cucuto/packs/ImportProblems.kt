@@ -3,6 +3,7 @@ package app.mauri.cucuto.packs
 import androidx.annotation.StringRes
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.pack.FailureReason
+import app.mauri.cucuto.core.repo.RepoError
 import app.mauri.cucuto.packspec.ErrorCode
 import app.mauri.cucuto.packspec.Issue
 import app.mauri.cucuto.packspec.ValidationReport
@@ -157,3 +158,68 @@ fun plainWords(reason: FailureReason): Int =
         FailureReason.NOT_PREPARED -> R.string.import_failure_not_prepared
         FailureReason.UNEXPECTED -> R.string.import_failure_unexpected
     }
+
+/** The problem for a download that failed before the importer saw the file. */
+fun problemFor(error: RepoError): ImportProblem =
+    ImportProblem(
+        title = R.string.download_problem_title,
+        summary = plainWords(error),
+        details =
+            when (error) {
+                is RepoError.InvalidIndex -> error.report.issues.map(Issue::toString)
+                else -> listOfNotNull(error.code?.name, error.toString())
+            },
+    )
+
+/** One sentence for a failed repository request (index, preview or download). */
+@StringRes
+fun plainWords(error: RepoError): Int =
+    when (error) {
+        is RepoError.InsecureUrl -> {
+            R.string.repo_error_insecure
+        }
+
+        is RepoError.TooManyRedirects -> {
+            R.string.repo_error_redirects
+        }
+
+        is RepoError.Unauthorized -> {
+            R.string.repo_error_unauthorized
+        }
+
+        is RepoError.HttpStatus -> {
+            when {
+                error.status == HTTP_NOT_FOUND || error.status == HTTP_GONE -> R.string.repo_error_not_found
+                error.status >= HTTP_SERVER_ERROR -> R.string.repo_error_server
+                else -> R.string.repo_error_http
+            }
+        }
+
+        is RepoError.TooLarge -> {
+            R.string.repo_error_too_large
+        }
+
+        is RepoError.SizeMismatch -> {
+            plainWords(ErrorCode.DOWNLOAD_SIZE_MISMATCH)
+        }
+
+        is RepoError.HashMismatch -> {
+            plainWords(ErrorCode.DOWNLOAD_HASH_MISMATCH)
+        }
+
+        is RepoError.InvalidIndex -> {
+            R.string.repo_error_invalid_index
+        }
+
+        is RepoError.Network -> {
+            R.string.repo_error_network
+        }
+
+        is RepoError.Storage -> {
+            R.string.import_failure_storage_error
+        }
+    }
+
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_GONE = 410
+private const val HTTP_SERVER_ERROR = 500

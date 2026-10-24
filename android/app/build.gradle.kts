@@ -110,6 +110,9 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.test.espresso.core)
+    // Discover's tests talk to a fake pack repository over real TLS.
+    testImplementation(libs.okhttp.mockwebserver3)
+    testImplementation(libs.okhttp.tls)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
