@@ -392,3 +392,7 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 > contacts
 
 (Owner answer on #254: ADR 0065's contacts-based option is accepted, and Cucuto never reads WhatsApp's files. Implementation is #292 in M2.)
+
+> Remove the live versions from the kk pack, i wont use them
+
+(The private K.K. pack is rebuilt as version 1.3.0 with only the Radio versions, outside the repo. The 3 hidden songs keep their only take.)
