@@ -105,7 +105,11 @@ class LargeFontScreenshotTest(
 
     private fun largeFont(screen: String) =
         // The onboarding's wavy progress bar and the restore checklist's download bar never stop moving.
-        screenshot(screen, fontScale = LARGEST_FONT_SCALE, animated = screen.startsWith("onboarding-") || screen == "restore-packs") {
+        screenshot(
+            screen,
+            fontScale = LARGEST_FONT_SCALE,
+            animated = screen.startsWith("onboarding-") || screen == "restore-packs",
+        ) {
             A11yScreens.content(screen)()
         }
 
