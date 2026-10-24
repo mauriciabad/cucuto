@@ -37,6 +37,13 @@ android {
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
+    // No "Dependency metadata" signing block: F-Droid's scanner refuses APKs that carry it (Google-encrypted, not
+    // reproducible by others). Play isn't used (ADR 0080), so nothing needs it.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     androidResources {
         // Per-app language (Android 13+ system settings, ADR 0036): AGP writes the LocaleConfig and the manifest's
         // android:localeConfig from the values-* folders; res/resources.properties names the default (English).
