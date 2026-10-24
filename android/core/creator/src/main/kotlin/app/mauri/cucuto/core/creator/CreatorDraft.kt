@@ -84,7 +84,16 @@ data class CreatorDraft(
                         name = c.name,
                         sprite = c.sprite?.let { draftFile(mediaDir, it) },
                         seedColor = c.seedColor,
-                        clips = c.clips.map { ClipDraft(draftFile(mediaDir, it.file), it.label, it.weight, it.`when`) },
+                        clips =
+                            c.clips.map {
+                                ClipDraft(
+                                    draftFile(mediaDir, it.file),
+                                    it.label,
+                                    it.weight,
+                                    it.`when`,
+                                    it.oneIn,
+                                )
+                            },
                         haptic = c.haptic(),
                         description = c.description,
                         tags = c.tags,
@@ -152,8 +161,10 @@ data class DraftClip(
     val label: String = "",
     val weight: Double = 1.0,
     val durationMs: Long,
-    /** The clip's condition (day and night clips), kept from a duplicated pack. */
+    /** The clip's condition (day and night clips, moments), kept from a duplicated pack. */
     val `when`: When? = null,
+    /** A rare clip's chance, one in [oneIn], kept from a duplicated pack. */
+    val oneIn: Int? = null,
 )
 
 /**

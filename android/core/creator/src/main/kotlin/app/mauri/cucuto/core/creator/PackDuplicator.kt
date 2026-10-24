@@ -76,6 +76,7 @@ class PackDuplicator(
                                 weight = clip.weight ?: 1.0,
                                 durationMs = durationMs(drafts.media(file)),
                                 `when` = clip.`when`,
+                                oneIn = clip.oneIn,
                             )
                         },
                     ringtones = c.ringtones.map { DraftRingtone(copy(it.file, "ringtone"), it) },

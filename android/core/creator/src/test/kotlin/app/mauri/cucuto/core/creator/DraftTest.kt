@@ -115,17 +115,22 @@ class DraftTest {
         assertEquals(4, robin.customHaptic.size)
         assertTrue(robin.sprite!!.endsWith(".svg"))
         assertTrue(draft.mediaFiles().all { store.media(it).isFile })
-        assertEquals(5, copy.keptRingtones)
+        assertEquals(6, copy.keptRingtones)
         assertEquals(1, copy.keptAnimations)
         assertTrue(robin.spriteAnimated!!.endsWith(".gif"))
-        assertEquals(listOf("day", "night"), robin.clips.map { (it.`when`?.time as JsonPrimitive).content })
+        assertEquals(
+            listOf("day", "night", null, null, null, "night"),
+            robin.clips.map { (it.`when`?.time as? JsonPrimitive)?.content },
+        )
+        // A rare clip keeps its chance.
+        assertEquals(listOf(null, null, null, null, 50, null), robin.clips.map { it.oneIn })
         assertEquals("A small bird with two calls.", robin.description)
         assertEquals(listOf("bird"), robin.tags)
         assertEquals(listOf("fixtures", "test-pack"), draft.tags)
         assertEquals("https://cucuto.mauri.app", draft.homepage)
         // Variants that share a file in the pack share one copy.
         val song = draft.characters[1]
-        assertEquals(4, song.ringtones.size)
+        assertEquals(5, song.ringtones.size)
         assertEquals(
             2,
             song.ringtones
