@@ -9,11 +9,13 @@ import app.mauri.cucuto.core.routing.RoutingContract
 import app.mauri.cucuto.core.routing.RoutingFile
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.core.routing.Voice
+import app.mauri.cucuto.xposed.events.DeliveryRefused
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.FileNotFoundException
 
 class RoutingTableHolderTest {
     private val logs = mutableListOf<String>()
@@ -23,6 +25,11 @@ class RoutingTableHolderTest {
     private var file: ByteArray? = null
     private var failFile = false
     private val reloads = mutableListOf<Long>()
+
+    /** What the app's provider answers to a pull; counted in [pulls]. */
+    private var provider: () -> ByteArray? = { null }
+    private var pulls = 0
+    private var fileReads = 0
     private val holder =
         RoutingTableHolder(
             preferences = {
@@ -31,8 +38,13 @@ class RoutingTableHolderTest {
             },
             log = { message, _ -> logs += message },
             remoteFile = {
+                fileReads++
                 if (failFile) error("binder died")
                 file
+            },
+            providerTable = {
+                pulls++
+                provider()
             },
             onReload = { reloads += it.generation },
             nanoTime = { now },
@@ -122,7 +134,7 @@ class RoutingTableHolderTest {
         assertTrue(holder.refresh())
         assertEquals(6L, holder.peek().generation)
         assertEquals(listOf(6L), reloads)
-        assertTrue(logs.contains("Routing table 6: 1 keys, 1 voices"))
+        assertTrue(logs.contains("Routing table 6 (via file): 1 keys, 1 voices"))
     }
 
     @Test
@@ -166,6 +178,153 @@ class RoutingTableHolderTest {
         assertTrue(failing.refresh())
         assertEquals(8L, failing.peek().generation)
         assertTrue(logs.contains("Routing table listener failed"))
+    }
+
+    private fun framed(generation: Long) = RoutingFile.frame(RoutingCodec.encode(table(generation)))
+
+    @Test
+    fun pullsFromTheProviderWhenTheServiceCarriedNothing() {
+        // An updated app without LSPosed's service: preferences and file stay at 5, the app announces 6.
+        prefs.put(RoutingCodec.encode(table(5)))
+        holder.ensureAttached()
+        file = framed(5)
+        provider = { framed(6) }
+
+        assertTrue(holder.refresh(target = 6))
+        assertEquals(6L, holder.peek().generation)
+        assertEquals(1, pulls)
+        assertEquals(listOf(6L), reloads)
+        assertTrue(logs.contains("Routing table 6 (via provider): 1 keys, 1 voices"))
+    }
+
+    @Test
+    fun theServiceIsPreferredAndNothingIsPulledTwice() {
+        holder.ensureAttached()
+        provider = { framed(9) }
+
+        // Remote Preferences delivered it before the nudge arrived: no file read, no pull.
+        prefs.put(RoutingCodec.encode(table(6)))
+        assertFalse(holder.refresh(target = 6))
+        assertEquals(0, fileReads)
+        assertEquals(0, pulls)
+
+        // The file has the announced generation: no pull either.
+        file = framed(7)
+        assertTrue(holder.refresh(target = 7))
+        assertEquals(0, pulls)
+        assertEquals(1, logs.count { it.startsWith("Routing table 7 (via file)") })
+    }
+
+    @Test
+    fun olderGenerationsNeverReplaceANewerTable() {
+        holder.ensureAttached()
+        provider = { framed(8) }
+        assertTrue(holder.refresh(target = 8))
+
+        // Late copies through the other sources are older: ignored, whatever the order.
+        prefs.put(RoutingCodec.encode(table(7)))
+        file = framed(6)
+        assertFalse(holder.refresh())
+        provider = { framed(7) }
+        assertFalse(holder.refresh(target = 9))
+        assertEquals(8L, holder.peek().generation)
+        assertEquals(listOf(8L), reloads)
+    }
+
+    @Test
+    fun refusedOrFailedPullsKeepTheTable() {
+        prefs.put(RoutingCodec.encode(table(5)))
+        holder.ensureAttached()
+
+        provider = { throw DeliveryRefused("the event provider's app is signed by another key") }
+        assertFalse(holder.refresh(target = 6))
+        assertTrue(
+            logs.contains("Pulling the routing table refused: the event provider's app is signed by another key"),
+        )
+
+        provider = { throw FileNotFoundException("nothing published") }
+        assertFalse(holder.refresh(target = 6))
+        assertTrue(logs.contains("The app has no routing table to pull yet"))
+
+        provider = { framed(6).let { it.copyOf(it.size - 3) } }
+        assertFalse(holder.refresh(target = 6))
+        assertTrue(logs.any { it.startsWith("Ignoring an incomplete routing table from the app") })
+
+        provider = { error("binder died") }
+        assertFalse(holder.refresh(target = 6))
+        assertTrue(logs.any { it.startsWith("Pulling the routing table from the app failed") })
+
+        assertEquals(5L, holder.peek().generation)
+        assertTrue(reloads.isEmpty())
+    }
+
+    @Test
+    fun atBootItPullsOnlyWhenTheFileIsMissing() {
+        prefs.put(RoutingCodec.encode(table(5)))
+        holder.ensureAttached()
+        provider = { framed(6) }
+
+        file = framed(5)
+        assertTrue(holder.checkAtBoot())
+        assertEquals(0, pulls)
+
+        file = null
+        // Before the user unlocks, the provider does not resolve: retry later, quietly, without waking the app.
+        provider = { throw DeliveryRefused("the event provider is not installed for user 0", unavailable = true) }
+        val before = logs.size
+        assertFalse(holder.checkAtBoot())
+        assertEquals(before, logs.size)
+
+        provider = { framed(6) }
+        assertTrue(holder.checkAtBoot())
+        assertEquals(6L, holder.peek().generation)
+    }
+
+    @Test
+    fun aBurstOfNudgesPullsOnce() {
+        prefs.put(RoutingCodec.encode(table(5)))
+        holder.ensureAttached()
+        file = framed(5)
+        provider = { framed(10) }
+        val posted = ArrayDeque<() -> Unit>()
+        val target = NudgeTarget()
+        val coalescer = Coalescer(post = { posted.addLast(it) }, task = { holder.refresh(target.get()) })
+
+        for (generation in 6L..10L) {
+            target.offer(generation)
+            coalescer.request()
+        }
+        assertEquals(1, posted.size)
+        posted.removeFirst()()
+        assertEquals(1, pulls)
+        assertEquals(10L, holder.peek().generation)
+
+        // A late nudge for a generation already held does nothing.
+        target.offer(9)
+        coalescer.request()
+        posted.removeFirst()()
+        assertEquals(1, pulls)
+    }
+
+    @Test
+    fun thePullDecision() {
+        // With an announced generation: only while the table held is older, whatever the file said.
+        assertTrue(shouldPull(target = 6, held = 5, file = FileRead.FOUND))
+        assertTrue(shouldPull(target = 6, held = 5, file = FileRead.MISSING))
+        assertFalse(shouldPull(target = 6, held = 6, file = FileRead.UNREADABLE))
+        assertFalse(shouldPull(target = 6, held = 7, file = FileRead.MISSING))
+        // An app from before ADR 0048 announces nothing: only when the file gave nothing.
+        assertFalse(shouldPull(target = 0, held = 5, file = FileRead.FOUND))
+        assertTrue(shouldPull(target = 0, held = 5, file = FileRead.MISSING))
+        assertTrue(shouldPull(target = 0, held = 5, file = FileRead.UNREADABLE))
+    }
+
+    @Test
+    fun generationOrdering() {
+        assertTrue(isNewer(1, RoutingTable.EMPTY))
+        assertTrue(isNewer(6, table(5)))
+        assertFalse(isNewer(5, table(5)))
+        assertFalse(isNewer(4, table(5)))
     }
 
     /** Just enough of a read-only SharedPreferences, notifying like Remote Preferences do. */

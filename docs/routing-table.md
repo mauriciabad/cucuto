@@ -25,10 +25,21 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
 - LSPosed stops notifying a module that has been running since before an app update (until the next reboot), so
   after each write the app also mirrors the table to the remote file `routing.table` (`XposedService.openRemoteFile`,
   framed by `RoutingFile`: a `cucuto-routing-file 1 <bytes> <crc32>` line, then the encoded table in UTF-8) and sends
-  the broadcast `app.mauri.cucuto.action.ROUTING_TABLE_PUBLISHED` to package `android` with its identity shared. The
-  module accepts it only from its own package and re-reads the file (`XposedInterface.openRemoteFile`) on its
-  background thread. A generation already loaded is skipped, so either path loads each table once
+  the broadcast `app.mauri.cucuto.action.ROUTING_TABLE_PUBLISHED` to package `android` with its identity shared and
+  the generation in the long extra `generation`. The module accepts it only from its own package and re-reads the
+  file (`XposedInterface.openRemoteFile`) on its background thread
   ([ADR 0024](decisions/0024-routing-updates-after-app-update.md)).
+- LSPosed sometimes never hands an updated app its service until a reboot
+  ([ADR 0043](decisions/0043-framework-service-lost-after-app-update.md)). So the app also keeps its own copy
+  (`noBackupFilesDir/routing/routing.table`, framed by `RoutingFile`) and nudges after every publication, with or
+  without the service. When the nudge announces a generation that neither the preferences nor the remote file gave
+  it, the module pulls the copy with `openFile(content://app.mauri.cucuto.events/routing, "r")`, after checking that
+  the provider is Cucuto's (package and signing certificate); the app serves it to uid 1000 only. At boot the module
+  pulls only when the remote file does not exist
+  ([ADR 0048](decisions/0048-routing-table-pull-without-the-service.md)).
+- Order of preference: Remote Preferences, the remote file, the provider. A table is installed only when its
+  generation is newer than the one held, so each table loads once, and the module logs which path delivered it:
+  `Routing table <gen> (via preferences|file|provider): N keys, M voices`.
 - Encoded tables larger than 256 Ki characters are not written, because Remote Preferences travel through Binder.
   The publisher first retries without clip envelopes (`PublishState.Published.clipHapticsLeftOut`: sounds still
   change, `auto` keeps WhatsApp's vibration) and only then gives up (`PublishState.TooLarge`). A heavy user (500

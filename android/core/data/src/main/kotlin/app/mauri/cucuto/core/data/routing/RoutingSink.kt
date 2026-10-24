@@ -30,11 +30,20 @@ interface RoutingSink {
     /** The encoded table currently published, or null. */
     suspend fun read(): String?
 
-    /** Publishes [encoded] and nudges the module to load it; throws when the preferences could not be written. */
+    /**
+     * Publishes [encoded] through the framework service (Remote Preferences and the remote file); throws when the
+     * preferences could not be written. Does not nudge: the publisher calls [nudge] afterwards.
+     */
     suspend fun write(
         encoded: String,
         generation: Long,
     )
+
+    /**
+     * Tells the module that [generation] is published, with or without the framework service: it re-reads the
+     * remote file, or pulls the table from the app's provider (ADR 0048). Best effort, never throws.
+     */
+    fun nudge(generation: Long)
 }
 
 /** State of the link to the Xposed framework. */
@@ -61,8 +70,10 @@ sealed interface SinkConnection {
  * stays the source of truth and the table is republished as soon as the service connects.
  *
  * LSPosed stops delivering those change notifications to a module that has been running since before an app update
- * (ADR 0024), so every write also mirrors the table to a remote file and sends `system_server` a nudge broadcast;
- * the module re-reads the file when nudged. Both steps are best effort: the preferences stay the source of truth.
+ * (ADR 0024), so every write also mirrors the table to a remote file, and the publisher then sends `system_server` a
+ * nudge broadcast ([nudge]); the module re-reads the file when nudged. The nudge also goes out without a service,
+ * and the module then pulls the table from the app's event provider (ADR 0048). Mirror and nudge are best effort:
+ * the preferences stay the source of truth.
  */
 @Singleton
 class XposedRoutingSink
@@ -125,14 +136,14 @@ class XposedRoutingSink
                     .putLong(RoutingContract.KEY_GENERATION, generation)
                     .commit()
             check(committed) { "Remote Preferences commit failed" }
-            if (mirror(service, encoded)) nudge()
+            mirror(service, encoded)
         }
 
-        /** Writes [encoded] to the remote file the module re-reads when nudged. Returns false on failure. */
+        /** Writes [encoded] to the remote file the module re-reads when nudged. Best effort. */
         private fun mirror(
             service: XposedService,
             encoded: String,
-        ): Boolean =
+        ) {
             try {
                 val bytes = RoutingFile.frame(encoded)
                 // The framework opens the file read-write without truncating it: overwrite, then cut the old tail.
@@ -140,22 +151,23 @@ class XposedRoutingSink
                     it.write(bytes)
                     it.channel.truncate(bytes.size.toLong())
                 }
-                true
             } catch (e: Exception) {
                 Log.w(TAG, "Mirroring the routing table to a remote file failed", e)
-                false
             }
+        }
 
         /**
          * Tells `system_server` that a new table is published. Only receivers registered by the system (package
-         * `android`) get it, and it carries no data: the module checks the sender's package, which this broadcast
-         * shares, and reads the table from the framework.
+         * `android`) get it, and it carries only the generation: the module checks the sender's package, which this
+         * broadcast shares, and reads the table from the framework's remote file or, when that does not have it,
+         * from the app's provider (ADR 0048). Needs no framework service.
          */
-        private fun nudge() {
+        override fun nudge(generation: Long) {
             try {
                 val intent =
                     Intent(RoutingContract.ACTION_TABLE_PUBLISHED)
                         .setPackage(RoutingContract.SYSTEM_PACKAGE)
+                        .putExtra(RoutingContract.EXTRA_GENERATION, generation)
                         .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY or Intent.FLAG_RECEIVER_FOREGROUND)
                 val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
                 context.sendBroadcast(intent, null, options)

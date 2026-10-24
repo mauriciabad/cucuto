@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,7 +32,8 @@ sealed interface PublishState {
     /**
      * The module has [generation], covering [routes] keys and [voices] voices. With [clipHapticsLeftOut], the full
      * table was over [RoutingContract.MAX_ENCODED_CHARS], so it went without clip envelopes: sounds still change,
-     * but `auto` haptics keep WhatsApp's vibration.
+     * but `auto` haptics keep WhatsApp's vibration. With [throughProvider], there was no framework service: the table
+     * is only in the app, and the module pulls it from the app's provider when nudged (ADR 0048).
      */
     data class Published(
         val generation: Long,
@@ -39,6 +41,7 @@ sealed interface PublishState {
         val voices: Int,
         val encodedChars: Int,
         val clipHapticsLeftOut: Boolean = false,
+        val throughProvider: Boolean = false,
     ) : PublishState
 
     /** The table is over [RoutingContract.MAX_ENCODED_CHARS]; the module keeps the previous one. */
@@ -58,7 +61,12 @@ sealed interface PublishState {
  * to Remote Preferences. A table equal to what is already published is not written again, so app restarts do not
  * make the module reparse.
  *
- * After every publication, [ClipMirror.retain] deletes mirrored clips the module can no longer play.
+ * Every new table also goes to [store], the app's own copy, and every publication ends with a nudge to the module,
+ * with or without the framework service. Without the service (LSPosed sometimes drops it after an app update, ADR
+ * 0043), the store is the only copy: the module pulls it from the app's event provider when nudged (ADR 0048).
+ *
+ * After every publication through the service, [ClipMirror.retain] deletes mirrored clips the module can no longer
+ * play. A publication without the service retains nothing: the module may still run an older table.
  *
  * Call [start] once from `Application.onCreate` (libxposed delivers the service binder at process start).
  */
@@ -68,6 +76,7 @@ class RoutingPublisher
     constructor(
         private val source: RoutingTableSource,
         private val sink: RoutingSink,
+        private val store: PublishedTableStore,
         private val mirror: ClipMirror,
         private val clock: WallClock,
         @param:ApplicationScope private val scope: CoroutineScope,
@@ -85,26 +94,34 @@ class RoutingPublisher
                     .collectLatest { (table, connection) ->
                         when (connection) {
                             is SinkConnection.Connected -> {
-                                publish(table)
+                                _state.value = publish(table, throughService = true)
                             }
 
                             is SinkConnection.Unsupported -> {
-                                _state.value =
-                                    PublishState.Unsupported(connection.framework)
+                                // The module may still pull the table; the screens say what the framework lacks.
+                                publish(table, throughService = false)
+                                _state.value = PublishState.Unsupported(connection.framework)
                             }
 
                             SinkConnection.Disconnected -> {
-                                // Wait: the table is published as soon as the framework connects.
+                                // No service yet, or LSPosed dropped it after an update: the module pulls the table
+                                // from the app's provider. Republished through the service as soon as it connects.
+                                _state.value = publish(table, throughService = false)
                             }
                         }
                     }
             }
         }
 
-        private suspend fun publish(table: RoutingTable) {
+        private suspend fun publish(
+            table: RoutingTable,
+            throughService: Boolean,
+        ): PublishState =
             try {
-                val published = RoutingCodec.decodeOrNull(sink.read())
-                val generation = maxOf(clock.now(), (published?.generation ?: 0) + 1)
+                val local = RoutingCodec.decodeOrNull(store.read())
+                val remote = if (throughService) RoutingCodec.decodeOrNull(sink.read()) else null
+                // Generations only grow, whichever copy saw the last publication.
+                val generation = maxOf(clock.now(), (remote?.generation ?: 0) + 1, (local?.generation ?: 0) + 1)
                 var stamped = table.copy(generation = generation)
                 var encoded = RoutingCodec.encode(stamped)
                 var leftOut = false
@@ -117,29 +134,75 @@ class RoutingPublisher
                 }
                 if (encoded.length > RoutingContract.MAX_ENCODED_CHARS) {
                     Log.w(TAG, "Routing table too large to publish: ${encoded.length} chars")
-                    _state.value = PublishState.TooLarge(encoded.length)
-                    return
+                    PublishState.TooLarge(encoded.length)
+                } else {
+                    val published = if (throughService) remote else local
+                    if (published != null && published.copy(generation = 0) == stamped.copy(generation = 0)) {
+                        unchanged(published, local, throughService, leftOut)
+                    } else {
+                        val stored = keep(encoded, generation)
+                        try {
+                            if (throughService) {
+                                sink.write(encoded, generation)
+                            } else {
+                                check(stored) { "Saving the routing table failed" }
+                            }
+                        } finally {
+                            // Also after a failed write: the module may still find the table in the other copy.
+                            sink.nudge(generation)
+                        }
+                        if (throughService) mirror.retain(stamped)
+                        stamped.toState(encoded.length, leftOut, throughProvider = !throughService)
+                    }
                 }
-                if (published != null && published.copy(generation = 0) == stamped.copy(generation = 0)) {
-                    _state.value = published.toState(RoutingCodec.encode(published).length, leftOut)
-                    mirror.retain(published)
-                    return
-                }
-                sink.write(encoded, generation)
-                _state.value = stamped.toState(encoded.length, leftOut)
-                mirror.retain(stamped)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Publishing the routing table failed", e)
-                _state.value = PublishState.Failed(e.message ?: e.javaClass.simpleName)
+                PublishState.Failed(e.message ?: e.javaClass.simpleName)
             }
+
+        /** Writes the app's own copy. Returns false (logged) when it could not, which only matters without a service. */
+        private suspend fun keep(
+            encoded: String,
+            generation: Long,
+        ): Boolean =
+            try {
+                store.write(encoded, generation)
+                true
+            } catch (e: IOException) {
+                Log.w(TAG, "Saving the routing table for the module's provider pull failed", e)
+                false
+            }
+
+        /** [published] already holds this table: nothing to write or nudge, but keep the app's copy in step. */
+        private suspend fun unchanged(
+            published: RoutingTable,
+            local: RoutingTable?,
+            throughService: Boolean,
+            leftOut: Boolean,
+        ): PublishState {
+            val encoded = RoutingCodec.encode(published)
+            if (throughService) {
+                // The provider must serve what the module may hold: the generation in Remote Preferences.
+                if (local?.generation != published.generation) keep(encoded, published.generation)
+                mirror.retain(published)
+            }
+            return published.toState(encoded.length, leftOut, throughProvider = !throughService)
         }
 
         private fun RoutingTable.toState(
             encodedChars: Int,
             clipHapticsLeftOut: Boolean,
-        ) = PublishState.Published(generation, routes.size, voices.size, encodedChars, clipHapticsLeftOut)
+            throughProvider: Boolean,
+        ) = PublishState.Published(
+            generation,
+            routes.size,
+            voices.size,
+            encodedChars,
+            clipHapticsLeftOut,
+            throughProvider,
+        )
 
         private fun RoutingTable.withoutClipHaptics() =
             copy(voices = voices.map { voice -> voice.copy(clips = voice.clips.map { it.copy(haptic = null) }) })
