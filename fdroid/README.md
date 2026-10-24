@@ -43,9 +43,8 @@ maintain. Once F-Droid merges theirs, changes go to fdroiddata through a merge r
   Kotlin and kotlinx, Hilt/Dagger, Room, DataStore, Coil, OkHttp/Okio, libxposed (Apache-2.0), MaterialKolor and a few
   small free libraries. No Google Play services, Firebase, GMS, Credential Manager or Google ID. Repositories: Google's
   Maven and Maven Central only.
-- **`:core:drive`** (Google Drive, ADR 0040) isn't in the release APK: nothing depends on it, and it holds only an
-  OkHttp REST client and a sign-in interface, with no Google Play services implementation (that waits for #163 and
-  #188). If a Play services sign-in is ever added, it needs a build flavor without it for F-Droid.
+- **Google Drive sign-in** is not planned (#188, ADR 0040): it needs Google Play services. `:core:drive` was deleted
+  on 2026-10-25.
 - **Rust crate** (`:core:jxl`): jxl-rs and its dependencies come from crates.io under free licenses, pinned by
   `Cargo.lock`.
 - **`fdroid scanner`** (fdroidserver 2.4.5) on the v0.2.2 source with this recipe: no problems. Without the two

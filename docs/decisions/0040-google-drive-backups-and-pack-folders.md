@@ -1,6 +1,6 @@
-# 0040. Google Drive: one SAF file for automatic backups now, the Drive API behind an interface
+# 0040. Google Drive: one SAF file for automatic backups, no Drive API
 
-- Status: accepted (owner decisions pending: #187; the Google Cloud project from #188 exists since 2026-10-25)
+- Status: accepted; decision 4 (the Drive API) withdrawn on 2026-10-25, see the update at the end (#188)
 - Date: 2026-10-24
 - Issues: #163 (automatic backups to Google Drive, the owner's request on #108), #37 (a Drive folder as a pack
   source), #46 (private packs from Drive on a clean install)
@@ -83,7 +83,7 @@ importer checks every byte, and ADR 0011's HTTPS and redirect rules apply unchan
 clear message instead of a broken `…/repository.json` guess: share each pack file, or download and open them. A
 Drive-hosted `repository.json` is not practical, since its relative pack links can't resolve to Drive file IDs.
 
-**4. The Drive API is built behind interfaces, without Google Play services** (`:core:drive`):
+**4. (Withdrawn 2026-10-25, see the update at the end.) The Drive API is built behind interfaces, without Google Play services** (`:core:drive`, now deleted):
 
 - `DriveAuthorizer`: `authorize()` returns a token, "needs consent" (an `IntentSender` the UI launches), or
   "unavailable" (no OAuth client, no Play services, denied); `invalidate(token)` after a 401. The only implementation
@@ -119,7 +119,8 @@ the user's Drive. Question #187 asks whether the owner wants a stored passphrase
   same file after restoring it.
 - One copy in file mode instead of 10; Drive's version history (30 days or 100 versions) covers older ones.
 - The owner decides whether the Drive API is worth a Google Cloud project (#188): until then
-  `:core:drive` is tested with MockWebServer and fakes only, and nothing calls it.
+  `:core:drive` is tested with MockWebServer and fakes only, and nothing calls it. (2026-10-25: no Drive API, and
+  `:core:drive` is deleted; see the update below.)
 - Private Drive pack folders (#46) work today only through the SAF picker: import each pack file from Drive (the
   import picker shows Drive), or restore a full backup, which carries the pack files. A real Drive
   folder source needs either the Picker (user picks the files, `drive.file`) or a restricted scope, which is not
@@ -127,17 +128,26 @@ the user's Drive. Question #187 asks whether the owner wants a stored passphrase
 - To check on the device (`needs-device`): whether Drive appears in the folder picker on Android 17, which write mode
   Drive accepts, and that a rewritten file shows a new version in Drive (docs/device-testing.md, section 4d).
 
-## Update 2026-10-25: the Google Cloud project exists (#188)
+## Update 2026-10-25: no Drive sign-in; Cucuto stays free of Google Play services (#188)
 
-The owner created it with an agent. Nothing here is secret, and nothing goes into GitHub secrets or the app:
+The owner created the Google Cloud project and its Android OAuth clients on 2026-10-25 (#188), then dropped Drive
+sign-in the same day when it turned out to need Google Play services. The owner, choosing between a second build
+flavor with Play services, a workaround Google calls deprecated, and no Drive sign-in: "i want C. i preffer to be in
+fdroid."
 
-- Project ID `cucuto-app`, owned by the owner's Google account. Google Drive API and Google
-  Picker API enabled.
-- Google Auth Platform: app name Cucuto, External, **In production**. Home page `https://cucuto.mauri.app`, privacy
-  policy `https://cucuto.mauri.app/privacy/`, authorized domain `mauri.app`. No logo, so no brand verification.
-- Data access: `https://www.googleapis.com/auth/drive.file` only (non-sensitive).
-- Android OAuth clients for `app.mauri.cucuto`: "Cucuto Android (release key)", SHA-1
-  `74:4B:E3:74:38:2F:16:E4:38:26:4E:74:F1:1E:8E:49:3F:3D:58:46` (`CN=Cucuto`, read from the installed release APK),
-  and "Cucuto Android (debug key)", SHA-1 `61:8E:2E:AC:C7:80:F5:4B:49:5B:16:44:F9:85:4C:A7:53:40:B4:DF` (the
-  default `~/.android/debug.keystore` on the owner's Mac). A Google Play build with Play App Signing would need a
-  third client with the Play signing key's SHA-1.
+- **Why.** An Android OAuth client (package + signing SHA-1) is checked only by Google Play services
+  (`AuthorizationClient`). A plain browser flow (AppAuth, Custom Tab, PKCE) has no supported redirect on Android:
+  "Custom URI schemes are no longer supported on Android and Chrome apps", and the loopback redirect "is DEPRECATED
+  for Android, Chrome app and iOS OAuth client types"
+  ([OAuth 2.0 for mobile and desktop apps](https://developers.google.com/identity/protocols/oauth2/native-app)).
+  Play services would block F-Droid inclusion (`docs/distribution.md`) and miss phones running microG or none.
+- **Drive story.** Decisions 1 to 3 stand: automatic full backups to one SAF file (`cucuto-backup-latest.zip`,
+  "Choose file"), which Drive uploads and versions by itself; restoring through the SAF picker, then "Keep backing up
+  to this file"; public Drive file links as pack downloads. A new phone doesn't find the backup by itself: the user
+  picks it once in the restore picker. #163 (finding Drive backups on a fresh install) and #37's Drive folder source
+  are not planned.
+- **Removed.** `:core:drive` (`DriveAuthorizer`, `DriveClient`, `DriveBackupStore`, `DrivePackFolder` and their
+  tests) existed only for the Drive API, nothing depended on it, and the SAF path never used it, so it is deleted.
+  `DocumentOverwrite`, `RepositoryLinks` and the backup code are untouched.
+- **Google Cloud.** The project, its consent screen and both Android OAuth clients were shut down on 2026-10-25
+  (`gcloud projects delete`; Google keeps it recoverable for 30 days). No client ID was ever used by the app.
