@@ -63,7 +63,12 @@ internal object A11yPushedScreens {
             "add-from-contacts" to { AddFromContactsContent(AddFromContactsState(), {}, {}, {}, {}, {}, {}) },
             "add-from-contacts-list" to { AddFromContactsContent(previewContactsState(), {}, {}, {}, {}, {}, {}) },
             "confirm-link" to {
-                ConfirmLinkContent(previewHomeStateWithQuestion().questions.first(), onBack = {}, onPick = {}, onNone = {})
+                ConfirmLinkContent(
+                    previewHomeStateWithQuestion().questions.first(),
+                    onBack = {},
+                    onPick = {},
+                    onNone = {},
+                )
             },
             "home-waiting" to {
                 HomeContent(

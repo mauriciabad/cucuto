@@ -102,8 +102,9 @@ object ChatLinkRules {
         val index =
             entries
                 .filter { (it.packageName to it.lookupKey) !in settled }
-                .mapNotNull { entry -> nameKey(entry.displayName)?.let { (entry.packageName to it) to entry.lookupKey } }
-                .groupBy({ it.first }, { it.second })
+                .mapNotNull { entry ->
+                    nameKey(entry.displayName)?.let { (entry.packageName to it) to entry.lookupKey }
+                }.groupBy({ it.first }, { it.second })
                 .mapValues { it.value.toSet() }
         return { packageName, name -> index[packageName to name].orEmpty() }
     }

@@ -155,8 +155,13 @@ class AddFromContactsViewModel
             val needle = _state.value.query.searchable()
             val rows =
                 entries
-                    .filter { needle.isEmpty() || it.displayName.orEmpty().searchable().contains(needle) }
-                    .map { entry ->
+                    .filter {
+                        needle.isEmpty() ||
+                            it.displayName
+                                .orEmpty()
+                                .searchable()
+                                .contains(needle)
+                    }.map { entry ->
                         val isKnown = entry in known
                         val id = EntryId(entry.packageName, entry.lookupKey)
                         ContactRow(entry, known = isKnown, selected = isKnown || id in picked)

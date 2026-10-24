@@ -11,12 +11,14 @@ class ChatLinkRulesTest {
     private val anaSighting = UnlinkedSighting(ChatKey(WA, "100000000000001@lid"), "Ana Test")
 
     /** Contacts hold exactly these WhatsApp entries. */
-    private fun entries(vararg people: Pair<String, String>, packageName: String = WA) =
-        ChatLinkRules.namesakesOf(
-            people.mapIndexed { i, (lookupKey, name) ->
-                WhatsAppContact(lookupKey, name, packageName, listOf("3460000000$i@s.whatsapp.net"))
-            },
-        )
+    private fun entries(
+        vararg people: Pair<String, String>,
+        packageName: String = WA,
+    ) = ChatLinkRules.namesakesOf(
+        people.mapIndexed { i, (lookupKey, name) ->
+            WhatsAppContact(lookupKey, name, packageName, listOf("3460000000$i@s.whatsapp.net"))
+        },
+    )
 
     @Test
     fun `an exact unique match links, ignoring case, surrounding spaces and Unicode form`() {

@@ -121,11 +121,15 @@ class ChatLinker
 
         /** A 1:1 contact already linked to [person]'s Android contact with a key in the same app (phone ringtones). */
         private suspend fun alreadyLinked(person: WhatsAppContact): Long? =
-            contacts.observeContacts().first().firstOrNull { contact ->
-                !contact.contact.isGroup &&
-                    contact.contact.androidLookupKey == person.lookupKey &&
-                    contact.keys.any { it.packageName == person.packageName }
-            }?.contact?.id
+            contacts
+                .observeContacts()
+                .first()
+                .firstOrNull { contact ->
+                    !contact.contact.isGroup &&
+                        contact.contact.androidLookupKey == person.lookupKey &&
+                        contact.keys.any { it.packageName == person.packageName }
+                }?.contact
+                ?.id
 
         /**
          * A chat made from a recent sender, with no Android link, that is [person] by the same rules as linking: the

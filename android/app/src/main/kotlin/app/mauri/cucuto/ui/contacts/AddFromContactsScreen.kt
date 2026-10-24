@@ -193,10 +193,27 @@ fun AddFromContactsContent(
         },
     ) { padding ->
         when (state.step) {
-            AddStep.Explainer -> Explainer(Modifier.padding(padding))
-            AddStep.Loading -> Loading(Modifier.padding(padding))
-            AddStep.Denied -> Denied(onOpenSettings, onContinue, onBack, Modifier.padding(padding))
-            AddStep.List -> if (state.total == 0) Empty(onBack, Modifier.padding(padding)) else ContactList(state, padding, onQueryChange, onToggle)
+            AddStep.Explainer -> {
+                Explainer(Modifier.padding(padding))
+            }
+
+            AddStep.Loading -> {
+                Loading(Modifier.padding(padding))
+            }
+
+            AddStep.Denied -> {
+                Denied(onOpenSettings, onContinue, onBack, Modifier.padding(padding))
+            }
+
+            AddStep.List -> {
+                if (state.total ==
+                    0
+                ) {
+                    Empty(onBack, Modifier.padding(padding))
+                } else {
+                    ContactList(state, padding, onQueryChange, onToggle)
+                }
+            }
         }
     }
 }
@@ -207,7 +224,12 @@ private fun Explainer(modifier: Modifier = Modifier) {
     val source = stringResource(R.string.settings_source_url)
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(
+                    rememberScrollState(),
+                ).padding(horizontal = 24.dp, vertical = 8.dp),
     ) {
         Text(stringResource(R.string.contacts_explainer_lead), style = MaterialTheme.typography.bodyLarge)
         ExplainerPart(R.string.contacts_explainer_reads_title, R.string.contacts_explainer_reads_body)
@@ -290,7 +312,12 @@ private fun Message(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(
+                    rememberScrollState(),
+                ).padding(horizontal = 32.dp, vertical = 24.dp),
     ) {
         CuckooDoor(beat = null, contentDescription = null, modifier = Modifier.size(120.dp))
         Text(
@@ -350,7 +377,10 @@ private fun ContactList(
                     trailingIcon = {
                         if (state.query.isNotEmpty()) {
                             IconButton(onClick = { onQueryChange("") }) {
-                                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.contacts_search_clear))
+                                Icon(
+                                    Icons.Rounded.Close,
+                                    contentDescription = stringResource(R.string.contacts_search_clear),
+                                )
                             }
                         }
                     },
@@ -416,7 +446,8 @@ private fun ContactItem(
 }
 
 /** An E.164 number as this phone writes numbers, or as it is when Android cannot format it. */
-internal fun formatNumber(e164: String): String = PhoneNumberUtils.formatNumber(e164, Locale.getDefault().country) ?: e164
+internal fun formatNumber(e164: String): String =
+    PhoneNumberUtils.formatNumber(e164, Locale.getDefault().country) ?: e164
 
 /** Made-up WhatsApp entries for previews and tests: no real names or numbers. */
 internal fun previewContactsState(): AddFromContactsState {
@@ -430,7 +461,11 @@ internal fun previewContactsState(): AddFromContactsState {
         listOf(
             ContactRow(entry("lk-1", "Ada", "34600000001"), known = true, selected = true),
             ContactRow(entry("lk-2", "Bruno", "34600000002"), known = false, selected = true),
-            ContactRow(entry("lk-2", "Bruno", "34600000002", ChatKey.WHATSAPP_BUSINESS), known = false, selected = false),
+            ContactRow(
+                entry("lk-2", "Bruno", "34600000002", ChatKey.WHATSAPP_BUSINESS),
+                known = false,
+                selected = false,
+            ),
             ContactRow(entry("lk-3", "Carla", "34600000003"), known = false, selected = false),
             ContactRow(entry("lk-4", "Dani", "34600000004"), known = false, selected = true),
             ContactRow(entry("lk-5", "Elena", "34600000005"), known = false, selected = false),

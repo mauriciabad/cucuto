@@ -192,7 +192,13 @@ internal fun mergeChats(
                 contact.contact.id to
                     LinkCandidate(
                         contactId = contact.contact.id,
-                        key = contact.keys.first { it.kind == ContactKeyKind.PHONE_JID }.let { ChatKey(it.packageName, it.value) },
+                        key =
+                            contact.keys.first { it.kind == ContactKeyKind.PHONE_JID }.let {
+                                ChatKey(
+                                    it.packageName,
+                                    it.value,
+                                )
+                            },
                         displayName = contact.contact.displayName,
                         phoneNumbers = phoneNumbersOf(contact),
                         voice = voices[contact.contact.id],

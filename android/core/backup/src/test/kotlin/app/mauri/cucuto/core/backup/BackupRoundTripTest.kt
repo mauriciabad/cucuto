@@ -356,7 +356,13 @@ class BackupRoundTripTest {
             assertTrue("still waiting for its first message", chat.awaitingLink)
             assertEquals("Carla", chat.displayName)
             assertEquals(ChatVoice(critters, "beep"), chat.voice)
-            assertEquals("0r3-GHI", newPhone.contactDao().get(chat.contactId!!)!!.contact.androidLookupKey)
+            assertEquals(
+                "0r3-GHI",
+                newPhone
+                    .contactDao()
+                    .get(chat.contactId!!)!!
+                    .contact.androidLookupKey,
+            )
         }
 
     @Test

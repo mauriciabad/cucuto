@@ -64,7 +64,15 @@ class ChatLinkerTest {
         key: String,
         name: String?,
         packageName: String = WA,
-    ) = sightings.record(packageName, key, name, isGroup = false, seenAt = clock.now(), senderKey = null, senderName = null)
+    ) = sightings.record(
+        packageName,
+        key,
+        name,
+        isGroup = false,
+        seenAt = clock.now(),
+        senderKey = null,
+        senderName = null,
+    )
 
     private suspend fun chats() = directory.observeChats().first()
 
@@ -146,7 +154,14 @@ class ChatLinkerTest {
 
             val asked = chats().filter { it.linkCandidates.isNotEmpty() }
             assertEquals(setOf(ChatKey(WA, ANA_LID), ChatKey(WA, OTHER_LID)), asked.map { it.key }.toSet())
-            assertEquals(listOf(firstId, secondId), asked.first().linkCandidates.map { it.contactId }.sorted())
+            assertEquals(
+                listOf(firstId, secondId),
+                asked
+                    .first()
+                    .linkCandidates
+                    .map { it.contactId }
+                    .sorted(),
+            )
 
             linker.confirmLink(ChatKey(WA, ANA_LID), firstId)
 

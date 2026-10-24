@@ -88,7 +88,7 @@ The facts that decide the design:
 
 ## Design details (#292)
 
-Filled in when it was built. The owner may override any of them on #292.
+Filled in when it was built. These are defaults the owner may override on #309.
 
 ### Entry points
 
@@ -122,7 +122,7 @@ The character and ringtone pickers stay as they are: they open for a chat that a
 (`vnd.android.cursor.item/vnd.com.whatsapp.w4b.profile`). The projection is `MIMETYPE`, `DATA1` (the phone JID),
 `LOOKUP_KEY` and `DISPLAY_NAME`. The MIME type says which app the entry belongs to. `Data` has no `ACCOUNT_TYPE` column
 on the owner's phone (checked with a column error, no rows printed), and `DATA1` held a phone JID in all 1,144 rows
-(a count). The Business type follows WhatsApp's naming; it is not on the owner's phone, so it is untested there (#229
+(a count). The Business type follows WhatsApp's naming; it is not on the owner's phone, so it is untested there (#228
 covers Business on the device). Rows whose `DATA1` is not a phone JID are skipped.
 
 **After saving.** One person: their contact detail opens (Messages and Phone calls rows, ADR 0063). Several: back to

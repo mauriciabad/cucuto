@@ -81,7 +81,12 @@ class AddFromContactsViewModelTest {
         val anaRow = vm.now.rows.first()
         assertTrue(anaRow.known && anaRow.selected)
         vm.toggle(anaRow.id)
-        assertTrue("known people cannot be unpicked or added twice", vm.now.rows.first().selected)
+        assertTrue(
+            "known people cannot be unpicked or added twice",
+            vm.now.rows
+                .first()
+                .selected,
+        )
         assertEquals(0, vm.now.selected)
     }
 
@@ -129,7 +134,11 @@ class AddFromContactsViewModelTest {
             assertTrue(chats.added.isEmpty())
 
             chats.failAdd = true
-            vm.toggle(vm.now.rows.first().id)
+            vm.toggle(
+                vm.now.rows
+                    .first()
+                    .id,
+            )
             vm.save()
             assertTrue(vm.now.failed)
             assertNull(vm.now.done)

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -40,10 +41,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
@@ -89,9 +89,9 @@ import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.packs.ui.PackPickerTypes
 import app.mauri.cucuto.ui.chat.chatSupportingText
 import app.mauri.cucuto.ui.components.CuckooDoor
-import app.mauri.cucuto.ui.contacts.PersonAddIcon
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
+import app.mauri.cucuto.ui.contacts.PersonAddIcon
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
@@ -258,7 +258,10 @@ fun HomeContent(
             }
             if (state.showQuestions) {
                 item(key = "questions-header") { SectionHeader(stringResource(R.string.home_questions_header)) }
-                items(state.questions, key = { "question/${it.key.packageName}/${it.key.conversationKey}" }) { question ->
+                items(
+                    state.questions,
+                    key = { "question/${it.key.packageName}/${it.key.conversationKey}" },
+                ) { question ->
                     QuestionItem(question) {
                         feedback.fire(Feedback.Tap)
                         onOpenQuestion(question.key)
@@ -726,7 +729,17 @@ internal fun previewHomeStateWithQuestion(now: Long = PREVIEW_NOW): HomeState {
             ),
         ) +
             listOf(leo1, leo2).map {
-                Chat(it.key, it.contactId, "Leo", false, null, null, 0, awaitingLink = true, phoneNumbers = it.phoneNumbers)
+                Chat(
+                    it.key,
+                    it.contactId,
+                    "Leo",
+                    false,
+                    null,
+                    null,
+                    0,
+                    awaitingLink = true,
+                    phoneNumbers = it.phoneNumbers,
+                )
             }
     return buildHomeState(chats, packs = emptyList(), query = "", packFilter = null, now = now)
 }

@@ -129,5 +129,8 @@ class AddFromContactsContentTest {
     }
 
     private fun previewPacks() =
-        listOf(app.mauri.cucuto.home.PackFilterOption("app.mauri.demo.critters", "Chiptune critters"))
+        listOf(
+            app.mauri.cucuto.home
+                .PackFilterOption("app.mauri.demo.critters", "Chiptune critters"),
+        )
 }

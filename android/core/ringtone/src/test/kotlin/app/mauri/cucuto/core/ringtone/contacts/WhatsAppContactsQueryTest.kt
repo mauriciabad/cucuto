@@ -79,7 +79,12 @@ class WhatsAppContactsQueryTest {
                         ChatKey.WHATSAPP,
                         listOf("34600000001@s.whatsapp.net", "447700900001@s.whatsapp.net"),
                     ),
-                    WhatsAppContact("lk-ana", "Ana Test", ChatKey.WHATSAPP_BUSINESS, listOf("34600000001@s.whatsapp.net")),
+                    WhatsAppContact(
+                        "lk-ana",
+                        "Ana Test",
+                        ChatKey.WHATSAPP_BUSINESS,
+                        listOf("34600000001@s.whatsapp.net"),
+                    ),
                     WhatsAppContact("lk-eva", "Éva Test", ChatKey.WHATSAPP, listOf("34600000004@s.whatsapp.net")),
                     WhatsAppContact("lk-zoe", "Zoe Test", ChatKey.WHATSAPP, listOf("34600000003@s.whatsapp.net")),
                 ),
