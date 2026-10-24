@@ -1,0 +1,122 @@
+name: dependabot
+
+# Lands Dependabot updates without anyone watching (ADR 0004, issue #122). The owner expects to stop maintaining the
+# code once the feature set works, so cheap updates must merge by themselves.
+#
+# - `auto-merge`: when Dependabot opens (or rebases) a PR, patch and minor updates get squash auto-merge, the same
+#   mechanism agents use. GitHub merges once `ci-ok`, the only required check of the `main` ruleset, is green; a red
+#   `ci-ok` leaves the PR open. Breaking updates (majors, and minors of the 0.x Rust crates, whose API changes between
+#   minors) get the `deps:major` label instead and wait for an agent (CLAUDE.md, Workflow, "Dependencies").
+# - `main-ci`: a merge done by auto-merge enabled with GITHUB_TOKEN pushes to main as GITHUB_TOKEN, and such pushes
+#   start no workflows, so ci.yml would not verify main or redeploy the site. When that happens this job dispatches
+#   ci.yml on main (workflow_dispatch is exempt from that rule).
+#
+# Pattern from the GitHub docs, "Automating Dependabot with GitHub Actions" (enable auto-merge on a pull request).
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  auto-merge:
+    name: Auto-merge patch and minor updates
+    # Only PRs Dependabot opened, and only its own pushes: a commit an agent adds to a Dependabot branch does not
+    # re-enable auto-merge.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.actor == 'dependabot[bot]' &&
+      github.repository == 'mauriciabad/cucuto'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # gh pr merge
+      pull-requests: write # gh pr merge, labels
+      issues: write # labels (the docs' labeling example asks for it)
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+
+      # Grouped PRs only hold patch and minor updates (dependabot.yml), so a group never mixes in a major; for a PR
+      # with several dependencies update-type is the highest change among them.
+      - name: Decide
+        id: decide
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+        run: |
+          case "$ECOSYSTEM:$UPDATE_TYPE" in
+            cargo:version-update:semver-patch) action=merge ;;
+            cargo:version-update:semver-minor) action=label ;;
+            *:version-update:semver-patch | *:version-update:semver-minor) action=merge ;;
+            *:version-update:semver-major) action=label ;;
+            *) action=none ;;
+          esac
+          echo "$ECOSYSTEM $UPDATE_TYPE -> $action"
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+
+      - name: Enable squash auto-merge
+        if: steps.decide.outputs.action == 'merge'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
+
+      - name: Label for an agent
+        if: steps.decide.outputs.action == 'label'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr edit "$PR_URL" --add-label "deps:major"
+
+  main-ci:
+    name: Run ci.yml on main after an auto-merge
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.repository == 'mauriciabad/cucuto'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: write # gh workflow run, gh run list
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Wait for the merge, then dispatch ci.yml if main got no run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          pr=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state all --json number --jq '.[0].number')
+          [ -n "$pr" ] || { echo "No PR for $HEAD_BRANCH"; exit 0; }
+          # Auto-merge fires on the green ci-ok, a few seconds before this workflow_run event; allow 15 minutes.
+          for _ in $(seq 1 30); do
+            read -r state auto sha < <(gh pr view "$pr" --repo "$REPO" \
+              --json state,autoMergeRequest,mergeCommit \
+              --jq '[.state, (.autoMergeRequest != null), (.mergeCommit.oid // "-")] | @tsv')
+            case "$state" in
+              MERGED) break ;;
+              CLOSED) echo "PR #$pr closed without merging"; exit 0 ;;
+            esac
+            [ "$auto" = "true" ] || { echo "PR #$pr has no auto-merge (left for an agent)"; exit 0; }
+            sleep 30
+          done
+          [ "$state" = "MERGED" ] || { echo "PR #$pr not merged yet; the next push to main runs ci.yml"; exit 0; }
+          # A merge by a person starts ci.yml on main by itself; give the push event time to register.
+          sleep 30
+          runs=$(gh run list --repo "$REPO" --workflow ci.yml --commit "$sha" --json databaseId --jq 'length')
+          if [ "$runs" = "0" ]; then
+            echo "PR #$pr merged as $sha with no ci.yml run on main; dispatching one"
+            gh workflow run ci.yml --repo "$REPO" --ref main
+          else
+            echo "ci.yml already ran for $sha"
+          fi
