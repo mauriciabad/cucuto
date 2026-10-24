@@ -41,14 +41,16 @@ flows (the setup guide reopened from Setup). Tab icons missing from `material-ic
 Discover: "explore") are drawn from the Material Icons path data instead of adding the extended icon set.
 
 **Screens plug in with one entry.** `cucutoEntries` maps each destination to a self-contained composable with
-`onNavigate: (CucutoDestination) -> Unit` and, for pushed screens, `onBack`. Settings and Discover get entry points
-that #28 and #36 replace: `SettingsScreen(onNavigate, modifier)` in `ui/settings/` and
-`DiscoverScreen(onNavigate, modifier)` in `ui/discover/`. Status becomes **Settings → Setup** (`SetupScreen`).
+`onNavigate: (CucutoDestination) -> Unit` and, for pushed screens, `onBack`. Settings gets an entry point that #28
+replaces: `SettingsScreen(onNavigate, modifier)` in `ui/settings/`. Discover (#36) is the tab root as
+`DiscoverScreen()` (no back arrow); an "Add to app" link opens the Discover tab, as an incoming pack opens Packs.
+The haptic editor (#32) is pushed on the current tab. Status becomes **Settings → Setup** (`SetupScreen`).
 Diagnostics stays reachable in release builds (Settings and the setup checks link to it; the brief wants the
 decision log for debugging). **Settings → Developer** (design gallery, Diagnostics with the debug test voice, and
 "Start over as a new user") and the gallery are registered only when `BuildConfig.DEBUG`. The placeholder screen,
-`ScreenInfo` and the "Preview screens" list are deleted; the contact detail and haptic editor get their entries
-with their screens.
+`ScreenInfo` and the "Preview screens" list are deleted; the contact detail gets its entry with its screen (#26).
+Picker and haptic editor entries use content keys built from the full chat key, because `ChatKey.toString()` hides
+the JID and would give every chat the same key.
 
 **Consistent chrome.** `CucutoTopBar`: a large flexible top bar without a back arrow on tab roots, a medium flexible
 one with a back arrow on pushed screens, both `exitUntilCollapsed`. Home keeps its search field as its top bar.
