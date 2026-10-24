@@ -43,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
@@ -212,7 +213,7 @@ internal fun ConditionFields(
             stringResource(R.string.creator_when_weekdays),
             stringResource(R.string.creator_when_weekdays_hint),
         ) {
-            val locale = Locale.getDefault()
+            val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ConditionForm.WEEKDAYS.forEachIndexed { i, day ->
                     Chip(
