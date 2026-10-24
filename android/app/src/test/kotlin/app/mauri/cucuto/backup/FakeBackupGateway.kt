@@ -12,10 +12,13 @@ import app.mauri.cucuto.core.backup.ContactMatch
 import app.mauri.cucuto.core.backup.ContactRestoreOutcome
 import app.mauri.cucuto.core.backup.PackRestoreItem
 import app.mauri.cucuto.core.backup.RestoreReport
+import app.mauri.cucuto.core.backup.RingtoneOutcome
+import app.mauri.cucuto.core.backup.RingtoneRestoreOutcome
 import app.mauri.cucuto.core.backup.SettingsRestoreResult
 import app.mauri.cucuto.core.backup.VoiceOutcome
 import app.mauri.cucuto.core.backup.VoiceSnapshot
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
@@ -91,6 +94,7 @@ object BackupTestData {
         conflicts: List<AssignmentConflict> = emptyList(),
         created: Int = 0,
         keysElsewhere: Int = 0,
+        ringtones: List<RingtoneRestoreOutcome> = emptyList(),
     ): RestoreReport {
         val outcomes =
             applied.mapIndexed { i, id ->
@@ -118,9 +122,14 @@ object BackupTestData {
             credentialsRestored = emptyList(),
             credentialsSkipped = emptyList(),
             settings = SettingsRestoreResult(listOf("enabled"), emptyList()),
-            ringtonesPending = 0,
+            ringtones = ringtones,
         )
     }
+
+    fun ringtone(
+        id: String,
+        outcome: RingtoneOutcome = RingtoneOutcome.APPLIED,
+    ) = RingtoneRestoreOutcome(id, id.toLong(), outcome, "Contact $id", androidContact = null, undo = null)
 }
 
 class FakeSession(
@@ -195,6 +204,24 @@ class FakeBackupGateway : BackupGateway {
     ): RestoreReport {
         restoreCalls += overwrite
         return reports.removeFirst()
+    }
+
+    /** What [restorePhoneRingtones] answers, and the reports it was given. */
+    var phoneRingtones = PhoneRingtoneRestore(0, 0, emptyList(), waitingForPermission = false, enabled = true)
+    val phoneRingtoneReports = mutableListOf<RestoreReport>()
+
+    /** What [enablePhoneRingtones] answers (null: the permission is still missing). */
+    var enableResult: PhoneRingtoneRestore? = null
+    var enableCalls = 0
+
+    override suspend fun restorePhoneRingtones(reports: List<RestoreReport>): PhoneRingtoneRestore {
+        phoneRingtoneReports.addAll(reports)
+        return phoneRingtones
+    }
+
+    override suspend fun enablePhoneRingtones(): PhoneRingtoneRestore? {
+        enableCalls++
+        return enableResult
     }
 
     override fun restorePack(

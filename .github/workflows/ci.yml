@@ -165,9 +165,14 @@ jobs:
         with:
           workspaces: android/core/jxl/rust -> target
 
-      # Debug and release APKs (R8, plus lintVital on release) and the instrumented test APKs.
+      # Debug and release APKs (R8, plus lintVital on release), the instrumented test APKs and the Baseline Profile
+      # generator (#226, docs/baseline-profile.md), which only runs on a device. Not plain `assemble`: the Baseline
+      # Profile plugin adds two more app build types (nonMinifiedRelease, benchmarkRelease) that only the generator
+      # needs; its own APK builds against nonMinifiedRelease.
       - name: Assemble
-        run: ./gradlew assemble assembleDebugAndroidTest --stacktrace
+        run: >-
+          ./gradlew assembleDebug assembleRelease assembleDebugAndroidTest
+          :baselineprofile:assembleNonMinifiedRelease --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
@@ -424,10 +429,10 @@ jobs:
           for pack in packs/*/pack.yaml; do
             "$packer" build "$(dirname "$pack")" -o dist/
           done
-          "$packer" bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.0.0 \
+          "$packer" bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.1.0 \
             --author "Cucuto contributors" --license CC0-1.0 \
             --description "Every Cucuto demo pack in one file." \
-            --cover packs/chiptune-critters/cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
+            --cover packs/demo-bundle-cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
           "$packer" validate --strict dist/*.soundpack.zip
 
       # The Android routing integration suite installs the demo packs from checked-in manifests (ADR 0047): they

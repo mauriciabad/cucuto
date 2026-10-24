@@ -469,6 +469,15 @@ val backupJson = """
       "ringtone": { "packId": "com.example.private.songs.day", "characterId": "bubblegum", "rule": { "mode": "fixed", "variant": "characters/bubblegum/ringtones/live.ogg" } }
     },
     {
+      "id": "c2",
+      "displayName": "Bruno",
+      "phoneNumbers": ["+34600333444"],
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "200000000000002@lid" }],
+      "androidContact": { "lookupKey": "0r2-DEF", "displayName": "Bruno" },
+      "message": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "frog" },
+      "ringtone": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "frog", "followsVoice": true, "rule": { "mode": "time" }, "undo": { "originalRingtone": "content://media/internal/audio/media/31", "writtenUri": "content://media/external/audio/media/1042" } }
+    },
+    {
       "id": "g1",
       "displayName": "Family",
       "isGroup": true,
@@ -479,7 +488,7 @@ val backupJson = """
 }
 """
 
-document("valid/backup.json", "backup", "Backup with repositories, pack references and contacts.", backupJson)
+document("valid/backup.json", "backup", "Backup with repositories, pack references, contacts and phone ringtones (one follows the voice and keeps its undo record).", backupJson)
 
 document("valid/envelope.json", "backup-envelope", "Encrypted backup envelope with Argon2id parameters.", """
 {
@@ -838,6 +847,16 @@ document(
     backupJson.substringBefore("  \"contacts\": [").trimEnd().removeSuffix(",") + "\n}\n", listOf("SCHEMA_VIOLATION"),
 )
 document("invalid/backup-duplicate-contact.json", "backup", "Two contacts with the same ID.", backupJson.replace("\"id\": \"g1\"", "\"id\": \"c1\""), listOf("DUPLICATE_ID"))
+document(
+    "invalid/backup-ringtone-fixed-without-variant.json", "backup", "A fixed phone ringtone rule without its variant.",
+    backupJson.replace("\"rule\": { \"mode\": \"fixed\", \"variant\": \"characters/bubblegum/ringtones/live.ogg\" }", "\"rule\": { \"mode\": \"fixed\" }"),
+    listOf("SCHEMA_VIOLATION"),
+)
+document(
+    "invalid/backup-ringtone-undo-without-uri.json", "backup", "A phone ringtone's undo record without the URI Cucuto wrote.",
+    backupJson.replace(", \"writtenUri\": \"content://media/external/audio/media/1042\"", ""),
+    listOf("SCHEMA_VIOLATION"),
+)
 document("invalid/envelope-weak-kdf.json", "backup-envelope", "Argon2id memory below the 19 MiB minimum.", """
 {
   "formatVersion": 1,

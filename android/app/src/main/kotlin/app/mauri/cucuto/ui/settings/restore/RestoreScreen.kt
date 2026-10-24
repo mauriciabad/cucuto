@@ -8,9 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,15 +22,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -37,11 +35,9 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,73 +49,97 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.backup.PackFailure
 import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.navigation.CucutoDestination
+import app.mauri.cucuto.ui.components.BottomActionBar
+import app.mauri.cucuto.ui.components.PushedScreen
+import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.ringtone.rememberContactsPermissionFlow
 import app.mauri.cucuto.ui.settings.ZIP_TYPES
 import app.mauri.cucuto.ui.settings.launchSafely
 import app.mauri.cucuto.ui.theme.CucutoTheme
 
 /**
- * The restore flow as a full-screen dialog over Settings (Material 3 full-screen dialog: a multi-step task with its
- * own close button). Back or Close leaves it at any step; nothing already restored is undone.
+ * Restore from a backup (docs/project-brief.md, "Restore on a new phone"; ADR 0028, ADR 0055): a screen pushed on the
+ * tab it was started from (Settings, or Home's first-run card) for the document at [backupUri]. Back leaves it at any
+ * step; nothing already restored is undone. A problem can pick another file, which replaces this screen
+ * ([onPickAnother]); the summary's links to the setup guide and Diagnostics replace it too ([onLeave]), so back from
+ * them returns where the restore started.
  */
 @Composable
-internal fun RestoreFlow(
-    step: RestoreStep,
-    actions: RestoreActions,
-    onPackFilePick: (id: String, uri: String) -> Unit,
+fun RestoreScreen(
+    backupUri: String,
+    onBack: () -> Unit,
+    onPickAnother: (backupUri: String) -> Unit,
+    onLeave: (CucutoDestination) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: RestoreViewModel = hiltViewModel(),
 ) {
-    if (step == RestoreStep.Closed) return
+    LaunchedEffect(viewModel, backupUri) { viewModel.start(backupUri) }
+    val step by viewModel.step.collectAsStateWithLifecycle()
     var pickingFor by rememberSaveable { mutableStateOf<String?>(null) }
     val pickPack =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             val id = pickingFor
             pickingFor = null
-            if (uri != null && id != null) onPackFilePick(id, uri.toString())
+            if (uri != null && id != null) viewModel.importPackFile(id, uri.toString())
+        }
+    val pickBackup =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) onPickAnother(uri.toString())
         }
     val feedback = LocalFeedback.current
+    val turnOnRingtones = rememberContactsPermissionFlow(onGrant = viewModel::enablePhoneRingtones)
     LaunchedEffect(step is RestoreStep.Done) {
         if (step is RestoreStep.Done) feedback.fire(Feedback.Success)
     }
 
-    Dialog(
-        onDismissRequest = actions.onClose,
-        properties =
-            DialogProperties(
-                usePlatformDefaultWidth = false,
-                dismissOnClickOutside = false,
-                decorFitsSystemWindows = false,
+    RestoreContent(
+        step = step,
+        actions =
+            RestoreActions(
+                onClose = onBack,
+                onPassphrase = viewModel::submitPassphrase,
+                onPickAnother = { launchSafely { pickBackup.launch(ZIP_TYPES) } },
+                onRetryPack = viewModel::restorePack,
+                onPickPack = { id ->
+                    pickingFor = id
+                    launchSafely { pickPack.launch(ZIP_TYPES) }
+                },
+                onContinue = viewModel::continueToContacts,
+                onToggleConflict = viewModel::toggleConflict,
+                onSelectAll = viewModel::selectAllConflicts,
+                onApplyConflicts = viewModel::applyConflicts,
+                onOpenSetup = { onLeave(CucutoDestination.Onboarding) },
+                onOpenDiagnostics = { onLeave(CucutoDestination.Diagnostics) },
+                onKeepForBackups = viewModel::keepForBackups,
+                onTurnOnPhoneRingtones = turnOnRingtones,
             ),
-    ) {
-        RestoreContent(
-            step = step,
-            actions =
-                actions.copy(
-                    onPickPack = { id ->
-                        pickingFor = id
-                        launchSafely { pickPack.launch(ZIP_TYPES) }
-                    },
-                ),
-        )
-    }
+        modifier = modifier,
+    )
 }
 
 internal data class RestoreActions(
+    /** Leaves the restore: back, a problem's Close, the summary's Finish. */
     val onClose: () -> Unit = {},
     val onPassphrase: (CharArray) -> Unit = {},
     val onPickAnother: () -> Unit = {},
@@ -131,38 +151,38 @@ internal data class RestoreActions(
     val onApplyConflicts: () -> Unit = {},
     val onOpenSetup: () -> Unit = {},
     val onOpenDiagnostics: () -> Unit = {},
-    /** Turns automatic backups on into the restored file (its URI). */
-    val onKeepForBackups: (String) -> Unit = {},
+    /** Turns automatic backups on into the restored file. */
+    val onKeepForBackups: () -> Unit = {},
+    /** Asks for the contacts permission (explained first), then turns phone ringtones on. */
+    val onTurnOnPhoneRingtones: () -> Unit = {},
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RestoreContent(
     step: RestoreStep,
     actions: RestoreActions,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.restore_title)) },
-                navigationIcon = {
-                    IconButton(onClick = actions.onClose) {
-                        Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.restore_close))
-                    }
-                },
-            )
-        },
+    PushedScreen(
+        title = stringResource(R.string.restore_title),
+        onBack = actions.onClose,
+        modifier = modifier,
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Box(Modifier.fillMaxSize().consumeWindowInsets(padding).padding(padding)) {
             when (step) {
-                RestoreStep.Closed -> Unit
+                // Opening starts right away; there is nothing else to show meanwhile.
+                RestoreStep.Closed -> WorkingStep(RestoreStep.Phase.OPENING)
+
                 is RestoreStep.Working -> WorkingStep(step.phase)
+
                 is RestoreStep.Passphrase -> PassphraseStep(step, actions.onPassphrase)
+
                 is RestoreStep.Problem -> ProblemStep(step, actions)
+
                 is RestoreStep.Packs -> PacksStep(step, actions)
+
                 is RestoreStep.Conflicts -> ConflictsStep(step, actions)
+
                 is RestoreStep.Done -> DoneStep(step, actions)
             }
         }
@@ -283,7 +303,7 @@ private fun PacksStep(
             }
             items(step.rows, key = { it.id }) { row -> PackRowItem(row, actions) }
         }
-        BottomBar {
+        BottomActionBar {
             val missing = step.missing
             Button(onClick = actions.onContinue, enabled = !step.busy, shapes = ButtonDefaults.shapes()) {
                 Text(
@@ -304,46 +324,56 @@ private fun PackRowItem(
     actions: RestoreActions,
 ) {
     val status = row.status
+    val button: (@Composable () -> Unit)? =
+        when {
+            status is PackStatus.Done -> {
+                null
+            }
+
+            row.item.action == PackRestoreAction.PICK_FILE && status !is PackStatus.Working -> {
+                {
+                    FilledTonalButton(onClick = { actions.onPickPack(row.id) }, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(R.string.restore_pack_pick_button))
+                    }
+                }
+            }
+
+            status is PackStatus.Failed -> {
+                {
+                    OutlinedButton(onClick = { actions.onRetryPack(row.id) }, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(R.string.restore_pack_retry))
+                    }
+                }
+            }
+
+            else -> {
+                null
+            }
+        }
+    // With large fonts the button goes under the text, which would otherwise be squeezed a word per line (#226).
+    val buttonBelow = isLargeFont()
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
         Column {
             ListItem(
                 headlineContent = { Text(row.name) },
                 supportingContent = { Text(packStatusText(row), color = packStatusColor(status)) },
                 trailingContent = {
-                    when {
-                        status is PackStatus.Done -> {
-                            Icon(
-                                Icons.Rounded.CheckCircle,
-                                contentDescription = stringResource(R.string.restore_pack_installed),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-
-                        row.item.action == PackRestoreAction.PICK_FILE && status !is PackStatus.Working -> {
-                            FilledTonalButton(
-                                onClick = { actions.onPickPack(row.id) },
-                                shapes = ButtonDefaults.shapes(),
-                            ) {
-                                Text(stringResource(R.string.restore_pack_pick_button))
-                            }
-                        }
-
-                        status is PackStatus.Failed -> {
-                            OutlinedButton(
-                                onClick = { actions.onRetryPack(row.id) },
-                                shapes = ButtonDefaults.shapes(),
-                            ) {
-                                Text(stringResource(R.string.restore_pack_retry))
-                            }
-                        }
-
-                        else -> {
-                            Unit
-                        }
+                    if (status is PackStatus.Done) {
+                        // The status line already says "Installed" in words.
+                        Icon(
+                            Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    } else if (!buttonBelow) {
+                        button?.invoke()
                     }
                 },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             )
+            if (buttonBelow && button != null) {
+                Box(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) { button() }
+            }
             if (status is PackStatus.Working) {
                 val fraction = status.fraction
                 val bar = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
@@ -430,10 +460,14 @@ private fun ConflictsStep(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     StepTitle(R.string.restore_conflicts_title)
                     Text(pluralStringResource(R.plurals.restore_conflicts_body, step.rows.size, step.rows.size))
+                    // 48 dp tall: the checkbox alone is 24 dp, too small to tap next to the first row (#226).
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier =
-                            Modifier.fillMaxWidth().toggleable(step.allSelected, role = Role.Checkbox) {
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(
+                                step.allSelected,
+                                role = Role.Checkbox,
+                            ) {
                                 feedback.fire(if (it) Feedback.ToggleOn else Feedback.ToggleOff)
                                 actions.onSelectAll(it)
                             },
@@ -465,7 +499,7 @@ private fun ConflictsStep(
                 }
             }
         }
-        BottomBar {
+        BottomActionBar {
             if (step.selected.isEmpty()) {
                 Button(onClick = actions.onApplyConflicts, shapes = ButtonDefaults.shapes()) {
                     Text(stringResource(R.string.restore_conflicts_keep))
@@ -533,15 +567,16 @@ private fun DoneStep(
                     ) {
                         SummaryLine(R.plurals.restore_done_packs_missing, summary.packsMissing)
                     }
-                    if (summary.ringtonesPending >
-                        0
-                    ) {
-                        SummaryLine(R.plurals.restore_done_ringtones, summary.ringtonesPending)
+                    if (summary.ringtonesKept > 0) {
+                        SummaryLine(R.plurals.restore_done_ringtones_kept, summary.ringtonesKept)
                     }
                 }
             }
+            summary.phoneRingtones?.takeIf { it.restored > 0 }?.let { ringtones ->
+                item { PhoneRingtonesCard(ringtones, summary.phoneRingtonesWaiting, actions.onTurnOnPhoneRingtones) }
+            }
             step.reusableSource?.let { source ->
-                item { KeepForBackupsCard(kept = step.keptForBackups, onKeep = { actions.onKeepForBackups(source) }) }
+                item { KeepForBackupsCard(kept = step.keptForBackups, onKeep = actions.onKeepForBackups) }
             }
             item {
                 Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
@@ -575,11 +610,54 @@ private fun DoneStep(
                 }
             }
         }
-        BottomBar {
+        BottomActionBar {
             Button(
                 onClick = actions.onClose,
                 shapes = ButtonDefaults.shapes(),
             ) { Text(stringResource(R.string.restore_finish)) }
+        }
+    }
+}
+
+/**
+ * The restored phone ringtones (ADR 0057): how many came back, which have no Android contact on this phone (linked by
+ * hand from each chat), and the one tap that turns them on when they wait for it.
+ */
+@Composable
+private fun PhoneRingtonesCard(
+    ringtones: PhoneRingtoneRestore,
+    waiting: Boolean,
+    onTurnOn: () -> Unit,
+) {
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.restore_ringtones_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(pluralStringResource(R.plurals.restore_ringtones_back, ringtones.restored, ringtones.restored))
+            if (ringtones.missing.isNotEmpty()) {
+                val unnamed = stringResource(R.string.chat_unnamed)
+                Text(
+                    pluralStringResource(
+                        R.plurals.restore_ringtones_missing,
+                        ringtones.missing.size,
+                        ringtones.missing.joinToString { it ?: unnamed },
+                    ),
+                )
+            }
+            if (waiting) {
+                Text(stringResource(R.string.restore_ringtones_off))
+                FilledTonalButton(onClick = onTurnOn, shapes = ButtonDefaults.shapes()) {
+                    Text(stringResource(R.string.ringtone_turn_on))
+                }
+            } else if (ringtones.linked > 0) {
+                Text(
+                    pluralStringResource(R.plurals.restore_ringtones_written, ringtones.linked, ringtones.linked),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
         }
     }
 }
@@ -634,16 +712,6 @@ private fun StepTitle(title: Int) {
         style = MaterialTheme.typography.headlineSmall,
         modifier = Modifier.semantics { heading() },
     )
-}
-
-@Composable
-private fun BottomBar(content: @Composable () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
-            horizontalArrangement = Arrangement.End,
-        ) { content() }
-    }
 }
 
 private const val MAX_DETAILS = 8

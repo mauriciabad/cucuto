@@ -49,6 +49,12 @@ sealed interface CucutoDestination : NavKey {
         val chat: ChatKey,
     ) : CucutoDestination
 
+    /** The ringtone picker (#53) for [chat]'s phone ringtone, opened from its contact detail. */
+    @Serializable
+    data class RingtonePicker(
+        val chat: ChatKey,
+    ) : CucutoDestination
+
     /** The pack creator (#47); with [sourcePackId], a copy of that installed pack to edit ("duplicate and edit"). */
     @Serializable
     data class Creator(
@@ -64,6 +70,63 @@ sealed interface CucutoDestination : NavKey {
     /** Day and night: the place sunrise and sunset are computed for (#118, ADR 0037). */
     @Serializable
     data object DayNight : CucutoDestination
+
+    /**
+     * Restore from the backup at [backupUri] (a document picked with the system file picker): passphrase, packs,
+     * conflicts and the LSPosed checklist (ADR 0028). Pushed from Settings or Home's first-run card. The URI is all it
+     * needs, so a restore interrupted by process death opens the file again.
+     */
+    @Serializable
+    data class Restore(
+        val backupUri: String,
+    ) : CucutoDestination
+
+    /** Settings → Back up now: the manual backup options (full backup, password, repository passwords). */
+    @Serializable
+    data object BackupExport : CucutoDestination
+
+    /** Settings → About → Licenses. */
+    @Serializable
+    data object Licenses : CucutoDestination
+
+    /** The import review of the pack or bundle being imported [from] Packs or Discover (#27, #36). */
+    @Serializable
+    data class ImportReview(
+        val from: ImportFrom,
+    ) : CucutoDestination
+
+    /** Where an import runs: each tab keeps its own, in its root's view model. */
+    @Serializable
+    enum class ImportFrom(
+        val root: CucutoDestination,
+    ) {
+        Packs(CucutoDestination.Packs),
+        Discover(CucutoDestination.Discover),
+    }
+
+    /** Everything about one installed pack (#27): its characters, where it came from, who uses it, remove. */
+    @Serializable
+    data class PackDetail(
+        val packId: String,
+    ) : CucutoDestination
+
+    /** Discover → add a repository or a pack link, or sign in to a saved repository (#36). */
+    @Serializable
+    data object RepositoryForm : CucutoDestination
+
+    /** Discover → the saved repositories: on or off, sign in, remove (#36). */
+    @Serializable
+    data object Repositories : CucutoDestination
+
+    /** The creator's "Check and finish" (#47): the checks, then install, save or share. Above [Creator]. */
+    @Serializable
+    data class CreatorFinish(
+        val sourcePackId: String? = null,
+    ) : CucutoDestination
+
+    /** Home → Assign a voice: every chat without a voice, to pick one for the character picker. */
+    @Serializable
+    data object AssignVoice : CucutoDestination
 
     /** Module status, the decision log and the self-test notification (#17). */
     @Serializable

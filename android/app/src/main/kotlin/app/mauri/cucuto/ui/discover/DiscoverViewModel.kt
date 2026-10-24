@@ -24,6 +24,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -69,6 +70,13 @@ class DiscoverViewModel
         private val loads = MutableStateFlow<Map<Long, RepoLoad>>(emptyMap())
         private val filters = MutableStateFlow(Filters())
         private val form = MutableStateFlow<RepositoryForm?>(null)
+        private val _showForm = MutableStateFlow(false)
+
+        /**
+         * True from opening the repository form (a tap, a sign-in, an "Add to app" link) until its screen is open
+         * ([formShown]): an event kept as state, like [showImportReview].
+         */
+        val showForm: StateFlow<Boolean> = _showForm.asStateFlow()
         private val message = MutableStateFlow<DiscoverMessage?>(null)
         private val demo = MutableStateFlow<DemoPacksUi?>(null)
         private val accesses = ConcurrentHashMap<Long, RepositoryAccess>()
@@ -146,16 +154,23 @@ class DiscoverViewModel
 
         // region Adding repositories and signing in
 
-        /** Opens the empty "add a repository" sheet. */
+        /** Opens the empty "add a repository" form. */
         fun openAdd() {
             formJob?.cancel()
             form.value = RepositoryForm()
+            _showForm.value = true
         }
 
-        /** Opens the sign-in sheet of [repository] (after a 401 or 403, or from the repositories sheet). */
+        /** Opens the sign-in form of [repository] (after a 401 or 403, or from the saved repositories). */
         fun openSignIn(repository: SavedRepository) {
             formJob?.cancel()
             form.value = RepositoryForm(repositoryId = repository.id, input = repository.url)
+            _showForm.value = true
+        }
+
+        /** The repository form's screen is open. */
+        fun formShown() {
+            _showForm.value = false
         }
 
         fun updateForm(change: (RepositoryForm) -> RepositoryForm) {
@@ -171,6 +186,7 @@ class DiscoverViewModel
         fun closeForm() {
             formJob?.cancel()
             form.value = null
+            _showForm.value = false
         }
 
         /**
@@ -206,6 +222,7 @@ class DiscoverViewModel
                 is LinkResult.Ok -> {
                     formJob?.cancel()
                     form.value = RepositoryForm(input = parsed.link.url.toString(), fromLink = true)
+                    _showForm.value = true
                 }
 
                 is LinkResult.Error -> {
@@ -311,7 +328,13 @@ class DiscoverViewModel
 
         // region Installing
 
-        /** Downloads [card]'s file and opens the import review (the same sheet as importing a file). */
+        /** An import started and its review screen should open ([ImportController.showReview]). */
+        val showImportReview: StateFlow<Boolean> = imports.showReview
+
+        /** The import review screen is open. */
+        fun importReviewShown() = imports.reviewShown()
+
+        /** Downloads [card]'s file and opens the import review (the same screen as importing a file). */
         fun install(card: PackCard) {
             viewModelScope.launch {
                 val repository = store.repositories.first().firstOrNull { it.id == card.repositoryId } ?: return@launch
@@ -393,7 +416,7 @@ class DiscoverViewModel
             selected: Boolean,
         ) = imports.setSelected(packId, selected)
 
-        /** Installs what the review shows (the sheet's install button). */
+        /** Installs what the review shows (the review's install button). */
         fun confirmInstall() =
             imports.install {
                 message.value = DiscoverMessage.Installed(it)

@@ -33,10 +33,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -61,15 +58,16 @@ import app.mauri.cucuto.ui.components.ChoiceButtonGroup
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSettingsSection
-import app.mauri.cucuto.ui.settings.restore.RestoreHost
+import app.mauri.cucuto.ui.settings.restore.rememberBackupPicker
 import app.mauri.cucuto.ui.status.SetupAttentionBanner
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import app.mauri.cucuto.ui.theme.rememberReducedMotion
 
 /**
  * Settings (#28, ADR 0028): the global switch, sound and feel, backup and restore, setup, diagnostics, about and
- * (debug builds) developer tools. Restore runs as a full-screen flow on top ([RestoreHost]). When
- * [setupNeedsAttention] (the shell's badge on this tab, #180), a banner on top leads to Settings → Setup.
+ * (debug builds) developer tools. The backup options, a restore and the licenses are screens of their own, pushed
+ * on this tab (ADR 0055). When [setupNeedsAttention] (the shell's badge on this tab, #180), a banner on top leads to
+ * Settings → Setup.
  */
 @Composable
 fun SettingsScreen(
@@ -82,13 +80,6 @@ fun SettingsScreen(
     val message by viewModel.message.collectAsStateWithLifecycle()
     val resources = LocalResources.current
     val snackbar = remember { SnackbarHostState() }
-    var exportDialog by rememberSaveable { mutableStateOf(false) }
-    var licenses by rememberSaveable { mutableStateOf(false) }
-
-    val createDocument =
-        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFileNames.MIME_TYPE)) { uri ->
-            viewModel.exportTo(uri?.toString())
-        }
     val chooseFolder =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             viewModel.chooseFolder(uri?.toString())
@@ -97,6 +88,7 @@ fun SettingsScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFileNames.MIME_TYPE)) { uri ->
             viewModel.chooseFile(uri?.toString())
         }
+    val pickBackup = rememberBackupPicker(onNavigate)
 
     LaunchedEffect(message) {
         val shown = message ?: return@LaunchedEffect
@@ -104,43 +96,30 @@ fun SettingsScreen(
         viewModel.messageShown()
     }
 
-    RestoreHost(onNavigate = onNavigate, onKeepForBackups = viewModel::chooseFile) { pickBackup ->
-        SettingsContent(
-            state = state,
-            systemRemovesAnimations = rememberReducedMotion(),
-            snackbar = snackbar,
-            phoneRingtones = { PhoneRingtoneSettingsSection() },
-            setupNeedsAttention = setupNeedsAttention,
-            actions =
-                SettingsActions(
-                    onEnabled = viewModel::setEnabled,
-                    onSoundLevel = viewModel::setSoundLevel,
-                    onHaptics = viewModel::setHaptics,
-                    onRemoveAnimations = viewModel::setRemoveAnimations,
-                    onExport = { exportDialog = true },
-                    onRestore = pickBackup,
-                    onChooseFolder = { launchSafely { chooseFolder.launch(null) } },
-                    onChooseFile = { launchSafely { chooseFile.launch(viewModel.suggestedAutoFileName()) } },
-                    onTurnOffAutoBackup = viewModel::turnOffAutoBackup,
-                    onAutoIncludePacks = viewModel::setAutoIncludePacks,
-                    onBackUpNow = viewModel::backUpNow,
-                    onLicenses = { licenses = true },
-                    onNavigate = onNavigate,
-                ),
-            modifier = modifier,
-        )
-    }
-
-    if (exportDialog) {
-        ExportDialog(
-            onDismiss = { exportDialog = false },
-            onConfirm = { form ->
-                exportDialog = false
-                if (viewModel.prepareExport(form)) launchSafely { createDocument.launch(viewModel.suggestedFileName()) }
-            },
-        )
-    }
-    if (licenses) LicensesDialog(onDismiss = { licenses = false })
+    SettingsContent(
+        state = state,
+        systemRemovesAnimations = rememberReducedMotion(),
+        snackbar = snackbar,
+        phoneRingtones = { PhoneRingtoneSettingsSection() },
+        setupNeedsAttention = setupNeedsAttention,
+        actions =
+            SettingsActions(
+                onEnabled = viewModel::setEnabled,
+                onSoundLevel = viewModel::setSoundLevel,
+                onHaptics = viewModel::setHaptics,
+                onRemoveAnimations = viewModel::setRemoveAnimations,
+                onExport = { onNavigate(CucutoDestination.BackupExport) },
+                onRestore = pickBackup,
+                onChooseFolder = { launchSafely { chooseFolder.launch(null) } },
+                onChooseFile = { launchSafely { chooseFile.launch(viewModel.suggestedAutoFileName()) } },
+                onTurnOffAutoBackup = viewModel::turnOffAutoBackup,
+                onAutoIncludePacks = viewModel::setAutoIncludePacks,
+                onBackUpNow = viewModel::backUpNow,
+                onLicenses = { onNavigate(CucutoDestination.Licenses) },
+                onNavigate = onNavigate,
+            ),
+        modifier = modifier,
+    )
 }
 
 /** Backups and packs are plain zips; some providers report them as octet streams. */

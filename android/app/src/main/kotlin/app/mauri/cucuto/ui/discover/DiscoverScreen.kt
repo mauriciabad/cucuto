@@ -1,5 +1,6 @@
 package app.mauri.cucuto.ui.discover
 
+import android.content.res.Resources
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,10 +63,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -77,16 +78,19 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.pack.ImportSource
-import app.mauri.cucuto.packs.ImportUi
+import app.mauri.cucuto.navigation.CucutoDestination
+import app.mauri.cucuto.navigation.OnEntryPopped
+import app.mauri.cucuto.navigation.parentViewModel
 import app.mauri.cucuto.packs.plainWords
 import app.mauri.cucuto.packs.ui.ClipPlayer
-import app.mauri.cucuto.packs.ui.ImportSheet
+import app.mauri.cucuto.packs.ui.ImportReviewRoute
 import app.mauri.cucuto.packs.ui.installedText
 import app.mauri.cucuto.packs.ui.rememberClipPlayer
 import app.mauri.cucuto.packs.ui.sizeText
@@ -121,19 +125,23 @@ data class DiscoverActions(
 /**
  * The Discover screen (#36, ADR 0029): pack repositories with their packs as cards (tap a character to hear it, as on
  * the Packs screen), search and tag filters, install and update through the import review, and repositories added by
- * URL or "Add to app" link, with optional sign-in. Offline, the last copy of each index stays browsable.
+ * URL or "Add to app" link, with optional sign-in. Offline, the last copy of each index stays browsable. The import
+ * review, the repository form and the saved repositories are screens of their own on this tab (ADR 0055), opened
+ * through [onNavigate].
  *
  * @param onBack Shows a back arrow when Discover is not a top-level destination.
  */
 @Composable
 fun DiscoverScreen(
     modifier: Modifier = Modifier,
+    onNavigate: (CucutoDestination) -> Unit = {},
     onBack: (() -> Unit)? = null,
     viewModel: DiscoverViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val showReview by viewModel.showImportReview.collectAsStateWithLifecycle()
+    val showForm by viewModel.showForm.collectAsStateWithLifecycle()
     val previews = remember(viewModel) { PreviewLoader(viewModel::preview) }
-    var showRepositories by rememberSaveable { mutableStateOf(false) }
     val resolver = LocalContext.current.applicationContext.contentResolver
     val picker =
         rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
@@ -162,37 +170,132 @@ fun DiscoverScreen(
         state = state,
         previews = previews,
         actions = actions,
-        onOpenRepositories = { showRepositories = true },
+        onOpenRepositories = { onNavigate(CucutoDestination.Repositories) },
         onBack = onBack,
         modifier = modifier,
     )
 
-    val import = state.import
-    if (import != ImportUi.Idle) {
-        ImportSheet(
-            import = import,
-            onSelect = viewModel::setSelected,
-            onInstall = viewModel::confirmInstall,
-            // The demo packs fall back to the file picker; other Discover installs have no file to pick again.
-            onPickAnother = actions.onPickFile.takeIf { state.demo == DemoPacksUi.Importing },
-            onClose = viewModel::closeImport,
-        )
+    // An install, the demo packs or a pack link started an import; a tap, a sign-in or a link opened the form.
+    val navigate by rememberUpdatedState(onNavigate)
+    LaunchedEffect(showReview) {
+        if (showReview) {
+            navigate(CucutoDestination.ImportReview(CucutoDestination.ImportFrom.Discover))
+            viewModel.importReviewShown()
+        }
     }
-    state.form?.let { form ->
-        RepositoryFormSheet(
-            form = form,
+    OpenRepositoryForm(showForm, onNavigate, onOpen = viewModel::formShown)
+}
+
+/** Opens the repository form's screen when the view model asks for it ([DiscoverViewModel.showForm]). */
+@Composable
+private fun OpenRepositoryForm(
+    showForm: Boolean,
+    onNavigate: (CucutoDestination) -> Unit,
+    onOpen: () -> Unit,
+) {
+    val navigate by rememberUpdatedState(onNavigate)
+    val currentOnOpen by rememberUpdatedState(onOpen)
+    LaunchedEffect(showForm) {
+        if (showForm) {
+            navigate(CucutoDestination.RepositoryForm)
+            currentOnOpen()
+        }
+    }
+}
+
+/**
+ * The import review of the Discover tab ([CucutoDestination.ImportReview] from Discover), on the Discover screen's view
+ * model ([parentViewModel]). The demo packs fall back to the file picker; other Discover installs have no file to pick
+ * again.
+ */
+@Composable
+fun DiscoverImportReview(
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+    viewModel: DiscoverViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val pending by viewModel.showImportReview.collectAsStateWithLifecycle()
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val picker =
+        rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
+            if (uri != null) viewModel.importFile(ImportSource.of(resolver, uri))
+        }
+    ImportReviewRoute(
+        import = state.import,
+        reviewPending = pending,
+        onShow = viewModel::importReviewShown,
+        onSelect = viewModel::setSelected,
+        onInstall = viewModel::confirmInstall,
+        onPickAnother = { picker.launch(PackPickerTypes) }.takeIf { state.demo == DemoPacksUi.Importing },
+        onClose = viewModel::closeImport,
+        onBack = onBack,
+        onDone = onDone,
+    )
+}
+
+/**
+ * Discover → add a repository, a pack link or sign in ([CucutoDestination.RepositoryForm]), on the Discover screen's
+ * view model. Leaves by itself once the form is done (saved, signed in, or a pack link handed to the import) or gone
+ * (after process death, the form and anything typed in it are not kept: passwords never go into saved state).
+ */
+@Composable
+fun DiscoverRepositoryForm(
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+    viewModel: DiscoverViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val pending by viewModel.showForm.collectAsStateWithLifecycle()
+    LaunchedEffect(pending) { if (pending) viewModel.formShown() }
+    OnEntryPopped(viewModel::closeForm)
+    val form = state.form
+    val currentOnDone by rememberUpdatedState(onDone)
+    LaunchedEffect(form == null) { if (form == null) currentOnDone() }
+    // While it slides out, the screen keeps showing the last form instead of going blank.
+    var shown by remember { mutableStateOf(form) }
+    if (form != null) shown = form
+    shown?.let {
+        RepositoryFormScreen(
+            form = it,
             onChange = viewModel::updateForm,
             onSubmit = viewModel::submitForm,
-            onDismiss = viewModel::closeForm,
+            onBack = onBack,
         )
     }
-    if (showRepositories) {
-        RepositoriesSheet(
-            repositories = state.repositories,
-            actions = actions,
-            onDismiss = { showRepositories = false },
-        )
+}
+
+/** Discover → Repositories ([CucutoDestination.Repositories]), on the Discover screen's view model. */
+@Composable
+fun DiscoverRepositories(
+    onBack: () -> Unit,
+    onNavigate: (CucutoDestination) -> Unit,
+    viewModel: DiscoverViewModel = parentViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val showForm by viewModel.showForm.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val feedback = LocalFeedback.current
+    val resources = LocalResources.current
+    LaunchedEffect(state.message) {
+        val message = state.message ?: return@LaunchedEffect
+        message.feedback()?.let(feedback::fire)
+        viewModel.messageShown()
+        snackbar.showSnackbar(message.text(resources))
     }
+    RepositoriesScreen(
+        repositories = state.repositories,
+        actions =
+            DiscoverActions(
+                onAdd = viewModel::openAdd,
+                onSignIn = viewModel::openSignIn,
+                onSetEnabled = viewModel::setEnabled,
+                onRemove = viewModel::remove,
+            ),
+        onBack = onBack,
+        snackbar = snackbar,
+    )
+    OpenRepositoryForm(showForm, onNavigate, onOpen = viewModel::formShown)
 }
 
 /** Loads a preview file (cover, sprite, sample) of a repository entry; null when it cannot be shown. */
@@ -223,39 +326,12 @@ internal fun DiscoverContent(
 
     LaunchedEffect(state.message) {
         val message = state.message ?: return@LaunchedEffect
-        val text =
-            when (message) {
-                is DiscoverMessage.Installed -> {
-                    celebration = feedback.fire(Feedback.Success)
-                    installedText(resources, message.installed)
-                }
-
-                is DiscoverMessage.Added -> {
-                    feedback.fire(Feedback.Confirm)
-                    resources.getString(R.string.discover_added, message.name)
-                }
-
-                is DiscoverMessage.SignedIn -> {
-                    feedback.fire(Feedback.Confirm)
-                    resources.getString(R.string.discover_signed_in, message.name)
-                }
-
-                is DiscoverMessage.Removed -> {
-                    feedback.fire(Feedback.Confirm)
-                    resources.getString(R.string.discover_removed, message.name)
-                }
-
-                is DiscoverMessage.AlreadyAdded -> {
-                    resources.getString(R.string.discover_already_added, message.name)
-                }
-
-                DiscoverMessage.BadLink -> {
-                    feedback.fire(Feedback.Error)
-                    resources.getString(R.string.discover_bad_link)
-                }
-            }
+        message.feedback()?.let { kind ->
+            val beat = feedback.fire(kind)
+            if (message is DiscoverMessage.Installed) celebration = beat
+        }
         currentOnConsume()
-        snackbar.showSnackbar(text)
+        snackbar.showSnackbar(message.text(resources))
     }
 
     Scaffold(
@@ -328,6 +404,26 @@ internal fun DiscoverContent(
     }
 }
 
+/** The snackbar text of a message. */
+internal fun DiscoverMessage.text(resources: Resources): String =
+    when (this) {
+        is DiscoverMessage.Installed -> installedText(resources, installed)
+        is DiscoverMessage.Added -> resources.getString(R.string.discover_added, name)
+        is DiscoverMessage.SignedIn -> resources.getString(R.string.discover_signed_in, name)
+        is DiscoverMessage.Removed -> resources.getString(R.string.discover_removed, name)
+        is DiscoverMessage.AlreadyAdded -> resources.getString(R.string.discover_already_added, name)
+        DiscoverMessage.BadLink -> resources.getString(R.string.discover_bad_link)
+    }
+
+/** The feedback a message fires with it, if any. */
+internal fun DiscoverMessage.feedback(): Feedback? =
+    when (this) {
+        is DiscoverMessage.Installed -> Feedback.Success
+        is DiscoverMessage.Added, is DiscoverMessage.SignedIn, is DiscoverMessage.Removed -> Feedback.Confirm
+        is DiscoverMessage.AlreadyAdded -> null
+        DiscoverMessage.BadLink -> Feedback.Error
+    }
+
 private fun LazyListScope.discoverItems(
     state: DiscoverUiState,
     previews: PreviewLoader,
@@ -377,13 +473,23 @@ private fun LazyListScope.discoverItems(
                             item(key = "repo-$id-empty") { EmptyRepository() }
                         }
                         items(section.cards, key = { it.key }) { card ->
-                            RemotePackCard(
-                                card = card,
-                                previews = previews,
-                                player = player,
-                                onInstall = { actions.onInstall(card) },
-                                modifier = animateItemUnlessReduced(),
-                            )
+                            if (card.isBundle) {
+                                RemoteBundleCard(
+                                    card = card,
+                                    previews = previews,
+                                    player = player,
+                                    onInstall = actions.onInstall,
+                                    modifier = animateItemUnlessReduced(),
+                                )
+                            } else {
+                                RemotePackCard(
+                                    card = card,
+                                    previews = previews,
+                                    player = player,
+                                    onInstall = { actions.onInstall(card) },
+                                    modifier = animateItemUnlessReduced(),
+                                )
+                            }
                         }
                     }
                 }
@@ -532,8 +638,7 @@ private fun SectionProblem(
     }
 }
 
-/** One repository entry: cover, name, author, characters to tap and hear, and what installing does. */
-@OptIn(ExperimentalLayoutApi::class)
+/** One pack: cover, name, author, characters to tap and hear, and what installing does. */
 @Composable
 private fun RemotePackCard(
     card: PackCard,
@@ -542,7 +647,6 @@ private fun RemotePackCard(
     onInstall: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val entry = card.entry.entry
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -554,68 +658,227 @@ private fun RemotePackCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                RemoteCover(card, previews, Modifier.size(56.dp))
-                // Name and "by author · version · size" are one stop for TalkBack.
-                Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
-                    Text(
-                        card.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = adaptiveMaxLines(2),
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = cardSubtitle(card),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = adaptiveMaxLines(2),
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                RemoteCover(card.cover, card.name, card.repositoryId, previews, Modifier.size(56.dp))
+                CardTitle(card, label = null, Modifier.weight(1f))
             }
-            entry.description?.takeIf { it.isNotBlank() }?.let {
-                Text(
-                    it,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = adaptiveMaxLines(3),
-                    overflow = TextOverflow.Ellipsis,
-                )
+            CardDescription(card.entry.entry.description)
+            CharacterRow(card.characters, card.repositoryId, previews, player)
+            CardFooter(card, onInstall)
+        }
+    }
+}
+
+/**
+ * A bundle (ADR 0064): its own cover, name and description, then one row per pack with its own state (and its own
+ * Install when the repository also lists the pack alone), then how many are installed and the bundle's install button.
+ */
+@Composable
+private fun RemoteBundleCard(
+    card: PackCard,
+    previews: PreviewLoader,
+    player: ClipPlayer,
+    onInstall: (PackCard) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                RemoteCover(card.cover, card.name, card.repositoryId, previews, Modifier.size(56.dp))
+                val label =
+                    pluralStringResource(R.plurals.discover_bundle_label, card.members.size, card.members.size)
+                CardTitle(card, label, Modifier.weight(1f))
             }
-            if (card.isBundle) {
-                Text(
-                    pluralStringResource(
-                        R.plurals.discover_bundle_packs,
-                        card.bundlePacks.size,
-                        card.bundlePacks.size,
-                        card.bundlePacks.joinToString(", "),
-                    ),
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (card.characters.isNotEmpty()) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(card.characters, key = { it.key }) { character ->
-                        RemoteCharacterBadge(character, card.repositoryId, previews, player)
-                    }
-                }
-            }
-            // The button wraps below the badge with large fonts and longer translations.
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                itemVerticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            CardDescription(card.entry.entry.description)
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                StateBadge(card)
-                Spacer(Modifier.weight(1f))
-                InstallButton(card, onInstall)
+                card.members.forEach { member ->
+                    BundleMemberRow(member, card.repositoryId, previews, player, onInstall)
+                }
+            }
+            CardFooter(card) { onInstall(card) }
+        }
+    }
+}
+
+/** One pack of a bundle: cover, name and version, its own state or Install, and its characters to hear. */
+@Composable
+private fun BundleMemberRow(
+    member: BundleMember,
+    repositoryId: Long,
+    previews: PreviewLoader,
+    player: ClipPlayer,
+    onInstall: (PackCard) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Column(Modifier.padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                RemoteCover(member.cover, member.name, repositoryId, previews, Modifier.size(40.dp))
+                // Name and version are one stop for TalkBack.
+                Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
+                    Text(
+                        member.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = adaptiveMaxLines(2),
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        stringResource(R.string.discover_version, member.version),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                MemberAction(member, onInstall)
+            }
+            CharacterRow(member.characters, repositoryId, previews, player, avatarSize = 56.dp)
+        }
+    }
+}
+
+/** A member installs alone only when the repository lists it on its own; otherwise its row just says its state. */
+@Composable
+private fun MemberAction(
+    member: BundleMember,
+    onInstall: (PackCard) -> Unit,
+) {
+    val alone = member.card
+    // The visible label, and what TalkBack says with the pack's name.
+    val (label, spoken) =
+        when (member.state) {
+            InstallState.NEW -> R.string.discover_install to R.string.discover_install_member
+            InstallState.UPDATE -> R.string.discover_update to R.string.discover_update_member
+            InstallState.INSTALLED -> null to null
+        }
+    if (alone != null && alone.entry.supported && label != null && spoken != null) {
+        val description = stringResource(spoken, member.name)
+        TextButton(
+            onClick = { onInstall(alone) },
+            shapes = ButtonDefaults.shapes(),
+            modifier = Modifier.semantics { contentDescription = description },
+        ) {
+            Text(stringResource(label))
+        }
+    } else {
+        when (member.state) {
+            InstallState.INSTALLED -> {
+                StatusBadge(
+                    stringResource(R.string.discover_installed),
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    check = true,
+                )
+            }
+
+            InstallState.UPDATE -> {
+                StatusBadge(
+                    stringResource(R.string.discover_update_available),
+                    MaterialTheme.colorScheme.primaryContainer,
+                )
+            }
+
+            InstallState.NEW -> {
+                Unit
             }
         }
+    }
+}
+
+/** Name and "by author · version · size" (one stop for TalkBack), with "Bundle · 2 packs" above a bundle's name. */
+@Composable
+private fun CardTitle(
+    card: PackCard,
+    label: String?,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        label?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Text(
+            card.name,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = adaptiveMaxLines(2),
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = cardSubtitle(card),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = adaptiveMaxLines(2),
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun CardDescription(description: String?) {
+    description?.takeIf { it.isNotBlank() }?.let {
+        Text(
+            it,
+            modifier = Modifier.padding(horizontal = 16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = adaptiveMaxLines(3),
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun CharacterRow(
+    characters: List<RemoteCharacter>,
+    repositoryId: Long,
+    previews: PreviewLoader,
+    player: ClipPlayer,
+    avatarSize: Dp = 72.dp,
+) {
+    if (characters.isEmpty()) return
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        items(characters, key = { it.key }) { character ->
+            RemoteCharacterBadge(character, repositoryId, previews, player, size = avatarSize)
+        }
+    }
+}
+
+/** The card's state and install button; the button wraps below the badge with large fonts and longer translations. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CardFooter(
+    card: PackCard,
+    onInstall: () -> Unit,
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        StateBadge(card)
+        Spacer(Modifier.weight(1f))
+        InstallButton(card, onInstall)
     }
 }
 
@@ -633,31 +896,46 @@ private fun StateBadge(
     card: PackCard,
     modifier: Modifier = Modifier,
 ) {
-    val (text, color) =
-        when {
-            !card.entry.supported -> {
-                stringResource(R.string.discover_needs_newer) to MaterialTheme.colorScheme.errorContainer
-            }
-
-            card.state == InstallState.UPDATE -> {
-                stringResource(R.string.discover_update_available) to MaterialTheme.colorScheme.primaryContainer
-            }
-
-            card.state == InstallState.INSTALLED -> {
-                stringResource(R.string.discover_installed) to MaterialTheme.colorScheme.tertiaryContainer
-            }
-
-            else -> {
-                return
-            }
+    val colors = MaterialTheme.colorScheme
+    when {
+        !card.entry.supported -> {
+            StatusBadge(stringResource(R.string.discover_needs_newer), colors.errorContainer, modifier = modifier)
         }
+
+        card.state == InstallState.UPDATE -> {
+            StatusBadge(
+                stringResource(R.string.discover_update_available),
+                colors.primaryContainer,
+                modifier = modifier,
+            )
+        }
+
+        card.state == InstallState.INSTALLED -> {
+            StatusBadge(stringResource(R.string.discover_installed), colors.tertiaryContainer, modifier, check = true)
+        }
+
+        // Some of a bundle's packs are here already.
+        card.installedMembers > 0 -> {
+            val text = stringResource(R.string.discover_bundle_installed_some, card.installedMembers, card.members.size)
+            StatusBadge(text, colors.tertiaryContainer, modifier = modifier)
+        }
+    }
+}
+
+@Composable
+private fun StatusBadge(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    check: Boolean = false,
+) {
     Surface(modifier = modifier, shape = RoundedCornerShape(8.dp), color = color) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            if (card.state == InstallState.INSTALLED && card.entry.supported) {
+            if (check) {
                 Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
             }
             Text(text, style = MaterialTheme.typography.labelMedium)
@@ -674,7 +952,7 @@ private fun InstallButton(
     when (card.state) {
         InstallState.NEW -> {
             Button(onClick = onInstall, enabled = enabled, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.discover_install))
+                Text(stringResource(if (card.isBundle) R.string.discover_install_all else R.string.discover_install))
             }
         }
 

@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 /**
  * "Add to app" links (`cucuto://repo/add?url=…`) from websites and QR codes. The activity [offer]s each link
- * ([repoLinkOf]); Discover [take]s it and opens the add sheet with the host and a warning. Nothing is fetched until
+ * ([repoLinkOf]); Discover [take]s it and opens the add form with the host and a warning. Nothing is fetched until
  * the user confirms: a link only fills in the form.
  */
 @Singleton

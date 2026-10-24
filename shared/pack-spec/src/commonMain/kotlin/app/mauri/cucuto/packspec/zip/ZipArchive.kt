@@ -87,6 +87,11 @@ internal class ZipTuning(
  * Every read checks the whole entry: the local header, the data bounds, that a DEFLATE stream expands to exactly the
  * declared size, and the CRC-32. Large entries are streamed, so memory stays bounded whatever their size, and the
  * errors are the same whichever way an entry is read.
+ *
+ * Once an entry has passed every check, later reads skip its CRC-32, and [useFile] skips its checking pass (#241): the
+ * validator reads every media file in its layout stage, then again for the header probes, and the importer once more
+ * to unpack it. This relies on the input not changing while the archive is open, as for the importer's private copy
+ * of the file or an archive in memory. Not thread-safe.
  */
 class ZipArchive private constructor(
     private val input: RandomAccessInput,
@@ -96,6 +101,9 @@ class ZipArchive private constructor(
 ) : PackSource {
 
     private val byName = records.associateBy { it.name }
+
+    /** Entries read whole that passed every check: sizes, the end of the DEFLATE stream and the CRC-32. */
+    private val checked = HashSet<String>()
 
     override val entries: List<SourceEntry> = records.map { SourceEntry(it.name, it.uncompressedSize, it.kind) }
 
@@ -153,6 +161,7 @@ class ZipArchive private constructor(
         if (inMemory(rec)) return block(ByteArrayInput(readWhole(rec)))
         if (rec.method == METHOD_STORED) {
             // Check it once, then read straight from the archive.
+            if (rec.name in checked) return block(SliceInput(input, dataStart(rec), rec.uncompressedSize, rec.name))
             val start = EntryReader(rec).use { reader ->
                 val scratch = ByteArray(tuning.chunkBytes)
                 while (reader.read(scratch, 0, scratch.size) >= 0) Unit
@@ -208,7 +217,10 @@ class ZipArchive private constructor(
             throw unreadable("Data of ${rec.name} is truncated")
         }
         val data = inflater.inflate(compressed, rec.uncompressedSize.toInt()) ?: throw inflateError(rec)
-        if (Crc32.of(data) != rec.crc32) throw unreadable("CRC mismatch in ${rec.name}")
+        if (rec.name !in checked) {
+            if (Crc32.of(data) != rec.crc32) throw unreadable("CRC mismatch in ${rec.name}")
+            checked += rec.name
+        }
         return data
     }
 
@@ -245,6 +257,9 @@ class ZipArchive private constructor(
      */
     private inner class EntryReader(private val rec: ZipEntryRecord) : AutoCloseable {
         val dataStart: Long = dataStart(rec)
+
+        /** Checked before: the sizes and the stream end are still enforced, the CRC-32 is not computed again. */
+        private val skipCrc = rec.name in checked
         private var stream: InflateStream? = null
         private var inBuffer = ByteArray(0)
         private var inPosition = dataStart
@@ -290,7 +305,7 @@ class ZipArchive private constructor(
             } else {
                 inflateSome(s, out, offset, want)
             }
-            crc = Crc32.update(crc, out, offset, n)
+            if (!skipCrc) crc = Crc32.update(crc, out, offset, n)
             position += n
             return n
         }
@@ -334,7 +349,10 @@ class ZipArchive private constructor(
                     if (s.finished || !s.needsInput || !feed(s)) break
                 }
             }
-            if (crc != rec.crc32) throw unreadable("CRC mismatch in ${rec.name}")
+            if (!skipCrc) {
+                if (crc != rec.crc32) throw unreadable("CRC mismatch in ${rec.name}")
+                checked += rec.name
+            }
         }
 
         override fun close() {
@@ -570,20 +588,48 @@ internal fun ByteArray.u16(i: Int): Int = (this[i].toInt() and 0xFF) or ((this[i
 internal fun ByteArray.u32(i: Int): Long = (u16(i).toLong()) or (u16(i + 2).toLong() shl 16)
 internal fun ByteArray.u64(i: Int): Long = u32(i) or (u32(i + 4) shl 32)
 
-/** CRC-32 (IEEE 802.3), as used by zip. */
+/**
+ * CRC-32 (IEEE 802.3), as used by zip. Slicing-by-8 on Int (eight bytes per step; Kotlin/JS emulates Long), about
+ * four times faster than a byte at a time, which matters for packs of hundreds of MB (#241).
+ */
 object Crc32 {
-    private val table = LongArray(256) { n ->
-        var c = n.toLong()
-        repeat(8) { c = if (c and 1L != 0L) 0xEDB88320L xor (c ushr 1) else c ushr 1 }
+    private val t0 = IntArray(256) { n ->
+        var c = n
+        repeat(8) { c = if (c and 1 != 0) POLYNOMIAL xor (c ushr 1) else c ushr 1 }
         c
     }
+    private val t1 = next(t0)
+    private val t2 = next(t1)
+    private val t3 = next(t2)
+    private val t4 = next(t3)
+    private val t5 = next(t4)
+    private val t6 = next(t5)
+    private val t7 = next(t6)
+
+    private fun next(previous: IntArray) = IntArray(256) { n -> t0[previous[n] and 0xFF] xor (previous[n] ushr 8) }
 
     fun of(data: ByteArray, offset: Int = 0, length: Int = data.size): Long = update(0L, data, offset, length)
 
     /** Continues the CRC-32 [crc] (0 for no data yet) with [length] more bytes. */
     fun update(crc: Long, data: ByteArray, offset: Int = 0, length: Int = data.size): Long {
-        var c = crc xor 0xFFFFFFFFL
-        for (i in offset until offset + length) c = table[((c xor data[i].toLong()) and 0xFF).toInt()] xor (c ushr 8)
-        return c xor 0xFFFFFFFFL
+        var c = crc.toInt().inv()
+        var i = offset
+        val end = offset + length
+        while (end - i >= 8) {
+            val lo = c xor ((data[i].toInt() and 0xFF) or ((data[i + 1].toInt() and 0xFF) shl 8) or
+                ((data[i + 2].toInt() and 0xFF) shl 16) or (data[i + 3].toInt() shl 24))
+            val hi = (data[i + 4].toInt() and 0xFF) or ((data[i + 5].toInt() and 0xFF) shl 8) or
+                ((data[i + 6].toInt() and 0xFF) shl 16) or (data[i + 7].toInt() shl 24)
+            c = t7[lo and 0xFF] xor t6[(lo ushr 8) and 0xFF] xor t5[(lo ushr 16) and 0xFF] xor t4[lo ushr 24] xor
+                t3[hi and 0xFF] xor t2[(hi ushr 8) and 0xFF] xor t1[(hi ushr 16) and 0xFF] xor t0[hi ushr 24]
+            i += 8
+        }
+        while (i < end) {
+            c = t0[(c xor data[i].toInt()) and 0xFF] xor (c ushr 8)
+            i++
+        }
+        return c.inv().toLong() and 0xFFFFFFFFL
     }
+
+    private const val POLYNOMIAL = 0xEDB88320.toInt()
 }

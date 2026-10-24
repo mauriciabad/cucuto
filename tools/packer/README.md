@@ -79,7 +79,7 @@ Exit codes: 0 valid, 1 invalid, 2 bad input (for example an unreadable `pack.yam
 
 ```sh
 packer bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.0.0 \
-  --license CC0-1.0 --cover packs/chiptune-critters/cover.svg -o dist/ \
+  --license CC0-1.0 --cover packs/demo-bundle-cover.svg -o dist/ \
   packs/chiptune-critters packs/kitchen-orchestra
 ```
 

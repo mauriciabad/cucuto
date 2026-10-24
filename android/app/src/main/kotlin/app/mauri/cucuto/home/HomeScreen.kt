@@ -42,7 +42,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
@@ -64,10 +63,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -90,7 +91,7 @@ import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
-import app.mauri.cucuto.ui.settings.restore.RestoreHost
+import app.mauri.cucuto.ui.settings.restore.rememberBackupPicker
 import app.mauri.cucuto.ui.status.SetupCardSection
 import app.mauri.cucuto.ui.theme.CucutoTheme
 
@@ -125,31 +126,31 @@ fun HomeScreen(
         rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
             if (uri != null) journeyViewModel.importDemoPacks(ImportSource.of(resolver, uri))
         }
-    RestoreHost(onNavigate = onNavigate, onKeepForBackups = journeyViewModel::keepForBackups) { pickBackup ->
-        HomeContent(
-            state = state,
-            onQueryChange = viewModel::setQuery,
-            onTogglePack = viewModel::togglePackFilter,
-            onDismissRecent = viewModel::dismissRecent,
-            onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat)) },
-            onOpenPacks = { onNavigate(CucutoDestination.Packs) },
-            modifier = modifier,
-            onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
-            journey = journey,
-            // Discover installs the demo bundle from the default repository, through the usual review (#179, #214).
-            onGetDemoPacks = {
-                viewModel.requestDemoPacks()
-                onNavigate(CucutoDestination.Discover)
-            },
-            // Offline fallback: a demo packs file the user already has in Downloads.
-            onImportDemoPacks = { demoPicker.launch(PackPickerTypes) },
-            // Someone moving to a new phone looks here first, not in Settings (ADR 0050).
-            onRestoreBackup = pickBackup,
-            onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
-            onDismissCelebration = journeyViewModel::dismissCelebration,
-            setupCard = { SetupCardSection(onNavigate = onNavigate) },
-        )
-    }
+    val pickBackup = rememberBackupPicker(onNavigate)
+    HomeContent(
+        state = state,
+        onQueryChange = viewModel::setQuery,
+        onTogglePack = viewModel::togglePackFilter,
+        onDismissRecent = viewModel::dismissRecent,
+        onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat)) },
+        onOpenPacks = { onNavigate(CucutoDestination.Packs) },
+        modifier = modifier,
+        onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
+        onAssign = { onNavigate(CucutoDestination.AssignVoice) },
+        journey = journey,
+        // Discover installs the demo bundle from the default repository, through the usual review (#179, #214).
+        onGetDemoPacks = {
+            viewModel.requestDemoPacks()
+            onNavigate(CucutoDestination.Discover)
+        },
+        // Offline fallback: a demo packs file the user already has in Downloads.
+        onImportDemoPacks = { demoPicker.launch(PackPickerTypes) },
+        // Someone moving to a new phone looks here first, not in Settings (ADR 0050).
+        onRestoreBackup = pickBackup,
+        onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
+        onDismissCelebration = journeyViewModel::dismissCelebration,
+        setupCard = { SetupCardSection(onNavigate = onNavigate) },
+    )
 }
 
 /** Stateless home screen, for previews and UI tests. */
@@ -164,6 +165,7 @@ fun HomeContent(
     onOpenPacks: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenDetail: (ChatKey) -> Unit = onOpenChat,
+    onAssign: () -> Unit = {},
     journey: JourneyStep = JourneyStep.None,
     onGetDemoPacks: () -> Unit = {},
     onImportDemoPacks: () -> Unit = {},
@@ -175,7 +177,6 @@ fun HomeContent(
     var query by rememberSaveable { mutableStateOf(state.query) }
     val latestOnQueryChange by rememberUpdatedState(onQueryChange)
     LaunchedEffect(query) { latestOnQueryChange(query) }
-    var sheetOpen by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val fabExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
     val feedback = LocalFeedback.current
@@ -189,7 +190,8 @@ fun HomeContent(
     }
 
     Scaffold(
-        modifier = modifier,
+        // Chat rows carry a resource ID, so the Baseline Profile generator can open one (#226).
+        modifier = modifier.semantics { testTagsAsResourceId = true },
         topBar = { HomeSearchBar(query, onQueryChange = { query = it }) },
         floatingActionButton = {
             if (state.totalChats > 0 && state.hasPacks) {
@@ -197,7 +199,7 @@ fun HomeContent(
                 ExtendedFloatingActionButton(
                     onClick = {
                         feedback.fire(Feedback.Tap)
-                        sheetOpen = true
+                        onAssign()
                     },
                     // Material hides the text from TalkBack: the icon carries the label, expanded or not.
                     icon = { Icon(Icons.Rounded.Add, contentDescription = fabLabel) },
@@ -278,17 +280,6 @@ fun HomeContent(
                 }
             }
         }
-    }
-
-    if (sheetOpen) {
-        AssignSheet(
-            unassigned = state.unassigned,
-            onDismiss = { sheetOpen = false },
-            onPick = { key ->
-                sheetOpen = false
-                open(key)
-            },
-        )
     }
 }
 
@@ -470,7 +461,7 @@ private fun RecentSender(
 }
 
 @Composable
-private fun ChatListItem(
+internal fun ChatListItem(
     row: ChatRow,
     shared: Boolean,
     onClick: () -> Unit,
@@ -508,7 +499,10 @@ private fun ChatListItem(
             }
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.chat_open_label), onClick = onClick),
+        modifier =
+            Modifier
+                .testTag(CHAT_ROW_TAG)
+                .clickable(onClickLabel = stringResource(R.string.chat_open_label), onClick = onClick),
     )
 }
 
@@ -535,36 +529,6 @@ private fun EmptyChats() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AssignSheet(
-    unassigned: List<ChatRow>,
-    onDismiss: () -> Unit,
-    onPick: (ChatKey) -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(
-            text = stringResource(R.string.home_sheet_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp).semantics { heading() },
-        )
-        if (unassigned.isEmpty()) {
-            Text(
-                text = stringResource(R.string.home_sheet_empty),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
-        } else {
-            LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                items(unassigned, key = { "sheet/${it.key.packageName}/${it.key.conversationKey}" }) { row ->
-                    ChatListItem(row, shared = false, onClick = { onPick(row.key) })
-                }
-            }
-        }
     }
 }
 
@@ -643,3 +607,6 @@ internal fun previewHomeState(now: Long = PREVIEW_NOW): HomeState {
 
 private const val WA = "com.whatsapp"
 private const val PREVIEW_NOW = 1_761_000_000_000L
+
+/** Test tag (and, on Home, resource ID) of each chat row; `baselineprofile/` opens one by it. */
+const val CHAT_ROW_TAG = "chat_row"

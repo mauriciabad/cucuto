@@ -77,14 +77,164 @@ export interface PackDraftInput {
 	license: string;
 	description?: string | null;
 	cover?: DraftFileRef | null;
-	characters: {
-		/** Null to derive a unique slug from the name. */
-		id: string | null;
-		name: string;
-		sprite: DraftFileRef | null;
-		seedColor: string | null;
-		clips: { file: DraftFileRef; label: string | null; weight?: number | null }[];
-	}[];
+	characters: CharacterDraftInput[];
+	/** Pass-through data from an opened pack: the creator keeps it but does not edit it yet. */
+	homepage?: string | null;
+	tags?: string[];
+}
+
+/** A character of a `PackDraftInput`. Fields after `haptic` are pass-through data from an opened pack. */
+export interface CharacterDraftInput {
+	/** Null to derive a unique slug from the name. */
+	id: string | null;
+	name: string;
+	sprite: DraftFileRef | null;
+	seedColor: string | null;
+	clips: ClipDraftInput[];
+	/** Null for the format's default (`auto`). */
+	haptic?: HapticJson | null;
+	description?: string | null;
+	tags?: string[];
+	/** A GIF, animated WebP or animated JPEG XL, kept from the opened pack. */
+	spriteAnimated?: DraftFileRef | null;
+	/** Ringtone variants kept from the opened pack: `entry` is written as it was, with only its file replaced. */
+	ringtones?: { file: DraftFileRef; entry: Record<string, unknown> }[];
+}
+
+export interface ClipDraftInput {
+	file: DraftFileRef;
+	label: string | null;
+	weight?: number | null;
+	/** The clip's condition (day and night clips), kept from an opened pack. */
+	when?: Record<string, unknown> | null;
+}
+
+/** One envelope point of a custom haptic, as in `pack.json`. */
+export interface ControlPointJson {
+	intensity: number;
+	sharpness: number;
+	ms: number;
+}
+
+/** One custom haptic event, as in `pack.json`: a preset or a basic envelope. */
+export interface HapticEventJson {
+	at: number;
+	preset?: 'CLICK' | 'TICK' | 'LOW_TICK';
+	scale?: number;
+	initialSharpness?: number;
+	envelope?: ControlPointJson[];
+}
+
+/** A character's `haptic`, as in `pack.json`. */
+export interface HapticJson {
+	mode: 'auto' | 'none' | 'custom';
+	events?: HapticEventJson[];
+}
+
+/** Why a pasted pattern was refused (`HapticPatternText.Problem` in shared/pack-spec). */
+export interface HapticProblem {
+	kind:
+		| 'NotJson'
+		| 'NotCustom'
+		| 'NoEvents'
+		| 'TooManyEvents'
+		| 'NotAnEvent'
+		| 'MissingField'
+		| 'UnknownField'
+		| 'NotWholeNumber'
+		| 'OutOfRange'
+		| 'UnknownPreset'
+		| 'PointCount'
+		| 'NotClosed'
+		| 'Unsorted'
+		| 'Overlap'
+		| 'TooLong';
+	event?: number;
+	point?: number;
+	field?: string;
+	value?: string;
+	min?: number;
+	max?: number;
+	count?: number;
+	ms?: number;
+	until?: number;
+}
+
+export type HapticParse =
+	{ valid: true; events: HapticEventJson[] } | { valid: false; problem: HapticProblem };
+
+/** A clip as "Copy for AI" describes it. `loudness` rows are `[ms, loudness, sharpness]`, 0 to 100. */
+export interface PromptClip {
+	path: string;
+	durationMs: number | null;
+	loudness?: [number, number, number][] | null;
+}
+
+/** An archive opened for editing. `draft` keys are paths in the archive; `roots` lists a bundle's pack folders. */
+export interface OpenedPack {
+	result: PackSpecResult;
+	roots: string[];
+	draft: PackDraftInput | null;
+	/** Audio paths in the archive and their length in milliseconds. */
+	durations: Record<string, number>;
+}
+
+/** A bundle being made from finished packs (`BundleDraft` in shared/pack-spec). */
+export interface BundleDraftInput {
+	id: string;
+	name: string;
+	version: string;
+	author?: string | null;
+	license?: string | null;
+	homepage?: string | null;
+	description?: string | null;
+	cover?: DraftFileRef | null;
+	tags?: string[];
+	packIds: string[];
+}
+
+export type BundleProblem =
+	| 'BUNDLE_ID_INVALID'
+	| 'BUNDLE_NAME_MISSING'
+	| 'VERSION_INVALID'
+	| 'NO_PACKS'
+	| 'TOO_MANY_PACKS'
+	| 'PACK_TWICE'
+	| 'ID_CLASH'
+	| 'UNSUPPORTED_FILE';
+
+export interface BundleAssembly {
+	problems: BundleProblem[];
+	manifestJson: string | null;
+	/** `packs/<pack id>`, in the order of `packIds`. */
+	roots: string[];
+	coverPath: string | null;
+	fileName: string | null;
+}
+
+/** One archive indexed for a repository, as `packer index` does. */
+export interface IndexedArchive {
+	result: PackSpecResult;
+	/** The `repository.json` entry, or null when the archive is invalid. */
+	entry: Record<string, unknown> | null;
+	/** Preview files to copy: `path` in the repository folder, `source` in the archive. */
+	previews: { path: string; source: string }[];
+}
+
+export interface RepositoryTools {
+	/** Where a file is downloaded from: `packs/<file>`, or `<baseUrl>/<file>` when the packs live elsewhere. */
+	downloadUrl(fileName: string, baseUrl: string | null): string;
+	entry(bytes: Uint8Array, downloadUrl: string, sha256: string): IndexedArchive;
+	/** `repository.json` (null when the schema check fails) and the check. */
+	index(
+		meta: {
+			name: string;
+			description?: string | null;
+			homepage?: string | null;
+			generatedAt?: string | null;
+		},
+		entries: Record<string, unknown>[]
+	): { json: string | null; result: PackSpecResult };
 }
 
 /** What a draft still needs (`DraftProblem.Kind`); `character` is the index of the character concerned. */
@@ -134,6 +284,10 @@ export interface AuthoringTargets {
 	clipHintMs: number;
 	maxSourceMs: number;
 	hookLengthMs: number;
+	/** Custom haptics: the longest timeline, most events and most points per envelope. */
+	hapticMaxMs: number;
+	hapticMaxEvents: number;
+	hapticMaxPoints: number;
 }
 
 export interface Authoring {
@@ -154,6 +308,23 @@ export interface Authoring {
 	): ProcessedClip;
 	/** The hook of a song for a clip of `lengthMs` (the shared auto-cut heuristic): `[startMs, endMs]`. */
 	findHook(samples: Float32Array, sampleRate: number, lengthMs: number): [number, number];
+	/** Opens a pack (or the pack in folder `root` of a bundle) for editing, with the app's pass-through rules. */
+	openPack(bytes: Uint8Array, root?: string | null): OpenedPack;
+	/** The version that installs over `installed` as an update. */
+	versionAfter(current: string, installed: string | null): string;
+	assembleBundle(draft: BundleDraftInput): BundleAssembly;
+	isPackId(id: string): boolean;
+	repository: RepositoryTools;
+	/** "Copy for AI": the prompt for a character's clips and current pattern (shared with the app). */
+	hapticPrompt(
+		character: string | null,
+		clips: PromptClip[],
+		current: HapticEventJson[] | null
+	): string;
+	/** `{"mode":"custom","events":[…]}`, compact, as `pack.json` carries it. */
+	hapticPatternJson(events: HapticEventJson[]): string;
+	/** "Paste pattern": the pattern in a text, checked with the pack format's haptic rules. */
+	parseHapticPattern(text: string): HapticParse;
 }
 
 type Nullable<T> = T | null | undefined;
@@ -210,6 +381,52 @@ export interface PackSpecModule {
 	};
 	findHook(samples: Float32Array, sampleRate: number, lengthMs: number): number[];
 	authoringTargets(): AuthoringTargets;
+	openPack(
+		bytes: Int8Array,
+		root: Nullable<string>
+	): {
+		readonly result: RawResult;
+		readonly roots: string[];
+		readonly draftJson: Nullable<string>;
+		readonly durationsJson: Nullable<string>;
+	};
+	versionAfter(current: string, installed: Nullable<string>): string;
+	assembleBundle(draft: string): {
+		readonly problems: string[];
+		readonly manifestJson: Nullable<string>;
+		readonly roots: string[];
+		readonly coverPath: Nullable<string>;
+		readonly fileName: Nullable<string>;
+	};
+	isPackId(id: string): boolean;
+	repositoryEntry(
+		bytes: Int8Array,
+		downloadUrl: string,
+		sha256: string
+	): {
+		readonly result: RawResult;
+		readonly entryJson: Nullable<string>;
+		readonly previewPaths: string[];
+		readonly previewSources: string[];
+	};
+	repositoryDownloadUrl(fileName: string, baseUrl: Nullable<string>): string;
+	repositoryIndex(
+		name: string,
+		description: Nullable<string>,
+		homepage: Nullable<string>,
+		generatedAt: Nullable<string>,
+		entries: string[]
+	): { readonly json: Nullable<string>; readonly result: RawResult };
+	hapticPrompt(
+		character: Nullable<string>,
+		clips: string,
+		currentEventsJson: Nullable<string>
+	): string;
+	hapticPatternJson(eventsJson: string): string;
+	parseHapticPattern(text: string): {
+		readonly eventsJson: Nullable<string>;
+		readonly problemJson: Nullable<string>;
+	};
 }
 
 // Kotlin's ByteArray is an Int8Array: a view over the same memory, no copy.
@@ -270,7 +487,10 @@ function authoring(module: PackSpecModule): Authoring {
 			clipMaxMs: t.clipMaxMs,
 			clipHintMs: t.clipHintMs,
 			maxSourceMs: t.maxSourceMs,
-			hookLengthMs: t.hookLengthMs
+			hookLengthMs: t.hookLengthMs,
+			hapticMaxMs: t.hapticMaxMs,
+			hapticMaxEvents: t.hapticMaxEvents,
+			hapticMaxPoints: t.hapticMaxPoints
 		},
 		licensePresets: [...module.licensePresets()],
 		personalUseLicense: module.personalUseLicense(),
@@ -307,6 +527,64 @@ function authoring(module: PackSpecModule): Authoring {
 		findHook(samples, sampleRate, lengthMs) {
 			const [start, end] = module.findHook(samples, sampleRate, lengthMs);
 			return [start, end];
+		},
+		openPack(bytes, root) {
+			const r = module.openPack(int8(bytes), root ?? null);
+			return {
+				result: plain(r.result),
+				roots: [...r.roots],
+				draft: r.draftJson ? (JSON.parse(r.draftJson) as PackDraftInput) : null,
+				durations: r.durationsJson ? (JSON.parse(r.durationsJson) as Record<string, number>) : {}
+			};
+		},
+		versionAfter: (current, installed) => module.versionAfter(current, installed),
+		assembleBundle(draft) {
+			const r = module.assembleBundle(JSON.stringify(draft));
+			return {
+				problems: r.problems.map((p) => p as BundleProblem),
+				manifestJson: r.manifestJson ?? null,
+				roots: [...r.roots],
+				coverPath: r.coverPath ?? null,
+				fileName: r.fileName ?? null
+			};
+		},
+		isPackId: (id) => module.isPackId(id),
+		repository: {
+			downloadUrl: (fileName, baseUrl) => module.repositoryDownloadUrl(fileName, baseUrl),
+			entry(bytes, downloadUrl, sha256) {
+				const r = module.repositoryEntry(int8(bytes), downloadUrl, sha256);
+				return {
+					result: plain(r.result),
+					entry: r.entryJson ? (JSON.parse(r.entryJson) as Record<string, unknown>) : null,
+					previews: r.previewPaths.map((path, i) => ({ path, source: r.previewSources[i] }))
+				};
+			},
+			index(meta, entries) {
+				const r = module.repositoryIndex(
+					meta.name,
+					meta.description ?? null,
+					meta.homepage ?? null,
+					meta.generatedAt ?? null,
+					entries.map((e) => JSON.stringify(e))
+				);
+				return { json: r.json ?? null, result: plain(r.result) };
+			}
+		},
+		hapticPrompt: (character, clips, current) =>
+			module.hapticPrompt(
+				character,
+				JSON.stringify(clips),
+				current && current.length > 0 ? JSON.stringify(current) : null
+			),
+		hapticPatternJson: (events) => module.hapticPatternJson(JSON.stringify(events)),
+		parseHapticPattern(text) {
+			const r = module.parseHapticPattern(text);
+			if (r.eventsJson)
+				return { valid: true, events: JSON.parse(r.eventsJson) as HapticEventJson[] };
+			return {
+				valid: false,
+				problem: JSON.parse(r.problemJson ?? '{"kind":"NotJson"}') as HapticProblem
+			};
 		}
 	};
 }

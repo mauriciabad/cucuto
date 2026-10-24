@@ -62,7 +62,6 @@
     <string name="export_credentials">Incluir las contraseñas de los repositorios</string>
     <string name="export_credentials_body">Solo es posible en una copia protegida con contraseña.</string>
     <string name="export_choose_place">Elegir dónde guardarla</string>
-    <string name="export_cancel">Cancelar</string>
     <string name="export_show_password">Mostrar contraseña</string>
     <string name="export_hide_password">Ocultar contraseña</string>
 
@@ -180,10 +179,27 @@
         <item quantity="many">Aún faltan %1$d packs. Sus contactos suenan con el tono de WhatsApp hasta que los importes desde Packs.</item>
         <item quantity="other">Aún faltan %1$d packs. Sus contactos suenan con el tono de WhatsApp hasta que los importes desde Packs.</item>
     </plurals>
-    <plurals name="restore_done_ringtones">
-        <item quantity="one">%1$d tono de llamada se guarda para una versión futura de Cucuto.</item>
-        <item quantity="many">%1$d tonos de llamada se guardan para una versión futura de Cucuto.</item>
-        <item quantity="other">%1$d tonos de llamada se guardan para una versión futura de Cucuto.</item>
+    <plurals name="restore_done_ringtones_kept">
+        <item quantity="one">Se ha mantenido %1$d tono de llamada que ya tenías en este móvil.</item>
+        <item quantity="many">Se han mantenido %1$d tonos de llamada que ya tenías en este móvil.</item>
+        <item quantity="other">Se han mantenido %1$d tonos de llamada que ya tenías en este móvil.</item>
+    </plurals>
+    <string name="restore_ringtones_title">Tonos de llamada</string>
+    <plurals name="restore_ringtones_back">
+        <item quantity="one">Ha vuelto %1$d tono de llamada.</item>
+        <item quantity="many">Han vuelto %1$d tonos de llamada.</item>
+        <item quantity="other">Han vuelto %1$d tonos de llamada.</item>
+    </plurals>
+    <plurals name="restore_ringtones_missing">
+        <item quantity="one">No está en los contactos de este móvil: %1$s. Vincúlalo desde la tarjeta Tono de llamada del chat.</item>
+        <item quantity="many">No están en los contactos de este móvil: %1$s. Vincúlalos desde la tarjeta Tono de llamada de cada chat.</item>
+        <item quantity="other">No están en los contactos de este móvil: %1$s. Vincúlalos desde la tarjeta Tono de llamada de cada chat.</item>
+    </plurals>
+    <string name="restore_ringtones_off">Los tonos de llamada están desactivados en este móvil. Actívalos para ponerlos en tus contactos.</string>
+    <plurals name="restore_ringtones_written">
+        <item quantity="one">%1$d contacto vuelve a sonar con su personaje.</item>
+        <item quantity="many">%1$d contactos vuelven a sonar con su personaje.</item>
+        <item quantity="other">%1$d contactos vuelven a sonar con su personaje.</item>
     </plurals>
     <string name="restore_checklist_title">Lo que una copia no puede hacer</string>
     <string name="restore_checklist_body">El módulo vive en LSPosed, fuera de Cucuto. En un móvil nuevo:</string>
@@ -215,7 +231,6 @@
     <string name="settings_licenses">Licencias</string>
     <string name="settings_licenses_body">Cucuto es software libre con licencia GPL, versión 3 o posterior.</string>
     <string name="licenses_title">Licencias</string>
-    <string name="licenses_close">Cerrar</string>
     <string name="licenses_app_body">Licencia Pública General de GNU, versión 3 o posterior. Puedes compartirlo y modificarlo en las mismas condiciones.</string>
     <string name="licenses_font_body">SIL Open Font License 1.1.</string>
     <string name="licenses_packs">Packs de sonidos de demostración</string>

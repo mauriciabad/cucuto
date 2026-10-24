@@ -25,7 +25,7 @@ class DriveClientTest {
 
     @After
     fun stop() {
-        server.close()
+        server.closeServer()
     }
 
     private suspend fun expectError(

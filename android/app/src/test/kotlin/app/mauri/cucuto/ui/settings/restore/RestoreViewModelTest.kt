@@ -11,9 +11,12 @@ import app.mauri.cucuto.backup.PackFailure
 import app.mauri.cucuto.backup.PackProgress
 import app.mauri.cucuto.core.backup.BackupPackSourceType
 import app.mauri.cucuto.core.backup.PackRestoreAction
+import app.mauri.cucuto.core.backup.RingtoneOutcome
 import app.mauri.cucuto.core.backup.ZipContentType
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
 import app.mauri.cucuto.testing.FakeCharacterDirectory
+import app.mauri.cucuto.ui.settings.FakeAutoBackup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -23,6 +26,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -30,7 +34,8 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestoreViewModelTest {
     private val gateway = FakeBackupGateway()
-    private val viewModel by lazy { RestoreViewModel(gateway, FakeCharacterDirectory()) }
+    private val autoBackup = FakeAutoBackup()
+    private val viewModel by lazy { RestoreViewModel(gateway, FakeCharacterDirectory(), autoBackup) }
 
     @Before
     fun setUp() {
@@ -73,6 +78,7 @@ class RestoreViewModelTest {
             assertEquals(null, done.reusableSource)
             viewModel.keepForBackups()
             assertFalse(step<RestoreStep.Done>().keptForBackups)
+            assertEquals(emptyList<String>(), autoBackup.chosenFiles)
         }
 
     @Test
@@ -88,6 +94,35 @@ class RestoreViewModelTest {
 
             viewModel.keepForBackups()
             assertTrue(step<RestoreStep.Done>().keptForBackups)
+            assertEquals(listOf("content://drive/backup"), autoBackup.chosenFiles)
+        }
+
+    @Test
+    fun `keeping the file stays off when the permission is refused`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports += BackupTestData.report(applied = listOf("1"))
+            autoBackup.failChoose = true
+
+            viewModel.open("content://drive/backup")
+            viewModel.keepForBackups()
+            assertFalse(step<RestoreStep.Done>().keptForBackups)
+        }
+
+    @Test
+    fun `the screen opens its file once, and again in a new view model after process death`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.PassphraseRequired
+            viewModel.start("content://backup")
+            viewModel.submitPassphrase("wrong".toCharArray())
+            // Shown again (rotation, back from another tab): the restore carries on where it was.
+            viewModel.start("content://backup")
+            assertEquals(listOf(null, "wrong"), gateway.openedWith)
+
+            val restored = RestoreViewModel(gateway, FakeCharacterDirectory(), autoBackup)
+            restored.start("content://backup")
+            assertEquals(listOf(null, "wrong", null), gateway.openedWith)
+            assertFalse((restored.step.value as RestoreStep.Passphrase).wrong)
         }
 
     @Test
@@ -214,6 +249,114 @@ class RestoreViewModelTest {
             assertEquals(listOf(emptySet<String>()), gateway.restoreCalls)
             assertEquals(2, done.summary.conflictsKept)
             assertEquals(1, done.summary.voicesApplied)
+        }
+
+    @Test
+    fun `a backup without phone ringtones never touches them`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports += BackupTestData.report(applied = listOf("1", "2"))
+            viewModel.open("content://backup")
+            assertNull(step<RestoreStep.Done>().summary.phoneRingtones)
+            assertTrue(gateway.phoneRingtoneReports.isEmpty())
+        }
+
+    @Test
+    fun `restored phone ringtones find their contacts and the summary says which are missing`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document(contacts = 3)))
+            val report =
+                BackupTestData.report(
+                    applied = listOf("1", "2", "3"),
+                    ringtones =
+                        listOf(
+                            BackupTestData.ringtone("1"),
+                            BackupTestData.ringtone("2"),
+                            BackupTestData.ringtone("3", RingtoneOutcome.KEPT),
+                        ),
+                )
+            gateway.reports += report
+            gateway.phoneRingtones =
+                PhoneRingtoneRestore(2, 1, listOf("Contact 2"), waitingForPermission = false, enabled = true)
+            viewModel.open("content://backup")
+
+            val summary = step<RestoreStep.Done>().summary
+            assertEquals(listOf(report), gateway.phoneRingtoneReports)
+            assertEquals(1, summary.ringtonesKept)
+            assertEquals(listOf("Contact 2"), summary.phoneRingtones!!.missing)
+            assertFalse(summary.phoneRingtonesWaiting)
+        }
+
+    @Test
+    fun `phone ringtones that wait for the permission are turned on from the summary`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports +=
+                BackupTestData.report(applied = listOf("1"), ringtones = listOf(BackupTestData.ringtone("1")))
+            gateway.phoneRingtones =
+                PhoneRingtoneRestore(1, 0, emptyList(), waitingForPermission = true, enabled = false)
+            viewModel.open("content://backup")
+            assertTrue(step<RestoreStep.Done>().summary.phoneRingtonesWaiting)
+
+            // The permission was refused: nothing changes.
+            gateway.enableResult = null
+            viewModel.enablePhoneRingtones()
+            assertTrue(step<RestoreStep.Done>().summary.phoneRingtonesWaiting)
+
+            gateway.enableResult = PhoneRingtoneRestore(1, 1, emptyList(), waitingForPermission = false, enabled = true)
+            viewModel.enablePhoneRingtones()
+            val summary = step<RestoreStep.Done>().summary
+            assertEquals(2, gateway.enableCalls)
+            assertFalse(summary.phoneRingtonesWaiting)
+            assertEquals(1, summary.phoneRingtones!!.linked)
+        }
+
+    @Test
+    fun `turning them on after the contacts were already matched keeps the restore's counts`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document()))
+            gateway.reports +=
+                BackupTestData.report(applied = listOf("1"), ringtones = listOf(BackupTestData.ringtone("1")))
+            // The permission was there but the feature was off: the contacts were matched, nothing is written yet.
+            gateway.phoneRingtones =
+                PhoneRingtoneRestore(1, 1, emptyList(), waitingForPermission = false, enabled = false)
+            viewModel.open("content://backup")
+            assertTrue(step<RestoreStep.Done>().summary.phoneRingtonesWaiting)
+
+            gateway.enableResult = PhoneRingtoneRestore(0, 0, emptyList(), waitingForPermission = false, enabled = true)
+            viewModel.enablePhoneRingtones()
+            val ringtones = step<RestoreStep.Done>().summary.phoneRingtones!!
+            assertEquals(1, ringtones.restored)
+            assertEquals(1, ringtones.linked)
+            assertTrue(ringtones.enabled)
+        }
+
+    @Test
+    fun `phone ringtones are matched after the conflicts, with both runs`() =
+        runTest {
+            gateway.openOutcomes[null] = OpenOutcome.Opened(FakeSession(BackupTestData.document(contacts = 2)))
+            val conflict = BackupTestData.conflict("2", "Contact 2")
+            val first =
+                BackupTestData.report(
+                    applied = listOf("1"),
+                    conflicts = listOf(conflict),
+                    ringtones =
+                        listOf(
+                            BackupTestData.ringtone("1"),
+                            BackupTestData.ringtone("2", RingtoneOutcome.KEPT),
+                        ),
+                )
+            val second = BackupTestData.report(applied = listOf("2"), ringtones = listOf(BackupTestData.ringtone("2")))
+            gateway.reports += first
+            gateway.reports += second
+            viewModel.open("content://backup")
+            step<RestoreStep.Conflicts>()
+            assertTrue("nothing is linked before the user answers", gateway.phoneRingtoneReports.isEmpty())
+
+            viewModel.toggleConflict("2")
+            viewModel.applyConflicts()
+            assertEquals(listOf(first, second), gateway.phoneRingtoneReports)
+            assertEquals(0, step<RestoreStep.Done>().summary.ringtonesKept)
         }
 
     @Test

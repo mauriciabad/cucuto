@@ -265,6 +265,25 @@ class PacksViewModelTest {
         }
 
     @Test
+    fun `every import asks once for its review screen`() =
+        runTest {
+            catalog.prepareSteps = listOf(ImportStep.Ready(review(pack("app.mauri.demo.cats"))))
+            val vm = viewModel()
+            assertFalse(vm.showImportReview.value)
+
+            incoming.offer(source())
+            assertTrue("an import from another app opens the review too", vm.showImportReview.value)
+            vm.importReviewShown()
+            assertFalse(vm.showImportReview.value)
+
+            // Back from the review closes it; the Packs screen must not open it again.
+            vm.closeImport()
+            assertFalse(vm.showImportReview.value)
+            vm.importFrom(source())
+            assertTrue(vm.showImportReview.value)
+        }
+
+    @Test
     fun `an install in progress is not interrupted`() =
         runTest {
             catalog.prepareSteps = listOf(ImportStep.Ready(review(pack("app.mauri.demo.cats"))))

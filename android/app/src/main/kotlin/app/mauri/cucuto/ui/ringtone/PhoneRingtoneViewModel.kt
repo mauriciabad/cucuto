@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.repository.ContactRepository
+import app.mauri.cucuto.core.data.voices.CharacterDirectory
+import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.ringtone.ContactPhoneRingtone
 import app.mauri.cucuto.core.ringtone.PhoneRingtones
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
@@ -43,6 +45,8 @@ data class VariantChip(
  * @property modes The rules worth offering for this character's variants, in display order.
  * @property ringingWith The version Cucuto put on the Android contact, when one is there.
  * @property exportTitle What the ring file is called in the system's ringtone lists (for the WhatsApp hint).
+ * @property ringingCharacter The character that rings, for its album cover (null when not installed).
+ * @property mixed The ringtone is another character than the messages (#53).
  */
 @Immutable
 data class PhoneRingtoneUiState(
@@ -64,12 +68,18 @@ data class PhoneRingtoneUiState(
     val syncing: Boolean = false,
     val suggestions: List<AndroidContact> = emptyList(),
     val needsPhonePermission: Boolean = false,
-)
+    val ringingCharacter: VoiceCharacter? = null,
+    val mixed: Boolean = false,
+) {
+    /** The rule as the summary row says it: "One version" names the version. */
+    val fixedLabel: String?
+        get() = if (mode == RingtoneMode.FIXED) variants.firstOrNull { it.file == fixedVariant }?.label else null
+}
 
 /**
- * The phone ringtone of one chat (#52, ADR 0039): link its Android contact, choose the variant rule, stop it, or take a
- * ringtone back after it was changed in Contacts. Everything goes through [PhoneRingtones], whose sync writes Android
- * contacts; the full ringtone picker is #53.
+ * The phone ringtone of one chat (#52, ADR 0039): link its Android contact, stop it, or take a ringtone back after it
+ * was changed in Contacts. The character, version and rule are chosen in the ringtone picker (#53). Everything goes
+ * through [PhoneRingtones], whose sync writes Android contacts.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = PhoneRingtoneViewModel.Factory::class)
@@ -79,6 +89,7 @@ class PhoneRingtoneViewModel
         @Assisted private val chat: ChatKey,
         private val ringtones: PhoneRingtones,
         private val contacts: ContactRepository,
+        private val characters: CharacterDirectory,
     ) : ViewModel() {
         private val suggestions = MutableStateFlow<List<AndroidContact>>(emptyList())
         private val permissionTick = MutableStateFlow(0)
@@ -91,8 +102,20 @@ class PhoneRingtoneViewModel
                     if (id == null) {
                         ringtones.enabled.map { PhoneRingtoneUiState(loading = false, enabled = it) }
                     } else {
-                        combine(ringtones.observeContact(id), suggestions, permissionTick) { contact, suggested, _ ->
-                            toState(contact, suggested)
+                        combine(
+                            ringtones.observeContact(id),
+                            suggestions,
+                            permissionTick,
+                            characters.observePacks(),
+                        ) { contact, suggested, _, packs ->
+                            val ringing =
+                                contact.character?.let { c ->
+                                    packs
+                                        .firstOrNull { it.packId == c.packId }
+                                        ?.characters
+                                        ?.firstOrNull { it.id == c.characterId }
+                                }
+                            toState(contact, suggested, ringing)
                         }
                     }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), PhoneRingtoneUiState())
@@ -100,6 +123,7 @@ class PhoneRingtoneViewModel
         private fun toState(
             contact: ContactPhoneRingtone,
             suggested: List<AndroidContact>,
+            ringing: VoiceCharacter?,
         ): PhoneRingtoneUiState {
             val variants = contact.character?.variants.orEmpty()
             val mode = contact.ringtone?.mode ?: RingtoneMode.PACK
@@ -131,6 +155,8 @@ class PhoneRingtoneViewModel
                 suggestions = if (contact.linkedLookupKey == null) suggested else emptyList(),
                 needsPhonePermission =
                     mode == RingtoneMode.RANDOM && contact.ringtone != null && !ringtones.canReadPhoneState(),
+                ringingCharacter = ringing,
+                mixed = contact.ringtone?.packId != null,
             )
         }
 
@@ -170,27 +196,6 @@ class PhoneRingtoneViewModel
         fun use() =
             launchSafely {
                 ringtones.setRule(contactId ?: return@launchSafely, RingtoneMode.PACK)
-            }
-
-        fun setMode(mode: RingtoneMode) =
-            launchSafely {
-                val current = state.value
-                ringtones.setRule(
-                    contactId ?: return@launchSafely,
-                    mode,
-                    if (mode ==
-                        RingtoneMode.FIXED
-                    ) {
-                        current.fixedVariant ?: current.variants.firstOrNull()?.file
-                    } else {
-                        null
-                    },
-                )
-            }
-
-        fun setVariant(file: String) =
-            launchSafely {
-                ringtones.setRule(contactId ?: return@launchSafely, RingtoneMode.FIXED, file)
             }
 
         fun stop() =

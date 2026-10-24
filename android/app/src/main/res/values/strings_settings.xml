@@ -65,7 +65,6 @@
     <string name="export_credentials">Include repository passwords</string>
     <string name="export_credentials_body">Only possible in a password-protected backup.</string>
     <string name="export_choose_place">Choose where to save</string>
-    <string name="export_cancel">Cancel</string>
     <string name="export_show_password">Show password</string>
     <string name="export_hide_password">Hide password</string>
 
@@ -172,9 +171,23 @@
         <item quantity="one">%1$d pack is still missing. Its contacts hear WhatsApp\'s tone until you import it from Packs.</item>
         <item quantity="other">%1$d packs are still missing. Their contacts hear WhatsApp\'s tone until you import them from Packs.</item>
     </plurals>
-    <plurals name="restore_done_ringtones">
-        <item quantity="one">%1$d call ringtone is saved for a later version of Cucuto.</item>
-        <item quantity="other">%1$d call ringtones are saved for a later version of Cucuto.</item>
+    <plurals name="restore_done_ringtones_kept">
+        <item quantity="one">%1$d phone ringtone set on this phone was kept.</item>
+        <item quantity="other">%1$d phone ringtones set on this phone were kept.</item>
+    </plurals>
+    <string name="restore_ringtones_title">Phone ringtones</string>
+    <plurals name="restore_ringtones_back">
+        <item quantity="one">%1$d phone ringtone is back.</item>
+        <item quantity="other">%1$d phone ringtones are back.</item>
+    </plurals>
+    <plurals name="restore_ringtones_missing">
+        <item quantity="one">Not in this phone\'s contacts: %1$s. Link it from the chat\'s Phone ringtone card.</item>
+        <item quantity="other">Not in this phone\'s contacts: %1$s. Link them from each chat\'s Phone ringtone card.</item>
+    </plurals>
+    <string name="restore_ringtones_off">Phone ringtones are off on this phone. Turn them on to set them in your contacts.</string>
+    <plurals name="restore_ringtones_written">
+        <item quantity="one">%1$d contact rings with its character again.</item>
+        <item quantity="other">%1$d contacts ring with their character again.</item>
     </plurals>
     <string name="restore_checklist_title">What a backup can\'t do</string>
     <string name="restore_checklist_body">The module itself lives in LSPosed, outside Cucuto. On a new phone:</string>
@@ -208,7 +221,6 @@
     <string name="settings_licenses">Licenses</string>
     <string name="settings_licenses_body">Cucuto is free software under the GPL, version 3 or later.</string>
     <string name="licenses_title">Licenses</string>
-    <string name="licenses_close">Close</string>
     <string name="licenses_app" translatable="false">Cucuto</string>
     <string name="licenses_app_body">GNU General Public License, version 3 or later. You may share and change it under the same terms.</string>
     <string name="licenses_font" translatable="false">Google Sans Flex</string>

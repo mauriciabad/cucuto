@@ -7,23 +7,36 @@ import app.mauri.cucuto.BuildConfig
 import app.mauri.cucuto.contact.ContactDetailScreen
 import app.mauri.cucuto.daynight.DayNightScreen
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
+import app.mauri.cucuto.home.AssignVoiceScreen
 import app.mauri.cucuto.home.HomeScreen
+import app.mauri.cucuto.packs.ui.PackDetailScreen
+import app.mauri.cucuto.packs.ui.PacksImportReview
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.creator.CreatorFinishScreen
 import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.developer.DeveloperScreen
+import app.mauri.cucuto.ui.discover.DiscoverImportReview
+import app.mauri.cucuto.ui.discover.DiscoverRepositories
+import app.mauri.cucuto.ui.discover.DiscoverRepositoryForm
 import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.haptics.HapticEditorScreen
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
+import app.mauri.cucuto.ui.ringtone.RingtonePickerScreen
+import app.mauri.cucuto.ui.settings.BackupExportScreen
+import app.mauri.cucuto.ui.settings.LicensesScreen
 import app.mauri.cucuto.ui.settings.SettingsScreen
+import app.mauri.cucuto.ui.settings.restore.RestoreScreen
 import app.mauri.cucuto.ui.status.SetupScreen
 
 /**
  * Every screen of the app, by destination. Feature screens are self-contained composables in their own package;
  * each one gets one `entry` here, as small as possible (contract of #153: other agents add only their own entry).
  * Screens navigate with `onNavigate` (tab roots switch tabs, anything else is pushed) and close with `onBack`.
- * [setupNeedsAttention] is read while Settings composes, so its banner follows the shell's badge (#180).
+ * A screen that is a step of its parent's work declares the parent with [childOf] and shares its view models
+ * (ADR 0055): the import review, a pack's detail, the repository screens, the backup options, "Check and finish" and
+ * "Assign a voice". [setupNeedsAttention] is read while Settings composes, so its banner follows the shell's badge (#180).
  */
 fun cucutoEntries(
     navigator: AppNavigator,
@@ -35,7 +48,7 @@ fun cucutoEntries(
         // Tab roots: no back arrow; system back goes to Home (or leaves the app from Home).
         entry<CucutoDestination.Home>(metadata = TabRootMetadata) { HomeScreen(onNavigate = navigate) }
         entry<CucutoDestination.Packs>(metadata = TabRootMetadata) { PacksScreen(onNavigate = navigate) }
-        entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen() }
+        entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen(onNavigate = navigate) }
         entry<CucutoDestination.Settings>(metadata = TabRootMetadata) {
             SettingsScreen(onNavigate = navigate, setupNeedsAttention = setupNeedsAttention())
         }
@@ -57,7 +70,23 @@ fun cucutoEntries(
         entry<CucutoDestination.Onboarding> { OnboardingScreen(onFinish = goBack, resume = false) }
         entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
         entry<CucutoDestination.DayNight> { DayNightScreen(onBack = goBack) }
-        entry<CucutoDestination.Creator> { key -> CreatorScreen(sourcePackId = key.sourcePackId, onBack = goBack) }
+        entry<CucutoDestination.Creator> { key ->
+            CreatorScreen(
+                sourcePackId = key.sourcePackId,
+                onBack = goBack,
+                onOpenFinish = { navigate(CucutoDestination.CreatorFinish(key.sourcePackId)) },
+            )
+        }
+        entry<CucutoDestination.CreatorFinish>(
+            metadata = { childOf(CucutoDestination.Creator(it.sourcePackId)) },
+        ) { key ->
+            CreatorFinishScreen(
+                onBack = goBack,
+                onCheckMissing = { navigator.remove(key) },
+                // Done: the pack is in the library, so the creator closes too.
+                onLeaveCreator = { navigator.remove(CucutoDestination.Creator(key.sourcePackId)) },
+            )
+        }
         entry<CucutoDestination.HapticEditor>(
             clazzContentKey = { "haptics/${it.chat?.packageName}/${it.chat?.conversationKey}" },
         ) { key ->
@@ -71,6 +100,68 @@ fun cucutoEntries(
                 onBack = goBack,
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
                 onEditPattern = { navigate(CucutoDestination.HapticEditor(key.chat)) },
+                onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
+            )
+        }
+        entry<CucutoDestination.RingtonePicker>(
+            clazzContentKey = { "ringtone/${it.chat.packageName}/${it.chat.conversationKey}" },
+        ) { key ->
+            RingtonePickerScreen(
+                chat = key.chat,
+                onBack = goBack,
+                onDone = { navigator.remove(key) },
+                onOpenPacks = { navigate(CucutoDestination.Packs) },
+            )
+        }
+
+        // Settings: backup and restore, licenses (ADR 0055). A restore can also start from Home's first-run card.
+        entry<CucutoDestination.BackupExport>(metadata = childOf(CucutoDestination.Settings)) { key ->
+            BackupExportScreen(onBack = goBack, onDone = { navigator.remove(key) })
+        }
+        entry<CucutoDestination.Restore> { key ->
+            RestoreScreen(
+                backupUri = key.backupUri,
+                onBack = goBack,
+                onPickAnother = { uri -> navigator.replace(key, CucutoDestination.Restore(uri)) },
+                onLeave = { destination -> navigator.replace(key, destination) },
+            )
+        }
+        entry<CucutoDestination.Licenses> { LicensesScreen(onBack = goBack) }
+
+        // Packs and Discover: the import review runs on the tab that started it, on that tab's root view model.
+        entry<CucutoDestination.ImportReview>(
+            metadata = { childOf(it.from.root) },
+        ) { key ->
+            when (key.from) {
+                CucutoDestination.ImportFrom.Packs -> {
+                    PacksImportReview(onBack = goBack, onDone = { navigator.remove(key) })
+                }
+
+                CucutoDestination.ImportFrom.Discover -> {
+                    DiscoverImportReview(onBack = goBack, onDone = { navigator.remove(key) })
+                }
+            }
+        }
+        entry<CucutoDestination.PackDetail>(metadata = childOf(CucutoDestination.Packs)) { key ->
+            PackDetailScreen(
+                packId = key.packId,
+                onBack = goBack,
+                onPackMissing = { navigator.remove(key) },
+                onDuplicate = { id -> navigate(CucutoDestination.Creator(id)) },
+            )
+        }
+        entry<CucutoDestination.RepositoryForm>(metadata = childOf(CucutoDestination.Discover)) { key ->
+            DiscoverRepositoryForm(onBack = goBack, onDone = { navigator.remove(key) })
+        }
+        entry<CucutoDestination.Repositories>(metadata = childOf(CucutoDestination.Discover)) {
+            DiscoverRepositories(onBack = goBack, onNavigate = navigate)
+        }
+
+        // Home: every chat without a voice; picking one hands over to the character picker.
+        entry<CucutoDestination.AssignVoice>(metadata = childOf(CucutoDestination.Home)) { key ->
+            AssignVoiceScreen(
+                onBack = goBack,
+                onPick = { chat -> navigator.replace(key, CucutoDestination.Picker(chat)) },
             )
         }
 

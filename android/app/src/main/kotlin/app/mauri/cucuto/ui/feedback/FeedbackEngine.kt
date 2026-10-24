@@ -100,15 +100,16 @@ class FeedbackEngine
 
 /**
  * The handle composables use: `LocalFeedback.current.fire(Feedback.Assign(id))`. In previews (no engine) it only
- * returns the beat, so visuals still animate.
+ * returns the beat, so visuals still animate. [nanoTime] stamps those engine-less beats: tests that step Compose's
+ * test clock pass its time, so beat-driven motion (door, burst) plays frame by frame (the explainer video, ADR 0060).
  */
 @Stable
 class FeedbackController internal constructor(
     private val engine: FeedbackEngine?,
     private val haptics: HapticFeedback?,
+    private val nanoTime: () -> Long = System::nanoTime,
 ) {
-    fun fire(feedback: Feedback): FeedbackBeat =
-        engine?.fire(feedback, haptics) ?: FeedbackBeat(feedback, System.nanoTime())
+    fun fire(feedback: Feedback): FeedbackBeat = engine?.fire(feedback, haptics) ?: FeedbackBeat(feedback, nanoTime())
 }
 
 val LocalFeedback = staticCompositionLocalOf { FeedbackController(engine = null, haptics = null) }
