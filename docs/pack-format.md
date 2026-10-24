@@ -309,9 +309,10 @@ fallback and depend on the device's frequency profile.
 model can write a more precise `custom` timeline from the sound ([ADR 0053](decisions/0053-ai-written-haptic-patterns.md)).
 Cucuto runs no model and calls no service; the user carries the text over:
 
-1. **Copy for AI** (haptic editor) puts a prompt on the clipboard: the character's clips (up to 6) with each one's
-   length and its auto analysis as `ms,loudness,sharpness` rows (0 to 100), the current pattern, these rules and an
-   example. The user pastes it into any AI chat, with the audio file attached if the chat takes audio.
+1. **Copy for AI** (the app's haptic editor, or a character's custom vibration on the website's Create page) puts a
+   prompt on the clipboard: the character's clips (up to 6) with each one's length and its auto analysis as
+   `ms,loudness,sharpness` rows (0 to 100; the website computes a simpler one in the browser), the current pattern,
+   these rules and an example. The user pastes it into any AI chat, with the audio file attached if the chat takes audio.
 2. **Paste pattern** reads the answer back. It takes the first code block holding JSON (else the first JSON object or
    array in the text) and accepts the whole `haptic` object, a character's `{ "haptic": { … } }`, a bare
    `{ "events": [ … ] }` or the events array alone. Everything else follows the rules above strictly (and

@@ -443,7 +443,7 @@ export const en = {
 			'No Java at hand? Choose a pack file here. This page runs the same rules as the app and <code>packer</code> (the same code, compiled for the web) and reports the same codes. The file stays on your device: nothing is uploaded.',
 		hostTitle: 'Host your own repository',
 		hostIntroHtml:
-			'A pack repository is any HTTPS location that serves a <code>repository.json</code> index and the files it lists: GitHub Pages, Cloudflare Pages, a bucket or your own server. No server code needed. <code>packer index</code> writes a ready-to-upload folder with the index, small previews and the packs:',
+			'A pack repository is any HTTPS location that serves a <code>repository.json</code> index and the files it lists: GitHub Pages, Cloudflare Pages, a bucket or your own server. No server code needed. <code>packer index</code> writes a ready-to-upload folder with the index, small previews and the packs (no Java? <a href="{createRepository}">make the folder in your browser</a>):',
 		hostShareHtml:
 			'Upload the folder and share its URL. People paste it in the app (or scan it as a QR code), browse your packs, preview the clips and download what they like. On a website, an <strong>Add to app</strong> link does it in one tap:',
 		hostPrivateHtml:
@@ -489,7 +489,7 @@ export const en = {
 		siteTitle: 'This website',
 		site: [
 			'Every page, font, image and sample clip is served from this site; it makes no requests to other services. To work offline and load faster, your browser keeps a copy of the site in its cache (a service worker). That copy stays on your device, and you can clear it in your browser settings.',
-			'The <a href="{create}">Create page</a> uses your microphone only while you record, and only if you allow it. Pictures and sounds you add there are processed in your browser and never leave your device.',
+			'The <a href="{create}">Create page</a> uses your microphone only while you record, and only if you allow it. Pictures and sounds you add there are processed in your browser and never leave your device. Drafts are kept in your browser’s storage on this device until you delete them or clear the site’s data.',
 			'The site is hosted on GitHub Pages, and the APK and pack downloads are GitHub release files. Like any web host, GitHub receives technical data such as your IP address when it serves a file; see the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="external">GitHub General Privacy Statement</a>.'
 		],
 		appTitle: 'The app',
@@ -530,7 +530,9 @@ export const en = {
 		leadHtml:
 			'Cucuto checks the pack files you open here (<code>.soundpack.zip</code>, or any pack <code>.zip</code>) with the same rules as the app, on your device. To make your own, use the <a href="{create}">Create page</a>; to install a pack, import it in the Cucuto app on your phone.',
 		opened: 'You opened:',
-		browse: 'Browse free packs'
+		browse: 'Browse free packs',
+		edit: 'Edit in the pack creator',
+		editFailed: 'The pack could not be handed to the creator ({error}).'
 	},
 	packCheck: {
 		choose: 'Choose pack files',
@@ -561,6 +563,41 @@ export const en = {
 		loadFailed: 'The pack creator could not load ({error}). Reload the page to try again.',
 		wavNotice:
 			'This browser cannot encode Opus, so clips are saved as WAV. They are bigger but work the same. Chrome, Edge and Firefox on a computer save Opus.',
+		drafts: {
+			title: 'Your drafts',
+			intro:
+				'The pack you are making is saved in this browser after every change, also offline. Nothing is uploaded; clearing the site’s data deletes the drafts.',
+			saved: 'Draft saved on this device',
+			saving: 'Saving the draft…',
+			unavailable:
+				'This browser cannot keep drafts (a private window, or site data is blocked). Download the pack before you leave the page.',
+			saveFailed: 'The draft could not be saved ({error}).',
+			loadFailed: 'This draft could not be opened ({error}).',
+			untitled: 'Untitled pack',
+			summary: 'Characters: {characters} · clips: {clips} · {date}',
+			current: 'Open now',
+			resume: 'Resume',
+			delete: 'Delete',
+			confirmDelete: 'Delete “{name}”? This cannot be undone.',
+			confirm: 'Delete',
+			cancel: 'Keep it',
+			new: 'Start a new pack',
+			open: 'Open a pack file',
+			openHint: 'Edit a .soundpack.zip made here, in the app or with packer.'
+		},
+		opening: {
+			busy: 'Opening {name}…',
+			invalid: '{name} cannot be opened: it does not pass the pack check.',
+			bundle: '{name} is a bundle of several packs. Pick the one to edit:',
+			failed: '{name} could not be opened ({error}).',
+			editing: 'Editing {name} {version}',
+			update:
+				'Saves as an update: the same pack ID, version {version}. The app replaces the installed pack and keeps every contact’s voice.',
+			copy: 'Save as a new pack instead, with its own ID and version 1.0.0, to install it next to the original',
+			kept: 'Kept from the original as they are, though this page does not edit them yet. Ringtones: {ringtones}. Animated pictures: {animations}.',
+			undecodable:
+				'Clips this browser cannot play: {n}. They stay in the pack as they are, without preview or editing.'
+		},
 		details: {
 			title: 'Pack details',
 			name: 'Pack name',
@@ -579,7 +616,19 @@ export const en = {
 				'An <a href="https://spdx.org/licenses/" rel="external">SPDX identifier</a> such as <code>MIT</code>, or your own words such as “Personal use only”.',
 			descriptionLabel: 'Description (optional)',
 			packId: 'Pack ID',
-			packIdHint: 'Made from the author and name; it stays the same for this draft.'
+			packIdHint: 'Made from the author and name; it stays the same for this draft.',
+			packIdKept: 'The ID of the pack you opened, so the app treats this as an update.',
+			version: 'Version',
+			versionHint: 'Raise it for every update you share, for example 1.0.1 or 1.1.0.'
+		},
+		cover: {
+			title: 'Cover (optional)',
+			hint: 'Shown on the pack’s card in the app. Without one, the app shows the first character.',
+			choose: 'Choose a cover',
+			change: 'Change cover',
+			remove: 'Remove cover',
+			alt: 'Cover of {name}',
+			none: 'No cover'
 		},
 		characters: {
 			title: 'Characters',
@@ -652,7 +701,71 @@ export const en = {
 		},
 		haptics: {
 			title: 'Vibration',
-			text: 'Each character vibrates along with its voice: the app works the pattern out from every clip when it imports the pack. Make custom patterns in the app, because browsers cannot play them.'
+			text: 'Each character vibrates along with its voice: the app works the pattern out from every clip when it imports the pack. To turn it off or design your own pattern, use Vibration on the character’s card. Browsers cannot play these vibrations: import the pack in the app to feel them.'
+		},
+		hapticEditor: {
+			title: 'Vibration',
+			auto: 'Follow the voice (automatic)',
+			none: 'No vibration',
+			custom: 'Custom pattern',
+			intro:
+				'Taps and swells on a timeline, in milliseconds from the start of the sound. Browsers cannot play them: import the pack in the app and preview the pattern there.',
+			timeline: 'Pattern timeline: {n} events over {ms} ms',
+			empty: 'No events yet. Add a tap or a swell, or paste a pattern.',
+			emptyNote: 'Until the pattern has an event, the pack uses the automatic vibration.',
+			tap: 'Tap',
+			swell: 'Swell',
+			addTap: 'Add a tap',
+			addSwell: 'Add a swell',
+			event: 'Event {n}: {kind}',
+			start: 'Start (ms)',
+			preset: 'Kind of tap',
+			presets: {
+				CLICK: 'Click (crisp)',
+				TICK: 'Tick (lighter)',
+				LOW_TICK: 'Low tick (lightest)'
+			} as Record<string, string>,
+			strength: 'Strength',
+			point: 'Point {n}',
+			intensity: 'Intensity',
+			sharpness: 'Sharpness',
+			duration: 'Time to reach it (ms)',
+			addPoint: 'Add a point',
+			removePoint: 'Remove point {n}',
+			removeEvent: 'Remove event {n}',
+			valid: 'Valid pattern: {n} events, {ms} ms.',
+			copyAi: 'Copy for AI',
+			copyAiHint:
+				'Copies a prompt with the clips’ lengths and loudness, the current pattern and the format. Paste it into any AI chat (attach the sound if the chat takes audio), then paste the answer below. Cucuto never sends anything to an AI itself.',
+			copied: 'Copied. Paste it into an AI chat.',
+			copyFailed: 'The browser did not allow copying. Select the text below and copy it.',
+			paste: 'Paste a pattern',
+			pasteHint: 'JSON from an AI chat or from another pack: the whole haptic or just its events.',
+			usePattern: 'Use pattern',
+			pasted: 'Pattern replaced. Undo brings the old one back.',
+			undo: 'Undo',
+			where: {
+				pattern: 'The pattern',
+				event: 'Event {event}',
+				point: 'Event {event}, point {point}'
+			},
+			problems: {
+				NotJson: 'There is no JSON pattern in the text.',
+				NotCustom: 'The mode is “{value}”; a pasted pattern must be “custom”.',
+				NoEvents: 'The pattern has no events.',
+				TooManyEvents: 'A pattern can have up to 64 events.',
+				NotAnEvent: 'Event {event} needs either “preset” or “envelope” (exactly one of them).',
+				MissingField: '{where}: “{field}” is missing.',
+				UnknownField: '{where}: “{field}” is not part of the format.',
+				NotWholeNumber: '{where}: “{field}” must be a whole number of milliseconds, not {value}.',
+				OutOfRange: '{where}: “{field}” must be between {min} and {max}, not {value}.',
+				UnknownPreset: 'Event {event}: “{value}” is not a kind of tap (CLICK, TICK or LOW_TICK).',
+				PointCount: 'Event {event}: a swell needs 1 to 16 points, not {count}.',
+				NotClosed: 'Event {event}: the last point of a swell must have intensity 0.',
+				Unsorted: 'Event {event} starts before the event above it. Sort the events by start.',
+				Overlap: 'Event {event} starts at {ms} ms, before the swell above it ends at {until} ms.',
+				TooLong: 'The pattern lasts {ms} ms; it must end by 5000 ms.'
+			} as Record<string, string>
 		},
 		build: {
 			title: 'Check and download',
@@ -679,6 +792,138 @@ export const en = {
 				TOO_MANY_CLIPS: '{name} has more than 200 clips.',
 				UNSUPPORTED_FILE: '{name} has a file the pack format does not accept.'
 			} as Record<string, string>
+		},
+		tools: {
+			title: 'More tools',
+			bundle: 'Bundle several packs',
+			bundleText: 'Combine finished packs into one file that installs them all at once.',
+			repository: 'Host your own repository',
+			repositoryText:
+				'Make a folder with repository.json, previews and your packs, ready to upload to GitHub Pages or any web host.'
+		}
+	},
+	bundle: {
+		title: 'Bundle packs',
+		description:
+			'Combine several Cucuto sound packs into one .soundpack.zip bundle in your browser, like packer bundle. Nothing is uploaded.',
+		leadHtml:
+			'A bundle is one file with several packs inside, each keeping its own license. The app installs every pack in it at once. This page writes the same layout as <code>packer bundle</code>, on your device.',
+		back: 'Back to the pack creator',
+		packs: {
+			title: 'Packs',
+			add: 'Add pack files',
+			hint: '.soundpack.zip files made here, in the app or with packer. A bundle cannot hold another bundle.',
+			empty: 'No packs yet.',
+			item: '{id} · version {version} · {characters} characters',
+			remove: 'Remove {name}',
+			invalid: '{name} does not pass the pack check, so it cannot go in a bundle.',
+			isBundle: '{name} is already a bundle. Add the packs inside it instead.',
+			failed: '{name} could not be read ({error}).'
+		},
+		details: {
+			title: 'Bundle details',
+			name: 'Bundle name',
+			author: 'Author (optional)',
+			id: 'Bundle ID',
+			idHint:
+				'Made from the author and name. Keep it different from the packs’ IDs, and the same in every update.',
+			version: 'Version',
+			versionHint: 'Raise it for every update you share, for example 1.0.1.',
+			license: 'License (optional)',
+			licenseHint: 'Each pack keeps its own license.',
+			description: 'Description (optional)'
+		},
+		build: {
+			title: 'Check and download',
+			check: 'Check bundle',
+			checking: 'Building and checking…',
+			download: 'Download bundle',
+			incomplete: 'Almost there:',
+			stale: 'You changed the bundle since this check. Check it again before downloading.',
+			failed: 'The bundle could not be built ({error}).',
+			problems: {
+				BUNDLE_ID_INVALID:
+					'The bundle ID must be lowercase words separated by dots, for example local.me.all-my-packs.',
+				BUNDLE_NAME_MISSING: 'Give the bundle a name.',
+				VERSION_INVALID: 'The version must look like 1.0.0.',
+				NO_PACKS: 'Add at least one pack.',
+				TOO_MANY_PACKS: 'A bundle can hold up to 100 packs.',
+				PACK_TWICE: 'Two packs have the same ID. Keep only one of them.',
+				ID_CLASH: 'The bundle ID is the same as one of its packs’ IDs. Pick another one.',
+				UNSUPPORTED_FILE: 'The cover is not an image the pack format accepts.'
+			} as Record<string, string>
+		}
+	},
+	repository: {
+		title: 'Host your own repository',
+		description:
+			'Make a ready-to-upload Cucuto pack repository (repository.json, previews and packs) in your browser, like packer index. Nothing is uploaded.',
+		leadHtml:
+			'A pack repository is a folder on any HTTPS host: a <code>repository.json</code> index, small previews and the pack files. The app lists it in Discover and offers updates. This page writes the same folder as <code>packer index</code>, on your device.',
+		back: 'Back to the pack creator',
+		files: {
+			title: 'Packs and bundles',
+			add: 'Add pack files',
+			hint: '.soundpack.zip packs or bundles. If a pack is there twice, the index lists the highest version.',
+			empty: 'No packs yet.',
+			item: '{kind} · {id} · version {version} · {size}',
+			pack: 'Pack',
+			bundle: 'Bundle',
+			remove: 'Remove {name}',
+			invalid: '{name} does not pass the pack check, so it cannot be listed.',
+			failed: '{name} could not be read ({error}).'
+		},
+		details: {
+			title: 'Repository details',
+			name: 'Repository name',
+			description: 'Description (optional)',
+			homepage: 'Homepage (optional)',
+			homepageHint: 'An https:// address about you or your packs.',
+			where: 'Where the pack files live',
+			here: 'In the same folder, under packs/ (the simplest)',
+			elsewhere: 'Somewhere else, for example GitHub Releases',
+			baseUrl: 'Address of the folder with the pack files',
+			baseUrlHint: 'https:// only. Each pack is listed as this address followed by its file name.',
+			httpsOnly: 'Use an https:// address.'
+		},
+		build: {
+			title: 'Make the folder',
+			make: 'Make repository',
+			making: 'Indexing…',
+			incomplete: 'Almost there:',
+			nameMissing: 'Give the repository a name.',
+			noFiles: 'Add at least one pack file.',
+			failed: 'The repository could not be made ({error}).',
+			invalid: 'The index does not pass the repository check:',
+			ready: 'Ready. Entries in the index: {n}. Unzip the folder and upload everything in it.',
+			download: 'Download the folder (.zip)',
+			copy: 'Copy repository.json',
+			copied: 'Copied.',
+			stale: 'You changed something since the folder was made. Make it again before downloading.'
+		},
+		host: {
+			title: 'Put it online',
+			githubTitle: 'GitHub Pages (free)',
+			github: [
+				'Create a public repository on GitHub, for example <code>my-packs</code>.',
+				'Unzip the folder. On the repository’s page, choose <strong>Add file → Upload files</strong>, drop everything that was inside the folder (<code>repository.json</code>, <code>previews</code> and <code>packs</code>) and commit.',
+				'Open <strong>Settings → Pages</strong>. Under <strong>Build and deployment</strong>, set the source to <strong>Deploy from a branch</strong>, pick <code>main</code> and <code>/ (root)</code>, and save.',
+				'After a minute or two the repository is online at <code>https://&lt;your user&gt;.github.io/my-packs/</code>. In the app, open <strong>Discover → Add a repository</strong> and paste that address.'
+			],
+			githubNote:
+				'GitHub’s upload page takes files up to 25 MB, and Git refuses files over 100 MB. Put bigger packs on GitHub Releases and choose “Somewhere else” with the release’s download address.',
+			driveTitle: 'Google Drive',
+			driveHtml:
+				'Drive cannot serve a repository: its links point to file IDs, not to paths next to <code>repository.json</code>. Share packs one by one instead: upload the <code>.soundpack.zip</code>, share it with <strong>Anyone with the link</strong>, and paste the link in the app’s <strong>Discover → Add a repository</strong>, which downloads it directly. For a list of packs with updates, use GitHub Pages or another web host.',
+			otherTitle: 'Other web hosts',
+			otherHtml:
+				'Cloudflare Pages, Netlify, a storage bucket or your own server work the same way: upload what is inside the folder and share its <code>https://</code> address. No server code is needed.',
+			address: 'Your repository’s address (optional)',
+			addressHint:
+				'Where the folder will be online, to get a link that adds it to the app in one tap.',
+			addLink: 'Add-to-app link:',
+			docsHtml:
+				'More in <a href="{authors}#host">Host your own repository</a> and in the <a href="{packFormat}#pack-repositories">pack format</a>.'
 		}
 	},
 	error: {
