@@ -23,8 +23,12 @@ import app.mauri.cucuto.ui.status.SetupScreen
  * Every screen of the app, by destination. Feature screens are self-contained composables in their own package;
  * each one gets one `entry` here, as small as possible (contract of #153: other agents add only their own entry).
  * Screens navigate with `onNavigate` (tab roots switch tabs, anything else is pushed) and close with `onBack`.
+ * [setupNeedsAttention] is read while Settings composes, so its banner follows the shell's badge (#180).
  */
-fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
+fun cucutoEntries(
+    navigator: AppNavigator,
+    setupNeedsAttention: () -> Boolean = { false },
+): (NavKey) -> NavEntry<NavKey> {
     val navigate: (CucutoDestination) -> Unit = navigator::navigate
     val goBack: () -> Unit = { navigator.goBack() }
     return entryProvider {
@@ -32,7 +36,9 @@ fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
         entry<CucutoDestination.Home>(metadata = TabRootMetadata) { HomeScreen(onNavigate = navigate) }
         entry<CucutoDestination.Packs>(metadata = TabRootMetadata) { PacksScreen(onNavigate = navigate) }
         entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen() }
-        entry<CucutoDestination.Settings>(metadata = TabRootMetadata) { SettingsScreen(onNavigate = navigate) }
+        entry<CucutoDestination.Settings>(metadata = TabRootMetadata) {
+            SettingsScreen(onNavigate = navigate, setupNeedsAttention = setupNeedsAttention())
+        }
 
         // ChatKey.toString() hides the JID (ADR 0017), so the default content key would be the same for every chat.
         entry<CucutoDestination.Picker>(

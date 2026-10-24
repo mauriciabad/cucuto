@@ -89,6 +89,7 @@ import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
+import app.mauri.cucuto.ui.settings.restore.RestoreHost
 import app.mauri.cucuto.ui.status.SetupCardSection
 import app.mauri.cucuto.ui.theme.CucutoTheme
 
@@ -99,9 +100,9 @@ data class ChatAvatarKey(
 
 /**
  * Home (brief, screen 2), the start tab: every chat with its character's sprite as avatar, the "recent senders" strip
- * of people who messaged and have no voice yet, search, a pack filter and a FAB to assign. Above them sit the setup
- * card (until setup is green once) and the first-run journey ([homeJourney]): import the demo packs, give the first
- * recent sender a voice, celebrate. Tapping a chat with a voice opens its contact detail (#26); a chat without one
+ * of people who messaged and have no voice yet, search, a pack filter and a FAB to assign. Above them sit the first-run
+ * journey ([homeJourney]: import the demo packs or restore a backup, give the first recent sender a voice, celebrate)
+ * and the setup card (until setup is green once). Tapping a chat with a voice opens its contact detail (#26); a chat without one
  * goes straight to the character picker.
  */
 @Composable
@@ -123,27 +124,31 @@ fun HomeScreen(
         rememberLauncherForActivityResult(OpenPackFromDownloads()) { uri ->
             if (uri != null) journeyViewModel.importDemoPacks(ImportSource.of(resolver, uri))
         }
-    HomeContent(
-        state = state,
-        onQueryChange = viewModel::setQuery,
-        onTogglePack = viewModel::togglePackFilter,
-        onDismissRecent = viewModel::dismissRecent,
-        onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat)) },
-        onOpenPacks = { onNavigate(CucutoDestination.Packs) },
-        modifier = modifier,
-        onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
-        journey = journey,
-        // Discover installs the demo bundle from the default repository, through the usual review (#179, #214).
-        onGetDemoPacks = {
-            viewModel.requestDemoPacks()
-            onNavigate(CucutoDestination.Discover)
-        },
-        // Offline fallback: a demo packs file the user already has in Downloads.
-        onImportDemoPacks = { demoPicker.launch(PackPickerTypes) },
-        onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
-        onDismissCelebration = journeyViewModel::dismissCelebration,
-        setupCard = { SetupCardSection(onNavigate = onNavigate) },
-    )
+    RestoreHost(onNavigate = onNavigate, onKeepForBackups = journeyViewModel::keepForBackups) { pickBackup ->
+        HomeContent(
+            state = state,
+            onQueryChange = viewModel::setQuery,
+            onTogglePack = viewModel::togglePackFilter,
+            onDismissRecent = viewModel::dismissRecent,
+            onOpenChat = { chat -> onNavigate(CucutoDestination.Picker(chat)) },
+            onOpenPacks = { onNavigate(CucutoDestination.Packs) },
+            modifier = modifier,
+            onOpenDetail = { chat -> onNavigate(CucutoDestination.ContactDetail(chat)) },
+            journey = journey,
+            // Discover installs the demo bundle from the default repository, through the usual review (#179, #214).
+            onGetDemoPacks = {
+                viewModel.requestDemoPacks()
+                onNavigate(CucutoDestination.Discover)
+            },
+            // Offline fallback: a demo packs file the user already has in Downloads.
+            onImportDemoPacks = { demoPicker.launch(PackPickerTypes) },
+            // Someone moving to a new phone looks here first, not in Settings (ADR 0050).
+            onRestoreBackup = pickBackup,
+            onPreviewCharacters = { onNavigate(CucutoDestination.Picker()) },
+            onDismissCelebration = journeyViewModel::dismissCelebration,
+            setupCard = { SetupCardSection(onNavigate = onNavigate) },
+        )
+    }
 }
 
 /** Stateless home screen, for previews and UI tests. */
@@ -161,6 +166,7 @@ fun HomeContent(
     journey: JourneyStep = JourneyStep.None,
     onGetDemoPacks: () -> Unit = {},
     onImportDemoPacks: () -> Unit = {},
+    onRestoreBackup: () -> Unit = {},
     onPreviewCharacters: () -> Unit = {},
     onDismissCelebration: () -> Unit = {},
     setupCard: @Composable () -> Unit = {},
@@ -216,22 +222,25 @@ fun HomeContent(
                     bottom = innerPadding.calculateBottomPadding() + FAB_CLEARANCE,
                 ),
         ) {
-            item(key = "setup", contentType = "setup") { setupCard() }
-            if (state.packs.size > 1) {
-                item(key = "filters") { PackFilters(state, onTogglePack) }
-            }
+            // The journey's next step comes first, so its main button is on screen without scrolling on a phone;
+            // the setup card follows (ADR 0050).
             if (journey != JourneyStep.None && !state.filtering) {
                 item(key = "journey", contentType = "journey") {
                     JourneyCard(
                         step = journey,
                         onGetDemoPacks = onGetDemoPacks,
                         onImportDemoPacks = onImportDemoPacks,
+                        onRestoreBackup = onRestoreBackup,
                         onOpenChat = open,
                         onPreviewCharacters = onPreviewCharacters,
                         onDismissCelebration = onDismissCelebration,
                         modifier = Modifier.animateItem(),
                     )
                 }
+            }
+            item(key = "setup", contentType = "setup") { setupCard() }
+            if (state.packs.size > 1) {
+                item(key = "filters") { PackFilters(state, onTogglePack) }
             }
             if (state.showRecent) {
                 item(key = "recent") { RecentSenders(state.recent, onOpen = open, onDismiss = onDismissRecent) }

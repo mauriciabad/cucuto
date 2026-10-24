@@ -10,6 +10,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -26,7 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -35,10 +39,12 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.NavDisplay
+import app.mauri.cucuto.R
 import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.ui.motion.SharedElementEntry
 import app.mauri.cucuto.ui.motion.SharedElementsHost
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
+import app.mauri.cucuto.ui.status.SetupAttentionViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 
@@ -79,26 +85,40 @@ fun CucutoShell(
     pendingImport: StateFlow<ImportSource?>? = null,
     pendingRepoLink: StateFlow<String?>? = null,
     navigator: AppNavigator = rememberAppNavigator(),
+    attention: SetupAttentionViewModel = hiltViewModel(),
 ) {
+    // Setup is re-checked when the app comes back (LSPosed, scope and apps change elsewhere), never per tab switch.
+    LifecycleResumeEffect(attention) {
+        attention.refresh()
+        onPauseOrDispose {}
+    }
+    val needsAttention by attention.needsAttention.collectAsStateWithLifecycle()
     LaunchedEffect(navigator, pendingImport) {
         pendingImport?.filterNotNull()?.collect { navigator.showRoot(TopLevelTab.Packs) }
     }
     LaunchedEffect(navigator, pendingRepoLink) {
         pendingRepoLink?.filterNotNull()?.collect { navigator.showRoot(TopLevelTab.Discover) }
     }
-    val entries = remember(navigator) { cucutoEntries(navigator) }
-    CucutoShellLayout(navigator = navigator, entryProvider = entries, modifier = modifier)
+    val entries = remember(navigator) { cucutoEntries(navigator, setupNeedsAttention = { needsAttention }) }
+    CucutoShellLayout(
+        navigator = navigator,
+        entryProvider = entries,
+        modifier = modifier,
+        settingsBadge = needsAttention,
+    )
 }
 
 /**
  * Material 3 adaptive navigation (a bar on phones, a rail on large screens) around one [NavDisplay] showing the
  * navigator's visible stacks. [entryProvider] is a parameter so tests can drive the shell with plain screens.
+ * [settingsBadge] puts a small badge on the Settings tab: setup needs the user (#180).
  */
 @Composable
 fun CucutoShellLayout(
     navigator: AppNavigator,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
     modifier: Modifier = Modifier,
+    settingsBadge: Boolean = false,
 ) {
     val suiteType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfo())
     val suiteState = rememberNavigationSuiteScaffoldState()
@@ -119,6 +139,7 @@ fun CucutoShellLayout(
                     icon = { Icon(tab.icon, contentDescription = null) },
                     label = { Text(stringResource(tab.label)) },
                     navigationSuiteType = suiteType,
+                    badge = if (tab == TopLevelTab.Settings && settingsBadge) ({ SetupBadge() }) else null,
                 )
             }
         },
@@ -133,6 +154,13 @@ fun CucutoShellLayout(
             )
         }
     }
+}
+
+/** A small badge (Material's dot) that TalkBack reads with the tab: "Settings, setup needs attention". */
+@Composable
+private fun SetupBadge() {
+    val description = stringResource(R.string.tab_settings_attention)
+    Badge(Modifier.semantics { contentDescription = description })
 }
 
 /** Destinations shown without the navigation bar. */
