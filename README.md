@@ -9,8 +9,16 @@ plays a random clip from the character you assigned to a contact whenever they m
 character's own vibration. Like a cuckoo clock, it announces who's there.
 
 - **Sound packs, not bundled content.** The app ships empty. Import `.soundpack.zip` files or download them from pack repositories.
-- **Ringtones too.** Packs can carry call ringtones with variants (day, night, seasons…).
-- **Make your own.** Build packs in the app or on the website, no tools needed (planned for v1.1; the `packer` CLI works today).
+- **Ringtones too.** Pick a contact's message sound, then their phone ringtone: a song from a pack, Android's default,
+  or theirs left as it is. Cucuto can always give the old ringtone back.
+- **Rules you can read.** Songs with several versions (day, night, seasons, holidays) follow the pack's rules, shown in
+  plain words, or rules you write for one contact.
+- **Clips with timing.** Packs can greet the first message of the day, answer a burst of messages, hide rare easter
+  eggs and play night or holiday clips, all decided on the phone with no battery cost.
+- **Chats before they write.** Add people from your contacts; their voice plays from their second message.
+- **Easy to pick.** Big packs fold into sections, with search and a "Surprise me" dice in both pickers.
+- **Try it without root.** The sample chat plays a character's sound, vibration and ringtone in the app.
+- **Make your own.** Build packs in the app or on the website, no tools needed, or with the `packer` CLI.
 - **Feels like a game.** Sound, motion and haptics on every interaction, built on Material 3 Expressive.
 
 > [!IMPORTANT]
@@ -30,7 +38,8 @@ Cucuto is an early test version: see the [changelog](CHANGELOG.md) for what each
 5. Import a pack and give a contact a character.
 
 Details, troubleshooting and recovery: [install guide](docs/install.md) (also on the
-[website](https://cucuto.mauri.app/install/)). Cucuto never checks for updates itself: watch the releases, or let [Obtainium](https://github.com/ImranR98/Obtainium) do it (the website's Install page has a one-tap setup). Where else it is distributed: [docs/distribution.md](docs/distribution.md).
+[website](https://cucuto.mauri.app/install/)). Cucuto never checks for updates itself: watch the releases, or let [Obtainium](https://github.com/ImranR98/Obtainium) do it (the website's Install page has a one-tap setup). Where else it is distributed: [docs/distribution.md](docs/distribution.md). A Google Play listing is being prepared;
+Play and GitHub installs share one signing certificate, so they update each other.
 
 ## Build
 

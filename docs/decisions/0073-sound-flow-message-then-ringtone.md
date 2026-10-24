@@ -118,8 +118,9 @@ also shows its two choices when no pack has ringtones.
 `ringtone`. A contact never has both. A restore stores the choice with the voice rule of ADR 0013 (applied, unchanged
 or kept). An Android default contact is matched to an Android contact on the new phone like any phone ringtone
 (ADR 0057), so its own ringtone can be cleared there. "Leave as is" needs no match: Cucuto writes nothing for it.
-Older readers ignore the field and leave the contact's ringtone alone, which is "Leave as is". The valid backup fixture
-gains both cases, and an invalid fixture has both `ringtone` and `ringtoneChoice`.
+Cucuto before 0.2.0 refuses the whole backup instead: its schema allows no unknown contact field (corrected
+2026-10-24 in the ringtone review; it said older readers ignore the field). Backwards compatibility is not a goal
+(#67). The valid backup fixture gains both cases, and an invalid fixture has both `ringtone` and `ringtoneChoice`.
 
 ## Consequences
 

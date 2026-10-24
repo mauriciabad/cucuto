@@ -175,7 +175,7 @@ fun HapticTimelineView(
         events.forEachIndexed { index, event ->
             val isSelected = index == selected
             when (event) {
-                is HapticEvent.Preset -> drawPreset(event, geometry, colors, isSelected)
+                is HapticEvent.Preset -> drawPreset(event, geometry, colors, isSelected, PresetMarks.Editor)
                 is HapticEvent.Envelope -> drawEnvelope(event, geometry, colors, isSelected, interactive)
             }
         }
@@ -185,6 +185,42 @@ fun HapticTimelineView(
         }
     }
 }
+
+/**
+ * A character's vibration as a small picture (#301, ADR 0069): the same marks as [HapticTimelineView] (presets as bars
+ * as tall as their strength with the kind's head, envelopes as their filled intensity curve) on a baseline, without
+ * grid, labels or touch. The pattern fills the width: the window is its own length (at least [minWindowMs]), so short
+ * taps stay readable. Decorative: the caller says what it is to screen readers.
+ */
+@Composable
+fun HapticPatternThumbnail(
+    events: List<HapticEvent>,
+    modifier: Modifier = Modifier,
+    minWindowMs: Int = THUMBNAIL_MIN_WINDOW_MS,
+    colors: HapticTimelineColors = hapticTimelineColors(),
+) {
+    val windowMs = maxOf(HapticTimeline.durationOf(events), minWindowMs)
+    Canvas(modifier) {
+        val pad = THUMBNAIL_EDGE.toPx()
+        val geometry = TimelineGeometry(size.width, size.height, pad, windowMs, bottomInset = pad)
+        drawLine(
+            colors.grid,
+            Offset(0f, geometry.bottom),
+            Offset(size.width, geometry.bottom),
+            strokeWidth = 1.dp.toPx(),
+        )
+        events.forEach { event ->
+            when (event) {
+                is HapticEvent.Preset -> drawPreset(event, geometry, colors, false, PresetMarks.Thumbnail)
+                is HapticEvent.Envelope -> drawEnvelope(event, geometry, colors, selected = false, showHandles = false)
+            }
+        }
+    }
+}
+
+/** A thumbnail shows at least this much time, so a single tap doesn't stretch across it. */
+private const val THUMBNAIL_MIN_WINDOW_MS = 400
+private val THUMBNAIL_EDGE: Dp = 4.dp
 
 private val EDGE: Dp = 12.dp
 private val TOUCH: Dp = 24.dp
@@ -196,10 +232,12 @@ private class TimelineGeometry(
     val height: Float,
     val pad: Float,
     val windowMs: Int,
+    /** Room under the baseline: the editor keeps space for the second labels. */
+    bottomInset: Float = pad * 2,
 ) {
     private val usableWidth = (width - 2 * pad).coerceAtLeast(1f)
     val top = pad
-    val bottom = (height - pad * 2).coerceAtLeast(top + 1f)
+    val bottom = (height - bottomInset).coerceAtLeast(top + 1f)
 
     fun x(ms: Int): Float = pad + ms.toFloat() / windowMs * usableWidth
 
@@ -288,11 +326,22 @@ private fun DrawScope.drawGrid(
     }
 }
 
+/** How big a preset's bar and head are drawn: full size in the editor, smaller in a thumbnail. */
+private enum class PresetMarks(
+    val bar: Dp,
+    val thinBar: Dp,
+    val head: Dp,
+) {
+    Editor(bar = 5.dp, thinBar = 3.dp, head = 5.dp),
+    Thumbnail(bar = 3.dp, thinBar = 2.dp, head = 3.dp),
+}
+
 private fun DrawScope.drawPreset(
     event: HapticEvent.Preset,
     geometry: TimelineGeometry,
     colors: HapticTimelineColors,
     selected: Boolean,
+    marks: PresetMarks,
 ) {
     val x = geometry.x(event.atMs)
     val top = geometry.y(event.milliScale)
@@ -302,8 +351,8 @@ private fun DrawScope.drawPreset(
             HapticPreset.TICK -> colors.tick
             HapticPreset.LOW_TICK -> colors.lowTick
         }
-    val barWidth = if (event.preset == HapticPreset.TICK) 3.dp.toPx() else 5.dp.toPx()
-    val head = 5.dp.toPx()
+    val barWidth = if (event.preset == HapticPreset.TICK) marks.thinBar.toPx() else marks.bar.toPx()
+    val head = marks.head.toPx()
     if (selected) {
         val halo = 10.dp.toPx()
         drawRoundRect(

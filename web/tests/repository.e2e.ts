@@ -81,6 +81,21 @@ test('the Packs page lists every pack in the index', async ({ page, request }) =
 				).toBeVisible();
 			}
 		}
+		// Each character's vibration is drawn from its x-haptic (#301, ADR 0069); none without it.
+		type Haptic = { mode: string; events?: unknown[] };
+		const modes = (entry.characters ?? []).map((c: { 'x-haptic'?: Haptic }) => c['x-haptic']) as (
+			Haptic | undefined
+		)[];
+		const count = (test: (h: Haptic) => boolean) => modes.filter((h) => h && test(h)).length;
+		await expect(card.getByRole('img', { name: /^Vibration: own pattern, / })).toHaveCount(
+			count((h) => h.mode === 'custom' && (h.events?.length ?? 0) > 0)
+		);
+		await expect(card.getByRole('img', { name: 'Vibration follows the voice' })).toHaveCount(
+			count((h) => h.mode === 'auto')
+		);
+		await expect(card.getByText('No vibration', { exact: true })).toHaveCount(
+			count((h) => h.mode === 'none')
+		);
 	}
 
 	const play = page.getByRole('button', { name: /^Play .*’s sample$/ }).first();

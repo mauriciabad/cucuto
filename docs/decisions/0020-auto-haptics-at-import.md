@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-24
-- Issues: #97, #98, #267 (parallel analysis)
+- Issues: #97, #98, #267 (parallel analysis), #315 (batches, one decoder per worker)
 
 ## Context
 
@@ -37,6 +37,10 @@ blocking waits rather than CPU. The stored file keeps manifest order and is the 
 Progress still comes from the calling coroutine, from 0 to the clip count, one step per finished clip, so
 `PackImporter.install` (a `channelFlow`, #181) reports `ImportProgress.Analyzing` as before. A clip that fails is left
 out, and the analyser never fails an import.
+
+*Amended by [ADR 0077](0077-batched-test-decodes.md) (#315):* each worker keeps one decoder for all its clips
+(`PcmDecoder.session`) and sends the packets of a clip in batches, through the same decoding loop as the import
+checks (`:core:codec`). The envelopes are the same as before, clip for clip.
 
 **Redo stale analyses in the background.** At app start, `AutoHapticsRunner.start` analyses again, once per process,
 every installed pack whose file is missing or `AutoHaptics.isStale` (new analyser version, restore on a phone with a
