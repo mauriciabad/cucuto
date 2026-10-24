@@ -38,6 +38,12 @@ sealed interface CucutoDestination : NavKey {
     @Serializable
     data object Packs : CucutoDestination
 
+    /** The pack creator (#47); with [sourcePackId], a copy of that installed pack to edit ("duplicate and edit"). */
+    @Serializable
+    data class Creator(
+        val sourcePackId: String? = null,
+    ) : CucutoDestination
+
     /** Pack repositories. */
     @Serializable
     data object Discover : CucutoDestination

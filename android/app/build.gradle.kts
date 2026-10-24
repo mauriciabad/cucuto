@@ -131,6 +131,7 @@ dependencies {
     implementation(projects.core.haptics)
     implementation(projects.core.audio)
     implementation(projects.core.jxl)
+    implementation(projects.core.creator)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

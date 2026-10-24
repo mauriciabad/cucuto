@@ -14,6 +14,8 @@ import app.mauri.cucuto.xposed.events.ModuleStatus
 import app.mauri.cucuto.xposed.events.ProviderEventSender
 import app.mauri.cucuto.xposed.events.systemContext
 import app.mauri.cucuto.xposed.hook.AlertHooks
+import app.mauri.cucuto.xposed.hook.CapabilitiesLoader
+import app.mauri.cucuto.xposed.hook.VibratorReader
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
@@ -28,6 +30,8 @@ import java.io.FileNotFoundException
  *
  * Pieces (ADR 0010):
  * - [AlertHooks] swaps WhatsApp's sound and vibration on the notification path, reading [routing] from memory.
+ * - [CapabilitiesLoader] reads the vibrator's capabilities on the background thread once the vibrator service is
+ *   ready (ADR 0044); until then custom haptics keep WhatsApp's vibration.
  * - [routing] follows the table the app publishes through Remote Preferences. It is attached from the background
  *   thread right after boot, never from the notification path, and retried until the framework serves it. The
  *   app's nudge broadcast makes it re-read the routing remote file, which also works after an app update (ADR 0024).
@@ -82,12 +86,17 @@ class CucutoModule : XposedModule() {
                     table = routing::peek,
                     report = reporter::report,
                     log = moduleLog,
-                    background = { block -> reporter.post(block = block) },
                 )
             hooks.install(param.classLoader)
             this.hooks = hooks
             moduleLog.info("Hooks installed: ${hooks.installed}; missing: ${hooks.missing}")
             reporter.post { hooks.warmUp() }
+            // Reads the vibrator's capabilities once the vibrator service is up, never on the notification path (#190).
+            CapabilitiesLoader(
+                read = VibratorReader()::read,
+                use = hooks::useCapabilities,
+                post = { delayMillis, task -> reporter.post(delayMillis = delayMillis, block = task) },
+            ).start()
             // Reads the module APK's signing certificate while the file still exists (an app update replaces it).
             reporter.post(delayMillis = ATTACH_FIRST_DELAY_MILLIS) { sender.prepare() }
 

@@ -5,8 +5,13 @@ import android.os.SystemClock
 import android.os.VibrationEffect
 import app.mauri.cucuto.core.haptics.HapticCapabilities
 import app.mauri.cucuto.core.haptics.HapticEffects
+import app.mauri.cucuto.core.routing.Clip
+import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.HapticEvent
+import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
+import app.mauri.cucuto.core.routing.Voice
 import app.mauri.cucuto.xposed.ModuleLog
 import app.mauri.cucuto.xposed.events.DecisionEvent
 import app.mauri.cucuto.xposed.events.Outcome
@@ -37,10 +42,11 @@ import java.util.concurrent.atomic.AtomicLong
  * name and arity, so a changed signature is a logged no-op, never a crash.
  *
  * Speed: the notification path does a package check, a handful of reflective getters, hash map lookups and a
- * shuffle-bag draw; each haptic's effect is built once and cached. The vibrator's capabilities are read once, on the
- * first custom haptic (a few in-process calls to the vibrator service). No IO, no allocation beyond a few small
- * objects. Every alert is timed with
- * [SystemClock.elapsedRealtimeNanos]; anything over [SLOW_NANOS] is logged.
+ * shuffle-bag draw; each haptic's effect is built once and cached. The vibrator's capabilities are read on the
+ * background thread after boot ([CapabilitiesLoader], #190) and handed over with [useCapabilities]; until then a
+ * custom haptic keeps WhatsApp's vibration, so the path never calls the vibrator service. No IO, no binder call, no
+ * allocation beyond a few small objects. Every alert is timed with [SystemClock.elapsedRealtimeNanos]; anything over
+ * [SLOW_NANOS] is logged.
  */
 internal class AlertHooks(
     private val module: XposedInterface,
@@ -49,10 +55,8 @@ internal class AlertHooks(
     private val log: ModuleLog,
     private val router: AlertRouter = AlertRouter(),
     private val vibrations: HapticVibrations<VibrationEffect> = HapticVibrations(HapticEffects::create),
-    private val background: (() -> Unit) -> Unit = { it() },
 ) {
     private var reader: RecordReader? = null
-    private var vibrator: VibratorReader? = null
     private val recent = RecentDecisions()
 
     val installed: MutableList<String> = ArrayList(2)
@@ -73,10 +77,6 @@ internal class AlertHooks(
                 return
             }
             reader = recordReader
-            vibrator =
-                VibratorReader(helper).also {
-                    if (!it.usable) log.warn("${helper.simpleName} has no Context field; haptics use generic fallbacks")
-                }
             hook(helper, PLAY_SOUND, 2) { chain -> playSound(chain) }
             hook(helper, PLAY_VIBRATION, 3) { chain -> playVibration(chain) }
         } catch (t: Throwable) {
@@ -87,11 +87,15 @@ internal class AlertHooks(
     /**
      * Loads and initialises everything the notification path touches (the module's own classes, the routing code,
      * `:core:haptics` and its `VibrationEffect.Builder` probe), so the first WhatsApp alert after boot does not pay for
-     * class loading. Run on the background thread; touches no shuffle bag, caches no effect and reports nothing.
+     * class loading. A throwaway router decides a routed alert against [WARM_UP_TABLE] (shuffle bag, `forClip`, the
+     * decision event), so the real router's bags stay untouched. Run on the background thread; caches no effect and
+     * reports nothing. The vibrator's capabilities are read separately, once the service is up ([useCapabilities]).
      */
     fun warmUp() {
         try {
-            router.decide(NotificationSnapshot(Targets.MESSENGERS.first(), shortcutId = "warm-up@lid"), table())
+            val snapshot = NotificationSnapshot(Targets.MESSENGERS.first(), shortcutId = WARM_UP_KEY)
+            router.decide(snapshot, table())
+            AlertRouter().decide(snapshot, WARM_UP_TABLE)?.toEvent(micros = 0)
             val builder = HapticEffects.builderAvailable
             vibrations.warmUp(Targets.SELF_TEST_HAPTIC, VibratorReader.fallback())
             vibrations.swapFor(Haptic.Keep)
@@ -154,7 +158,7 @@ internal class AlertHooks(
             guarded(PLAY_VIBRATION) {
                 val start = SystemClock.elapsedRealtimeNanos()
                 val haptic = decisionFor(chain.getArg(0), start)?.haptic
-                if (haptic is Haptic.Custom && vibrations.capabilities == null) loadCapabilities(chain.thisObject)
+                // A volatile read of the capabilities: a custom haptic keeps the original until they are known.
                 val swap = vibrations.swapFor(haptic)
                 timed(PLAY_VIBRATION, start)
                 swap
@@ -178,14 +182,22 @@ internal class AlertHooks(
     }
 
     /**
-     * Reads the vibrator's capabilities through the helper's Context, once per boot: the first custom haptic pays a
-     * few in-process calls to the vibrator service. Falls back to generic capabilities when it cannot.
+     * Sets the device's capabilities, read by [CapabilitiesLoader] on the background thread ([read] false when they
+     * could not be read and [capabilities] are the generic fallback). Logs the one `Vibrator: …` line, then builds a
+     * preset and an envelope for these capabilities, uncached, so the first custom haptic does not load the build
+     * path this device takes. Only the first call counts. Background thread only; never throws.
      */
-    private fun loadCapabilities(helper: Any?) {
-        val read = vibrator?.capabilities(helper)
-        val capabilities = read ?: VibratorReader.fallback()
-        if (vibrations.useCapabilities(capabilities)) {
-            background { log.info(describe(capabilities, read != null)) }
+    fun useCapabilities(
+        capabilities: HapticCapabilities,
+        read: Boolean,
+    ) {
+        try {
+            if (!vibrations.useCapabilities(capabilities)) return
+            log.info(describe(capabilities, read))
+            vibrations.warmUp(Targets.SELF_TEST_HAPTIC, capabilities)
+            vibrations.warmUp(WARM_UP_ENVELOPE, capabilities)
+        } catch (t: Throwable) {
+            log.warn("Using the vibrator's capabilities failed", t)
         }
     }
 
@@ -300,6 +312,43 @@ internal class AlertHooks(
         const val SLOW_NANOS: Long = 5_000_000
 
         private val EMPTY_IDENTITY = ConversationIdentity(emptyList(), false, null, null, null)
+
+        private const val WARM_UP_KEY = "warm-up@lid"
+
+        /** One routed chat with an auto haptic, for [warmUp]'s throwaway router. */
+        private val WARM_UP_TABLE =
+            RoutingTable(
+                generation = 0,
+                enabled = true,
+                voices =
+                    listOf(
+                        Voice(
+                            packId = "warm-up",
+                            characterId = "warm-up",
+                            clips = listOf(Clip(uri = Targets.SELF_TEST_CLIP, haptic = Targets.SELF_TEST_HAPTIC)),
+                            haptic = Haptic.Auto,
+                        ),
+                    ),
+                routes =
+                    listOf(
+                        Route(Targets.MESSENGERS.first(), WARM_UP_KEY, voice = 0, seed = 0, flags = 0, contactId = 0),
+                    ),
+            )
+
+        /** A short swell, built once with the device's capabilities to load the envelope path off the hot path. */
+        private val WARM_UP_ENVELOPE =
+            Haptic.Custom(
+                listOf(
+                    HapticEvent.Envelope(
+                        atMs = 0,
+                        points =
+                            listOf(
+                                ControlPoint(milliIntensity = 600, milliSharpness = 500, durationMs = 40),
+                                ControlPoint(milliIntensity = 0, milliSharpness = 500, durationMs = 60),
+                            ),
+                    ),
+                ),
+            )
 
         /** One line with what the vibrator can play, e.g. `Vibrator: builder, envelopes 16 points 20..1000ms, …`. */
         internal fun describe(
