@@ -311,3 +311,62 @@ table's `S` line is running. To measure the cold path without a WhatsApp message
 - `file://` URI but silence: the copy is missing. `NotificationPlayer` logs `error loading sound for file://…`.
   Opening Cucuto rebuilds the table and repairs the mirror.
 
+
+## 7. Phone ringtones (#52, ADR 0039)
+
+Phone ringtones use only public APIs: no LSPosed change and no reboot. The module can stay as it is. The
+supervised call tests with a second phone (Telecom ringing, `vibration_uri`, WhatsApp calls) are #143. This section
+checks Cucuto's side. Use only a test contact, for example "Cucuto Test" from #143. Every step can be undone with
+**Settings › Phone ringtones › off**, which gives every contact its old ringtone back.
+
+**Ring file rendering (codec path, no contact needed).** With the phone unlocked:
+
+```
+cd android && ./gradlew :core:ringtone:connectedDebugAndroidTest
+```
+
+`PlatformRingRendererTest` renders a 14 s, 44.1 kHz stereo WAV with loop 4–12 s into a 92 s Ogg Opus file, and a
+play-once file padded to 90 s. If it reports `.m4a`, the device fell back to AAC; check logcat for `Opus in Ogg
+failed`.
+
+**Turn on and link.**
+
+1. Give the chat a character whose pack has ringtones, for example Kitchen orchestra's kettle "Kettle reel".
+2. Open the chat's detail. The **Phone ringtone** card says "Turn on phone ringtones". Tap it. Check that the
+   explanation dialog comes before Android's permission dialog, then allow Contacts.
+3. Link the Android contact. A WhatsApp chat with a phone JID suggests "Link <name>"; an `@lid` chat needs
+   **Choose contact**. The card then says "Rings with …".
+4. Check the result:
+
+   ```
+   adb shell content query --uri content://media/external/audio/media --projection _id:_display_name:title:relative_path \
+     --where "relative_path='Ringtones/cucuto/'"
+   adb shell content query --uri content://com.android.contacts/contacts --projection display_name:custom_ringtone \
+     --where "display_name='Cucuto Test'"
+   ```
+
+   - One file per variant, named `<character>-<variant>-<hash>.ogg`, titled "Character · Variant".
+   - The contact's `custom_ringtone` is one of those `content://media/external/audio/media/<id>` URIs.
+   - The Contacts app shows the ringtone under that title. A call from the second phone plays it and loops it (#143
+     N2).
+
+**Rules.**
+
+- **One version**: pick another chip; `custom_ringtone` changes within a second.
+- **Day and night** (07:00 to 19:00 until #118): `adb shell dumpsys alarm | grep -A3 app.mauri.cucuto` shows
+  one `RINGTONE_BOUNDARY` alarm at the next 07:00 or 19:00.
+- **Random per call**: the phone permission dialog follows its explanation. After a call ends (place and end one,
+  #143), `custom_ringtone` changes to a different variant. `adb shell pm dump app.mauri.cucuto | grep -A2
+  CallEndedReceiver` shows the receiver enabled only while some contact uses this rule.
+
+**Respect and undo.**
+
+1. Change the test contact's ringtone in the Contacts app. Reopen the card: it says "This ringtone was changed in
+   Contacts", and Cucuto no longer writes it. **Use Cucuto's ringtone again** takes it back.
+2. **Stop using for calls** gives the contact the ringtone it had before (or the default), and the unused files
+   disappear from `Ringtones/cucuto/`.
+3. Settings › Phone ringtones › off: every linked contact gets its old ringtone back, `Ringtones/cucuto/` is empty,
+   and both receivers are disabled again.
+
+**Repair.** Delete a file from `Ringtones/cucuto/` with a file manager, then open Cucuto. The file is rendered again
+and the contact points at the new URI.

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tonos de llamada (#52, ADR 0039). Mismas claves y marcadores que values/strings_ringtone.xml. -->
+<resources>
+    <!-- Contact detail section -->
+    <string name="ringtone_title">Tono de llamada</string>
+    <string name="ringtone_off_body">Cuando esta persona te llame, puede sonar su personaje en lugar de tu tono de siempre. Cucuto lo configura en los Contactos de Android.</string>
+    <string name="ringtone_turn_on">Activar tonos de llamada</string>
+    <string name="ringtone_no_ringtones">%1$s no tiene tono de llamada.</string>
+    <string name="ringtone_no_character">Primero dale una voz a este chat: su personaje trae el tono.</string>
+    <string name="ringtone_linked">Contacto de Android: %1$s</string>
+    <string name="ringtone_linked_unnamed">Contacto de Android vinculado</string>
+    <string name="ringtone_change_contact">Cambiar</string>
+    <string name="ringtone_link_prompt">¿Qué contacto de Android es? Las llamadas llegan de los contactos de Android.</string>
+    <string name="ringtone_link_suggestion">Vincular a %1$s</string>
+    <string name="ringtone_pick_contact">Elegir contacto</string>
+    <string name="ringtone_use">Sonar con %1$s</string>
+    <string name="ringtone_stop">Dejar de usarlo en llamadas</string>
+    <string name="ringtone_rule_pack">Reglas del pack</string>
+    <string name="ringtone_rule_random">Al azar en cada llamada</string>
+    <string name="ringtone_rule_time">Día y noche</string>
+    <string name="ringtone_rule_season">Según la estación</string>
+    <string name="ringtone_rule_fixed">Una versión</string>
+    <string name="ringtone_rule_pack_body">Sigue al pack: la versión que elige para esta hora, día o estación.</string>
+    <string name="ringtone_rule_random_body">Una versión distinta después de cada llamada.</string>
+    <string name="ringtone_rule_time_body">La versión de día de 7:00 a 19:00, la de noche el resto del tiempo.</string>
+    <string name="ringtone_rule_season_body">La versión de la estación actual.</string>
+    <string name="ringtone_rule_fixed_body">Siempre la versión que elijas.</string>
+    <string name="ringtone_status_ringing">Suena con %1$s</string>
+    <string name="ringtone_status_preparing">Preparando el tono…</string>
+    <string name="ringtone_problem_contact_missing">El contacto de Android vinculado ya no existe. Vincula otro.</string>
+    <string name="ringtone_problem_render">Cucuto no ha podido preparar este tono. Lo volverá a intentar la próxima vez que abras la app.</string>
+    <string name="ringtone_problem_write">Android no ha dejado que Cucuto cambie este contacto.</string>
+    <string name="ringtone_problem_permission">Cucuto vuelve a necesitar el permiso de contactos para poner tonos.</string>
+    <string name="ringtone_problem_changed">Este tono se ha cambiado en Contactos, así que Cucuto no lo toca.</string>
+    <string name="ringtone_take_over">Volver a usar el tono de Cucuto</string>
+    <string name="ringtone_phone_hint">Para cambiar de versión tras cada llamada, Cucuto necesita saber cuándo termina una llamada.</string>
+    <string name="ringtone_phone_allow">Permitir</string>
+    <string name="ringtone_whatsapp_hint">Las llamadas de WhatsApp suenan por su cuenta. Para oírlo también ahí, abre el chat en WhatsApp, luego Notificaciones, luego Tono de llamada, y elige «%1$s».</string>
+    <string name="ringtone_whatsapp_hint_generic">Las llamadas de WhatsApp suenan por su cuenta. Para oírlo también ahí, abre el chat en WhatsApp, luego Notificaciones, luego Tono de llamada, y elígelo entre los tonos de Cucuto.</string>
+
+    <!-- Permission explanations -->
+    <string name="ringtone_contacts_title">¿Dejas que Cucuto ponga tonos?</string>
+    <string name="ringtone_contacts_body">Android reproduce el tono propio de un contacto cuando te llama. Para usar ahí tus personajes, Cucuto necesita el permiso de contactos:\n\n• Solo lee los contactos para encontrar a la persona de un chat.\n• Solo cambia el tono de los contactos que vincules, y les devuelve el anterior cuando lo dejes.\n• Tus contactos nunca salen de tu móvil.\n\nCucuto es de código abierto: tú (o tu asistente de IA) puedes leer exactamente lo que hace en github.com/mauriciabad/cucuto.</string>
+    <string name="ringtone_phone_title">¿Saber cuándo termina una llamada?</string>
+    <string name="ringtone_phone_body">Con «Al azar en cada llamada», Cucuto elige la siguiente versión en cuanto termina una llamada. Android se lo dice a través del permiso de teléfono. Cucuto nunca lee quién ha llamado, y solo se activa tras las llamadas mientras algún contacto use esta regla.</string>
+    <string name="ringtone_continue">Continuar</string>
+    <string name="ringtone_not_now">Ahora no</string>
+    <string name="ringtone_denied_title">Hace falta el permiso de contactos</string>
+    <string name="ringtone_denied_body">Sin el permiso de contactos, Cucuto no puede poner tonos de llamada. Puedes permitirlo en los ajustes de Android para Cucuto.</string>
+    <string name="ringtone_open_settings">Abrir ajustes</string>
+    <string name="ringtone_close">Cerrar</string>
+
+    <!-- Settings -->
+    <string name="settings_section_ringtones">Tonos de llamada</string>
+    <string name="settings_ringtones_switch">Los personajes suenan en las llamadas</string>
+    <string name="settings_ringtones_on">Activado: los contactos vinculados suenan con su personaje.</string>
+    <string name="settings_ringtones_off">Desactivado: los tonos de Android se quedan como están.</string>
+    <string name="settings_ringtones_hint">Vincula un contacto en la pantalla de detalle de su chat. Al desactivarlo, cada contacto recupera su tono anterior.</string>
+    <string name="settings_ringtones_off_title">¿Desactivar los tonos de llamada?</string>
+    <string name="settings_ringtones_off_body">Cada contacto recupera el tono que tenía antes de Cucuto y se borran los archivos de tono de Cucuto. Tus elecciones se guardan para la próxima vez.</string>
+    <string name="settings_ringtones_off_confirm">Desactivar</string>
+</resources>

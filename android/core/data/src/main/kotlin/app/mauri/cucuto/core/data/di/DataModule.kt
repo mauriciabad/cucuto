@@ -15,6 +15,7 @@ import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.DecisionLogDao
 import app.mauri.cucuto.core.data.db.InstalledPackDao
 import app.mauri.cucuto.core.data.db.PackRepositoryDao
+import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.routing.CharacterCatalog
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
@@ -65,6 +66,8 @@ object DataModule {
     @Provides fun decisionLogDao(db: CucutoDatabase): DecisionLogDao = db.decisionLogDao()
 
     @Provides fun seenSenderDao(db: CucutoDatabase): SeenSenderDao = db.seenSenderDao()
+
+    @Provides fun phoneRingtoneDao(db: CucutoDatabase): PhoneRingtoneDao = db.phoneRingtoneDao()
 
     @Provides
     @Singleton
