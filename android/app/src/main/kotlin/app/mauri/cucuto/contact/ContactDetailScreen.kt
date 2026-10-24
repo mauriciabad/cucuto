@@ -646,7 +646,7 @@ private fun LazyListScope.clipSection(
     item(key = "clips-header") {
         SectionHeader(R.string.contact_clips_header, R.string.contact_clips_hint)
     }
-    items(state.clips, key = { "clip/${it.path}" }) { clip ->
+    items(state.clips, key = { "clip/${it.path}" }, contentType = { "clip" }) { clip ->
         val lastOn = stringResource(R.string.contact_clip_last)
         val playing = state.playingClip == clip.path
         val playingLabel = stringResource(R.string.a11y_playing)
@@ -742,7 +742,7 @@ private fun LazyListScope.decisionSection(decisions: List<DecisionRow>) {
         }
         return
     }
-    items(decisions, key = { "decision/${it.id}" }) { DecisionItem(it) }
+    items(decisions, key = { "decision/${it.id}" }, contentType = { "decision" }) { DecisionItem(it) }
 }
 
 @Composable
