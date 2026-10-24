@@ -478,6 +478,7 @@ private fun ContactItem(
         when {
             row.known -> stringResource(R.string.contacts_known)
             row.entry.packageName == ChatKey.WHATSAPP_BUSINESS -> stringResource(R.string.contacts_business, numbers)
+            row.entry.isSignal -> stringResource(R.string.contacts_signal, numbers)
             else -> numbers
         }
     ListItem(

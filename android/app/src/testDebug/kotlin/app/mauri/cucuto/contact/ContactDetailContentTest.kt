@@ -194,7 +194,7 @@ class ContactDetailContentTest {
             ),
         )
 
-        compose.onNodeWithText("No voice yet: WhatsApp's tone plays.").assertIsDisplayed()
+        compose.onNodeWithText("No voice yet: the default tone plays.").assertIsDisplayed()
         compose.onNodeWithText("No voice yet. Tap to choose one.").performClick()
         assertEquals(1, changes)
         compose.onNodeWithText("Choose a character to simulate a message.").assertIsDisplayed()

@@ -2,7 +2,7 @@
 	"id": "/",
 	"name": "Cucuto",
 	"short_name": "Cucuto",
-	"description": "Give each contact a voice: per-contact WhatsApp notification sounds and vibrations for rooted Android 17.",
+	"description": "Give each contact a voice: per-contact WhatsApp and Signal notification sounds and vibrations for rooted Android 17.",
 	"lang": "en",
 	"dir": "ltr",
 	"start_url": "/",

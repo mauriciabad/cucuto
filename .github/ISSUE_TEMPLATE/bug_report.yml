@@ -72,8 +72,8 @@ body:
   - type: input
     id: whatsapp
     attributes:
-      label: WhatsApp version
-      description: Package (WhatsApp or WhatsApp Business) and version, if the bug involves notifications.
+      label: Messenger version
+      description: Package (WhatsApp, WhatsApp Business, Signal or Molly) and version, if the bug involves notifications.
       placeholder: com.whatsapp 2.26.x
   - type: textarea
     id: decision-log

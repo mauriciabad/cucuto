@@ -1,12 +1,12 @@
-Cucuto reproduce el sonido y la vibración de un personaje distinto para cada contacto de WhatsApp, como un reloj de cuco que anuncia quién llama. Un gato para tu hermana, una trompeta para tu jefa. Con el móvil en el bolsillo, ya sabes quién te escribe.
+Cucuto reproduce el sonido y la vibración de un personaje distinto para cada contacto de WhatsApp y Signal, como un reloj de cuco que anuncia quién llama. Un gato para tu hermana, una trompeta para tu jefa. Con el móvil en el bolsillo, ya sabes quién te escribe.
 
 <b>Lee esto primero: Cucuto necesita root y LSPosed.</b> Es una herramienta para móviles que ya tienen:
 • <b>Android 17.</b> No funciona en Android 16 ni anteriores.
 • <b>Root</b>, por ejemplo con Magisk, KernelSU o APatch. Cucuto no rootea el móvil por ti.
 • <b>LSPosed</b> que cargue módulos modernos (libxposed API 102). Ahí activas Cucuto con el ámbito System Framework y reinicias.
-• <b>WhatsApp o WhatsApp Business</b>, con su propio tono y vibración de notificación activados.
+• <b>WhatsApp, WhatsApp Business, Signal o Molly</b>, con el tono y la vibración de notificación de la app activados.
 
-Sin root ni LSPosed no puede cambiar los sonidos de WhatsApp. Cucuto es una versión temprana: puede tener asperezas, y conviene saber cómo entrar en el modo seguro de tu gestor de root por si el móvil no arranca.
+Sin root ni LSPosed no puede cambiar los sonidos de las notificaciones. Cucuto es una versión temprana: puede tener asperezas; conviene saber cómo entrar en el modo seguro de tu gestor de root por si el móvil no arranca.
 
 <b>Cómo funciona</b>
 • <b>Importa un pack de sonidos.</b> Abre un archivo .soundpack.zip, descárgalo de un repositorio de packs o crea el tuyo en la app. Un pack es un reparto de personajes: criaturas con clips cortos y su propia vibración, o canciones para las llamadas.
@@ -18,7 +18,7 @@ Sin root ni LSPosed no puede cambiar los sonidos de WhatsApp. Cucuto es una vers
 • Reglas del tono que se entienden: en directo de día, versión radio de noche. Lee las del pack o escribe las tuyas para un contacto.
 • Clips en el momento justo: saludo al primer mensaje del día, respuesta a una ráfaga, huevos de pascua, clips de noche y de fiestas. Sin rastreo ni gasto de batería.
 • Los packs grandes se pliegan, la búsqueda encuentra personajes por su nombre y Sorpréndeme elige uno al azar.
-• Añade personas desde tus contactos antes de que te escriban: su voz suena desde su segundo mensaje.
+• Añade personas desde tus contactos antes de que te escriban: su voz suena desde su primer mensaje en Signal y desde el segundo en WhatsApp.
 
 <b>Hecho para no molestar</b>
 • Un sonido, sin duplicados: ni una segunda notificación ni un icono fijo en la barra de estado.
@@ -29,10 +29,10 @@ Sin root ni LSPosed no puede cambiar los sonidos de WhatsApp. Cucuto es una vers
 • Nada en segundo plano: sin servicio, sin notificación permanente y sin excepciones de batería.
 
 <b>Qué toca</b>
-• El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las de WhatsApp y WhatsApp Business. Nunca engancha la app de WhatsApp y nunca lee lo que dicen tus mensajes.
-• Sin cuentas, sin anuncios, sin analíticas y sin informes de errores. La app solo se conecta a internet cuando exploras o descargas packs de un repositorio. La ubicación se pide una vez, aproximada, y solo si quieres clips de día y de noche. Los contactos solo se leen para los tonos de llamada y al añadir un chat desde ellos.
+• El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las de WhatsApp, WhatsApp Business, Signal y Molly. Nunca engancha esas apps y nunca lee lo que dicen tus mensajes.
+• Sin cuentas, anuncios, analíticas ni informes de errores. La app solo se conecta a internet cuando exploras o descargas packs de un repositorio. La ubicación se pide una vez, aproximada, y solo si quieres clips de día y de noche. Los contactos solo se leen para los tonos de llamada y al añadir un chat desde ellos.
 • Cucuto nunca busca actualizaciones por sí sola. Actualízala desde donde la instalaste y reinicia: el módulo carga la versión nueva al arrancar.
 
 La app viene vacía: no incluye contenido de terceros, y tú eres responsable de los packs que importas. Packs de demostración gratis (CC0), guía de instalación y formato de los packs: https://cucuto.mauri.app/es/
 
-Software libre con licencia GPL-3.0-or-later. Sin relación con WhatsApp ni Meta.
+Software libre con licencia GPL-3.0-or-later. Sin relación con WhatsApp, Meta ni Signal.

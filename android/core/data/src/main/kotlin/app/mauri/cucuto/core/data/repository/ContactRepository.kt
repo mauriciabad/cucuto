@@ -9,6 +9,7 @@ import app.mauri.cucuto.core.data.db.ContactWithKeys
 import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.di.WallClock
+import app.mauri.cucuto.core.routing.ContactKeys
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,10 +33,24 @@ class ContactRepository
 
         suspend fun get(id: Long): ContactWithKeys? = dao.get(id)
 
+        /**
+         * The contact that owns `(packageName, key)`. A Signal or Molly contact key (`contact:<lookupKey>`) that no
+         * contact stores belongs to the oldest 1:1 contact linked to that Android contact, as in the routing table
+         * (ADR 0081).
+         */
         suspend fun findByKey(
             packageName: String,
             key: String,
-        ): ContactEntity? = dao.findByKey(packageName, key)
+        ): ContactEntity? = dao.findByKey(packageName, key) ?: derivedOwner(packageName, key)
+
+        private suspend fun derivedOwner(
+            packageName: String,
+            key: String,
+        ): ContactEntity? {
+            if (!ContactKeys.isSignalFamily(packageName)) return null
+            val lookupKey = ContactKeys.lookupKeyOf(key) ?: return null
+            return dao.findByLookupKey(lookupKey)
+        }
 
         /**
          * Returns the contact that owns `(packageName, key)`, creating it if needed, and records the sighting
@@ -50,15 +65,26 @@ class ContactRepository
             db.withWriteTransaction {
                 val now = clock.now()
                 val existing = dao.findKey(packageName, key)
+                val derived = if (existing == null) derivedOwner(packageName, key) else null
                 if (existing != null) {
                     dao.touchKey(existing.id, displayName, now)
                     existing.contactId
+                } else if (derived != null) {
+                    derived.id
                 } else {
+                    // A Signal conversation named by its Android contact starts linked to it, so the person's
+                    // WhatsApp chat shares the voice once linked too (ADR 0081).
+                    val lookupKey =
+                        if (ContactKeys.isSignalFamily(packageName)) ContactKeys.lookupKeyOf(key) else null
                     val contactId =
                         dao.insert(
                             ContactEntity(
                                 displayName = displayName,
-                                isGroup = isGroup || ContactKeyKind.classify(key) == ContactKeyKind.GROUP_JID,
+                                isGroup =
+                                    lookupKey == null &&
+                                        (isGroup || ContactKeyKind.classify(key) == ContactKeyKind.GROUP_JID),
+                                androidLookupKey = lookupKey,
+                                androidDisplayName = if (lookupKey != null) displayName else null,
                                 shuffleSeed = Random.nextInt(),
                                 createdAt = now,
                                 updatedAt = now,

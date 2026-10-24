@@ -50,11 +50,12 @@ val changelogLimit = 500
  */
 val allowedTags = setOf("<b>", "</b>", "<i>", "</i>")
 
-/** Each full description ends with this disclaimer (Meta's brand guidelines, Play's IP policy; ADR 0046). */
-val disclaimers = mapOf("en-US" to "Not affiliated with WhatsApp or Meta.", "es-ES" to "Sin relación con WhatsApp ni Meta.")
+/** Each full description ends with this disclaimer (Meta's brand guidelines, Play's IP policy; ADR 0046; Signal since ADR 0081). */
+val disclaimers =
+    mapOf("en-US" to "Not affiliated with WhatsApp, Meta or Signal.", "es-ES" to "Sin relación con WhatsApp, Meta ni Signal.")
 
 /** Other brands that must stay out of the title and the opening words of the short description (ADR 0046). */
-val brands = listOf("WhatsApp", "Meta")
+val brands = listOf("WhatsApp", "Meta", "Signal")
 
 /** True when [text] has [brand] as a whole word, in any case. */
 fun names(text: String, brand: String) = Regex("""\b$brand\b""", RegexOption.IGNORE_CASE).containsMatchIn(text)
@@ -163,7 +164,7 @@ fun checkMetadata(): List<String> {
                 .forEach { problems += "$locale/full_description.txt uses $it (Play renders only ${allowedTags.joinToString(" ")})" }
             val disclaimer = disclaimers[locale.name]
             if (disclaimer == null) {
-                problems += "$locale: add its WhatsApp and Meta disclaimer to `disclaimers` in this script"
+                problems += "$locale: add its WhatsApp, Meta and Signal disclaimer to `disclaimers` in this script"
             } else if (!description.trimEnd().endsWith(disclaimer)) {
                 problems += "$locale/full_description.txt must end with \"$disclaimer\""
             }

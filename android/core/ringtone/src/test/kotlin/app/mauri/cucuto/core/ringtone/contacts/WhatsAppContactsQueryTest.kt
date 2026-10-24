@@ -53,6 +53,9 @@ class WhatsAppContactsQueryTest {
                 // Odd WhatsApp rows: skipped.
                 FakeContactsData.Row("lk-odd", "Odd Test", PROFILE, "not-a-jid"),
                 FakeContactsData.Row("lk-null", "Null Test", PROFILE, null),
+                // Signal's entries (ADR 0081): the number as the contact has it.
+                FakeContactsData.Row("lk-ana", "Ana Test", SIGNAL, "+34 600 00-00-01"),
+                FakeContactsData.Row("lk-sam", "Sam Test", SIGNAL, "600000005"),
             )
     }
 
@@ -85,7 +88,10 @@ class WhatsAppContactsQueryTest {
                         ChatKey.WHATSAPP_BUSINESS,
                         listOf("34600000001@s.whatsapp.net"),
                     ),
+                    WhatsAppContact("lk-ana", "Ana Test", ChatKey.SIGNAL, emptyList(), listOf("+34600000001")),
                     WhatsAppContact("lk-eva", "Éva Test", ChatKey.WHATSAPP, listOf("34600000004@s.whatsapp.net")),
+                    // A number that is not E.164 is not kept, but the person is listed.
+                    WhatsAppContact("lk-sam", "Sam Test", ChatKey.SIGNAL, emptyList(), emptyList()),
                     WhatsAppContact("lk-zoe", "Zoe Test", ChatKey.WHATSAPP, listOf("34600000003@s.whatsapp.net")),
                 ),
                 people,
@@ -95,7 +101,8 @@ class WhatsAppContactsQueryTest {
             val query = provider.queries.single()
             assertEquals(Data.CONTENT_URI, query.uri)
             assertEquals(listOf(Data.MIMETYPE, Data.DATA1, Data.LOOKUP_KEY, Data.DISPLAY_NAME), query.projection)
-            assertEquals(listOf(PROFILE, BUSINESS), query.args)
+            assertEquals(listOf(PROFILE, BUSINESS, SIGNAL), query.args)
+            assertEquals(ChatKey(ChatKey.SIGNAL, "contact:lk-ana"), people[2].chatKey)
         }
 
     @Test
@@ -111,6 +118,7 @@ class WhatsAppContactsQueryTest {
         const val PROFILE = "vnd.android.cursor.item/vnd.com.whatsapp.profile"
         const val BUSINESS = "vnd.android.cursor.item/vnd.com.whatsapp.w4b.profile"
         const val VOIP = "vnd.android.cursor.item/vnd.com.whatsapp.voip.call"
+        const val SIGNAL = "vnd.android.cursor.item/vnd.org.thoughtcrime.securesms.contact"
     }
 }
 

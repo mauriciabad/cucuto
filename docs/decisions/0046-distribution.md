@@ -121,8 +121,9 @@ defaults in #211 the owner didn't change).
 
 The recipe is in [`fdroid/`](../../fdroid/README.md), ready for the owner to submit after v1. It builds the tag with
 JDK 21, the pinned Rust toolchain through rustup, cargo-ndk and NDK r30, and uses `Binaries:` with
-`AllowedAPKSigningKeys:` so F-Droid publishes the GitHub APK's signature on its own build. It declares `NonFreeDep`
-(F-Droid's anti-feature for apps that need a non-free app, WhatsApp being their example). It has no inclusion
+`AllowedAPKSigningKeys:` so F-Droid publishes the GitHub APK's signature on its own build. It declared `NonFreeDep`
+(F-Droid's anti-feature for apps that need a non-free app, WhatsApp being their example) until Signal and Molly
+support made WhatsApp optional (#374, [ADR 0081](0081-signal-support.md)); the recipe now declares no anti-feature. It has no inclusion
 blockers: no Play services, Firebase, trackers or proprietary libraries in the release APK.
 
 For F-Droid's update check, a tag's source must name its version, so the release PR now also sets `versionCode` and

@@ -1,6 +1,7 @@
 package app.mauri.cucuto.xposed
 
 import android.util.Log
+import app.mauri.cucuto.core.routing.ContactKeys
 
 /**
  * The module's log. Lines go to libxposed's `log()`, which LSPosed shows in its modules log (not logcat: M0 found
@@ -61,6 +62,7 @@ internal class ModuleLog(
         /** A loggable shape of a conversation key: its JID domain, never the identifier itself. */
         fun keyShape(key: String?): String {
             if (key == null) return "<none>"
+            if (key.startsWith(ContactKeys.PREFIX)) return "<contact>"
             val at = key.lastIndexOf('@')
             return if (at in 1 until key.length - 1 && key.indexOf(' ') < 0) key.substring(at) else "<title>"
         }

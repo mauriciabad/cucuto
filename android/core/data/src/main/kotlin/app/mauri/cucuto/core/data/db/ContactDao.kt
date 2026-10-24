@@ -6,6 +6,7 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Transaction
 import androidx.room3.Update
+import app.mauri.cucuto.core.routing.ContactKeys
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -30,6 +31,10 @@ interface ContactDao {
         packageName: String,
         value: String,
     ): ContactEntity?
+
+    /** The oldest 1:1 contact linked to the Android contact [lookupKey] (Signal's derived keys, ADR 0081). */
+    @Query("SELECT * FROM contacts WHERE androidLookupKey = :lookupKey AND NOT isGroup ORDER BY id LIMIT 1")
+    suspend fun findByLookupKey(lookupKey: String): ContactEntity?
 
     @Insert
     suspend fun insert(contact: ContactEntity): Long
@@ -73,17 +78,31 @@ interface ContactDao {
     /**
      * Every messenger key of a contact that has a voice, or of a per-sender group: the input of the routing
      * table. Phone numbers ([ContactKeyEntity.NO_PACKAGE]) never route.
+     *
+     * Then the derived Signal and Molly keys (ADR 0081): every 1:1 contact with a voice that is linked to an Android
+     * contact also routes `contact:<lookupKey>` in both apps, flagged `derived`. Sorted so that, for one key, a stored
+     * key comes before a derived one, then the oldest contact: the builder keeps the first.
      */
     @Query(
         """
         SELECT k.packageName AS packageName, k.value AS keyValue, c.id AS contactId, c.isGroup AS isGroup,
                c.groupPolicy AS groupPolicy, c.shuffleSeed AS shuffleSeed, a.packId AS packId,
-               a.characterId AS characterId, a.disabledClips AS disabledClips, a.hapticOverride AS hapticOverride
+               a.characterId AS characterId, a.disabledClips AS disabledClips, a.hapticOverride AS hapticOverride,
+               0 AS derived
         FROM contact_keys AS k
         JOIN contacts AS c ON c.id = k.contactId
         LEFT JOIN assignments AS a ON a.contactId = c.id
         WHERE k.packageName != '' AND (a.contactId IS NOT NULL OR (c.isGroup AND c.groupPolicy = 'PER_SENDER'))
-        ORDER BY k.packageName, k.value
+        UNION ALL
+        SELECT p.packageName AS packageName, '${ContactKeys.PREFIX}' || c.androidLookupKey AS keyValue,
+               c.id AS contactId, c.isGroup AS isGroup, c.groupPolicy AS groupPolicy, c.shuffleSeed AS shuffleSeed,
+               a.packId AS packId, a.characterId AS characterId, a.disabledClips AS disabledClips,
+               a.hapticOverride AS hapticOverride, 1 AS derived
+        FROM contacts AS c
+        JOIN assignments AS a ON a.contactId = c.id
+        JOIN (SELECT '${ContactKeys.SIGNAL}' AS packageName UNION ALL SELECT '${ContactKeys.MOLLY}') AS p
+        WHERE NOT c.isGroup AND c.androidLookupKey IS NOT NULL AND c.androidLookupKey != ''
+        ORDER BY packageName, keyValue, derived, contactId
         """,
     )
     fun observeRoutingRows(): Flow<List<RoutingRow>>
@@ -101,4 +120,6 @@ data class RoutingRow(
     val characterId: String?,
     val disabledClips: List<String>?,
     val hapticOverride: String?,
+    /** A Signal or Molly key derived from the contact's Android link, not stored (ADR 0081). */
+    val derived: Boolean = false,
 )

@@ -20,7 +20,9 @@ import java.lang.reflect.Method
  * MessagingStyle extras are read key by key with the expected types (the M0 spike's reader went through the hidden
  * `extractMessagingStyleFromNotification` and a wrongly typed `EXTRA_PEOPLE_LIST` read, which logged Bundle type
  * warnings and came back empty). A type mismatch on one key loses that key only. Of a message, only the sender
- * (`sender_person`, else the legacy `sender` name) is read, and only for groups.
+ * (`sender_person`, else the legacy `sender` name) is read, and only for groups. On Signal and Molly only, the first
+ * `Person` of `EXTRA_PEOPLE_LIST` (read as the `ArrayList<Person>` it is) gives a 1:1 conversation's contact URI, and
+ * a group sender's URI is kept too (ADR 0081).
  */
 internal class RecordReader(
     recordClass: Class<*>,
@@ -50,6 +52,10 @@ internal class RecordReader(
         val group = ConversationKeys.isGroup(channelId, shortcutId ?: shortcutInfoId, isGroupConversation)
         val lastMessage = if (group) extras?.let { lastMessage(it) } else null
         val person = lastMessage?.let { safe { it.getParcelable(KEY_SENDER_PERSON, Person::class.java) } }
+        // Signal and Molly (ADR 0081): a 1:1 conversation's Android contact is the URI of the one Person they add to
+        // EXTRA_PEOPLE_LIST; the messages are not opened for it. Never read for any other app.
+        val signal = Targets.isSignalFamily(pkg)
+        val personUri = if (signal && !group) extras?.let { firstPersonUri(it) } else null
         // The simulate extras are read only from Cucuto's own simulate channel; the package is the one
         // system_server attributes the notification to, which no other app can claim.
         val simulate = pkg == Targets.SELF_PACKAGE && channelId == Targets.SIMULATE_CHANNEL
@@ -64,6 +70,8 @@ internal class RecordReader(
             isGroupConversation = isGroupConversation,
             senderKey = safe { person?.key },
             senderName = safe { person?.name?.toString() } ?: lastMessage?.let { text(it, KEY_SENDER) },
+            personUri = personUri,
+            senderUri = if (signal) safe { person?.uri } else null,
             simulatePackage = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_PACKAGE) } else null,
             simulateKey = if (simulate) extras?.let { text(it, Targets.EXTRA_SIMULATE_KEY) } else null,
         )
@@ -74,6 +82,12 @@ internal class RecordReader(
         safe {
             val messages = extras.getParcelableArray(Notification.EXTRA_MESSAGES, Parcelable::class.java)
             messages?.lastOrNull { it is Bundle } as? Bundle
+        }
+
+    /** `Person.getUri()` of the first entry of `EXTRA_PEOPLE_LIST` (an `ArrayList<Person>`). */
+    private fun firstPersonUri(extras: Bundle): String? =
+        safe {
+            extras.getParcelableArrayList(Notification.EXTRA_PEOPLE_LIST, Person::class.java)?.firstOrNull()?.uri
         }
 
     private fun text(

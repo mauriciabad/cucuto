@@ -1,7 +1,8 @@
 # Cucuto — agent guide
 
-Cucuto gives each WhatsApp contact a voice: an LSPosed module in `system_server` swaps the
-notification sound and vibration per contact, using clips from user-imported sound packs. The full spec is
+Cucuto gives each WhatsApp and Signal contact a voice (Molly too; one voice per person across both apps, ADR 0081):
+an LSPosed module in `system_server` swaps the notification sound and vibration per contact, using clips from
+user-imported sound packs. The full spec is
 [`docs/project-brief.md`](docs/project-brief.md). Read it before starting any non-trivial task; it is the source of truth.
 
 **Working alone?** Since 2026-10-25 there is no lead agent, only occasional single agents. Start with

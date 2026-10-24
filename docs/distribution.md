@@ -45,9 +45,9 @@ fastlane/metadata/android/
   copy in both languages. Format: plain text, a blank line between paragraphs, `<b>` for headings, "• " bullets and
   bare URLs. Play renders only bold, italics and line breaks, and F-Droid turns line breaks into `<br>`. `<p>`,
   `<ul>` and `<a>` would show as raw tags on Play.
-- **WhatsApp** (ADR 0046): never in the title, the icon or the feature graphic, and not in the first words of the short
-  description. The full description ends with "Not affiliated with WhatsApp or Meta." ("Sin relación con WhatsApp
-  ni Meta.").
+- **WhatsApp and Signal** (ADR 0046, ADR 0081): never in the title, the icon or the feature graphic, and not in the
+  first words of the short description. The full description ends with "Not affiliated with WhatsApp, Meta or
+  Signal." ("Sin relación con WhatsApp, Meta ni Signal.").
 - **Screenshots** come from the Roborazzi screenshot tests (ADR 0032), light theme, with the CC0 demo packs and
   made-up chats only. The screen keeps its 822 × 1782 px and is centered on a 1080 × 1920 canvas in the brand's
   primary-90 tone (`StoreFrame`), because Play refuses screenshots taller than 2:1 and any alpha. Regenerate both
@@ -97,11 +97,11 @@ What its [App Inclusion Policy](https://izzyondroid.org/docs/general/AppInclusio
 | No trackers or ads; apps that request root must have no tracking at all | None. Met. |
 | No self-updater, or an opt-in one | No update checker at all. Met. |
 | Avoid `usesCleartextTraffic` | Not set (HTTPS only). Met. |
-| "Apps for Facebook, WhatsApp & Co" won't be accepted | **Not met.** Cucuto only works with WhatsApp's notifications. |
+| "Apps for Facebook, WhatsApp & Co" won't be accepted | **Probably met now.** Since #374 ([ADR 0081](decisions/0081-signal-support.md)) Cucuto works fully with Signal or Molly, so WhatsApp is optional. Until then it only worked with WhatsApp's notifications. |
 | "Vibe-coded apps will be rejected"; "the code itself should be free of" LLM-generated text | **Not met.** Cucuto's code is written by AI agents. |
 | Reproducible builds | Encouraged, not required. See [reproducible-builds.md](reproducible-builds.md). |
 
-So a request would most likely be refused today on two grounds the project can't change. If the owner still wants to
+So a request would most likely be refused today on the AI-written code, which the project can't change (the WhatsApp ground likely fell with Signal support). If the owner still wants to
 ask (the policy is applied case by case), the request goes to the [repodata issue
 tracker](https://codeberg.org/IzzyOnDroid/repodata/issues) with its new-app template, pointing at the GitHub
 releases; IzzyOnDroid then pins the signing certificate from the first APK it sees. Nothing has been submitted.
@@ -124,8 +124,9 @@ with what it does and what was checked in [`fdroid/README.md`](../fdroid/README.
   `android/app/build.gradle.kts`, which the release PR now sets ([releasing.md](releasing.md)).
 - **No inclusion blockers.** The release APK has no Google Play services, Firebase, GMS, Google sign-in, trackers or
   proprietary libraries. `:core:drive` isn't part of it. `fdroid scanner` and `fdroid lint` pass with the recipe.
-- **Anti-feature `NonFreeDep`:** Cucuto is only useful with WhatsApp. `NonFreeNet` doesn't fit, because Cucuto never
-  talks to WhatsApp's servers.
+- **No anti-features** (since #374, [ADR 0081](decisions/0081-signal-support.md)): Cucuto works fully with Signal or
+  Molly, which are free software, so `NonFreeDep` no longer applies. `NonFreeNet` doesn't fit, because Cucuto never
+  talks to any messenger's servers.
 - Still untested: a full `fdroid build` on F-Droid's Debian image. The merge request's CI runs it.
 
 **Owner steps** (GitLab account, fork, merge request): #275. Once F-Droid publishes Cucuto, add it to the website's

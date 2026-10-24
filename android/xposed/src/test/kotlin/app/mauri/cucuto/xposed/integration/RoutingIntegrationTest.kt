@@ -468,6 +468,38 @@ class RoutingIntegrationTest {
         }
 
     @Test
+    fun aPersonLinkedToTheirAndroidContactSpeaksWithTheSameVoiceOnSignal() =
+        runBlocking<Unit> {
+            val p = pipeline()
+            val world = p.started()
+            val lookupUri = "content://com.android.contacts/contacts/lookup/3789r12-2A4C3E/1234"
+
+            // Before the link, Signal knows nobody: Signal's tone, and the contact key is reported for Home.
+            val (before, beforeEvent) = p.alert(Notifications.signal("42", "Ana", lookupUri))
+            assertUntouched(before)
+            assertEquals(Outcome.UNASSIGNED.name, beforeEvent!!.outcome)
+            assertEquals(Notifications.SIGNAL, beforeEvent.packageName)
+            assertEquals("contact:3789r12-2A4C3E", beforeEvent.conversationKey)
+
+            // Linking Ana's WhatsApp chat to her Android contact gives Signal and Molly her voice, with no other step.
+            p.contacts.linkAndroidContact(world.ana, "3789r12-2A4C3E", "Ana")
+            p.awaitModule { it.route(Notifications.MOLLY, "contact:3789r12-2A4C3E") != null }
+            val (signal, signalEvent) = p.alert(Notifications.signal("42", "Ana", lookupUri))
+            assertTrue(
+                assertSwapped(signal, signalEvent, Notifications.SIGNAL, "contact:3789r12-2A4C3E", world.ana)
+                    .contains("/frog/"),
+            )
+            assertEquals(expectedEffect(frogHaptic), signal.vibration)
+            val (molly, mollyEvent) = p.alert(Notifications.signal("7", "Ana", lookupUri, pkg = Notifications.MOLLY))
+            assertSwapped(molly, mollyEvent, Notifications.MOLLY, "contact:3789r12-2A4C3E", world.ana)
+
+            // An unsaved number (no contact URI) keeps Signal's tone and is reported by its recipient ID.
+            val (unsaved, unsavedEvent) = p.alert(Notifications.signal("43", "+34 600 00 00 09", null))
+            assertUntouched(unsaved)
+            assertEquals("43", unsavedEvent!!.conversationKey)
+        }
+
+    @Test
     fun unassignedChatsAndOtherAppsKeepTheirTone() =
         runBlocking<Unit> {
             val p = pipeline()

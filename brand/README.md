@@ -181,7 +181,7 @@ Material 3 Expressive shapes (`androidx.compose.material3.MaterialShapes`, opt-i
 | Cards, sheets, dialogs | Standard shape scale (`medium` → `extraLarge`) |
 
 Never use a plain circle for contact avatars: the cookie silhouette is how people tell Cucuto's characters from
-WhatsApp's profile pictures.
+WhatsApp's and Signal's profile pictures.
 
 ## Iconography
 

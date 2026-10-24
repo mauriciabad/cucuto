@@ -14,11 +14,12 @@ website copy lives in `web/src/lib/i18n/en.ts` and `es.ts`; change both pages an
 - **Root**, for example with Magisk, KernelSU or APatch. Cucuto does not root your phone for you.
 - **LSPosed** that loads modern modules (libxposed API 102), installed and working. Developed on LSPosed 2.2.1 under
   KernelSU ([device facts](device.md)).
-- **WhatsApp or WhatsApp Business**, with notifications on and its own tone and vibration left on.
+- **WhatsApp, WhatsApp Business, Signal or Molly**, with notifications on and the app's own tone and vibration left on.
+  On Signal, its notifications must show at least the name (otherwise Signal's own tone plays).
 
 Root and LSPosed weaken Android's security and can break banking apps, Play Integrity and your warranty. An Android
-update can move the code Cucuto hooks; WhatsApp's own tone then plays until Cucuto is updated. To pick a voice, the
-module reads who sent each WhatsApp notification. That stays in Cucuto's private storage on the phone.
+update can move the code Cucuto hooks; the app's own tone then plays until Cucuto is updated. To pick a voice, the
+module reads who sent each WhatsApp or Signal notification. That stays in Cucuto's private storage on the phone.
 
 ## Steps
 
@@ -27,17 +28,17 @@ module reads who sent each WhatsApp notification. That stays in Cucuto's private
    allow installs from that app (your browser or file manager) the first time.
 2. **Enable the module in LSPosed.** Open the LSPosed manager, go to **Modules**, turn on **Cucuto** and check that its
    scope is **System Framework** only. Cucuto asks for exactly that scope, so it is usually ticked already. Don't add
-   WhatsApp: Cucuto never hooks the WhatsApp app.
+   WhatsApp or Signal: Cucuto never hooks them.
 3. **Reboot.** The module loads into `system_server` at boot, so a full reboot is needed after enabling it, changing
    its scope or updating Cucuto.
 4. **Check the status card.** Open Cucuto. On first launch a setup guide walks you through these steps: what Cucuto
    does, requirements and risks, enabling the module, rebooting and a test notification. You can skip it and reopen it
    later from Settings › Setup › **Setup guide**. The status card on Home then checks that the module is active, the LSPosed scope is
-   right, WhatsApp is installed and at least one pack is imported. Each failing check tells you how to fix it.
+   right, WhatsApp or Signal is installed and at least one pack is imported. Each failing check tells you how to fix it.
 5. **Import a pack and assign characters.** Import a `.soundpack.zip` file or pick one from the
    [free packs](https://cucuto.mauri.app/packs/), then choose a chat, tap a character and, if you like, a ringtone
    (step 2 of the same flow: a song from a pack, **Android default** or **Leave as is**). Someone who hasn't written
-   since you installed Cucuto? Add them with **Add a chat from contacts**. Keep WhatsApp's own tone and vibration on:
+   since you installed Cucuto? Add them with **Add a chat from contacts**. Keep WhatsApp's or Signal's own tone and vibration on:
    Cucuto replaces them per contact. To import, open **Packs** › **Import a pack**, or open or share a
    `.soundpack.zip` file with Cucuto from any app.
 
@@ -69,10 +70,10 @@ isn't on Google Play ([ADR 0080](decisions/0080-no-google-play.md)).
 | Module check: "Not enabled" | Turn on Cucuto in LSPosed with the System Framework scope, then reboot. |
 | "Enabled in LSPosed, but not loaded into the system yet" | Reboot. |
 | "Cucuto was updated since the last boot" | Reboot: `system_server` still runs the old module. |
-| "These hooks could not be installed on this Android build" | Your Android build moved the code Cucuto hooks. WhatsApp's own tone plays. [Open a bug](https://github.com/mauriciabad/cucuto/issues/new?template=bug_report.yml) with your build number. |
+| "These hooks could not be installed on this Android build" | Your Android build moved the code Cucuto hooks. WhatsApp's or Signal's own tone plays. [Open a bug](https://github.com/mauriciabad/cucuto/issues/new?template=bug_report.yml) with your build number. |
 | Scope check fails | In LSPosed, open Modules › Cucuto, tick only System Framework, untick anything else and reboot. |
-| A contact plays WhatsApp's normal tone | That is the safe fallback: the contact has no character yet, the **Cucuto voices** switch is off, or the module isn't active. Diagnostics shows the decision for each recent notification. |
-| No sound at all | Cucuto only replaces a sound that was going to play. Check that the chat isn't muted, Do Not Disturb is off and WhatsApp's tone isn't silent. |
+| A contact plays WhatsApp's or Signal's normal tone | That is the safe fallback: the contact has no character yet, the **Cucuto voices** switch is off, or the module isn't active. On Signal, also check that its notifications show at least the name. Diagnostics shows the decision for each recent notification. |
+| No sound at all | Cucuto only replaces a sound that was going to play. Check that the chat isn't muted, Do Not Disturb is off and WhatsApp's or Signal's tone isn't silent. |
 | "Wait N seconds" after tapping the test | Android mutes notifications an app posts less than 10 seconds apart, so Cucuto waits. Within a minute of the last test the chirp plays quieter. |
 | The test plays the default sound | The module is not active: check the steps above. |
 | The test makes no sound | Allow Cucuto's notifications in the system settings, and keep the sound of its Self-test channel on. |
@@ -96,7 +97,7 @@ Try these in order:
 ## Turn it off or uninstall
 
 To pause Cucuto, turn off the **Cucuto voices** switch (in Settings, or the Quick Settings tile): every chat goes back to
-WhatsApp's tone right away. To remove it completely, disable the module in LSPosed, reboot and uninstall the app.
+WhatsApp's or Signal's own tone right away. To remove it completely, disable the module in LSPosed, reboot and uninstall the app.
 Uninstalling deletes your imported packs and assignments.
 
 ## Debug builds

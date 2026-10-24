@@ -86,7 +86,8 @@ class HomeContentTest {
     fun assignedChatsShowTheirCharacterAndPack() {
         show(previewHomeState())
         compose.onNodeWithText("Bleep the frog · Chiptune critters").assertIsDisplayed()
-        compose.onNodeWithText("Group · No voice yet: WhatsApp's tone").assertIsDisplayed()
+        compose.onNodeWithText("Signal · No voice yet: default tone").assertIsDisplayed()
+        compose.onNodeWithText("Group · No voice yet: default tone").assertIsDisplayed()
     }
 
     @Test

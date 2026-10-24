@@ -98,7 +98,7 @@
     <string name="creator_haptic_none">Off</string>
     <string name="creator_haptic_custom">Custom</string>
     <string name="creator_haptic_auto_hint">The vibration follows the loudness of each sound.</string>
-    <string name="creator_haptic_none_hint">No vibration from the pack: WhatsApp\'s own vibration stays.</string>
+    <string name="creator_haptic_none_hint">No vibration from the pack: WhatsApp\'s or Signal\'s own vibration stays.</string>
     <string name="creator_haptic_custom_hint">A vibration pattern of your own.</string>
     <string name="creator_haptic_try">Try it</string>
     <string name="creator_haptic_edit">Edit pattern</string>

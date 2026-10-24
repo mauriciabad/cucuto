@@ -8,25 +8,26 @@
     <!-- Explainer -->
     <string name="contacts_explainer_lead">Dale una voz y un tono a alguien antes de que te escriba.</string>
     <string name="contacts_explainer_reads_title">Qué lee Cucuto</string>
-    <string name="contacts_explainer_reads_body">Las entradas de WhatsApp que ya tienen los contactos de tu móvil: el nombre y el número de WhatsApp de cada persona. Las pone ahí el propio WhatsApp.</string>
+    <string name="contacts_explainer_reads_body">Las entradas de WhatsApp y Signal que ya tienen los contactos de tu móvil: el nombre y el número de cada persona. Las ponen ahí los propios WhatsApp y Signal.</string>
     <string name="contacts_explainer_never_title">Qué no lee nunca</string>
-    <string name="contacts_explainer_never_body">Tus mensajes, chats y grupos, ni ningún archivo de WhatsApp. Tampoco nada más de tus contactos.</string>
+    <string name="contacts_explainer_never_body">Tus mensajes, chats y grupos, ni ningún archivo de WhatsApp o Signal. Tampoco nada más de tus contactos.</string>
     <string name="contacts_explainer_saves_title">Qué guarda</string>
     <string name="contacts_explainer_saves_body">Solo a las personas que eliges. Nada sale de tu móvil.</string>
     <string name="contacts_explainer_why_title">Por qué pide tus contactos</string>
     <string name="contacts_explainer_why_body">Android guarda estas entradas con tus contactos, así que Cucuto necesita permiso para leerlas. Es el mismo permiso que usan los tonos de llamada.</string>
     <string name="contacts_explainer_first_title">Su primer mensaje</string>
-    <string name="contacts_explainer_first_body">WhatsApp solo da nombre a un chat cuando te escribe. Así que, cuando alguien que añades te escribe por primera vez, Cucuto compara su nombre con estas entradas y vincula el chat. Ese primer mensaje suena con el tono de WhatsApp; su voz suena desde el siguiente. Los tonos de llamada funcionan desde ya.</string>
+    <string name="contacts_explainer_first_body">Signal indica el contacto en cada notificación, así que una voz en Signal suena desde el primer mensaje. WhatsApp solo da nombre a un chat cuando te escribe: cuando alguien que añades te escribe ahí por primera vez, Cucuto compara su nombre con estas entradas y vincula el chat. Ese primer mensaje de WhatsApp suena con el tono de WhatsApp; su voz suena desde el siguiente. Los tonos de llamada funcionan desde ya.</string>
     <string name="contacts_explainer_code">Ver el código en GitHub</string>
     <string name="contacts_continue">Continuar</string>
     <string name="contacts_not_now">Ahora no</string>
 
     <!-- List -->
-    <string name="contacts_loading">Leyendo las entradas de WhatsApp</string>
+    <string name="contacts_loading">Leyendo las entradas de WhatsApp y Signal</string>
     <string name="contacts_search_hint">Buscar contactos</string>
     <string name="contacts_search_clear">Borrar búsqueda</string>
     <string name="contacts_list_hint">Elige a quién quieres darle una voz. Solo se guardan esas personas.</string>
     <string name="contacts_business">WhatsApp Business · %1$s</string>
+    <string name="contacts_signal">Signal · %1$s</string>
     <string name="contacts_known">Ya está en tus chats</string>
     <string name="contacts_no_matches">Ningún contacto coincide</string>
     <plurals name="contacts_add_button">
@@ -36,13 +37,13 @@
     </plurals>
     <string name="contacts_add_none">Elige a alguien para añadir</string>
     <string name="contacts_failed">No se ha podido guardar. Vuelve a intentarlo.</string>
-    <string name="contacts_empty_title">No hay contactos de WhatsApp</string>
-    <string name="contacts_empty_body">Tus contactos no tienen entradas de WhatsApp. WhatsApp las añade cuando puede ver tus contactos. La gente que te escribe sigue apareciendo en Inicio.</string>
+    <string name="contacts_empty_title">No hay contactos de WhatsApp ni de Signal</string>
+    <string name="contacts_empty_body">Tus contactos no tienen entradas de WhatsApp ni de Signal. Cada app las añade cuando puede ver tus contactos. La gente que te escribe sigue apareciendo en Inicio.</string>
     <string name="contacts_back">Volver</string>
 
     <!-- Permission refused -->
     <string name="contacts_denied_title">No se ha leído nada</string>
-    <string name="contacts_denied_body">Sin el permiso de contactos, Cucuto no puede ver las entradas de WhatsApp. La gente que te escribe sigue apareciendo en Inicio. Puedes permitirlo en los ajustes de Android cuando quieras.</string>
+    <string name="contacts_denied_body">Sin el permiso de contactos, Cucuto no puede ver las entradas de WhatsApp y Signal. La gente que te escribe sigue apareciendo en Inicio. Puedes permitirlo en los ajustes de Android cuando quieras.</string>
     <string name="contacts_open_settings">Abrir ajustes</string>
     <string name="contacts_try_again">Volver a intentarlo</string>
     <string name="contacts_blocked_title">El permiso de contactos está desactivado</string>

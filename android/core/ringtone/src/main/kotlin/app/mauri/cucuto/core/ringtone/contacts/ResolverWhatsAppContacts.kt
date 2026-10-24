@@ -43,16 +43,21 @@ class ResolverWhatsAppContacts
                 .query(
                     Data.CONTENT_URI,
                     PROJECTION,
-                    "${Data.MIMETYPE} IN (?, ?)",
-                    arrayOf(WHATSAPP_PROFILE, BUSINESS_PROFILE),
+                    "${Data.MIMETYPE} IN (?, ?, ?)",
+                    arrayOf(WHATSAPP_PROFILE, BUSINESS_PROFILE, SIGNAL_CONTACT),
                     null,
                 )?.use { c ->
                     while (c.moveToNext()) {
                         val packageName = packageOf(c.getString(0)) ?: continue
-                        val jid = c.getString(1)?.trim() ?: continue
+                        val value = c.getString(1)?.trim() ?: continue
                         val lookupKey = c.getString(2)?.takeIf { it.isNotEmpty() } ?: continue
-                        if (ContactKeyKind.classify(jid) != ContactKeyKind.PHONE_JID) continue
-                        rows += Row(packageName, jid, lookupKey, c.getString(3))
+                        if (packageName == ChatKey.SIGNAL) {
+                            // Signal's entry holds the number as the contact has it; keep it only when it is E.164.
+                            rows += Row(packageName, e164(value), lookupKey, c.getString(3))
+                            continue
+                        }
+                        if (ContactKeyKind.classify(value) != ContactKeyKind.PHONE_JID) continue
+                        rows += Row(packageName, value, lookupKey, c.getString(3))
                     }
                 }
             return group(rows)
@@ -60,7 +65,8 @@ class ResolverWhatsAppContacts
 
         private data class Row(
             val packageName: String,
-            val jid: String,
+            /** The phone JID; for Signal, the E.164 number or null. */
+            val jid: String?,
             val lookupKey: String,
             val name: String?,
         )
@@ -72,14 +78,27 @@ class ResolverWhatsAppContacts
             /** WhatsApp Business's, by the same naming (#229); not seen on the owner's phone yet. */
             const val BUSINESS_PROFILE = "vnd.android.cursor.item/vnd.com.whatsapp.w4b.profile"
 
+            /**
+             * Signal's "Message +34…" rows (`SyncSystemContactLinksJob.MESSAGE_MIMETYPE`), number in `DATA1`. Molly
+             * writes the same type (ADR 0081).
+             */
+            const val SIGNAL_CONTACT = "vnd.android.cursor.item/vnd.org.thoughtcrime.securesms.contact"
+
             private val PROJECTION = arrayOf(Data.MIMETYPE, Data.DATA1, Data.LOOKUP_KEY, Data.DISPLAY_NAME)
 
             fun packageOf(mimeType: String?): String? =
                 when (mimeType) {
                     WHATSAPP_PROFILE -> ChatKey.WHATSAPP
                     BUSINESS_PROFILE -> ChatKey.WHATSAPP_BUSINESS
+                    SIGNAL_CONTACT -> ChatKey.SIGNAL
                     else -> null
                 }
+
+            /** [raw] without spaces, dashes or brackets when it is an E.164 number, else null. */
+            fun e164(raw: String): String? {
+                val compact = raw.filterNot { it == ' ' || it == '-' || it == '(' || it == ')' || it == '.' }
+                return compact.takeIf { ContactKeyKind.classify(it) == ContactKeyKind.PHONE_NUMBER }
+            }
 
             /** One entry per Android contact and app, with all its numbers, sorted by name for the list. */
             private fun group(rows: List<Row>): List<WhatsAppContact> {
@@ -91,7 +110,22 @@ class ResolverWhatsAppContacts
                             lookupKey = key.second,
                             displayName = group.firstNotNullOfOrNull { it.name?.takeIf(String::isNotBlank) },
                             packageName = key.first,
-                            phoneJids = group.map { it.jid }.distinct(),
+                            phoneJids =
+                                if (key.first ==
+                                    ChatKey.SIGNAL
+                                ) {
+                                    emptyList()
+                                } else {
+                                    group.mapNotNull { it.jid }.distinct()
+                                },
+                            numbers =
+                                if (key.first ==
+                                    ChatKey.SIGNAL
+                                ) {
+                                    group.mapNotNull { it.jid }.distinct()
+                                } else {
+                                    emptyList()
+                                },
                         )
                     }.sortedWith(
                         compareBy<WhatsAppContact, String?>(nullsLast(collator)) { it.displayName }

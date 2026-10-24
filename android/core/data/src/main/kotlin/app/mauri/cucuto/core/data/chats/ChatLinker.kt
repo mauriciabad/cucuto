@@ -12,19 +12,27 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * What Cucuto already has of Android contacts' WhatsApp entries, to mark them in the "Add a chat from contacts" list.
+ * What Cucuto already has of Android contacts' WhatsApp and Signal entries, to mark them in the "Add a chat from
+ * contacts" list.
  *
  * @property linked `(package, lookup key)` of every chat linked to an Android contact.
  * @property keys Every messenger key of every contact.
+ * @property people Lookup keys of every 1:1 contact linked to an Android contact: on Signal, that person already has
+ *   their voice through the link (ADR 0081).
  */
 data class KnownContacts(
     val linked: Set<Pair<String, String>> = emptySet(),
     val keys: Set<ChatKey> = emptySet(),
+    val people: Set<String> = emptySet(),
 ) {
-    /** Whether [entry] is already a chat: one of its numbers, or its Android contact for that app. */
+    /** Whether [entry] is already a chat: one of its numbers, or its Android contact for that app (any app on Signal). */
     operator fun contains(entry: WhatsAppContact): Boolean =
-        (entry.packageName to entry.lookupKey) in linked ||
-            entry.phoneJids.any { ChatKey(entry.packageName, it) in keys }
+        if (entry.isSignal) {
+            entry.lookupKey in people || entry.chatKey in keys
+        } else {
+            (entry.packageName to entry.lookupKey) in linked ||
+                entry.phoneJids.any { ChatKey(entry.packageName, it) in keys }
+        }
 }
 
 /**
@@ -74,13 +82,15 @@ class ChatLinker
             val all = contacts.observeContacts().first()
             val linked = HashSet<Pair<String, String>>()
             val keys = HashSet<ChatKey>()
+            val people = HashSet<String>()
             for (contact in all) {
                 val messenger = contact.keys.filter { it.packageName != ContactKeyEntity.NO_PACKAGE }
                 messenger.mapTo(keys) { ChatKey(it.packageName, it.value) }
                 val lookupKey = contact.contact.androidLookupKey ?: continue
                 messenger.mapTo(linked) { it.packageName to lookupKey }
+                if (!contact.contact.isGroup) people += lookupKey
             }
-            return KnownContacts(linked, keys)
+            return KnownContacts(linked, keys, people)
         }
 
         override suspend fun addFromContacts(
@@ -90,7 +100,9 @@ class ChatLinker
             val saved =
                 mutex.withLock {
                     val namesakes = ChatLinkRules.namesakesOf(all)
-                    picked.filter { it.phoneJids.isNotEmpty() }.map { person -> save(person, namesakes) }
+                    picked.filter { it.isSignal || it.phoneJids.isNotEmpty() }.map { person ->
+                        if (person.isSignal) saveSignal(person) else save(person, namesakes)
+                    }
                 }
             linkWaiting(all)
             return saved
@@ -117,6 +129,21 @@ class ChatLinker
             }
             for (number in person.phoneNumbers) runCatching { contacts.addPhoneNumber(contactId, number) }
             return key ?: person.chatKey
+        }
+
+        /**
+         * A Signal entry (ADR 0081): the person who already owns its contact key (stored, or through a chat linked to
+         * the same Android contact) stays as they are; anyone else becomes a contact linked to the Android contact,
+         * with the contact key stored so the chat shows on Home before their first Signal message.
+         */
+        private suspend fun saveSignal(person: WhatsAppContact): ChatKey {
+            val key = person.chatKey
+            if (contacts.findByKey(key.packageName, key.conversationKey) != null) return key
+            val contactId = contacts.create(person.displayName)
+            contacts.linkAndroidContact(contactId, person.lookupKey, person.displayName)
+            contacts.addKey(contactId, key.packageName, key.conversationKey, person.displayName)
+            for (number in person.phoneNumbers) runCatching { contacts.addPhoneNumber(contactId, number) }
+            return key
         }
 
         /** A 1:1 contact already linked to [person]'s Android contact with a key in the same app (phone ringtones). */

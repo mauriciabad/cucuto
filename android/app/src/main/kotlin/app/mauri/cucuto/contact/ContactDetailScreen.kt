@@ -88,6 +88,7 @@ import app.mauri.cucuto.home.ChatAvatarKey
 import app.mauri.cucuto.home.ChatRingtoneBadgeKey
 import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
+import app.mauri.cucuto.ui.chat.chatKindLabel
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
@@ -207,7 +208,7 @@ fun ContactDetailContent(
                             modifier = Modifier.semantics { heading() },
                         )
                     },
-                    subtitle = { Text(stringResource(state.kindLabel())) },
+                    subtitle = { Text(chatKindLabel(state.chat, state.chatKey, state.isGroup)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
@@ -313,17 +314,6 @@ fun ContactDetailContent(
 @Composable
 private fun ContactDetailState.chatName(): String =
     chat?.name() ?: stringResource(if (isGroup) R.string.chat_unnamed_group else R.string.chat_unnamed)
-
-@StringRes
-private fun ContactDetailState.kindLabel(): Int {
-    val business = chatKey.packageName == ChatKey.WHATSAPP_BUSINESS
-    return when {
-        business && isGroup -> R.string.contact_subtitle_business_group
-        business -> R.string.contact_subtitle_business_chat
-        isGroup -> R.string.contact_subtitle_group
-        else -> R.string.contact_subtitle_chat
-    }
-}
 
 @Composable
 private fun Header(
