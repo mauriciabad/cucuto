@@ -143,7 +143,7 @@ brief's 10 and 16 MB budgets.
 #271 leaves publishing out of scope ("a separate decision once a cut with voice exists"). The video is now a full
 cut with an AI voice, and its pictures look finished. But no human has watched it or heard the voice yet: this agent
 can't hear audio, and the Whisper check proves intelligibility, not quality. So `web/static/video/` stays empty, and
-a `question` issue asks the owner to watch the artifact and say whether to publish. Publishing means copying three
+a `question` issue (#302) asks the owner to watch the artifact and say whether to publish. Publishing means copying three
 files (`explainer.webm`, `explainer.mp4`, the poster) into the site, as ADR 0042 describes.
 
 ## Consequences

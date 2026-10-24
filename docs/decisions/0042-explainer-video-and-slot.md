@@ -110,4 +110,4 @@ What changes in the decision above:
   nothing is filmed.
 - The draft pipeline (ADR 0060) renders the real screens, so it is reworked in #271. Done:
   [ADR 0070](0070-illustrated-explainer-video-project.md) (illustrated scenes in `android/video`, a Kokoro AI voice,
-  English only). The site keeps "coming soon" until the owner has watched the cut and says to publish it.
+  English only). The site keeps "coming soon" until the owner has watched the cut and says to publish it (#302).
