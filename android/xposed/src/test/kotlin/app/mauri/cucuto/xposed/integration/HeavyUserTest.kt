@@ -35,8 +35,9 @@ import java.io.File
  * The size limit with everything turned on, through the real data layer and publisher (ADR 0047). The heavy user of
  * `RoutingScaleTest` (500 contacts with a phone JID and a LID each, 50 groups, 120 characters of 12 clips, 60 contacts
  * with their own clip toggles or haptic) plus every feature added since: an analysed envelope on every clip with
- * `auto` haptics (#149), day, night, hour, weekday and season clips (#200), per-sender groups (#159), 100 WhatsApp
- * Business chats, haptic overrides from the editor (#172) and the clip mirror's long `file://` URIs (#151).
+ * `auto` haptics (#149), day, night, hour, weekday, season and date clips (#200, #120), rare, first of the day and
+ * burst clips (#120), per-sender groups (#159), 100 WhatsApp Business chats, haptic overrides from the editor (#172)
+ * and the clip mirror's long `file://` URIs (#151).
  */
 @RunWith(AndroidJUnit4::class)
 class HeavyUserTest {
@@ -48,7 +49,10 @@ class HeavyUserTest {
     @After
     fun tearDown() = pipeline.close()
 
-    /** One heavy pack: 30 characters with 12 clips each; three clips per character have a `when`. */
+    /**
+     * One of four packs of 30 characters with 12 clips each. Three clips per character have a time `when`; every
+     * third character also has a rare clip, every fifth a first-of-the-day clip and every sixth a burst clip.
+     */
     private fun heavyPack(
         root: File,
         index: Int,
@@ -63,6 +67,7 @@ class HeavyUserTest {
                 """{"time":{"from":"22:00","to":"06:00"},"weekday":["sat","sun"]}""",
                 """{"season":"winter"}""",
                 """{"weekday":["mon","tue","wed","thu","fri"]}""",
+                """{"date":[{"from":"12-24","to":"01-06"},"10-31"]}""",
             )
         val envelopes = HashMap<String, Haptic.Custom?>()
         val characters =
@@ -94,7 +99,14 @@ class HeavyUserTest {
                                     ),
                                 ),
                             )
-                        val condition = if (k < 3) ""","when":${conditions[(c + k) % conditions.size]}""" else ""
+                        val condition =
+                            when {
+                                k < 3 -> ""","when":${conditions[(c + k) % conditions.size]}"""
+                                k == 3 && c % 3 == 0 -> ""","oneIn":${20 + c}"""
+                                k == 4 && c % 5 == 0 -> ""","when":{"firstOfDay":true}"""
+                                k == 5 && c % 6 == 0 -> ""","when":{"burst":3}"""
+                                else -> ""
+                            }
                         """{"file":"$file","weight":${1 + k % 3}$condition}"""
                     }
                 """{"id":"character-$c","name":"Character $c","sprite":"characters/character-$c/sprite.svg",""" +
@@ -199,13 +211,16 @@ class HeavyUserTest {
                         onPhone.length * 100.0 / RoutingContract.MAX_PREFERENCES_CHARS,
                     ) +
                     "${table.routes.size} routes, ${table.voices.size} voices, ${table.envelopes()} clip envelopes, " +
-                    "${table.conditions.size} conditions",
+                    "${table.conditions.size} conditions, " +
+                    "${table.voices.count { it.hasMoments }} voices with special clips",
             )
             println("Bytes by line type: ${bytesByLineType(onPhone)}")
 
             assertEquals(180, table.voices.size)
             assertEquals(PACKS * CHARACTERS_PER_PACK * CLIPS, table.envelopes())
-            assertEquals(6, table.conditions.size)
+            assertEquals(7, table.conditions.size)
+            assertTrue("local days for first-of-the-day clips", table.days != null)
+            assertTrue(table.voices.count { it.hasMoments } in 40..120)
             assertTrue(table.voices.flatMap { it.clips }.all { it.uri.startsWith("file://") })
             assertFalse("published with every clip envelope", published.clipHapticsLeftOut)
             // Headroom (#223, ADR 0054): at least three times this user before the publisher drops anything.

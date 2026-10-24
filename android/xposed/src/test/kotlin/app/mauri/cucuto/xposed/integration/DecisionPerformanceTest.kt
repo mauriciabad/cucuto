@@ -25,6 +25,8 @@ class DecisionPerformanceTest {
         listOf(
             "1:1, day and night clips" to
                 NotificationSnapshot(WHATSAPP, "individual_chat_defaults_5", shortcutId = "111111111111111@lid"),
+            "1:1, rare, first of the day and burst clips" to
+                NotificationSnapshot(WHATSAPP, "individual_chat_defaults_5", shortcutId = "333333333333333@lid"),
             "1:1, auto envelopes" to
                 NotificationSnapshot(WHATSAPP, "individual_chat_defaults_5", shortcutId = "222222222222222@lid"),
             "per-sender group" to

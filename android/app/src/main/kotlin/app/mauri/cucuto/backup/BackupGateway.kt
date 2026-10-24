@@ -5,7 +5,7 @@ import app.mauri.cucuto.core.backup.BackupPackReference
 import app.mauri.cucuto.core.backup.PackRestoreItem
 import app.mauri.cucuto.core.backup.RestoreReport
 import app.mauri.cucuto.core.backup.ZipContentType
-import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.ContactLinkRestore
 import kotlinx.coroutines.flow.Flow
 import java.io.Closeable
 
@@ -40,16 +40,32 @@ interface BackupGateway {
     ): RestoreReport
 
     /**
-     * After [restore] (both runs when the user overwrote conflicts): finds the restored phone ringtones' Android
-     * contacts on this phone and writes them when phone ringtones are on (ADR 0057).
+     * After [restore] (both runs when the user overwrote conflicts): finds the Android contacts of the restored
+     * Android links and phone ringtones on this phone, and writes the ringtones when phone ringtones are on (ADR 0013's
+     * amendment for #43, ADR 0057).
      */
-    suspend fun restorePhoneRingtones(reports: List<RestoreReport>): PhoneRingtoneRestore
+    suspend fun restoreContactLinks(reports: List<RestoreReport>): ContactLinkRestore
+
+    /**
+     * The restore summary's "Find contacts", once the permission to read contacts is granted: matches the restored
+     * contacts that waited for it. Null when the permission is still missing.
+     */
+    suspend fun findRestoredContacts(): ContactLinkRestore?
 
     /**
      * Turns phone ringtones on once the contacts permission is granted (the restore summary's button), then finishes
-     * the restored ones. Null when it could not (the permission is still missing).
+     * the restored contacts that waited. Null when it could not (the permission is still missing).
      */
-    suspend fun enablePhoneRingtones(): PhoneRingtoneRestore?
+    suspend fun enablePhoneRingtones(): ContactLinkRestore?
+
+    /**
+     * The restore summary's "Choose contact": links [contactId] to the contact the user picked in Android's contact
+     * picker ([contactUri]). False when the picked contact could not be read.
+     */
+    suspend fun linkPickedContact(
+        contactId: Long,
+        contactUri: String,
+    ): Boolean
 
     /** Brings back one pack without asking for a file: from the backup itself, its repository or its download link. */
     fun restorePack(

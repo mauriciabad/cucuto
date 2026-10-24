@@ -1,8 +1,10 @@
 # 0017. Home, recent senders and the character picker
 
 - Status: accepted (the owner may override the defaults below, #129); the picker's character list is amended by
-  [ADR 0063](0063-independent-voice-and-ringtone.md); Home gains "Add a chat from contacts", a section of chats waiting
-  for their first message and the "Who is this?" questions in [ADR 0065](0065-chats-before-they-message.md)
+  [ADR 0063](0063-independent-voice-and-ringtone.md), its pack sections, search and random pick by
+  [ADR 0072](0072-picker-folding-and-surprise-me.md); Home gains "Add a chat from contacts", a section of
+  chats waiting for their first message and the "Who is this?" questions in
+  [ADR 0065](0065-chats-before-they-message.md)
 - Date: 2026-10-24
 - Issues: #25 (Home and character picker), #18 (recent senders feed with one-tap assignment)
 
@@ -42,7 +44,11 @@ the start destination (#24 owns onboarding) and links to Home.
 
 **Picker.** A `LazyVerticalGrid` with one section per pack. Amended by [ADR 0063](0063-independent-voice-and-ringtone.md)
 (owner update 2026-10-24, #245): it lists only characters with notification clips, with pack filter chips (and counts)
-when two or more packs have some, and its empty state links to Packs and Discover. The first tap selects a character and previews it: a
+when two or more packs have some, and its empty state links to Packs and Discover. Amended by
+[ADR 0072](0072-picker-folding-and-surprise-me.md) (owner update 2026-10-24, #289 and #290): pack sections fold
+(sticky headers, the contact's current pack and small packs unfolded, the rest as the user left them), a search field
+finds characters inside folded packs, the chips are the quick jump, and dice buttons ("Surprise me", per pack and for
+every pack) select and preview a random character, with a bar to re-roll or assign. The first tap selects a character and previews it: a
 random clip, never the same one twice in a row, plus the character's haptic, and the sprite "speaks" (`CookieAvatar`
 morph) while the clip plays. A second tap on the selected character assigns it:
 `LocalFeedback.current.fire(Feedback.Assign(id))` returns the beat, the avatar morph and `ParticleBurst` start from

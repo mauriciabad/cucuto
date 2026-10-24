@@ -285,6 +285,62 @@ class RoutingIntegrationTest {
         }
 
     @Test
+    fun specialClipsFollowTheChatsRhythm() =
+        runBlocking<Unit> {
+            val p = pipeline()
+            val world = p.started()
+            val ordinary = setOf("chirp.ogg", "trill.ogg", "whistle.ogg")
+
+            fun cy(): String {
+                val (alert, event) = p.alert(Notifications.oneToOne(cy, "Cy"))
+                val clip = assertSwapped(alert, event, WHATSAPP, cy, world.cy)
+                // The bird's special clips keep Cy's own vibration rule (off), like every other clip.
+                assertTrue(alert.vibrationSuppressed)
+                return name(clip)!!
+            }
+
+            // The app published where days start in Madrid (04:00 local, ADR 0059) with the bird's moments.
+            val table = p.moduleTables.value
+            val days = checkNotNull(table.days)
+            assertEquals(days.dayOf(Pipeline.at(4, 0)), days.dayOf(Pipeline.at(3, 59, Pipeline.DAY.plusDays(1))))
+
+            // Cy's first message of the day: the dawn chorus. The clock stands still, so the next two are a burst.
+            p.clock.time = Pipeline.at(9, 0)
+            assertEquals("dawn-chorus.ogg", cy())
+            assertTrue(cy() in ordinary + "cuckoo.ogg")
+            assertEquals("the third message in a row", "squawk.ogg", cy())
+            assertTrue("once per burst", cy() != "squawk.ogg")
+
+            // A message every two minutes for a day and a half: no bursts, the cuckoo now and then, never twice in a
+            // row, and the dawn chorus once more on the next day.
+            var cuckoos = 0
+            var dawns = 0
+            var last = ""
+            repeat(1000) {
+                p.clock.time += 2 * 60_000
+                val clip = cy()
+                assertTrue(clip, clip in ordinary + "cuckoo.ogg" + "dawn-chorus.ogg")
+                if (clip == "cuckoo.ogg") {
+                    cuckoos++
+                    assertNotEquals("cuckoo.ogg", last)
+                }
+                if (clip == "dawn-chorus.ogg") dawns++
+                last = clip
+            }
+            assertTrue("$cuckoos cuckoos", cuckoos in 15..80)
+            assertEquals("the next morning", 1, dawns)
+
+            // Simulate draws like a real message and keeps the rhythm: no greeting twice on the same day.
+            val (_, simulated) = p.alert(Notifications.simulate(WHATSAPP, cy))
+            assertTrue(name(simulated!!.clipUri) != "dawn-chorus.ogg")
+
+            // Ana's frog has no special clips, so her voice is unchanged.
+            assertTrue(
+                name(p.alert(Notifications.oneToOne(ana, "Ana")).second!!.clipUri) in setOf("ribbit.ogg", "hop.ogg"),
+            )
+        }
+
+    @Test
     fun autoHapticsFollowTheClipThatPlays() =
         runBlocking<Unit> {
             val p = pipeline()

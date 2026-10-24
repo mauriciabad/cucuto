@@ -5,9 +5,11 @@ import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneMode
+import app.mauri.cucuto.core.data.settings.PickerKind
 import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
 import app.mauri.cucuto.packspec.LoopRange
 import app.mauri.cucuto.packspec.When
+import app.mauri.cucuto.testing.FakePickerFoldSettings
 import app.mauri.cucuto.testing.TestData.ADA
 import app.mauri.cucuto.testing.TestData.CLUB
 import app.mauri.cucuto.testing.TestData.chat
@@ -32,6 +34,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -45,6 +48,7 @@ class RingtonePickerViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private val source = FakeSource()
     private val preview = FakePreview()
+    private val folds = FakePickerFoldSettings()
 
     /** 2026-10-24 at noon, local time: the day version wins "Day and night" and the pack's rules. */
     private val noon =
@@ -99,7 +103,7 @@ class RingtonePickerViewModelTest {
         File("/packs/$file"),
     )
 
-    private fun viewModel(chat: ChatKey = ADA) = RingtonePickerViewModel(chat, source, preview) { noon }
+    private fun viewModel(chat: ChatKey = ADA) = RingtonePickerViewModel(chat, source, preview, { noon }, folds)
 
     private fun TestScope.collect(vm: RingtonePickerViewModel) = backgroundScope.launch { vm.state.collect {} }
 
@@ -483,6 +487,71 @@ class RingtonePickerViewModelTest {
         assertNull(RingtonePickerViewModel.saved(row, null))
         assertNull(RingtonePickerViewModel.saved(null, frog.voice))
     }
+
+    @Test
+    fun surpriseRingsACharacterWithRingtonesAndNeverTheSelectedOne() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            collect(vm)
+            var previous =
+                vm.state.value.selection
+                    ?.voice
+            assertEquals(frog.voice, previous)
+            val seen = mutableSetOf<ChatVoice>()
+            repeat(30) {
+                val pick = vm.surprise(null)!!
+                assertNotEquals(previous, pick.voice)
+                assertEquals(
+                    pick.voice,
+                    vm.state.value.selection
+                        ?.voice,
+                )
+                assertEquals(
+                    pick.voice,
+                    vm.state.value.playing
+                        ?.voice,
+                )
+                assertTrue(vm.state.value.rolled)
+                previous = pick.voice
+                seen += pick.voice
+            }
+            assertEquals(setOf(frog.voice, owl.voice, kettle.voice), seen)
+            assertEquals(30, preview.plays.size)
+        }
+
+    @Test
+    fun surpriseFromAPackWithOneCharacterRingsItAgainAndShowsIt() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            collect(vm)
+            vm.filterPack(frog.packId)
+            vm.search("owl")
+
+            assertEquals(kettleItem, vm.surprise(kettle.packId))
+            assertEquals(kettleItem, vm.surprise(kettle.packId))
+
+            val state = vm.state.value
+            assertEquals(listOf("kettle/reel.ogg", "kettle/reel.ogg"), preview.plays)
+            assertEquals("", state.query)
+            assertNull(state.packFilter)
+            assertEquals(2, state.roll?.count)
+            assertTrue(state.sections.any { section -> kettleItem in section.shown })
+        }
+
+    @Test
+    fun foldingAPackIsRememberedForTheRingtonePicker() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            collect(vm)
+            vm.toggleFold(kettle.packId)
+            assertFalse(
+                vm.state.value.sections
+                    .first { it.packId == kettle.packId }
+                    .expanded,
+            )
+            assertEquals(setOf(kettle.packId), folds.folds.value[PickerKind.Ringtone]?.folded)
+            assertNull(folds.folds.value[PickerKind.Voice])
+        }
 
     data class Saved(
         val contactId: Long?,
