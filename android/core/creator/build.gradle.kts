@@ -12,6 +12,8 @@ val specDir: File = layout.projectDirectory.dir("../../../spec").asFile
 dependencies {
     // PackStore (installed packs to duplicate) and, through its api, pack-spec (assembly, validation, probes).
     api(projects.core.pack)
+    // The haptic editor's timeline model, to write a character's custom vibration into the pack (#185).
+    implementation(projects.core.routing)
     // JPEG XL pictures picked as sprites (Android 17 has no platform decoder, ADR 0006).
     implementation(projects.core.jxl)
     implementation(libs.kotlinx.coroutines.android)

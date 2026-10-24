@@ -13,6 +13,7 @@ import app.mauri.cucuto.packs.ui.PackDetailScreen
 import app.mauri.cucuto.packs.ui.PacksImportReview
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.sample.SampleChatScreen
 import app.mauri.cucuto.ui.creator.CreatorFinishScreen
 import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.developer.DeveloperScreen
@@ -22,6 +23,7 @@ import app.mauri.cucuto.ui.discover.DiscoverRepositoryForm
 import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.haptics.HapticEditorScreen
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
 import app.mauri.cucuto.ui.ringtone.RingtonePickerScreen
 import app.mauri.cucuto.ui.settings.BackupExportScreen
@@ -76,6 +78,7 @@ fun cucutoEntries(
                 sourcePackId = key.sourcePackId,
                 onBack = goBack,
                 onOpenFinish = { navigate(CucutoDestination.CreatorFinish(key.sourcePackId)) },
+                onEditHaptic = { target -> navigate(CucutoDestination.HapticEditor(target)) },
             )
         }
         entry<CucutoDestination.CreatorFinish>(
@@ -89,9 +92,9 @@ fun cucutoEntries(
             )
         }
         entry<CucutoDestination.HapticEditor>(
-            clazzContentKey = { "haptics/${it.chat?.packageName}/${it.chat?.conversationKey}" },
+            clazzContentKey = { "haptics/${it.target.contentKey()}" },
         ) { key ->
-            HapticEditorScreen(chat = key.chat, onBack = goBack, onDone = { navigator.remove(key) })
+            HapticEditorScreen(target = key.target, onBack = goBack, onDone = { navigator.remove(key) })
         }
         entry<CucutoDestination.ContactDetail>(
             clazzContentKey = { "contact/${it.chat.packageName}/${it.chat.conversationKey}" },
@@ -100,7 +103,7 @@ fun cucutoEntries(
                 chat = key.chat,
                 onBack = goBack,
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
-                onEditPattern = { navigate(CucutoDestination.HapticEditor(key.chat)) },
+                onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
                 onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
             )
         }
@@ -167,6 +170,11 @@ fun cucutoEntries(
             )
         }
 
+        // Home: the sample chat, a demo that plays in the app without the module (ADR 0075).
+        entry<CucutoDestination.SampleChat> {
+            SampleChatScreen(onBack = goBack, onOpenDiscover = { navigate(CucutoDestination.Discover) })
+        }
+
         // Debug builds only: R8 drops these screens from release builds.
         if (BuildConfig.DEBUG) {
             entry<CucutoDestination.Developer> { DeveloperScreen(onNavigate = navigate, onBack = goBack) }
@@ -174,3 +182,11 @@ fun cucutoEntries(
         }
     }
 }
+
+/** One saved state per edited thing: a chat, or a creator character. */
+private fun HapticTarget?.contentKey(): String =
+    when (this) {
+        null -> "scratch"
+        is HapticTarget.Chat -> "chat/${chat.packageName}/${chat.conversationKey}"
+        is HapticTarget.CreatorCharacter -> "creator/$characterKey"
+    }
