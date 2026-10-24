@@ -478,6 +478,23 @@ val backupJson = """
       "ringtone": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "frog", "followsVoice": true, "rule": { "mode": "time" }, "undo": { "originalRingtone": "content://media/internal/audio/media/31", "writtenUri": "content://media/external/audio/media/1042" } }
     },
     {
+      "id": "c3",
+      "displayName": "Carla",
+      "phoneNumbers": ["+34600555666"],
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "300000000000003@lid" }],
+      "androidContact": { "lookupKey": "0r3-GHI", "displayName": "Carla" },
+      "message": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "bird" },
+      "ringtone": { "packId": "com.example.private.songs.day", "characterId": "bubblegum", "followsVoice": true, "rule": { "mode": "pack" } }
+    },
+    {
+      "id": "c4",
+      "displayName": "Dani",
+      "phoneNumbers": ["+34600777888"],
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "34600777888@s.whatsapp.net" }],
+      "androidContact": { "lookupKey": "0r4-JKL", "displayName": "Dani" },
+      "ringtone": { "packId": "com.example.private.songs.day", "characterId": "bubblegum", "rule": { "mode": "random" } }
+    },
+    {
       "id": "g1",
       "displayName": "Family",
       "isGroup": true,
@@ -488,7 +505,7 @@ val backupJson = """
 }
 """
 
-document("valid/backup.json", "backup", "Backup with repositories, pack references, contacts and phone ringtones (one follows the voice and keeps its undo record).", backupJson)
+document("valid/backup.json", "backup", "Backup with repositories, pack references, contacts and phone ringtones (one follows the voice and keeps its undo record, one follows a voice without ringtones and keeps the song that rang, one rings with no message voice).", backupJson)
 
 document("valid/envelope.json", "backup-envelope", "Encrypted backup envelope with Argon2id parameters.", """
 {

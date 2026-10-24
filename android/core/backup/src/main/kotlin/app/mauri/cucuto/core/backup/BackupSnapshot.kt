@@ -71,19 +71,20 @@ internal object BackupSnapshot {
     }
 
     /**
-     * A phone ringtone (ADR 0057). One that follows the voice is written with the voice's character and
-     * `followsVoice`; one with neither its own character nor a voice has nothing to ring and is left out. The undo
-     * record goes along only while Cucuto's file is on the contact ([ContactRingtoneWriteEntity.writtenUri], not
-     * changed by the user since).
+     * A phone ringtone (ADR 0057, ADR 0063). It names the character that rings: its own (picked by the user, or kept
+     * while the voice has no ringtones), else the voice's. One that follows the voice says `followsVoice`; one with
+     * neither its own character nor a voice has nothing to ring and is left out. The undo record goes along only while
+     * Cucuto's file is on the contact ([ContactRingtoneWriteEntity.writtenUri], not changed by the user since).
      */
     fun ringtone(
         row: PhoneRingtoneEntity,
         assignment: AssignmentEntity?,
         write: ContactRingtoneWriteEntity?,
     ): BackupRingtoneAssignment? {
-        val follows = row.packId == null || row.characterId == null
-        val packId = (if (follows) assignment?.packId else row.packId) ?: return null
-        val characterId = (if (follows) assignment?.characterId else row.characterId) ?: return null
+        val own = row.packId != null && row.characterId != null
+        val follows = row.followsVoice || !own
+        val packId = (if (own) row.packId else assignment?.packId) ?: return null
+        val characterId = (if (own) row.characterId else assignment?.characterId) ?: return null
         val mode =
             when (row.mode) {
                 RingtoneMode.FIXED -> BackupRingtoneMode.FIXED

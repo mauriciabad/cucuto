@@ -86,6 +86,7 @@ import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.animateItemUnlessReduced
+import app.mauri.cucuto.ui.ringtone.RingtonePlayback
 import coil3.compose.AsyncImage
 
 /** Free demo packs on the website, until Discover (#36) lists repositories in the app. */
@@ -197,6 +198,7 @@ internal fun PacksContent(
     val listState = rememberLazyListState()
     val snackbar = remember { SnackbarHostState() }
     val player = rememberClipPlayer()
+    val ringtones = rememberRingtonePlayback()
     val feedback = LocalFeedback.current
     val resources = LocalResources.current
     val uriHandler = LocalUriHandler.current
@@ -298,6 +300,7 @@ internal fun PacksContent(
                             PackCard(
                                 pack = pack,
                                 player = player,
+                                ringtones = ringtones,
                                 onOpen = { onOpenPack(pack.id) },
                                 modifier = animateItemUnlessReduced(),
                             )
@@ -319,6 +322,7 @@ internal fun PacksContent(
 private fun PackCard(
     pack: LibraryPack,
     player: ClipPlayer,
+    ringtones: RingtonePlayback<String>,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -364,7 +368,12 @@ private fun PackCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(pack.characters, key = { it.id }) { character ->
-                        CharacterBadge(character, playerKey = "${pack.id}/${character.id}", player = player)
+                        CharacterBadge(
+                            character,
+                            playerKey = "${pack.id}/${character.id}",
+                            player = player,
+                            ringtones = ringtones,
+                        )
                     }
                 }
             }

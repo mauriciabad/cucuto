@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatHapticOverrides
+import app.mauri.cucuto.core.data.chats.InstalledRingtoneCapability
+import app.mauri.cucuto.core.data.chats.RingtoneCapability
 import app.mauri.cucuto.core.data.chats.RoomChatDirectory
 import app.mauri.cucuto.core.data.chats.RoomChatHapticOverrides
 import app.mauri.cucuto.core.data.db.AssignmentDao
@@ -115,4 +117,6 @@ interface DataBindings {
     @Binds fun chatHapticOverrides(overrides: RoomChatHapticOverrides): ChatHapticOverrides
 
     @Binds fun characterDirectory(directory: InstalledCharacterDirectory): CharacterDirectory
+
+    @Binds fun ringtoneCapability(capability: InstalledRingtoneCapability): RingtoneCapability
 }

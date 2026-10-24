@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Message voice and phone ringtone as independent choices (#245, #246, ADR 0063). Kept apart from strings.xml so
+     parallel UI work merges cleanly. -->
+<resources>
+    <!-- Contact detail: the two rows -->
+    <string name="contact_sounds_header">Sounds</string>
+    <string name="contact_row_messages">Messages</string>
+    <string name="contact_row_calls">Phone calls</string>
+    <string name="contact_row_messages_value">%1$s · %2$s</string>
+    <string name="contact_row_messages_none">No voice yet. Tap to choose one.</string>
+    <string name="contact_row_messages_missing">Its pack is gone. Tap to choose another.</string>
+    <string name="ringtone_row_none">No ringtone yet. Tap to choose one.</string>
+    <string name="ringtone_row_follows">Same as the messages</string>
+    <string name="ringtone_row_kept">Kept: %1$s has no ringtone</string>
+    <string name="ringtone_row_own">Chosen for calls</string>
+    <string name="ringtone_row_value">%1$s · %2$s</string>
+
+    <!-- Pickers: pack filter chips and empty states -->
+    <string name="pack_filter_all">All</string>
+    <string name="pack_filter_count">%1$s · %2$d</string>
+    <plurals name="pack_filter_a11y">
+        <item quantity="one">%1$s, %2$d character</item>
+        <item quantity="other">%1$s, %2$d characters</item>
+    </plurals>
+    <string name="picker_open_discover">Open Discover</string>
+
+    <!-- Packs: what each character offers -->
+    <string name="packs_offers_messages">Messages</string>
+    <string name="packs_offers_ringtone">Ringtone</string>
+    <string name="packs_offers_both">Messages and ringtone</string>
+
+    <!-- Ringtone previews ring like the call until stopped (owner update 2026-10-24, #242) -->
+    <string name="ringtone_picker_pause">Pause %1$s</string>
+</resources>

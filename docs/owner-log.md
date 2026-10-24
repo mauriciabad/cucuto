@@ -365,3 +365,22 @@ Applied: a ringtone preview plays exactly what a call would (the same ring file,
 the call), with no 30 s cut, until the user pauses or stops it or leaves the screen. It has play/pause. Updated
 ADR 0057 and the brief. The work goes into #246, whose description now carries this answer (no PR for #245/#246 was
 open yet). The other defaults stand. The two later defaults from #266 on that issue are still open for the owner.
+
+> the kk pack should be updated to use the new ringtone packs
+
+(Already done: the private K.K. pack 1.1.0 is ringtone-only and in the phone's Download folder.)
+
+> and where is the pokemon pack? is it at least planed?
+
+(Already built: the private Pokémon pack, 268 characters and 1,541 clips, is in the phone's Download folder.)
+
+> testing sounds and pictures is taking more than i would expect. but dont fix it asap
+
+(Filed as roadmap issue #279. The speedups from #269 and #277 ship in v0.1.7.)
+
+> in the kk pack the radio should be the default.
+>
+> i should be able to view the pack'rules and to edit if i want
+> and when picking a character there should be some kind of folding on the packs because there are soo many that it is hard to get to the one i want. and i would also like a button to pick (select) a random sound from a pack, and a random from every pack
+
+(The private K.K. pack was rebuilt with Radio as the default, version 1.2.0, outside the repo. The app items went into the roadmap as issues: #288 view and edit the pack's rules (M9), #289 fold packs in the pickers (M3), #290 random character from a pack or from every pack (M3).)
