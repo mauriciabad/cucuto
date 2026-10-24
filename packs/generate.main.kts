@@ -3,7 +3,8 @@
  * Synthesizes every sound of the CC0 demo packs with ffmpeg, so the audio is reproducible and contains no third-party
  * material.
  *
- *   kotlin packs/generate.main.kts        # from the repository root; needs ffmpeg with libopus
+ *   kotlin packs/generate.main.kts        # from the repository root; needs ffmpeg with libopus and packer
+ *                                          # (cd tools/packer && ./gradlew installDist)
  *
  * Each sound is an ffmpeg `aevalsrc` expression (t = time in seconds), faded in and out to avoid clicks and encoded as
  * mono Ogg Opus at 48 kHz. Sprites and covers are hand-written SVG files next to each pack.yaml.
@@ -70,6 +71,29 @@ val sounds = listOf(
     Sound("$kitchen/whisk/clips/swish.ogg", 0.6, "0.5*(2*random(0)-1)*sin(PI*t/0.6)^2", filter = "bandpass=f=4000:width_type=o:w=2"),
     Sound("$kitchen/kettle/clips/whistle.ogg", 1.5, "0.3*sin(2*PI*(1800*t+200*t*t))*min(t*2,1)+0.05*(2*random(0)-1)"),
     Sound("$kitchen/kettle/clips/bubble.ogg", 1.0, "0.4*sin(2*PI*(400+200*sin(t*37))*mod(t,0.12))*exp(-mod(t,0.12)*40)"),
+    // Kettle reel, a ringtone with an intro, a loop and an outro (pack.yaml: loop 4000..12000 ms, fade-in 500 ms).
+    // 0-4 s: the water heats up (bubbles and a rising whistle, both fading to zero at 4 s).
+    // 4-12 s: the loop, a jig whistled over bubbles and a bass line. Every part is zero at u = 0 and u = 8 (notes are
+    //   sine-shaped, the bass has whole cycles per 2 s), so the seam from 12 s back to 4 s is seamless.
+    // 12-14 s: the outro, a ding that never plays in a looping ring file.
+    Sound(
+        "$kitchen/kettle/ringtones/kettle-reel.ogg", 14.0,
+        run {
+            val u = "(t-4)"
+            val beat = "mod($u,0.25)"
+            val note = "mod($u,0.5)"
+            val melody = noteTable("mod(floor($u*2),16)", listOf(880, 988, 1109, 1319, 1109, 988, 880, 740, 784, 880, 988, 1175, 988, 880, 784, 880))
+            val bass = noteTable("mod(floor($u/2),4)", listOf(110, 147, 131, 98))
+            val intro = "(0.3*sin(2*PI*(400+200*sin(t*37))*mod(t,0.12))*exp(-mod(t,0.12)*40)*t/4" +
+                "+0.2*sin(2*PI*(600*t+100*t*t))*t/4)*(1-exp(-(4-t)*30))"
+            val loop = "0.3*sin(2*PI*$melody*$u)*sin(2*PI*$note)" +
+                "+0.2*sin(2*PI*(300+150*sin(8*PI*$beat))*$beat)*exp(-$beat*30)" +
+                "+0.12*sin(2*PI*$bass*$u)"
+            val outro = "0.35*(sin(2*PI*2093*(t-12))+0.3*sin(2*PI*4186*(t-12)))*exp(-2.5*(t-12))*min((t-12)*200,1)"
+            "if(lt(t,4),$intro,if(lt(t,12),$loop,$outro))"
+        },
+        bitrate = "48k",
+    ),
 )
 
 fun ffmpeg(vararg args: String) {
@@ -92,4 +116,17 @@ for (s in sounds) {
         out.path,
     )
     println("${out.path}  ${out.length()} bytes")
+}
+
+// Auto-cut clips: notification clips cut from a ringtone with `packer cut` (the hook finder of pack-spec, shared with
+// the app and the pack creators). They are committed like the other sounds, so building the packs needs no ffmpeg.
+val packer = File("tools/packer/cli/build/install/packer/bin/packer")
+check(packer.canExecute()) { "Build packer first: (cd tools/packer && ./gradlew installDist)" }
+data class Cut(val song: String, val clip: String, val args: List<String> = emptyList())
+for (c in listOf(Cut("$kitchen/kettle/ringtones/kettle-reel.ogg", "$kitchen/kettle/clips/reel-hook.ogg", listOf("--from-ms", "4000", "--to-ms", "12000")))) {
+    val cmd = listOf(packer.path, "cut", File(packsDir, c.song).path, "-o", File(packsDir, c.clip).path) + c.args
+    val p = ProcessBuilder(cmd).redirectErrorStream(true).start()
+    val out = p.inputStream.bufferedReader().readText()
+    check(p.waitFor(120, TimeUnit.SECONDS) && p.exitValue() == 0) { "${cmd.joinToString(" ")} failed:\n$out" }
+    print(out)
 }

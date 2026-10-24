@@ -3,6 +3,7 @@ package app.mauri.cucuto.core.pack
 import app.mauri.cucuto.core.pack.media.AudioProbeResult
 import app.mauri.cucuto.core.pack.media.ImageProbeResult
 import app.mauri.cucuto.packspec.ErrorCode
+import app.mauri.cucuto.packspec.RingFiles
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -91,6 +92,24 @@ class PackImporterTest {
             assertEquals(store.packDir(candidate.id, candidate.version), pack.directory)
             assertEquals(candidate.version, store.activeVersion(candidate.id))
             assertEquals(candidate.manifest, store.activeManifest(candidate.id))
+            assertNoLeftovers()
+        }
+
+    @Test
+    fun `ringtone variants and loop settings are stored for ring files`() =
+        runTest {
+            // A song with only ringtones (no clips): stored with its loop settings, which #52 renders into ring files.
+            val result = importer().installAll(fixtureArchive("valid/ringtone-song", archives))
+            val pack = result.packs.single()
+            val song = store.activeManifest(pack.id)!!.characters.single()
+            assertTrue(song.clips.isEmpty())
+            assertEquals(listOf("Intro and loop", "Last second", "Once"), song.ringtones.map { it.label })
+            assertTrue("characters/song/song.ogg" in filesIn(pack.directory))
+            val plans = song.ringtones.map { RingFiles.plan(it, 6_000) }
+            assertEquals(listOf(1_000L, 5_000L, 0L), plans.map { it.loopStartMs })
+            assertEquals(listOf(93_000L, 90_000L, 90_000L), plans.map { it.totalMs })
+            assertEquals(10_000L, plans.first().fadeInMs)
+            assertTrue(plans.last().playOnce)
             assertNoLeftovers()
         }
 
@@ -195,6 +214,20 @@ class PackImporterTest {
             val steps = events.filterIsInstance<ImportEvent.Progress>().map { it.progress::class }.distinct()
             assertEquals(listOf(ImportProgress.Analyzing::class, ImportProgress.Installing::class), steps)
             assertNoLeftovers()
+        }
+
+    @Test
+    fun `an analyzer may report progress from its own dispatcher`() =
+        runTest {
+            // The app's auto haptics analyses on Dispatchers.Default (device finding in v0.1.1: every import failed).
+            val analyzer =
+                PackAnalyzer { _, _, progress ->
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { progress(1, 1) }
+                }
+            val importer = importer(analyzer = analyzer)
+            val events = importer.install(importer.ready(minimal("1.0.0"))).toList()
+            assertTrue((events.last() as ImportEvent.Finished).result is ImportResult.Installed)
+            assertTrue(events.any { (it as? ImportEvent.Progress)?.progress is ImportProgress.Analyzing })
         }
 
     @Test

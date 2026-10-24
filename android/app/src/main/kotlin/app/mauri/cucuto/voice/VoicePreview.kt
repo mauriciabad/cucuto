@@ -9,8 +9,7 @@ import android.os.VibratorManager
 import android.util.Log
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.haptics.HapticCapabilities
-import app.mauri.cucuto.core.haptics.HapticEffects
-import app.mauri.cucuto.core.haptics.hapticCapabilities
+import app.mauri.cucuto.core.haptics.PublicHapticEffects
 import app.mauri.cucuto.core.routing.Haptic
 import dagger.Binds
 import dagger.Module
@@ -41,6 +40,31 @@ interface VoicePreview {
         atNanos: Long? = null,
     ): Long?
 
+    /**
+     * Plays [clip] and, when it is [Haptic.Custom], [haptic], the way a notification plays them. Stops the previous
+     * preview. Contact detail uses it for single clips and for the in-app "Simulate message".
+     *
+     * @return The clip's duration in milliseconds, or null when nothing could play.
+     */
+    suspend fun playClip(
+        clip: File,
+        haptic: Haptic? = null,
+    ): Long?
+
+    /**
+     * Plays one of [character]'s clips with [haptic] instead of the character's own vibration: a per-contact override
+     * or the pattern in the haptic editor. [Haptic.Auto] plays the chosen clip's own envelope.
+     *
+     * @return The clip's duration in milliseconds, or null when nothing could play.
+     */
+    suspend fun play(
+        character: VoiceCharacter,
+        haptic: Haptic,
+    ): Long?
+
+    /** Plays [haptic] alone, with no clip. Stops the previous preview. Returns false when nothing could play. */
+    fun vibrate(haptic: Haptic.Custom): Boolean
+
     /** Stops the current clip and vibration. */
     fun stop()
 }
@@ -48,8 +72,8 @@ interface VoicePreview {
 /**
  * [VoicePreview] with `MediaPlayer` and the vibrator. Clips play with notification audio attributes, like Android's
  * own notification sound picker, so the preview follows the notification volume and the ringer mode: what you hear
- * is what a message will sound like. The vibration uses the same `:core:haptics` builder as the module, with
- * notification vibration attributes. Files come from the installed pack folders (ADR 0008), never from the network.
+ * is what a message will sound like. The vibration uses `:core:haptics`' public-API path ([PublicHapticEffects]:
+ * the module's Builder is hidden API for apps, issue #139), with notification vibration attributes. Files come from the installed pack folders (ADR 0008), never from the network.
  */
 @Singleton
 class MediaVoicePreview
@@ -62,16 +86,50 @@ class MediaVoicePreview
         private val vibrator: Vibrator by lazy {
             context.getSystemService(VibratorManager::class.java).defaultVibrator
         }
-        private val capabilities: HapticCapabilities by lazy { vibrator.hapticCapabilities() }
+        private val capabilities: HapticCapabilities by lazy { PublicHapticEffects.capabilities(vibrator) }
 
         override suspend fun play(
             character: VoiceCharacter,
             withHaptic: Boolean,
             atNanos: Long?,
+        ): Long? = playCharacter(character, if (withHaptic) character.haptic else null, atNanos)
+
+        override suspend fun play(
+            character: VoiceCharacter,
+            haptic: Haptic,
+        ): Long? = playCharacter(character, haptic, atNanos = null)
+
+        override fun vibrate(haptic: Haptic.Custom): Boolean {
+            stop()
+            return vibrate(haptic, clipEnvelope = null)
+        }
+
+        private suspend fun playCharacter(
+            character: VoiceCharacter,
+            haptic: Haptic?,
+            atNanos: Long?,
         ): Long? {
             stop()
             val clip = pickClip(character.clips, lastClip) ?: return null
             lastClip = clip
+            return start(clip, haptic, atNanos, clipEnvelope = character.autoHapticOf(clip))
+        }
+
+        override suspend fun playClip(
+            clip: File,
+            haptic: Haptic?,
+        ): Long? {
+            stop()
+            // The router already resolved Auto against this clip (forClip), so no envelope is needed here.
+            return start(clip, haptic, atNanos = null, clipEnvelope = null)
+        }
+
+        private suspend fun start(
+            clip: File,
+            haptic: Haptic?,
+            atNanos: Long?,
+            clipEnvelope: Haptic.Custom?,
+        ): Long? {
             val prepared = MediaPlayer()
             try {
                 withContext(Dispatchers.IO) {
@@ -98,7 +156,7 @@ class MediaVoicePreview
                 finished.release()
             }
             prepared.start()
-            if (withHaptic) vibrate(character.haptic)
+            if (haptic != null) vibrate(haptic, clipEnvelope)
             return prepared.duration.toLong().takeIf { it > 0 }
         }
 
@@ -111,11 +169,20 @@ class MediaVoicePreview
             runCatching { vibrator.cancel() }
         }
 
-        private fun vibrate(haptic: Haptic) {
-            // Keep and Off leave the vibration to WhatsApp or silence it; Auto needs per-clip envelopes (#97).
-            val custom = haptic as? Haptic.Custom ?: return
-            val effect = HapticEffects.create(custom, capabilities) ?: return
-            runCatching { vibrator.vibrate(effect, NOTIFICATION_VIBRATION) }
+        /** Plays [haptic] like the module would ([Haptic.Auto] is the clip's [clipEnvelope]), with public APIs only. */
+        private fun vibrate(
+            haptic: Haptic,
+            clipEnvelope: Haptic.Custom?,
+        ): Boolean {
+            // Keep and Off leave the vibration to WhatsApp or silence it; Auto without an envelope behaves like Keep.
+            val custom =
+                when (haptic) {
+                    is Haptic.Custom -> haptic
+                    Haptic.Auto -> clipEnvelope
+                    Haptic.Keep, Haptic.Off -> null
+                } ?: return false
+            val effect = PublicHapticEffects.create(custom, capabilities) ?: return false
+            return runCatching { vibrator.vibrate(effect, NOTIFICATION_VIBRATION) }.isSuccess
         }
 
         private companion object {

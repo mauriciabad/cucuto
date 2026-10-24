@@ -15,6 +15,7 @@ import app.mauri.cucuto.core.routing.HapticPreset
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,14 +29,15 @@ import kotlin.math.sin
 
 /**
  * Decodes a generated clip with the platform codecs, analyses it, and builds real [android.os.VibrationEffect]s on the
- * device. Nothing vibrates: effects are only built.
+ * device. Nothing vibrates: effects are only built. This runs in an app process, so it uses the app's public-API path
+ * ([PublicHapticEffects]); the module's Builder path only runs in `system_server` (issue #139).
  */
 @RunWith(AndroidJUnit4::class)
 class HapticsDeviceTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val dir = File(context.cacheDir, "haptics-test").apply { mkdirs() }
     private val vibrator = context.getSystemService(VibratorManager::class.java).defaultVibrator
-    private val capabilities = vibrator.hapticCapabilities()
+    private val capabilities = PublicHapticEffects.capabilities(vibrator)
 
     @After
     fun tearDown() {
@@ -46,8 +48,7 @@ class HapticsDeviceTest {
     fun decodesAndAnalysesAGeneratedClip() =
         runTest {
             Log.i(TAG, "Capabilities: $capabilities")
-            val probe = runCatching { Class.forName("android.os.VibrationEffect\$Builder").getConstructor() }
-            Log.i(TAG, "VibrationEffect.Builder in this process: $probe")
+            assertFalse(capabilities.builderSupported)
             // 250 ms of silence, a loud low hum, a quiet gap, a loud bright whistle, then silence: 1.5 s, stereo.
             val parts =
                 listOf(
@@ -74,7 +75,7 @@ class HapticsDeviceTest {
             assertEquals(0, envelope.points.last().milliIntensity)
             assertTrue(envelope.points.size <= auto.options.maxControlPoints)
 
-            val effect = HapticEffects.create(haptic, capabilities)
+            val effect = PublicHapticEffects.create(haptic, capabilities)
             assertNotNull("No effect for $haptic on $capabilities", effect)
 
             // Stored next to the pack, and read back.
@@ -93,26 +94,30 @@ class HapticsDeviceTest {
                     HapticEvent.Envelope(220, listOf(ControlPoint(1000, 800, 120), ControlPoint(0, 400, 180))),
                 ),
             )
-        assertNotNull(HapticEffects.create(brief, capabilities))
-        assertNotNull(HapticEffects.create(brief, vibrator))
+        assertNotNull(PublicHapticEffects.create(brief, capabilities))
 
-        // The fallbacks, forced on this device: one joined envelope, a composition, a waveform.
+        // Every public path, forced on this device: one joined envelope (envelopes only, or presets as bumps), a
+        // composition, a predefined effect, a waveform.
         val envelopes = Haptic.Custom(brief.events.filterIsInstance<HapticEvent.Envelope>())
         val presets = Haptic.Custom(brief.events.filterIsInstance<HapticEvent.Preset>())
-        val noBuilder = capabilities.copy(builderSupported = false)
         if (capabilities.envelopesSupported) {
-            val plan = HapticPlanner.plan(envelopes, noBuilder)
-            assertTrue(plan.toString(), plan is HapticPlan.Envelope)
-            assertNotNull(HapticEffects.build(plan))
+            for (haptic in listOf(envelopes, brief)) {
+                val plan = HapticPlanner.plan(haptic, capabilities)
+                assertTrue(plan.toString(), plan is HapticPlan.Envelope)
+                assertNotNull(PublicEffects.build(plan))
+            }
         }
         if (presets.events.all { (it as HapticEvent.Preset).preset in capabilities.primitiveDurationsMs }) {
-            val plan = HapticPlanner.plan(presets, noBuilder)
+            val plan = HapticPlanner.plan(presets, capabilities)
             assertTrue(plan.toString(), plan is HapticPlan.Primitives)
-            assertNotNull(HapticEffects.build(plan))
+            assertNotNull(PublicEffects.build(plan))
+        }
+        for (preset in HapticPreset.entries) {
+            assertNotNull(PublicEffects.build(HapticPlan.Predefined(preset)))
         }
         val waveform = HapticPlanner.waveform(brief, capabilities)
         assertTrue(waveform.toString(), waveform is HapticPlan.Waveform)
-        assertNotNull(HapticEffects.build(waveform))
+        assertNotNull(PublicEffects.build(waveform))
 
         // Nonsense in, something playable (or nothing) out, never an exception.
         val messy =
@@ -138,7 +143,7 @@ class HapticsDeviceTest {
                     HapticEvent.Preset(0, HapticPreset.CLICK, 9000),
                 ),
             )
-        assertNotNull(HapticEffects.create(messy, capabilities))
+        assertNotNull(PublicHapticEffects.create(messy, capabilities))
     }
 
     private data class Part(

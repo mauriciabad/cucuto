@@ -71,8 +71,9 @@ generation, counters) rides along with every batch for the Diagnostics screen.
 
 **Self-test.** The app's own notifications on channel `cucuto_self_test` are swapped for a synthesised chirp
 (`content://app.mauri.cucuto.clips/selftest/chirp.wav`; `selftest` can never be a pack ID) and a click-tick, so the
-Diagnostics screen can test hook, provider, haptics and event delivery without a WhatsApp message. Nothing else from
-the app's package is touched. Android's notification cooldown (politeness) mutes alerts before `playSound` is ever
+Diagnostics screen can test hook, provider, haptics and event delivery without a WhatsApp message. The only other
+channel of the app that the module reads is `cucuto_simulate` ("Simulate message", ADR 0025); nothing else from the
+app's package is touched. Android's notification cooldown (politeness) mutes alerts before `playSound` is ever
 called (device finding, #15): during an "avalanche" (2 min after boot, airplane mode off, a profile becoming
 available) every non-exempt alert is muted, and an app's alert less than 10 s after its previous one is muted
 (`config_notifCooldownMuteMillis`; within 60 s it only plays quieter). So the test notification uses
@@ -107,8 +108,9 @@ sets two requirements for the whole notification path, now an M1 acceptance crit
   runs later on the `cucuto-events` thread, so `playSound` and `playVibration` never wait for it. The gap is elsewhere:
   SystemUI opens the clip from `ClipProvider`, and when Cucuto's process is not running Android cold-starts it
   (Hilt graph, `RoutingPublisher.start()`) before the first byte is served, while the vibration from `system_server`
-  is not delayed. Not measured yet; #121 measures it on the device and removes the cold start from the sound path if
-  it is noticeable.
+  is not delayed. #121 measured it at 0.35 to 0.45 s, and
+  [ADR 0018](0018-clip-mirror-for-instant-sounds.md) removes it: clips are mirrored to shared storage and SystemUI
+  reads them as `file://` paths, so no process starts on the sound path. `ClipProvider` remains the fallback.
 - **Battery.** Delivery uses `Handler.postAtTime` on `uptimeMillis`: no alarm, no wake lock, no service, so it never
   wakes the phone and only runs while the CPU is already awake after an alert. Its cost is at most one process start
   and a Room write per 10 s during active chats. #121 checks it with batterystats and, if it shows, defers delivery

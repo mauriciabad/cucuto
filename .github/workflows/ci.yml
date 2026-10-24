@@ -135,7 +135,9 @@ jobs:
           tool: cargo-ndk@4.1.2
 
       - name: Install NDK r30
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;30.0.16248370" > /dev/null
+        # `yes` dies of SIGPIPE when sdkmanager exits; under pipefail that would fail the step.
+        run: |
+          { yes || true; } | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;30.0.16248370" > /dev/null
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
@@ -385,6 +387,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      # ffmpeg (with libopus) for the ring file and auto-cut clip tests; building the demo packs never needs it.
+      - name: Install ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
 
       - name: Build and test packer
         working-directory: tools/packer

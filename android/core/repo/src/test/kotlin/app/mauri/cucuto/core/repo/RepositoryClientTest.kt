@@ -127,6 +127,27 @@ class RepositoryClientTest {
         }
 
     @Test
+    fun cachedIndexWorksOfflineAndKeepsTheBaseAfterRedirects() =
+        runTest {
+            val cache = FileIndexCache(tmp.newFolder("offline-cache"))
+            assertNull(client.cachedIndex(access(), cache))
+            server.enqueue(redirect("/moved/index.json", code = 301))
+            server.enqueue(ok(indexJson()))
+            client.fetchIndex(access(), cache).success()
+            val requests = server.requestCount
+
+            val offline = client.cachedIndex(access(), cache) ?: throw AssertionError("Expected the cached copy")
+            assertEquals("Fixture repository", offline.index.name)
+            assertEquals(server.at("/moved/index.json"), offline.baseUrl)
+            assertEquals(requests, server.requestCount)
+
+            // A cache entry that no longer validates reads as missing.
+            val key = access().indexUrl.toString()
+            cache.write(CachedIndex(key, key, null, "{}".encodeToByteArray()))
+            assertNull(client.cachedIndex(access(), cache))
+        }
+
+    @Test
     fun hugeAdvertisedSizeIsRejectedBeforeAnyRequest() =
         runTest {
             val huge = ExpectedFile(10 * Limits.GiB, expected.sha256)

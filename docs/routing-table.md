@@ -20,6 +20,13 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
   published as soon as the service connects.
 - The module attaches lazily on the first lookup (not during boot), decodes on the change callback, and swaps one
   volatile reference. The notification path only does hash map lookups.
+- LSPosed stops notifying a module that has been running since before an app update (until the next reboot), so
+  after each write the app also mirrors the table to the remote file `routing.table` (`XposedService.openRemoteFile`,
+  framed by `RoutingFile`: a `cucuto-routing-file 1 <bytes> <crc32>` line, then the encoded table in UTF-8) and sends
+  the broadcast `app.mauri.cucuto.action.ROUTING_TABLE_PUBLISHED` to package `android` with its identity shared. The
+  module accepts it only from its own package and re-reads the file (`XposedInterface.openRemoteFile`) on its
+  background thread. A generation already loaded is skipped, so either path loads each table once
+  ([ADR 0024](decisions/0024-routing-updates-after-app-update.md)).
 - Encoded tables larger than 256 Ki characters are not written, because Remote Preferences travel through Binder.
   The publisher first retries without clip envelopes (`PublishState.Published.clipHapticsLeftOut`: sounds still
   change, `auto` keeps WhatsApp's vibration) and only then gives up (`PublishState.TooLarge`). A heavy user (500
@@ -38,8 +45,15 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
 - **Haptic**: `Keep` (leave WhatsApp's vibration), `Off` (no vibration), `Auto` (each clip's own envelope; clips
   without one behave like `Keep`) or `Custom` (presets and basic envelopes, one-to-one with
   `VibrationEffect.Builder`). Pack mode `none` maps to `Keep`; a per-contact override of `none` maps to `Off`.
-- **Clip URIs** are `content://app.mauri.cucuto.clips/<packId>/<characterId>/<file>`, where `file` is the clip's
-  path from `pack.json`. Pack IDs, character IDs and pack paths are URI-safe by construction.
+- **Clip URIs** are what SystemUI opens, chosen per clip by the app
+  ([ADR 0018](decisions/0018-clip-mirror-for-instant-sounds.md)):
+  `file:///storage/emulated/0/Android/media/app.mauri.cucuto/clips/<packId>/<version>/<file>` when the clip is
+  mirrored to shared storage (SystemUI reads it without starting Cucuto's process), otherwise the clip provider's
+  `content://app.mauri.cucuto.clips/<packId>/<characterId>/<file>`. `file` is the clip's path from `pack.json`.
+  Pack IDs, versions, character IDs and pack paths are URI-safe by construction. The module passes the URI through
+  unchanged.
+- **Self-test clip**: the mirrored Diagnostics chirp (`…/clips/selftest/chirp.wav`), or absent, in which case the
+  module plays the provider's `content://app.mauri.cucuto.clips/selftest/chirp.wav`.
 
 Lookup (`RoutingTable.resolve(package, conversationKey, senderKey)`):
 
@@ -48,7 +62,10 @@ Lookup (`RoutingTable.resolve(package, conversationKey, senderKey)`):
 3. If that route is a per-sender group and the sender's key has a voice, play the sender's voice.
 4. Otherwise play the conversation's voice, or change nothing if it has none.
 
-A group with the default policy (one voice per group) never uses its members' voices.
+A group with the default policy (one voice per group) never uses its members' voices. The sender key is the
+`Person` key of the alerting record's newest MessagingStyle message, read only for groups; every lookup stays within
+one package, so WhatsApp and WhatsApp Business never share a route
+([ADR 0031](decisions/0031-group-policy-and-whatsapp-business.md)).
 
 ## Encoding
 
@@ -58,6 +75,7 @@ thousandths.
 
 ```text
 cucuto-routing	1	<generation>	<enabled 0|1>	<package count>	<voice count>	<route count>	<clip haptic count>
+S	<self-test clip URI>                                    optional, at most once
 P	<package>
 H	<clip haptic>
 V	<packId>	<characterId>	<haptic>	<uriBase>	<clip count>	{<uriSuffix>	<milliWeight>	<clipHaptic or ->}	[h<ref>,<ref>…]
@@ -66,6 +84,8 @@ R	<package index>	<key>	<voice index or ->	<seed>	<flags>	<contactId>
 
 - Line 1 is the header. `generation` is the publication time in milliseconds (strictly increasing per device). The
   clip haptic count was added with the dictionary; a header without it means 0.
+- The optional `S` line (added in #121, right after the header) is the self-test clip. Readers that predate it
+  skip it and keep the provider's chirp.
 - `P` lines list packages; routes refer to them by index (order of appearance).
 - `H` lines are the clip haptic dictionary: every distinct clip envelope once, referred to by index (order of
   appearance). They come before the `V` lines that use them.

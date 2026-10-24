@@ -1,6 +1,7 @@
 package app.mauri.cucuto.diagnostics
 
 import android.Manifest
+import android.os.SystemClock
 import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,6 +51,7 @@ import app.mauri.cucuto.core.data.db.DecisionLogEntity
 import app.mauri.cucuto.core.data.routing.PublishState
 import app.mauri.cucuto.core.data.routing.SinkConnection
 import app.mauri.cucuto.provider.ReceivedStatus
+import app.mauri.cucuto.xposed.events.ModuleStatus
 
 /**
  * Diagnostics (issue #17): is the framework connected, is the routing table published, what did the module last
@@ -104,7 +106,7 @@ fun DiagnosticsScreen(
                         listOf(
                             stringResource(R.string.diag_framework) to connectionText(state.connection),
                             stringResource(R.string.diag_routing) to publishText(state.publish),
-                        ) + moduleRows(state.moduleStatus),
+                        ) + moduleRows(state.moduleStatus, state.publish),
                 )
             }
             item {
@@ -286,7 +288,10 @@ private fun publishText(state: PublishState): String =
     }
 
 @Composable
-private fun moduleRows(received: ReceivedStatus?): List<Pair<String, String>> {
+private fun moduleRows(
+    received: ReceivedStatus?,
+    publish: PublishState,
+): List<Pair<String, String>> {
     val label = stringResource(R.string.diag_module)
     if (received == null) return listOf(label to stringResource(R.string.diag_module_never))
     val s = received.status
@@ -307,9 +312,35 @@ private fun moduleRows(received: ReceivedStatus?): List<Pair<String, String>> {
                 },
                 s.missingHooks.joinToString().ifEmpty { "—" },
             ),
-        stringResource(R.string.diag_module_table) to
-            stringResource(R.string.diag_module_table_value, s.tableGeneration, s.tableRoutes),
+        stringResource(R.string.diag_module_table) to moduleTableText(s, publish),
         stringResource(R.string.diag_module_timing) to
             stringResource(R.string.diag_module_timing_value, s.decisions, s.slowDecisions, s.maxHookMicros, s.dropped),
     )
+}
+
+/** The module's table, compared with the app's: the module reports a new table within seconds (ADR 0024). */
+@Composable
+private fun moduleTableText(
+    s: ModuleStatus,
+    publish: PublishState,
+): String {
+    val bootTime = System.currentTimeMillis() - SystemClock.elapsedRealtime()
+    return when (moduleTableSync(s, publish, bootTime)) {
+        ModuleTableSync.SAME -> {
+            stringResource(R.string.diag_module_table_same, s.tableGeneration, s.tableRoutes)
+        }
+
+        ModuleTableSync.BEHIND -> {
+            val latest = (publish as PublishState.Published).generation
+            stringResource(R.string.diag_module_table_behind, s.tableGeneration, s.tableRoutes, latest)
+        }
+
+        ModuleTableSync.PREVIOUS_BOOT -> {
+            stringResource(R.string.diag_module_table_previous_boot, s.tableGeneration, s.tableRoutes)
+        }
+
+        ModuleTableSync.UNKNOWN -> {
+            stringResource(R.string.diag_module_table_value, s.tableGeneration, s.tableRoutes)
+        }
+    }
 }

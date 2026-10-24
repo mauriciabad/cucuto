@@ -94,7 +94,7 @@ class MediaTools(private val log: (String) -> Unit) {
             val trim = "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.02"
             filters += listOf(trim, "areverse", trim, "areverse")
         }
-        if (o.normalize) filters += loudnorm(src, filters)
+        if (o.normalize) filters += loudnorm(listOf("-i", src.toString()), filters)
         val targetExt = if (o.opus) "ogg" else ext.lowercase()
         val codec = when {
             o.opus -> listOf("-c:a", "libopus", "-b:a", if (role == Role.RINGTONE) "128k" else "96k", "-vbr", "on")
@@ -118,11 +118,11 @@ class MediaTools(private val log: (String) -> Unit) {
         return newPath to out.readBytes()
     }
 
-    /** First loudnorm pass: measure, then return the filter for a linear second pass. */
-    private fun loudnorm(src: Path, before: List<String>): String {
+    /** First loudnorm pass over the ffmpeg [input] arguments: measure, then return the filter for a linear second pass. */
+    fun loudnorm(input: List<String>, before: List<String>): String {
         val target = "I=-16:TP=-1.5:LRA=11"
         val chain = (before + "loudnorm=$target:print_format=json").joinToString(",")
-        val output = run(listOf("ffmpeg", "-hide_banner", "-nostats", "-i", src.toString(), "-af", chain, "-f", "null", "-"))
+        val output = run(listOf("ffmpeg", "-hide_banner", "-nostats") + input + listOf("-af", chain, "-f", "null", "-"))
         val json = output.substring(output.lastIndexOf('{'), output.lastIndexOf('}') + 1)
         val m = SpecJson.parseToJsonElement(json).jsonObject
         fun v(key: String) = m[key]!!.jsonPrimitive.content

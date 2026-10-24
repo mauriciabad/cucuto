@@ -111,7 +111,9 @@ jobs:
           tool: cargo-ndk@4.1.2
 
       - name: Install NDK r30
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;30.0.16248370" > /dev/null
+        # `yes` dies of SIGPIPE when sdkmanager exits; under pipefail that would fail the step.
+        run: |
+          { yes || true; } | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;30.0.16248370" > /dev/null
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3

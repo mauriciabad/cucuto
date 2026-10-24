@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.routing.Clip
 import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
+import app.mauri.cucuto.core.routing.HapticPreset
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingCodec
 import app.mauri.cucuto.core.routing.Voice
@@ -17,7 +18,7 @@ import org.junit.Test
 
 class RoutingTableBuilderTest {
     private val catalog = FakeCatalog()
-    private val builder = RoutingTableBuilder(catalog)
+    private val builder = RoutingTableBuilder(catalog, ProviderClips)
     private val packs = mapOf(CRITTERS to installedPack())
 
     private fun row(
@@ -67,6 +68,29 @@ class RoutingTableBuilderTest {
             assertEquals(listOf(Route("com.whatsapp", "a@s.whatsapp.net", 0, 10, 0, 1)), table.routes)
             assertEquals(0L, table.generation)
             assertTrue(table.enabled)
+        }
+
+    @Test
+    fun mirroredClipsGetFileUrisAndTheRestKeepTheProvider() =
+        runTest {
+            val mirror =
+                FakeMirror(
+                    mirrored = setOf("characters/frog/clips/ribbit.ogg"),
+                    selfTest = "file:///mirror/selftest/chirp.wav",
+                )
+            val table = RoutingTableBuilder(catalog, mirror).build(listOf(row("a@s.whatsapp.net", 1)), packs, true)
+            assertEquals(
+                listOf(
+                    "file:///mirror/$CRITTERS/1.0.0/characters/frog/clips/ribbit.ogg",
+                    "content://app.mauri.cucuto.clips/$CRITTERS/frog/characters/frog/clips/croak.ogg",
+                ),
+                table.voices
+                    .single()
+                    .clips
+                    .map { it.uri },
+            )
+            assertEquals("file:///mirror/selftest/chirp.wav", table.selfTestClip)
+            assertEquals(table, RoutingCodec.decode(RoutingCodec.encode(table)))
         }
 
     @Test
@@ -183,5 +207,49 @@ class RoutingTableBuilderTest {
             assertFalse(table.enabled)
             // Whatever the builder makes, the codec can carry.
             assertEquals(table, RoutingCodec.decode(RoutingCodec.encode(table)))
+        }
+
+    @Test
+    fun perContactHapticOverridesReachTheModule() =
+        runTest {
+            val envelope = Haptic.Custom(listOf(HapticEvent.Envelope(0, listOf(ControlPoint(1000, 508, 40)))))
+            catalog.characters =
+                catalog.characters.mapValues { (_, characters) ->
+                    characters.mapValues { (_, c) -> c.copy(clips = c.clips.map { it.copy(autoHaptic = envelope) }) }
+                }
+            val custom =
+                Haptic.Custom(
+                    listOf(
+                        HapticEvent.Preset(0, HapticPreset.TICK, 537),
+                        HapticEvent.Envelope(100, listOf(ControlPoint(800, 500, 300), ControlPoint(0, 300, 80))),
+                    ),
+                )
+            val overrides =
+                mapOf(
+                    "pack@lid" to HapticOverride.PackDefault,
+                    "auto@lid" to HapticOverride.Auto,
+                    "off@lid" to HapticOverride.Off,
+                    "custom@lid" to HapticOverride.Custom(custom),
+                )
+            val rows =
+                overrides.entries.mapIndexed { i, (key, override) ->
+                    row(key, contactId = i + 1L, haptic = override.toJson())
+                }
+            // What the module sees: the published text, decoded.
+            val table = RoutingCodec.decode(RoutingCodec.encode(builder.build(rows, packs, enabled = true)))
+
+            fun voice(key: String) = table.resolve("com.whatsapp", key)!!.voice
+            assertEquals(frogHaptic, voice("pack@lid").haptic)
+            assertEquals(Haptic.Auto, voice("auto@lid").haptic)
+            assertEquals(Haptic.Off, voice("off@lid").haptic)
+            assertEquals(custom, voice("custom@lid").haptic)
+            // Only auto needs the clips' envelopes; the frog's own pattern is custom.
+            assertEquals(listOf(envelope, envelope), voice("auto@lid").clips.map { it.haptic })
+            for (key in listOf("pack@lid", "off@lid", "custom@lid")) {
+                assertEquals(listOf(null, null), voice(key).clips.map { it.haptic })
+            }
+            // Four different haptics, four voices; the clips stay the frog's.
+            assertEquals(4, table.voices.size)
+            assertTrue(table.voices.all { it.characterId == "frog" && it.clips.size == 2 })
         }
 }
