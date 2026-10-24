@@ -18,6 +18,8 @@
 		{ id: 'whats-in-a-pack', title: t.whatTitle },
 		{ id: 'make', title: t.makeTitle },
 		{ id: 'packer', title: t.packerTitle },
+		{ id: 'moments', title: t.momentsTitle },
+		{ id: 'in-the-app', title: t.showTitle },
 		{ id: 'check', title: t.checkTitle },
 		{ id: 'host', title: t.hostTitle },
 		{ id: 'rights', title: t.rightsTitle },
@@ -56,6 +58,30 @@ characters:
     sprite: mittens.svg
     clips:
       - mittens/meow-*.ogg`;
+
+	const moments = `characters:
+  - name: Tweet
+    sprite: tweet.png
+    clips:
+      - tweet/chirp.ogg                # the usual rotation
+      - file: tweet/hoot.ogg
+        when: night                    # only at night
+      - file: tweet/dawn-chorus.ogg
+        when: { firstOfDay: true, time: { from: "05:00", to: "12:00" } }
+      - file: tweet/squawk.ogg
+        when: { burst: 3 }             # the third message in a row
+      - file: tweet/cuckoo.ogg
+        oneIn: 25                      # about one message in 25
+      - file: tweet/scream.ogg
+        oneIn: 13
+        when: { date: "10-31" }        # a rare Halloween scream
+    ringtones:
+      - file: tweet/song-live.ogg      # first: rings when nothing else matches
+        label: Live
+      - file: tweet/song-radio.ogg
+        label: Radio
+        tags: [night]
+        when: night`;
 
 	const commands = `packer build my-cats -o dist/ --opus --normalize --trim-silence --jxl
 packer validate dist/*.soundpack.zip
@@ -127,6 +153,24 @@ site/repo/
 	<p><Html text={t.packerCommandsHtml} /></p>
 	<Code code={commands} />
 	<p><Html text={t.packerMoreHtml} /></p>
+
+	<h2 id="moments" class="headline-small">{t.momentsTitle}</h2>
+	<p><Html text={t.momentsIntroHtml} /></p>
+	<ul>
+		{#each t.moments as item (item)}
+			<li><Html text={item} /></li>
+		{/each}
+	</ul>
+	<p><Html text={t.momentsYamlHtml} /></p>
+	<Code code={moments} />
+	<p><Html text={t.momentsNoteHtml} /></p>
+
+	<h2 id="in-the-app" class="headline-small">{t.showTitle}</h2>
+	<ul>
+		{#each t.show as item (item)}
+			<li><Html text={item} /></li>
+		{/each}
+	</ul>
 
 	<h2 id="check" class="headline-small">{t.checkTitle}</h2>
 	<p><Html text={t.checkHtml} /></p>

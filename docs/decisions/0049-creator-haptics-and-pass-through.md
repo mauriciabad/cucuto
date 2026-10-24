@@ -3,6 +3,7 @@
 - Status: accepted (defaults open for the owner in #222)
 - Date: 2026-10-24
 - Issue: #185
+- Amended: 2026-10-24 (#322, the creators edit conditions, special clips, ringtones and more)
 
 ## Context
 
@@ -37,7 +38,7 @@ the pack's `homepage` and `tags`; a character's `description`, `tags`, `spriteAn
 canonical layout (`sprite-anim.<ext>`, `ringtones/<label slug>.<ext>`; a file shared by several variants is written
 once, named after the first). A character needs a clip or a ringtone, as the format says, so a song-only character
 survives a duplicate. `PackDuplicator` copies each source file once, and `DraftCharacter` stores the media names.
-The creator does not edit these yet; the character page says what came from the original pack. Choosing a new
+The creator does not edit these yet; the character page says what came from the original pack (*amended below: #322 makes most of them editable*). Choosing a new
 picture drops the animated sprite, which would still show the old one (#222). Unknown `x-` keys are not kept.
 
 **Clip labels.** The catalog reads each clip's `label`; `VoiceCharacter.clipLabels` lines up with `clips`. Contact
@@ -51,4 +52,38 @@ pack data, so they are shown as written, in the pack's language.
 - A duplicated pack installs with the same ringtone variants, conditions and animations as the original, and its
   ringtone settings are byte-for-byte the same entries (tested by round-tripping the full fixture pack).
 - The website's creator gets the pass-through fields for free; it does not set them yet.
-- Ringtones are still not edited in the creator; that needs its own screen.
+- Ringtones are still not edited in the creator; that needs its own screen (*done in #322, below*).
+
+## Amendment 2026-10-24 (#322): the creators edit everything but animated sprites
+
+Pack authors should never have to hand-edit JSON. The app's creator and the website's Create page now edit what they
+only passed through, with one model in `packspec.authoring` so both read and write the same entries:
+
+- **`ConditionForm`**: a `when` and a clip's `oneIn` as the editors' controls: time of day (any, by day, at night,
+  hours `from`–`to`), seasons, weekdays, dates (days or ranges, up to 50), and for clips the moment (any message, the
+  first message of the day, message N in a row) and "rare: about 1 in N". `of` reads every condition the format allows;
+  `toWhen` writes a canonical one (a single season as a string, several as a list in calendar order; all four seasons
+  or all seven days are the same as none; ringtones never get moment keys). `problems` names what to fix in plain
+  words: an empty or malformed hour range, a date that is not a calendar day, more than 50 dates, a burst outside 2 to
+  50, a rarity outside 2 to 10,000.
+- **`RingtoneForm`**: a ringtone version's label, condition, loop (whole file, play once, or an intro and a loop
+  section), fade-in and weight, with its tags kept. `problems` also checks the file's length (5 s to 6 min) and the
+  loop against it (at least 1 s, within the audio), the importer's rules.
+- `Authoring.tags` turns typed text (`Animals, 8-bit games`) into the format's tags; `Authoring.isHomepage` checks a
+  homepage. The browser build exports all of it (`ConditionsJs.kt`).
+
+The editors (each in the style of its creator: dialogs on the website, pages in the app as ADR 0055 asks):
+
+- **Clips**: each clip gets a "When it plays" editor. The clip row shows a short summary when the clip has a condition
+  ("At night · Rare: about 1 in 25").
+- **Ringtones**: a "Ringtones" section on the character. "Add a ringtone" picks an audio file of 5 s to 6 min, kept in
+  its own format (the format never forces one, and re-encoding a song would lose quality); each version has play,
+  label, its condition summary, edit (label, "When it rings", loop, fade-in, how often it is picked for "random per
+  call"), "Add a version" (another entry for the same file, for example a night version with a fade-in) and remove.
+  A character needs a clip or a ringtone, so ringtone-only characters (songs) can be made from scratch.
+- **More details**: the pack's homepage and tags, and a character's description. A character's tags stay
+  pass-through (no app feature reads them yet).
+- The website's bundle tool gains homepage and tags, like `packer bundle`.
+
+Animated sprites stay pass-through (#324): adding one needs an animated encoder on each platform. Ringtone-only
+characters get no preview sample in repository indexes yet (#325).

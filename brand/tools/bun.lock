@@ -7,7 +7,7 @@
       "dependencies": {
         "@material/material-color-utilities": "0.4.0",
         "fontkit": "2.0.4",
-        "paper": "0.14.0",
+        "paper": "0.16.0",
       },
     },
   },
@@ -30,7 +30,7 @@
 
     "pako": ["pako@0.2.9", "", {}, "sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA=="],
 
-    "paper": ["paper@0.14.0", "", {}, "sha512-+CkS4bVg37vtsim2yonG0CMTboKwiNKyn3m+tnlaXZc2ltgh/2BvnY3sWeGX7+irtktpZGXK4M9/SJFxTpOl2w=="],
+    "paper": ["paper@0.16.0", "", {}, "sha512-MVkNFA40Afe1HbOJfP1i/WBGrEBfo3e8qO/wniNyQbN5RdW+A5JpLxNCYaUk7aFCV1KMDSErmk7ri6tyJ8bJQA=="],
 
     "restructure": ["restructure@3.0.2", "", {}, "sha512-gSfoiOEA0VPE6Tukkrr7I0RBdE0s7H1eFCDBk05l1KIQT1UIKNc5JZy6jdyW6eYH3aR3g5b3PuL77rq0hvwtAw=="],
 

@@ -54,8 +54,8 @@ It shows, from top to bottom:
      the picker);
    - **One version**, with the versions to pick from.
 
-   With a chat whose ringtone is another character (a cover tapped in the picker but not saved yet), the screen shows
-   the pack's rules and says that the rules can be changed once the character rings for that contact.
+   With a chat whose ringtone is another character (a cover tapped in the picker but not saved yet), or "Android
+   default" or "Leave as is" ([ADR 0073](0073-sound-flow-message-then-ringtone.md)), the screen shows the pack's rules and says that the rules can be changed once the character rings for that contact.
 4. A **bottom bar**: "Save" (disabled while nothing changed) and, when the contact's rule is not the pack's,
    **"Reset to the pack's rules"**, which saves at once. Saving closes the screen; "Random per call" asks for the phone
    permission first, as in the picker.
@@ -81,8 +81,8 @@ pack update keeps applying to them.
 in the pack (after a pack update) are skipped; when none is left, the pack's rules apply.
 
 **Backups.** `ringtone.rule.mode` gains `custom`, with `rule.rules` (1 to 50 entries of `{ variant, when? }`, `when`
-as in the pack schema). Still `formatVersion` 1: older readers fail to restore a custom rule's contact ringtone
-(unknown enum), and backwards compatibility is not a goal (#67). A restore drops entries whose file the installed pack
+as in the pack schema). Still `formatVersion` 1: Cucuto before 0.2.0 refuses the whole backup (its schema does not
+know `custom`), and backwards compatibility is not a goal (#67). A restore drops entries whose file the installed pack
 lacks only when the ringtone syncs, never in the stored rules, so a pack installed later still finds them.
 
 ### The picker

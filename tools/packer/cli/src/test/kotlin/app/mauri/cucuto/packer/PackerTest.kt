@@ -216,6 +216,78 @@ class PackerTest {
     }
 
     @Test
+    fun `pack yaml writes every condition, special clips and ringtone-only characters`(@TempDir tmp: Path) {
+        val src = tmp.resolve("src").createDirectories()
+        val frog = demoPacks[0].resolve("frog")
+        frog.resolve("sprite.svg").copyTo(src.resolve("sprite.svg"))
+        for (name in listOf("ribbit", "croak", "hop")) frog.resolve("clips/$name.ogg").copyTo(src.resolve("$name.ogg"))
+        frog.resolve("ringtones/pond-song-day.ogg").copyTo(src.resolve("song.ogg"))
+        demoPacks[0].resolve("cat/clips/mew.ogg").copyTo(src.resolve("mew.ogg"))
+        src.resolve("pack.yaml").writeText(
+            """
+            id: io.example.conditions
+            name: Conditions
+            version: 1.0.0
+            author: Tests
+            license: CC0-1.0
+            characters:
+              - name: Frog
+                sprite: sprite.svg
+                clips:
+                  - file: ribbit.ogg
+                    when: [night, sat, sun]
+                  - file: croak.ogg
+                    when: [12-25, 12-24..01-06]
+                    oneIn: 13
+                  - file: hop.ogg
+                    label: Good morning
+                    when: { firstOfDay: true, time: 05:00-12:00 }
+                  - file: mew.ogg
+                    label: Impatient
+                    when: { burst: 3, date: 10-25..10-31 }
+              - name: Song
+                sprite: sprite.svg
+                ringtones:
+                  - file: song.ogg
+                    label: Day
+                    when: [day, summer, autumn]
+                    loop: false
+                  - file: song.ogg
+                    label: Night
+                    when: 22:00-06:00
+                    loop: { startMs: 1000 }
+                    fadeInMs: 500
+                    weight: 2
+            """.trimIndent(),
+        )
+        val loaded = PackSources.load(src)
+        val characters = loaded.manifest["characters"]!!.jsonArray.map { it.jsonObject }
+        val whens = characters[0]["clips"]!!.jsonArray.map { it.jsonObject["when"].toString() }
+        assertEquals(
+            listOf(
+                """{"time":"night","weekday":["sat","sun"]}""",
+                """{"date":["12-25",{"from":"12-24","to":"01-06"}]}""",
+                """{"firstOfDay":true,"time":{"from":"05:00","to":"12:00"}}""",
+                """{"burst":3,"date":{"from":"10-25","to":"10-31"}}""",
+            ),
+            whens,
+        )
+        assertEquals("13", characters[0]["clips"]!!.jsonArray[1].jsonObject["oneIn"].toString())
+        val ringtones = characters[1]["ringtones"]!!.jsonArray.map { it.jsonObject }
+        assertEquals("""{"time":"day","season":["summer","autumn"]}""", ringtones[0]["when"].toString())
+        assertEquals("""{"time":{"from":"22:00","to":"06:00"}}""", ringtones[1]["when"].toString())
+        assertTrue("clips" !in characters[1])
+        val report = PackValidator().validate(loaded.pack).report
+        assertTrue(report.issues.isEmpty(), report.issues.toString())
+
+        // Two kinds of time are refused with a plain message.
+        src.resolve("pack.yaml").writeText(src.resolve("pack.yaml").readText().replace("[night, sat, sun]", "[night, day]"))
+        val refused = packer("build", src.toString(), "-o", tmp.resolve("out").toString())
+        assertEquals(2, refused.statusCode, refused.output)
+        assertTrue("only one time of day" in refused.output, refused.output)
+    }
+
+    @Test
     fun `build refuses invalid packs`(@TempDir tmp: Path) {
         val result = packer("build", repo.resolve("spec/fixtures/invalid/clip-too-long").toString(), "-o", tmp.toString())
         assertEquals(1, result.statusCode)

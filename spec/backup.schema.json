@@ -244,7 +244,7 @@
           "unevaluatedProperties": false
         },
         "ringtoneChoice": {
-          "description": "A phone-call ringtone that is not a pack character, in place of ringtone (ADR 0073). android-default: the contact rings with the phone's default ringtone; Cucuto clears a ringtone of the contact's own. unchanged: Cucuto never touches the contact's ringtone. Older readers ignore it, which leaves the contact's ringtone alone.",
+          "description": "A phone-call ringtone that is not a pack character, in place of ringtone (ADR 0073). android-default: the contact rings with the phone's default ringtone; Cucuto clears a ringtone of the contact's own. unchanged: Cucuto never touches the contact's ringtone. Cucuto before 0.2.0 does not know it and refuses the whole backup (contacts allow no unknown field).",
           "enum": ["android-default", "unchanged"]
         }
       },
