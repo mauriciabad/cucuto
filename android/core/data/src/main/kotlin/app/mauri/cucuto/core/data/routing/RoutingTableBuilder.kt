@@ -4,9 +4,11 @@ import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.data.db.RoutingRow
 import app.mauri.cucuto.core.routing.Clip
+import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.core.routing.Voice
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 /**
@@ -22,6 +24,8 @@ import javax.inject.Inject
  * - Identical voices (same character, enabled clips and haptic) are stored once.
  * - Clip URIs come from [ClipMirror]: a `file://` copy SystemUI reads without starting the app, or the clip
  *   provider's `content://` URI (ADR 0018).
+ * - Clips carry their auto envelope only in voices whose haptic is [Haptic.Auto], the only case where the module
+ *   uses it, which keeps the table small (issue #98).
  */
 class RoutingTableBuilder
     @Inject
@@ -29,6 +33,9 @@ class RoutingTableBuilder
         private val catalog: CharacterCatalog,
         private val mirror: ClipMirror,
     ) {
+        /** [CharacterCatalog.revisions]: the same rows can give a different table after these. */
+        val catalogRevisions: Flow<Long> get() = catalog.revisions
+
         suspend fun build(
             rows: List<RoutingRow>,
             packs: Map<String, InstalledPackEntity>,
@@ -73,6 +80,7 @@ class RoutingTableBuilder
             val pack = packs[packId] ?: return null
             val character = catalog.character(pack, characterId) ?: return null
             val disabled = row.disabledClips.orEmpty().toHashSet()
+            val haptic = HapticJson.fromOverride(row.hapticOverride) ?: character.haptic
             val clips =
                 character.clips
                     .filter { it.file !in disabled }
@@ -80,11 +88,10 @@ class RoutingTableBuilder
                         Clip(
                             uri = mirror.clipUri(pack, characterId, clip.file),
                             milliWeight = clip.milliWeight,
-                            haptic = clip.autoHaptic,
+                            haptic = if (haptic == Haptic.Auto) clip.autoHaptic else null,
                         )
                     }
             if (clips.isEmpty()) return null
-            val haptic = HapticJson.fromOverride(row.hapticOverride) ?: character.haptic
             return Voice(packId, characterId, clips, haptic)
         }
     }

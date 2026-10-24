@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
 import app.mauri.cucuto.core.routing.RoutingTable
+import kotlinx.coroutines.flow.MutableStateFlow
 
 internal const val CRITTERS = "app.mauri.demo.critters"
 
@@ -28,7 +29,7 @@ internal val frogHaptic = Haptic.Custom(listOf(HapticEvent.Preset(0, HapticPrese
 
 /** An in-memory catalog: `pack ID → character ID → character`. Counts lookups. */
 internal class FakeCatalog(
-    private val characters: Map<String, Map<String, CatalogCharacter>> =
+    var characters: Map<String, Map<String, CatalogCharacter>> =
         mapOf(
             CRITTERS to
                 mapOf(
@@ -50,6 +51,7 @@ internal class FakeCatalog(
         ),
 ) : CharacterCatalog {
     var lookups = 0
+    override val revisions = MutableStateFlow(0L)
 
     override suspend fun character(
         pack: InstalledPackEntity,

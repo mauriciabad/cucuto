@@ -1,0 +1,67 @@
+# 0020. Auto haptics at import and clip envelopes in the routing table
+
+- Status: accepted
+- Date: 2026-10-24
+- Issues: #97, #98
+
+## Context
+
+[ADR 0012](0012-haptics-effects-and-auto-haptics.md) built the auto haptics analyser (`AutoHaptics`,
+`AutoHapticFile`) and the module already resolves `auto` against the chosen clip (`forClip`, #105). Nothing ran the
+analysis, and nothing put the envelopes in the routing table. A 16-point envelope takes about 190 characters in the
+table's haptic syntax, and clip haptics were written once per voice. In the heavy-user case of `RoutingScaleTest`
+(120 characters of 12 clips, 176 voices), envelopes on every clip would add about 320 Ki characters, beyond the
+256 Ki limit (`RoutingContract.MAX_ENCODED_CHARS`). Notification clips can now last 30 s
+([ADR 0019](0019-long-notification-clips.md)).
+
+## Decision
+
+**Analyse at install, before the commit.** `:core:pack` gets a small hook, `PackAnalyzer`, which `PackImporter.install`
+runs on each staged pack it is about to install (chosen, and confirmed when that is needed). It runs outside the
+install lock and reports `ImportProgress.Analyzing`, which the Packs screen shows as part of installing. What it
+writes in the staging folder (`.cucuto/auto-haptics.txt`) moves into place in the same rename as the pack. Any
+exception except cancellation is ignored, so analysis never fails an import. The analysis runs after the user
+confirms rather than during `prepare`, so packs that are left out of a bundle, discarded or not confirmed cost
+nothing. `:core:pack` stays free of audio code; the app plugs in `AutoHaptics` (`AutoHapticsRunner.packAnalyzer`).
+
+**Every clip, bounded.** All notification clips are analysed whatever their character's pack haptic, because a
+per-contact `auto` override can apply to any character (#33). Only the first 2 s of each clip are decoded and
+analysed, so a 30 s clip costs the same as a short one, and the decoder has a 10 s timeout per clip.
+
+**Redo stale analyses in the background.** At app start, `AutoHapticsRunner.start` analyses again, once per process,
+every installed pack whose file is missing or `AutoHaptics.isStale` (new analyser version, restore on a phone with a
+smaller point budget, a pack installed by an older app, a failed analysis). `AutoHapticFile.write` never recreates a
+missing pack folder, so a background run that loses a race with an update or a removal cannot leave a fake version
+behind.
+
+**Publish.** `PackManifestCatalog` reads the file and fills `CatalogClip.autoHaptic`. It gets an `invalidate(path)`
+and a `revisions` flow, which `RoutingTableSource` combines with the database, so new envelopes republish the table
+even though no row changed.
+
+**Keep the table small (#98).**
+
+1. Clips carry their envelope only in voices whose haptic is `Auto`; the module ignores them otherwise.
+2. A clip haptic dictionary: each distinct envelope is written once in an `H` line, and voices refer to it by index in
+   a trailing `h` field. Toggle variants of a character share their envelopes.
+3. A compact form for dictionary entries: `HapticGrid` snaps auto envelopes to 64 intensity and sharpness levels and
+   20 ms steps (the analyser's frame; durations round up, so segments never get shorter than the device minimum),
+   and the codec writes on-grid envelopes as three base-64 digits per point. A 16-point envelope drops from about
+   190 to about 55 characters. The analyser already ignores changes under 3 %, so 1.6 % steps are below what anyone
+   feels. Encoding stays lossless (off-grid haptics use the full syntax), so the publisher's "same table, no
+   rewrite" check still works.
+4. If a table is still too large, the publisher drops the clip envelopes and publishes the rest
+   (`PublishState.Published.clipHapticsLeftOut`), because changing the sound matters more than the vibration.
+
+All of this stays in format version 1. A module still running the previous code (until the next reboot after an
+app update) skips `H` lines and trailing fields, so it reads new tables correctly, only without clip envelopes.
+
+## Consequences
+
+- The heavy-user table measures about 111 Ki characters without envelopes (127 Ki before the dictionary) and about
+  195 Ki with a 16-point envelope on every one of its 1,440 clips, under the 256 Ki limit. `RoutingScaleTest` checks
+  both.
+- Clip envelopes in the table differ from the stored analysis by at most 8 thousandths and 19 ms per point.
+- Installing takes longer: tens of milliseconds per clip, shown as progress. The first start after this update
+  analyses packs installed before it, in the background.
+- The diagnostics screen does not yet say when clip envelopes were left out; `PublishState` carries it for later.
+- How auto haptics feel can only be judged on the device (`needs-device`).

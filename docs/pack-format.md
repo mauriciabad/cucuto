@@ -539,8 +539,10 @@ directly.
 - [`shared/pack-spec`](../shared/pack-spec) is the Kotlin implementation of every rule above, shared by packer and
   the Android importer (`android/core/pack`, see [ADR 0005](decisions/0005-shared-pack-spec-module.md) and
   [ADR 0008](decisions/0008-pack-importer.md)).
-- The website validates with the same Kotlin code, `shared/pack-spec` compiled for the browser (owner decision on #60;
-  work in #116), so it reports the same codes by construction.
+- The website validates with the same Kotlin code, `shared/pack-spec` compiled to JavaScript (owner decision on #60,
+  [ADR 0022](decisions/0022-pack-spec-in-the-browser.md)), so it reports the same codes by construction.
+- CI runs every fixture through all three: the JVM module (packer's build), the Android importer (`:core:pack` tests)
+  and the browser build (`web/tests/pack-spec.test.ts` under Bun).
 - [`spec/fixtures/fixtures.json`](../spec/fixtures/fixtures.json) lists every golden fixture with its `kind`
   (`package`, `repository`, `backup`, `backup-envelope`), whether it is valid, and the exact sets of error and warning
   codes expected. Folders are unpacked packs or bundles; `.soundpack.zip` files are archives; `.json` files are documents.

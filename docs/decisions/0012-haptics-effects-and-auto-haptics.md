@@ -37,8 +37,9 @@ What the platform offers, from the API reference and
 stored outside a table. The routing table format is unchanged.
 
 **Plan in pure Kotlin, build with Android.** `HapticPlanner` (pure, JVM-tested) turns a `Haptic.Custom` and the
-device's `HapticCapabilities` (plain data, read once with `Vibrator.hapticCapabilities()`) into a plan.
-`HapticEffects.create(haptic, capabilities)` maps the plan onto the platform. It needs no Context and never throws:
+device's `HapticCapabilities` (plain data, read once with `HapticEffects.capabilities(vibrator)`) into a plan.
+`HapticEffects.create(haptic, capabilities)` maps the plan onto the platform (in the app process,
+`PublicHapticEffects.create` and `PublicHapticEffects.capabilities`, [ADR 0026](0026-app-haptics-public-apis-only.md)). It needs no Context and never throws:
 it returns null when nothing is playable, and the caller keeps the original vibration. Steps:
 
 1. **Normalize** whatever the source (pack, override, analysis): sort by start; move an event that would overlap the
@@ -50,7 +51,10 @@ it returns null when nothing is playable, and the caller keeps the original vibr
 3. **Choose the API.** With the Builder, use it (presets and basic envelopes 1:1). The Builder counts as
    available on 37.2 and later, or when a reflective probe of its constructor and methods succeeds
    (`HapticEffects.builderAvailable`). On the owner's 37.1 phone, that means the module in `system_server` uses
-   it while the app (previews) uses the fallbacks. Without it,
+   it while the app (previews) uses the fallbacks. *Amended by [ADR 0026](0026-app-haptics-public-apis-only.md):*
+   the app never probes or references the Builder. It uses `PublicHapticEffects`, and only the module uses
+   `HapticEffects`. Mixed timelines on envelope hardware become one envelope with preset bumps, and a lone
+   unsupported preset becomes `createPredefined`. ADR 0026 lists how previews differ from the module. Without it,
    use one `BasicEnvelopeBuilder` effect for envelope-only timelines (envelopes joined, gaps held at zero), a
    `Composition` for preset-only timelines whose primitives are all supported (delays from
    `getPrimitiveDurations`), and otherwise `createWaveform` (envelopes sampled every 20 ms, presets as 10–20 ms
@@ -84,9 +88,10 @@ after a better analyser ships or after a restore on a phone with a smaller budge
 
 - The module (#15) needs only `HapticCapabilities` (once) and `HapticEffects.create`, which can be cached per haptic.
   Wiring is #96. The importer and catalog integration (analyse at import, read the file into
-  `CatalogClip.autoHaptic`) is #97.
+  `CatalogClip.autoHaptic`) is #97, done in [ADR 0020](0020-auto-haptics-at-import.md).
 - A clip's auto envelope takes about 100–200 characters in the routing table. Clip haptics are not deduplicated
   across voices, so a heavy user with many distinct voices of 12 clips could get close to the 256 Ki-character limit.
-  #98 tracks measuring this and adding a haptic dictionary if needed.
+  #98 tracks measuring this and adding a haptic dictionary if needed. ADR 0020 adds the dictionary and a compact
+  form of about 55 characters per envelope.
 - Behavior with the Builder relies on the framework's fallbacks. Those can only be checked on hardware. The
   instrumented test builds every path on a device but does not judge how the vibration feels.

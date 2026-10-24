@@ -52,8 +52,8 @@ import java.util.UUID
  *    [ImportResult.Failed].
  * 2. The UI shows the packs, warnings and what installing does ([PackCandidate.action]), and the user picks packs of a
  *    bundle and confirms replacements and downgrades ([PackSelection]).
- * 3. [install] moves the chosen packs into [PackStore] with renames and switches them to the new version, or
- *    [discard] drops everything.
+ * 3. [install] runs the [analyzer] on the chosen packs (auto haptics), moves them into [PackStore] with renames and
+ *    switches them to the new version, or [discard] drops everything.
  *
  * All IO runs on [ioDispatcher]; the flows are cold and safe to collect from the main thread. Cancelling a flow
  * deletes what it unpacked.
@@ -65,6 +65,8 @@ class PackImporter(
     private val verifier: MediaVerifier,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val validator: PackValidator = PackValidator(),
+    /** Extra work on each pack before it is installed; see [PackAnalyzer]. */
+    private val analyzer: PackAnalyzer? = null,
 ) {
     /** Serializes changes to [store]. */
     private val installLock = Mutex()
@@ -96,6 +98,8 @@ class PackImporter(
             val progress: suspend (ImportProgress) -> Unit = { emit(ImportEvent.Progress(it)) }
             val result =
                 try {
+                    // Outside the lock: the staging folders belong to this import, and analysis can take a while.
+                    analyze(import, selection, progress)
                     installLock.withLock { installSelected(import, selection, activate, progress) }
                 } catch (e: IOException) {
                     ImportResult.Failed(FailureReason.STORAGE_ERROR, "Could not install: ${e.message}", e)
@@ -128,6 +132,34 @@ class PackImporter(
             workDir.deleteRecursively()
             Unit
         }
+
+    /**
+     * Runs the [analyzer] on the staged packs that [installSelected] will most likely install (chosen, and confirmed
+     * when they need it). Never fails: a pack whose analysis throws is installed without it.
+     */
+    private suspend fun analyze(
+        import: PreparedImport,
+        selection: PackSelection,
+        progress: suspend (ImportProgress) -> Unit,
+    ) {
+        val analyzer = analyzer ?: return
+        val chosen =
+            import.packs.filter {
+                it.id in selection.selected && (!it.action.needsConfirmation || it.id in selection.confirmed)
+            }
+        for (candidate in chosen) {
+            val staged = import.stagedPacks[candidate.root] ?: continue
+            try {
+                analyzer.analyze(staged, candidate.manifest) { done, total ->
+                    progress(ImportProgress.Analyzing(candidate.id, done, total))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // The pack installs without the analysis; the app redoes missing analyses later (ADR 0020).
+            }
+        }
+    }
 
     private suspend fun installSelected(
         import: PreparedImport,
@@ -457,11 +489,15 @@ class PackImporter(
         private const val PROGRESS_STEP_BYTES = Limits.MiB
 
         /** The importer of the app: packs in `files/packs/`, scratch files in the cache, platform decoders. */
-        fun create(context: Context): PackImporter =
+        fun create(
+            context: Context,
+            analyzer: PackAnalyzer? = null,
+        ): PackImporter =
             PackImporter(
                 store = PackStore.inFilesDir(context.filesDir),
                 workDir = File(context.cacheDir, "pack-import"),
                 verifier = MediaVerifier(PlatformAudioProbe(), PlatformImageProbe()),
+                analyzer = analyzer,
             )
 
         /** What installing [version] does when [installedVersion] is active (null: not installed). */

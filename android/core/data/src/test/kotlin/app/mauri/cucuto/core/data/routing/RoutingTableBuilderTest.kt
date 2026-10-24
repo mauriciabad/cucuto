@@ -3,7 +3,9 @@ package app.mauri.cucuto.core.data.routing
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.RoutingRow
 import app.mauri.cucuto.core.routing.Clip
+import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingCodec
 import app.mauri.cucuto.core.routing.Voice
@@ -88,6 +90,36 @@ class RoutingTableBuilderTest {
             )
             assertEquals("file:///mirror/selftest/chirp.wav", table.selfTestClip)
             assertEquals(table, RoutingCodec.decode(RoutingCodec.encode(table)))
+        }
+
+    @Test
+    fun clipEnvelopesOnlyGoWhereAutoHapticsUseThem() =
+        runTest {
+            val envelope = Haptic.Custom(listOf(HapticEvent.Envelope(0, listOf(ControlPoint(1000, 500, 40)))))
+            catalog.characters =
+                catalog.characters.mapValues { (_, characters) ->
+                    characters.mapValues { (_, c) -> c.copy(clips = c.clips.map { it.copy(autoHaptic = envelope) }) }
+                }
+            val table =
+                builder.build(
+                    listOf(
+                        row("frog@s.whatsapp.net", 1),
+                        row("frog-auto@s.whatsapp.net", 2, haptic = """{"mode":"auto"}"""),
+                        row("owl@s.whatsapp.net", 3, characterId = "owl"),
+                        row("owl-off@s.whatsapp.net", 4, characterId = "owl", haptic = """{"mode":"none"}"""),
+                    ),
+                    packs,
+                    enabled = true,
+                )
+
+            fun clipHaptics(key: String) =
+                table.voices[table.route("com.whatsapp", key)!!.voice].clips.map { it.haptic }
+            // The frog's pack haptic is custom and the module would ignore clip envelopes: left out.
+            assertEquals(listOf(null, null), clipHaptics("frog@s.whatsapp.net"))
+            // A per-contact auto override on the same character needs them.
+            assertEquals(listOf(envelope, envelope), clipHaptics("frog-auto@s.whatsapp.net"))
+            assertEquals(listOf(envelope), clipHaptics("owl@s.whatsapp.net"))
+            assertEquals(listOf(null), clipHaptics("owl-off@s.whatsapp.net"))
         }
 
     @Test

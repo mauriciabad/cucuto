@@ -109,14 +109,20 @@ object AutoHapticFile {
         }
     }
 
-    /** Writes [set] for the pack version in [packDir], atomically (temporary file, then rename). Blocking IO. */
+    /**
+     * Writes [set] for the pack version in [packDir], atomically (temporary file, then rename). Blocking IO.
+     *
+     * Throws [IOException] when [packDir] does not exist: it is never recreated, so a background analysis racing
+     * with an update or a removal cannot leave a version folder without its pack behind.
+     */
     fun write(
         packDir: File,
         set: AutoHapticSet,
     ) {
+        if (!packDir.isDirectory) throw IOException("No pack in $packDir")
         val file = File(packDir, RELATIVE_PATH)
         val dir = file.parentFile ?: throw IOException("No parent for $file")
-        if (!dir.isDirectory && !dir.mkdirs()) throw IOException("Cannot create $dir")
+        if (!dir.isDirectory && !dir.mkdir()) throw IOException("Cannot create $dir")
         val tmp = File(dir, file.name + ".tmp")
         tmp.writeText(encode(set))
         if (!tmp.renameTo(file)) {

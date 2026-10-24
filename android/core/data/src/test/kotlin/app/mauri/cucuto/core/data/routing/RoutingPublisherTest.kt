@@ -11,7 +11,11 @@ import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
 import app.mauri.cucuto.core.data.settings.RoutingSettings
+import app.mauri.cucuto.core.routing.ControlPoint
+import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.RoutingCodec
+import app.mauri.cucuto.core.routing.RoutingContract
 import app.mauri.cucuto.core.routing.RoutingTable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,6 +60,8 @@ class RoutingPublisherTest {
     @After
     fun tearDown() = db.close()
 
+    private val catalog = FakeCatalog()
+
     private fun TestScope.publisher(scope: CoroutineScope = backgroundScope): Pair<RoutingPublisher, RoutingSettings> {
         val settings =
             RoutingSettings(
@@ -68,10 +74,113 @@ class RoutingPublisherTest {
                 db.contactDao(),
                 db.installedPackDao(),
                 settings,
-                RoutingTableBuilder(FakeCatalog(), mirror),
+                RoutingTableBuilder(catalog, mirror),
             )
         return RoutingPublisher(source, sink, mirror, clock, scope) to settings
     }
+
+    /** An owl with [clips] clips, each with its own 16-point auto envelope (off the grid: the long syntax). */
+    private fun owlWithEnvelopes(clips: Int) =
+        mapOf(
+            CRITTERS to
+                mapOf(
+                    "owl" to
+                        CatalogCharacter(
+                            clips =
+                                (0 until clips).map { i ->
+                                    val points =
+                                        (1..16).map { p ->
+                                            ControlPoint(
+                                                if (p ==
+                                                    16
+                                                ) {
+                                                    0
+                                                } else {
+                                                    501 + i % 400
+                                                },
+                                                333,
+                                                21 + p,
+                                            )
+                                        }
+                                    CatalogClip(
+                                        "characters/owl/clips/hoot-$i.ogg",
+                                        1000,
+                                        Haptic.Custom(listOf(HapticEvent.Envelope(i, points))),
+                                    )
+                                },
+                            haptic = Haptic.Auto,
+                        ),
+                ),
+        )
+
+    @Test
+    fun republishesWhenTheCatalogRereadsAPack() =
+        runTest {
+            val (publisher, _) = publisher()
+            packs.recordInstalled(installedPack())
+            val ada = contacts.findOrCreate("com.whatsapp", "34600000001@s.whatsapp.net", "Ada", isGroup = false)
+            assignments.assign(ada, CRITTERS, "owl")
+            sink.connect()
+            publisher.start()
+            sink.tables().test {
+                assertNull(
+                    awaitItem()
+                        .voices
+                        .single()
+                        .clips
+                        .single()
+                        .haptic,
+                )
+                // Auto haptics analysed in the background: same database rows, new catalog content.
+                catalog.characters = owlWithEnvelopes(1)
+                catalog.revisions.value++
+                assertTrue(
+                    awaitItem()
+                        .voices
+                        .single()
+                        .clips
+                        .single()
+                        .haptic != null,
+                )
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun leavesClipHapticsOutRatherThanNotPublishing() =
+        runTest {
+            catalog.characters = owlWithEnvelopes(1500)
+            val (publisher, _) = publisher()
+            packs.recordInstalled(installedPack())
+            val ada = contacts.findOrCreate("com.whatsapp", "34600000001@s.whatsapp.net", "Ada", isGroup = false)
+            assignments.assign(ada, CRITTERS, "owl")
+            sink.connect()
+            publisher.start()
+
+            val state = publisher.state.filterIsInstance<PublishState.Published>().first()
+            assertTrue(state.clipHapticsLeftOut)
+            assertTrue(state.encodedChars <= RoutingContract.MAX_ENCODED_CHARS)
+            val table = RoutingCodec.decode(sink.writes.value.single())
+            assertEquals(
+                1500,
+                table.voices
+                    .single()
+                    .clips.size,
+            )
+            assertTrue(
+                table.voices
+                    .single()
+                    .clips
+                    .all { it.haptic == null },
+            )
+
+            // Nothing changed: the same reduced table is not written again.
+            sink.disconnect()
+            clock.advance()
+            sink.connect()
+            testScheduler.advanceUntilIdle()
+            assertEquals(1, sink.writes.value.size)
+        }
 
     @Test
     fun republishesOnEveryRelevantChange() =

@@ -54,8 +54,10 @@ class PackLibrary
         private val installedPacks: InstalledPackRepository,
         private val assignments: AssignmentRepository,
         private val contacts: ContactRepository,
+        private val autoHaptics: AutoHapticsRunner,
     ) : PackCatalog {
-        private val importer: PackImporter by lazy { PackImporter.create(context) }
+        /** Analyses auto haptics before installing, so each version is committed with its clip envelopes. */
+        private val importer: PackImporter by lazy { PackImporter.create(context, autoHaptics.packAnalyzer) }
 
         /** Discards and cleanup outlive the screen that started them. */
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -256,6 +258,8 @@ class PackLibrary
             for (pack in result.packs) {
                 if (!pack.active) continue
                 val candidate = import.packs.firstOrNull { it.id == pack.id && it.version == pack.version }
+                // A reinstall of the same version reuses the folder: forget what was read from the old files.
+                autoHaptics.installed(pack.directory.path)
                 installedPacks.recordInstalled(
                     InstalledPackEntity(
                         packId = pack.id,

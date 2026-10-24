@@ -28,3 +28,6 @@ playwright-report
 # Release data fetched at build time (scripts/build-data.ts)
 /.build-data
 /static/repo
+
+# shared/pack-spec compiled to JavaScript (`./gradlew syncWebPackSpec` in shared/pack-spec)
+/src/lib/pack-spec/generated

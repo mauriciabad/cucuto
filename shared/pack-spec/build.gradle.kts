@@ -1,4 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -61,6 +64,16 @@ kotlin {
     jvm {
         compilerOptions { jvmTarget = JvmTarget.JVM_21 }
     }
+    // The website validates packs in the browser with this same code (owner's answer on #60, ADR 0022).
+    js {
+        browser {
+            // Golden fixtures run against the exported module under Bun (web/tests/pack-spec.test.ts), so no Karma.
+            testTask { enabled = false }
+        }
+        binaries.library()
+        useEsModules()
+        generateTypeScriptDefinitions()
+    }
 
     sourceSets {
         commonMain {
@@ -79,6 +92,31 @@ kotlin {
         }
     }
 }
+
+// The browser build for the website (ADR 0022). `./gradlew syncWebPackSpec` compiles the js target and copies the ES
+// module and its TypeScript declarations to web/src/lib/pack-spec/generated/ (git-ignored), where the site and its
+// golden-fixture test (web/tests/pack-spec.test.ts) import it. CI runs it in the `pack-spec-js` job before `web`.
+val webPackSpecDir = layout.projectDirectory.dir("../../web/src/lib/pack-spec/generated")
+tasks.register<Sync>("syncWebPackSpec") {
+    group = "build"
+    description = "Compiles pack-spec for the browser and copies it to web/src/lib/pack-spec/generated/."
+    from(tasks.named<KotlinJsIrLink>("compileProductionLibraryKotlinJs").flatMap { it.destinationDirectory }) {
+        include("pack-spec.mjs", "pack-spec.d.mts")
+    }
+    into(webPackSpecDir)
+}
+
+// No Node.js or npm, ever: the js target has no Kotlin tests (the fixtures run under Bun) and the site type-checks the
+// generated declarations itself, so the npm install that the plugin wires into `check` (Karma, webpack, a TypeScript
+// check of the .d.mts) is skipped. download = false keeps the plugin from adding a Node.js repository, which
+// FAIL_ON_PROJECT_REPOS in settings would reject. Packer and the app only ever build the jvm target.
+project.plugins.withType<NodeJsPlugin> {
+    project.the<NodeJsEnvSpec>().download = false
+}
+tasks.matching {
+    it.name in setOf("kotlinNpmInstall", "kotlinRestorePackageLock", "kotlinStorePackageLock") ||
+        it.name.endsWith("ValidateGeneratedByCompilerTypeScript")
+}.configureEach { enabled = false }
 
 tasks.named<Test>("jvmTest") {
     useJUnitPlatform()
