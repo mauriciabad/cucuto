@@ -15,6 +15,7 @@ import app.mauri.cucuto.core.audio.PcmAudio
 import app.mauri.cucuto.core.creator.CreatorDraft
 import app.mauri.cucuto.core.creator.DraftCharacter
 import app.mauri.cucuto.core.creator.DraftClip
+import app.mauri.cucuto.core.creator.DraftRingtone
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
@@ -33,7 +34,9 @@ import app.mauri.cucuto.packs.LibraryPack
 import app.mauri.cucuto.packs.PacksUiState
 import app.mauri.cucuto.packs.ui.PacksContent
 import app.mauri.cucuto.packspec.RepositoryIndex
+import app.mauri.cucuto.packspec.Ringtone
 import app.mauri.cucuto.packspec.SpecJson
+import app.mauri.cucuto.packspec.When
 import app.mauri.cucuto.picker.PickerContent
 import app.mauri.cucuto.picker.previewPickerState
 import app.mauri.cucuto.ui.creator.CharacterPage
@@ -70,6 +73,7 @@ import app.mauri.cucuto.ui.status.SelfTestMessage
 import app.mauri.cucuto.ui.status.StatusCard
 import app.mauri.cucuto.ui.status.StatusReport
 import app.mauri.cucuto.ui.status.WhatsAppCheck
+import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.io.File
 
@@ -155,8 +159,24 @@ internal object A11yScreens {
             seedColor = "#3A7D44",
             clips =
                 listOf(
-                    DraftClip(key = "a", file = "a.ogg", label = "Croak", durationMs = 1_200),
+                    DraftClip(
+                        key = "a",
+                        file = "a.ogg",
+                        label = "Croak",
+                        durationMs = 1_200,
+                        `when` = When(time = JsonPrimitive("night")),
+                        oneIn = 25,
+                    ),
                     DraftClip(key = "b", file = "b.ogg", label = "", weight = 2.0, durationMs = 2_400),
+                ),
+            ringtones =
+                listOf(
+                    DraftRingtone(
+                        file = "pond.ogg",
+                        entry = Ringtone("pond.ogg", label = "Pond song", `when` = When(time = JsonPrimitive("day"))),
+                        key = "pond",
+                        durationMs = 32_000,
+                    ),
                 ),
         )
 

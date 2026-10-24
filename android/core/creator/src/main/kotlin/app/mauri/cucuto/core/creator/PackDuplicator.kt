@@ -11,7 +11,7 @@ import java.io.IOException
 /** What [PackDuplicator.duplicate] made. */
 data class Duplicate(
     val draft: CreatorDraft,
-    /** Ringtone variants and animated sprites kept as they are: the creator does not edit them yet. */
+    /** Ringtone versions copied, and animated sprites kept as they are (the creator does not edit those yet). */
     val keptRingtones: Int,
     val keptAnimations: Int,
 )
@@ -79,7 +79,11 @@ class PackDuplicator(
                                 oneIn = clip.oneIn,
                             )
                         },
-                    ringtones = c.ringtones.map { DraftRingtone(copy(it.file, "ringtone"), it) },
+                    ringtones =
+                        c.ringtones.map {
+                            val file = copy(it.file, "ringtone")
+                            DraftRingtone(file, it, durationMs = durationMs(drafts.media(file)))
+                        },
                     haptic =
                         when (c.haptic?.mode) {
                             "none" -> HapticMode.NONE

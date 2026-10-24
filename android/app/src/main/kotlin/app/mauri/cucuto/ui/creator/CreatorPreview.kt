@@ -86,6 +86,47 @@ class CreatorPreview
             }
         }
 
+        /**
+         * Plays a ringtone version's file from the start with ringtone audio attributes (it follows the ringer volume),
+         * stopping any earlier preview; [onDone] runs when it ends or fails to load (not when [stop]ped).
+         */
+        suspend fun playRingtone(
+            file: File,
+            onDone: () -> Unit,
+        ) {
+            stop()
+            val media = MediaPlayer()
+            try {
+                withContext(Dispatchers.IO) {
+                    media.setAudioAttributes(
+                        AudioAttributes
+                            .Builder()
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build(),
+                    )
+                    media.setDataSource(file.path)
+                    media.prepare()
+                }
+            } catch (e: CancellationException) {
+                media.release()
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Creator ringtone preview failed to load (${e.javaClass.simpleName})")
+                media.release()
+                onDone()
+                return
+            }
+            stop()
+            player = media
+            media.setOnCompletionListener { done ->
+                if (player === done) player = null
+                done.release()
+                onDone()
+            }
+            media.start()
+        }
+
         fun stop() {
             player?.let {
                 runCatching { it.stop() }
