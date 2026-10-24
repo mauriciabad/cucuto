@@ -184,16 +184,33 @@
         <item quantity="many">Se han mantenido %1$d tonos de llamada que ya tenías en este móvil.</item>
         <item quantity="other">Se han mantenido %1$d tonos de llamada que ya tenías en este móvil.</item>
     </plurals>
+    <string name="restore_contacts_title">Contactos</string>
+    <plurals name="restore_contacts_waiting">
+        <item quantity="one">%1$d chat está vinculado a alguien de tus contactos. Los contactos se buscan de nuevo en cada móvil, así que Cucuto necesita leer los contactos de este móvil para encontrarlo.</item>
+        <item quantity="many">%1$d chats están vinculados a personas de tus contactos. Los contactos se buscan de nuevo en cada móvil, así que Cucuto necesita leer los contactos de este móvil para encontrarlas.</item>
+        <item quantity="other">%1$d chats están vinculados a personas de tus contactos. Los contactos se buscan de nuevo en cada móvil, así que Cucuto necesita leer los contactos de este móvil para encontrarlas.</item>
+    </plurals>
+    <string name="restore_contacts_find">Buscar contactos</string>
+    <plurals name="restore_contacts_found">
+        <item quantity="one">%1$d chat encontrado en los contactos de este móvil.</item>
+        <item quantity="many">%1$d chats encontrados en los contactos de este móvil.</item>
+        <item quantity="other">%1$d chats encontrados en los contactos de este móvil.</item>
+    </plurals>
+    <plurals name="restore_contacts_unmatched">
+        <item quantity="one">%1$d no está en los contactos de este móvil. Elige el contacto, o vincúlalo más tarde desde el chat.</item>
+        <item quantity="many">%1$d no están en los contactos de este móvil. Elige cada contacto, o vincúlalos más tarde desde cada chat.</item>
+        <item quantity="other">%1$d no están en los contactos de este móvil. Elige cada contacto, o vincúlalos más tarde desde cada chat.</item>
+    </plurals>
+    <string name="restore_contacts_choose_for">Elegir contacto para %1$s</string>
+    <string name="restore_contacts_ringtone_waits">Su tono de llamada sonará cuando elijas el contacto.</string>
+    <string name="restore_contacts_permission_title">¿Dejas que Cucuto lea tus contactos?</string>
+    <string name="restore_contacts_permission_body">Tu copia vincula chats con personas de tus contactos. Cada móvil guarda los contactos a su manera, así que Cucuto los vuelve a buscar aquí, por número de teléfono y nombre:\n\n• Solo lee los contactos, para encontrar a las personas con las que estaban vinculados tus chats.\n• No cambia nada en tus contactos.\n• Tus contactos nunca salen de tu móvil.\n\nCucuto es de código abierto: tú (o tu asistente de IA) puedes leer exactamente lo que hace en github.com/mauriciabad/cucuto.</string>
+    <string name="restore_contacts_denied_body">Sin el permiso de contactos, Cucuto no puede encontrar a estas personas en este móvil. Puedes permitirlo en los ajustes de Android para Cucuto.</string>
     <string name="restore_ringtones_title">Tonos de llamada</string>
     <plurals name="restore_ringtones_back">
         <item quantity="one">Ha vuelto %1$d tono de llamada.</item>
         <item quantity="many">Han vuelto %1$d tonos de llamada.</item>
         <item quantity="other">Han vuelto %1$d tonos de llamada.</item>
-    </plurals>
-    <plurals name="restore_ringtones_missing">
-        <item quantity="one">No está en los contactos de este móvil: %1$s. Vincúlalo desde la tarjeta Tono de llamada del chat.</item>
-        <item quantity="many">No están en los contactos de este móvil: %1$s. Vincúlalos desde la tarjeta Tono de llamada de cada chat.</item>
-        <item quantity="other">No están en los contactos de este móvil: %1$s. Vincúlalos desde la tarjeta Tono de llamada de cada chat.</item>
     </plurals>
     <string name="restore_ringtones_off">Los tonos de llamada están desactivados en este móvil. Actívalos para ponerlos en tus contactos.</string>
     <plurals name="restore_ringtones_written">

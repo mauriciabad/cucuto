@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -16,27 +17,33 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
 /**
- * A phone ringtone a backup restore put in the database, waiting for its Android contact on this phone (ADR 0057).
- * Nothing here names a person beyond what the database already holds; never log it.
+ * A contact a backup restore brought in with an Android link or a phone ringtone, waiting for its Android contact on
+ * this phone: lookup keys are per device (ADR 0013's amendment for #43, ADR 0057). Nothing here names a person beyond
+ * what the database already holds; never log it.
  *
  * @property contactId The Cucuto contact.
  * @property displayName The Cucuto contact's name, for the restore summary.
  * @property androidName The Android contact's name on the phone that wrote the backup (a tie-break when matching).
+ * @property ringtone The contact has a phone ringtone from the backup (false: only its Android link came back).
  * @property originalRingtone The backup's undo record: the Android contact's own ringtone before Cucuto (null: the
  *   default ringtone).
  * @property writtenUri The backup's undo record: the ring file Cucuto wrote last on that phone, or null when the backup
  *   has no undo record.
  */
-data class RestoredRingtone(
+data class RestoredLink(
     val contactId: Long,
     val displayName: String? = null,
     val androidName: String? = null,
+    val ringtone: Boolean = true,
     val originalRingtone: String? = null,
     val writtenUri: String? = null,
 ) {
     companion object {
-        /** JSON for the pending list kept in settings until the contacts permission is granted. */
-        fun encode(items: List<RestoredRingtone>): String =
+        /**
+         * JSON for the pending list kept in settings until the contacts permission is granted. `ringtone` is written
+         * only when false: lists from before #43 held phone ringtones only.
+         */
+        fun encode(items: List<RestoredLink>): String =
             buildJsonArray {
                 for (item in items) {
                     add(
@@ -44,6 +51,7 @@ data class RestoredRingtone(
                             put("contactId", item.contactId)
                             item.displayName?.let { put("displayName", it) }
                             item.androidName?.let { put("androidName", it) }
+                            if (!item.ringtone) put("ringtone", false)
                             item.originalRingtone?.let { put("originalRingtone", it) }
                             item.writtenUri?.let { put("writtenUri", it) }
                         },
@@ -52,7 +60,7 @@ data class RestoredRingtone(
             }.toString()
 
         /** The list [encode] wrote; empty for anything unreadable (a pending relink is a convenience, not data). */
-        fun decode(json: String?): List<RestoredRingtone> {
+        fun decode(json: String?): List<RestoredLink> {
             if (json.isNullOrBlank()) return emptyList()
             val array =
                 runCatching { Json.parseToJsonElement(json) as? JsonArray }.getOrNull()
@@ -62,12 +70,14 @@ data class RestoredRingtone(
 
                 fun text(key: String): String? = (o[key] as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
                 val id = o["contactId"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
-                RestoredRingtone(
-                    id,
-                    text("displayName"),
-                    text("androidName"),
-                    text("originalRingtone"),
-                    text("writtenUri"),
+                val ringtone = (o["ringtone"] as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: true
+                RestoredLink(
+                    contactId = id,
+                    displayName = text("displayName"),
+                    androidName = text("androidName"),
+                    ringtone = ringtone,
+                    originalRingtone = text("originalRingtone"),
+                    writtenUri = text("writtenUri"),
                 )
             }
         }
@@ -75,7 +85,7 @@ data class RestoredRingtone(
 }
 
 /** Where the relinker reads and changes Cucuto contacts' Android links. */
-interface RingtoneLinks {
+interface ContactLinks {
     /** The lookup key [contactId] is linked to, or null. */
     suspend fun linkedKey(contactId: Long): String?
 
@@ -89,7 +99,7 @@ interface RingtoneLinks {
     )
 }
 
-/** How a restored phone ringtone found its Android contact. */
+/** How a restored contact found its Android contact. */
 enum class RelinkOutcome {
     /** The link the database already had points at the right Android contact. */
     KEPT,
@@ -97,7 +107,7 @@ enum class RelinkOutcome {
     /** Linked to another Android contact on this phone (matched by phone number or name). */
     LINKED,
 
-    /** No Android contact on this phone matches: unlinked, the user links it from the chat. */
+    /** No Android contact on this phone matches: unlinked, the user picks it (restore summary or contact detail). */
     MISSING,
 }
 
@@ -110,8 +120,9 @@ data class RelinkResult(
 )
 
 /**
- * Finds the Android contact of each restored phone ringtone on this phone, and adopts the backup's undo record when
- * the contact still rings with Cucuto's old file (ADR 0057). Needs the contacts permission; the caller checks it.
+ * Finds the Android contact of each restored contact on this phone and, for phone ringtones, adopts the backup's undo
+ * record when the contact still rings with Cucuto's old file (ADR 0057). The one matcher for every Android link a
+ * restore brings in (ADR 0013's amendment for #43). It only reads contacts; the caller checks the permission.
  *
  * Matching, in order (brief, "Restore on a new phone"; #198):
  * 1. **Phone numbers.** Lookup keys are per device, numbers are not. A contact whose current link is among the
@@ -119,16 +130,16 @@ data class RelinkResult(
  * 2. **The lookup key** the database has (this phone's own link, or the backup's): kept when it still resolves.
  * 3. **The exact name** of the Android contact on the old phone, when exactly one contact has it.
  *
- * Nothing found: the stale link is removed, so contact detail offers to link it instead of reporting a missing
- * contact, and the ringtone choice stays.
+ * Nothing found: the stale link is removed, so the restore summary and contact detail offer to pick the contact
+ * instead of showing a key that means nothing here, and the voice and ringtone choices stay.
  */
-class RingtoneRelinker(
+class ContactRelinker(
     private val contacts: AndroidContacts,
-    private val links: RingtoneLinks,
+    private val links: ContactLinks,
     private val store: PhoneRingtoneStore,
     private val wallClock: () -> Long,
 ) {
-    suspend fun relink(item: RestoredRingtone): RelinkResult {
+    suspend fun relink(item: RestoredLink): RelinkResult {
         val stored = links.linkedKey(item.contactId)
         val current = stored?.let { contacts.find(it) }?.let { AndroidContact(it.lookupKey, it.displayName) }
         val byNumber =
@@ -160,7 +171,7 @@ class RingtoneRelinker(
                 else -> RelinkOutcome.LINKED
             }
         if (outcome != RelinkOutcome.KEPT) links.link(item.contactId, chosen)
-        val seeded = chosen != null && seedUndo(item, chosen.lookupKey)
+        val seeded = chosen != null && item.ringtone && seedUndo(item, chosen.lookupKey)
         return RelinkResult(item.contactId, outcome, chosen?.lookupKey, seeded)
     }
 
@@ -171,7 +182,7 @@ class RingtoneRelinker(
      * mean nothing and are ignored.
      */
     private suspend fun seedUndo(
-        item: RestoredRingtone,
+        item: RestoredLink,
         lookupKey: String,
     ): Boolean {
         val written = item.writtenUri ?: return false

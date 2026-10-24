@@ -104,6 +104,41 @@ class BackupRestorerTest {
         }
 
     @Test
+    fun `Android links taken from the backup are reported for matching on this phone, this phone's own are not`() =
+        runTest {
+            // Bruno exists here with his own Android link; Ada is new.
+            val bruno = contact("Bruno", ContactKeyEntity.NO_PACKAGE to "+34600333444")
+            db.contactDao().update(
+                db
+                    .contactDao()
+                    .get(
+                        bruno,
+                    )!!
+                    .contact
+                    .copy(androidLookupKey = "here-bruno", androidDisplayName = "Bruno"),
+            )
+            val first = restorer.restore(fixture, encrypted = false)
+            val ada = first.contacts.single { it.backupId == "c1" }
+            assertEquals(BackupAndroidContact("0r1-ABC", "Ada Lovelace"), ada.androidContact)
+            assertEquals("Ada", ada.displayName)
+            val restoredBruno = first.contacts.single { it.backupId == "c2" }
+            assertEquals(bruno, restoredBruno.contactId)
+            assertNull(restoredBruno.androidContact)
+            assertEquals(
+                "here-bruno",
+                db
+                    .contactDao()
+                    .get(bruno)!!
+                    .contact.androidLookupKey,
+            )
+            assertNull(first.contacts.single { it.backupId == "g1" }.androidContact)
+
+            // A second run finds Ada's link already stored (the app may have matched it again since): not reported.
+            val second = restorer.restore(fixture, encrypted = false)
+            assertNull(second.contacts.single { it.backupId == "c1" }.androidContact)
+        }
+
+    @Test
     fun `an assignment made on this phone is kept and reported until the user overwrites it`() =
         runTest {
             val ada = contact("Ada (new phone)", "com.whatsapp" to adaKey)

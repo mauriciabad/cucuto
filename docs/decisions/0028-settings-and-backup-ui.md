@@ -3,6 +3,7 @@
 - Status: accepted; the owner confirmed the #166 defaults except item 9 (restore becomes a screen, #218)
 - Date: 2026-10-24
 - Issues: #28, #43 (the UI left over from [ADR 0013](0013-backup-and-restore.md))
+- Amended: 2026-10-24 (#43, the restore summary's Contacts card)
 
 ## Context
 
@@ -55,7 +56,8 @@ they are unit-tested with a fake.
   after each install so a bundle can satisfy several rows), contacts and voices (`BackupRestorer`), conflicts
   (unticked by default: this phone's voice is kept unless the user ticks the contact; a second, idempotent restore
   with `RestoreOptions.overwrite` applies only the ticked ones), then a summary with the LSPosed checklist (enable,
-  System Framework scope, reboot, test notification) and a link to the setup guide. The user can go on with packs
+  System Framework scope, reboot, test notification) and a link to the setup guide. Since #43 the summary also has a
+  Contacts card for the Android links the backup brought (see the amendment below). The user can go on with packs
   missing; the summary says how many.
 - **Downloads during restore** use `RepositoryClient` directly: repository packs come from the current index entry
   with the same ID (same version preferred) and are verified against the index's SHA-256; direct links are verified
@@ -72,8 +74,9 @@ Sans Flex, CC0 1.0 for the demo packs, and the libraries' licenses.
   `RepositoryModule`, ADR 0029), injected lazily so app start touches neither the network nor the Keystore.
 - Full automatic backups re-zip every pack on each change. With large private packs this costs time and space in the
   chosen folder (10 copies at most, and only when something changed); the switch to leave packs out is next to it.
-- Re-linking Android contacts on a new phone, and Google Drive backups (the owner's request on #108, now #163), are separate
-  work.
+- Google Drive backups (the owner's request on #108, now #163) are separate work
+  ([ADR 0040](0040-google-drive-backups-and-pack-folders.md)). Re-linking Android contacts on a new phone came later
+  (the amendment below).
 
 ## Owner answer (2026-10-24, #166)
 
@@ -84,3 +87,28 @@ Defaults 1 to 8 stand. Item 9 changes: the restore flow becomes a screen (a navi
 back), not a full-screen dialog. The answer also became a UI rule in the brief ("Screens over dialogs"): dialogs and
 sheets only for very minimal, temporary content. The manual backup options dialog and the licenses dialog are
 non-trivial too; all conversions are listed in #218.
+
+## Amendment 2026-10-24 (#43): the Contacts card
+
+Android links in a backup are matched again on the new phone ([ADR 0013](0013-backup-and-restore.md#amendment-2026-10-24-43-re-linking-android-contacts)).
+The summary shows where that stands in a **Contacts** card, above the Phone ringtones card. The card appears only when
+the backup brought Android links or phone ringtones.
+
+- **No contacts permission:** "N chats are linked to people in your contacts." A plain explanation follows: contacts
+  are found again on each phone; Cucuto only reads them for this; they never leave the phone. Then **Find contacts**,
+  which asks for `READ_CONTACTS` only, explained first in a dialog like every contacts prompt (#145). If the user
+  refuses, a second dialog offers Android's app settings, or choosing each contact by hand later.
+- **Matched:** "Found N of M in this phone's contacts."
+- **Unmatched:** each contact is a row with its name and **Choose contact**. The button opens Android's contact picker
+  (`ActivityResultContracts.PickContact`, no permission needed), and the pick links the contact. A pick on a contact with
+  a phone ringtone also starts the ringtone sync when phone ringtones are on. The row then disappears and the count goes
+  up. A failed or cancelled pick changes nothing; contact detail can still link it later.
+- The Phone ringtones card keeps its count, "Turn on phone ringtones" and "N contacts ring with their character again".
+  Its list of missing contacts moved to the Contacts card.
+
+Defaults the owner may change (on #242, next to the ringtone backup defaults):
+
+- `READ_CONTACTS` alone for matching, rather than both contacts permissions. This is minimum intrusion (#67).
+  Android grants `WRITE_CONTACTS` without another prompt when phone ringtones need it, because both are in the same
+  permission group.
+- Unmatched contacts are unlinked, as ADR 0057 does for ringtones.

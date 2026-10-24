@@ -175,14 +175,29 @@
         <item quantity="one">%1$d phone ringtone set on this phone was kept.</item>
         <item quantity="other">%1$d phone ringtones set on this phone were kept.</item>
     </plurals>
+    <string name="restore_contacts_title">Contacts</string>
+    <plurals name="restore_contacts_waiting">
+        <item quantity="one">%1$d chat is linked to someone in your contacts. Contacts are found again on each phone, so Cucuto needs to read this phone\'s contacts to find them.</item>
+        <item quantity="other">%1$d chats are linked to people in your contacts. Contacts are found again on each phone, so Cucuto needs to read this phone\'s contacts to find them.</item>
+    </plurals>
+    <string name="restore_contacts_find">Find contacts</string>
+    <plurals name="restore_contacts_found">
+        <item quantity="one">%1$d chat found in this phone\'s contacts.</item>
+        <item quantity="other">%1$d chats found in this phone\'s contacts.</item>
+    </plurals>
+    <plurals name="restore_contacts_unmatched">
+        <item quantity="one">%1$d is not in this phone\'s contacts. Choose the contact, or link it later from the chat.</item>
+        <item quantity="other">%1$d are not in this phone\'s contacts. Choose each contact, or link them later from each chat.</item>
+    </plurals>
+    <string name="restore_contacts_choose_for">Choose contact for %1$s</string>
+    <string name="restore_contacts_ringtone_waits">Its phone ringtone rings once you choose the contact.</string>
+    <string name="restore_contacts_permission_title">Let Cucuto read your contacts?</string>
+    <string name="restore_contacts_permission_body">Your backup links chats to people in your contacts. Each phone stores contacts its own way, so Cucuto looks for them again here, by phone number and name:\n\n• It only reads contacts, to find the people your chats were linked to.\n• It changes nothing in your contacts.\n• Your contacts never leave your phone.\n\nCucuto is open source: you (or your AI assistant) can read exactly what it does at github.com/mauriciabad/cucuto.</string>
+    <string name="restore_contacts_denied_body">Without the contacts permission, Cucuto can\'t find these people on this phone. You can allow it in Android\'s settings for Cucuto.</string>
     <string name="restore_ringtones_title">Phone ringtones</string>
     <plurals name="restore_ringtones_back">
         <item quantity="one">%1$d phone ringtone is back.</item>
         <item quantity="other">%1$d phone ringtones are back.</item>
-    </plurals>
-    <plurals name="restore_ringtones_missing">
-        <item quantity="one">Not in this phone\'s contacts: %1$s. Link it from the chat\'s Phone ringtone card.</item>
-        <item quantity="other">Not in this phone\'s contacts: %1$s. Link them from each chat\'s Phone ringtone card.</item>
     </plurals>
     <string name="restore_ringtones_off">Phone ringtones are off on this phone. Turn them on to set them in your contacts.</string>
     <plurals name="restore_ringtones_written">
