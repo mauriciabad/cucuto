@@ -1,7 +1,7 @@
 # 0023. Call ringtones: native first, Telecom hooks only as a fallback, WhatsApp calls guided
 
-- Status: accepted for the static phase; the device run (#143) confirms or revises it. The owner may override the
-  two defaults in #144 and #145.
+- Status: accepted for the static phase; the device run (#143) confirms or revises it. The #144 default stands (issue closed);
+  decision 6 (WhatsApp calls) is amended by the owner's answer on #145 (see the end, and ADR 0051).
 - Date: 2026-10-24
 - Issue: #50
 
@@ -49,3 +49,25 @@ The owner's "minimum intrusion" principle (ADR 0002) favours public APIs over ho
 - Devices without the ringtone-vibration config ignore `vibration_uri`; the app says so in the ringtone picker.
 - WhatsApp call ringtones stay manual (one file per chat, no variants), as the brief's risk table anticipated.
 - `spikes/m9/` holds the hooks and a supervised test script; the device run appends its results to the report.
+
+## Amendment (2026-10-24, owner answer on #145): automatic WhatsApp call ringtones
+
+> Not hooking the WhatsApp app is a preference, not a requirement. [...] if we inform the user why we need each
+> permision they will understand, and ultimately they dont have to give the permission if they wont use ringtones.
+> [...] It is pretty important that ringtones can be set automatically in whatsapp calls too. so i would change the
+> rule just for this feature.
+
+Decision 6 changes from "guided fallback only" to "guided fallback by default, automatic with an opt-in WhatsApp
+scope":
+
+- Automatic per-contact WhatsApp call ringtones (fixed, rule-based or random per call) become a v1 goal, through an
+  **optional WhatsApp scope** the user enables in LSPosed after a full-screen explanation ([ADR 0051](0051-optional-whatsapp-scope.md)).
+  The feature works only while that scope is enabled.
+- The guided per-chat ringtone (W-d) stays for everyone who does not enable it.
+- Spike #215 finds the least intrusive hook from the M9 findings (report §5): identify the caller in `system_server`
+  from WhatsApp's call notification, and substitute only the ringtone WhatsApp's player opens, ideally through one
+  stable framework method in WhatsApp's process, reading nothing of messages. It re-evaluates W-b (ring the
+  CallStyle notification from `system_server`) against that hook, and checks coexistence with WaEnhancer X on the
+  device.
+- Consequences above that said "WhatsApp call ringtones stay manual" and "No hook touches WhatsApp's audio" hold only
+  for users without the optional scope. Phone calls are unchanged.
