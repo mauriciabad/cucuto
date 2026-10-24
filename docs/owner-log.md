@@ -306,3 +306,7 @@ every page in both languages at 320, 360 and 656 px so the overflow cannot come 
 > when i tell you things dont skip the processes. the repo sas issues and docs, so maybe those need to be updated rather than jumping into coding and risking making contradictions
 
 (Lead opened #245, #246 and #247 for the feedback above, told the agents to update the brief and ADRs before coding, and made "issue first, docs before code" a standing rule.)
+
+> and also, i didnt expect you to do them now. the app has a roadmap for something
+
+(Lead stopped the two agents. #245, #246 and #247 stay in their milestones, to be done in roadmap order.)
