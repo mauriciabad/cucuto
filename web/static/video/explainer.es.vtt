@@ -1,0 +1,110 @@
+WEBVTT
+
+NOTE
+Draft Spanish captions for the Cucuto explainer video (docs/explainer-video.md). Same cue IDs and times as
+explainer.en.vtt, so both files line up with both cuts.
+
+s1-ping
+00:00:00.500 --> 00:00:02.900
+[El mismo aviso, tres veces]
+
+s1-vo
+00:00:03.000 --> 00:00:04.900
+Siempre el mismo sonido. ¿Quién era?
+
+s2-call
+00:00:05.300 --> 00:00:06.200
+[Canto de cuco: cu-cu]
+
+s2-vo
+00:00:06.200 --> 00:00:09.000
+Cucuto da voz a cada
+contacto de WhatsApp.
+
+s3-vo
+00:00:09.300 --> 00:00:13.600
+Se configura una vez, en un
+Android 17 con root y LSPosed.
+
+s3-chime
+00:00:13.800 --> 00:00:15.000
+[Sonido de éxito]
+
+s4-vo
+00:00:15.400 --> 00:00:19.800
+Importa un pack de sonidos. Los de
+demostración traen ocho personajes.
+
+s4-chime
+00:00:20.000 --> 00:00:21.000
+[Sonido de éxito]
+
+s5-vo
+00:00:21.300 --> 00:00:25.600
+Aquí aparece quien te ha escrito.
+Vamos a darle voz a Ada.
+
+s6-vo-hear
+00:00:26.100 --> 00:00:27.700
+Toca un personaje para oírlo.
+
+s6-cat
+00:00:27.800 --> 00:00:28.900
+[El gato maúlla]
+
+s6-kettle
+00:00:28.900 --> 00:00:30.000
+[La tetera silba]
+
+s6-frog
+00:00:30.000 --> 00:00:30.900
+[La rana croa]
+
+s6-vo-assign
+00:00:30.900 --> 00:00:32.500
+Tócalo otra vez y es de Ada.
+
+s6-assign
+00:00:32.600 --> 00:00:34.400
+[Canto de cuco y la rana croa]
+
+s7-door
+00:00:36.400 --> 00:00:37.400
+[Canto de cuco, la rana croa]
+
+s7-vo
+00:00:37.400 --> 00:00:40.000
+La próxima vez que Ada escriba,
+oirás a la rana Bleep.
+
+s8-vo
+00:00:40.300 --> 00:00:43.000
+Simula un mensaje y oye
+justo lo que llegará.
+
+s8-clip
+00:00:43.300 --> 00:00:45.500
+[La rana croa y el móvil vibra dos veces]
+
+s9-ada
+00:00:46.800 --> 00:00:49.200
+[Mensaje de WhatsApp de Ada:
+la rana croa]
+
+s9-bea
+00:00:49.400 --> 00:00:50.500
+[Mensaje de Bea: la tetera silba]
+
+s9-vo
+00:00:50.600 --> 00:00:52.800
+Ahora sabes quién te escribe,
+sin mirar.
+
+s10-call
+00:00:53.200 --> 00:00:54.000
+[Canto de cuco: cu-cu]
+
+s10-vo
+00:00:54.000 --> 00:00:57.600
+Cucuto. Gratis y de código abierto,
+en cucuto.mauri.app.

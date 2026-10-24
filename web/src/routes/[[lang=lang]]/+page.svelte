@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import DownloadApk from '#lib/components/DownloadApk.svelte';
+	import ExplainerVideo from '#lib/components/ExplainerVideo.svelte';
 	import HeroClock from '#lib/components/HeroClock.svelte';
 	import Html from '#lib/components/Html.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -60,19 +61,11 @@
 	</div>
 </section>
 
-<!--
-	Explainer video slot (#42). Until the video exists this is a placeholder; the video goes here as
-	static/video/explainer.webm + .mp4 with a poster and WebVTT captions, lazy-loaded (preload="none"), never
-	autoplaying with sound.
--->
+<!-- Explainer video (#42): the poster with "coming soon" until static/video/ has the files (docs/explainer-video.md). -->
 <section class="section" aria-labelledby="video-title">
 	<div class="container">
 		<h2 id="video-title" class="headline-large">{t.videoTitle}</h2>
-		<div class="video-slot">
-			<span class="video-icon"><Icon name="play-circle" /></span>
-			<p class="title-large">{t.videoSoonTitle}</p>
-			<p class="body-medium on-surface-variant">{t.videoSoonText}</p>
-		</div>
+		<ExplainerVideo video={data.explainer} {locale} />
 	</div>
 </section>
 
@@ -290,65 +283,6 @@
 		background: var(--md-sys-color-primary-container);
 		fill: var(--md-sys-color-on-primary-container);
 		box-sizing: border-box;
-	}
-
-	/* Video slot (#42) */
-
-	.video-slot {
-		--r1: 7rem;
-		--r2: 9rem;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		margin-top: 1.5rem;
-		aspect-ratio: 21 / 9;
-		padding: 2rem 1.5rem;
-		border-radius: 2rem;
-		text-align: center;
-		/* Two soft circles peeking in from the corners, like the hero's confetti. */
-		background:
-			radial-gradient(
-				circle at 0% 0%,
-				color-mix(in srgb, var(--md-sys-color-primary-container) 45%, transparent) 0 var(--r1),
-				transparent calc(var(--r1) + 1px)
-			),
-			radial-gradient(
-				circle at 100% 100%,
-				color-mix(in srgb, var(--md-sys-color-tertiary-container) 50%, transparent) 0 var(--r2),
-				transparent calc(var(--r2) + 1px)
-			),
-			var(--md-sys-color-surface-container);
-	}
-
-	.video-slot p {
-		max-width: 32rem;
-	}
-
-	.video-icon {
-		display: grid;
-		place-items: center;
-		width: 4.5rem;
-		height: 4.5rem;
-		margin-bottom: 0.5rem;
-		border-radius: 50%;
-		background: var(--md-sys-color-primary);
-		color: var(--md-sys-color-on-primary);
-	}
-
-	.video-icon :global(.icon) {
-		width: 2.5rem;
-		height: 2.5rem;
-	}
-
-	@media (max-width: 40rem) {
-		.video-slot {
-			--r1: 3.5rem;
-			--r2: 4rem;
-			aspect-ratio: auto;
-			min-height: 16rem;
-		}
 	}
 
 	/* Features */
