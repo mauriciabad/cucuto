@@ -21,7 +21,7 @@ class CharacterDirectoryTest {
                         CatalogCharacter(
                             clips =
                                 listOf(
-                                    CatalogClip("characters/frog/clips/ribbit.ogg", 1000),
+                                    CatalogClip("characters/frog/clips/ribbit.ogg", 1000, label = "Ribbit"),
                                     CatalogClip("../../escape.ogg", 1000),
                                 ),
                             haptic = Haptic.Keep,
@@ -40,6 +40,7 @@ class CharacterDirectoryTest {
         assertEquals(listOf(File("/packs/critters/1.0.0/characters/frog/clips/ribbit.ogg")), frog.clips)
         // Pack paths stay index for index with the files, so a dropped clip never shifts the toggles.
         assertEquals(listOf("characters/frog/clips/ribbit.ogg"), frog.clipPaths)
+        assertEquals(listOf("Ribbit"), frog.clipLabels)
         assertEquals(0xFF4CAF50.toInt(), frog.seedColor)
         assertEquals("owl", owl.name)
         assertNull(owl.sprite)
