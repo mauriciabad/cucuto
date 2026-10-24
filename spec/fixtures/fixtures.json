@@ -141,7 +141,7 @@
     { "path": "valid/archive-with-directories.soundpack.zip", "kind": "package", "valid": true, "errors": [], "warnings": [],
       "description": "Zip with explicit directory entries and a stored manifest (as made by common zip tools)." },
     { "path": "valid/backup.json", "kind": "backup", "valid": true, "errors": [], "warnings": [],
-      "description": "Backup with repositories, pack references, contacts and phone ringtones (one follows the voice and keeps its undo record)." },
+      "description": "Backup with repositories, pack references, contacts and phone ringtones (one follows the voice and keeps its undo record, one follows a voice without ringtones and keeps the song that rang, one rings with no message voice)." },
     { "path": "valid/bundle", "kind": "package", "valid": true, "errors": [], "warnings": [],
       "description": "A bundle with a cover and two packs." },
     { "path": "valid/envelope.json", "kind": "backup-envelope", "valid": true, "errors": [], "warnings": [],

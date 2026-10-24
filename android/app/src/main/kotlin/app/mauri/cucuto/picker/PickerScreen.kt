@@ -68,10 +68,12 @@ import app.mauri.cucuto.core.data.voices.VoicePack
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.home.ChatAvatarKey
 import app.mauri.cucuto.home.name
-import app.mauri.cucuto.ui.components.CuckooDoor
+import app.mauri.cucuto.ui.components.PackFilterChips
 import app.mauri.cucuto.ui.components.ParticleBurst
+import app.mauri.cucuto.ui.components.PickerEmptyState
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
+import app.mauri.cucuto.ui.components.selectedChip
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
@@ -80,6 +82,7 @@ import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import app.mauri.cucuto.ui.theme.rememberSeedColor
 import kotlinx.coroutines.delay
+import java.io.File
 
 /**
  * The character picker (brief, screen 3) for [chat], or a preview-only grid when it is null. The first tap on a
@@ -93,6 +96,7 @@ fun PickerScreen(
     onDone: () -> Unit,
     onOpenPacks: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenDiscover: () -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<PickerViewModel, PickerViewModel.Factory>(creationCallback = { factory -> factory.create(chat) })
@@ -133,6 +137,11 @@ fun PickerScreen(
         onBack = onBack,
         onOpenPacks = onOpenPacks,
         modifier = modifier,
+        onOpenDiscover = onOpenDiscover,
+        onFilterPack = { packId ->
+            feedback.fire(Feedback.SegmentTick)
+            viewModel.filterPack(packId)
+        },
     )
 }
 
@@ -147,6 +156,8 @@ fun PickerContent(
     onBack: () -> Unit,
     onOpenPacks: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenDiscover: () -> Unit = {},
+    onFilterPack: (String?) -> Unit = {},
 ) {
     val bitmaps = remember { mutableStateMapOf<ChatVoice, Bitmap>() }
     val focus = state.selected ?: state.currentVoice
@@ -218,11 +229,27 @@ fun PickerContent(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         fullWidth("header") { PickerHeader(state, assignBeat) }
-                        val packs = state.packs.filter { it.characters.isNotEmpty() }
-                        if (packs.isEmpty()) {
-                            fullWidth("empty") { EmptyPicker(onOpenPacks) }
+                        if (state.packs.isEmpty()) {
+                            fullWidth("empty") {
+                                PickerEmptyState(
+                                    title = stringResource(R.string.picker_empty_title),
+                                    body = stringResource(R.string.picker_empty_body),
+                                    onOpenPacks = onOpenPacks,
+                                    onOpenDiscover = onOpenDiscover,
+                                )
+                            }
                         }
-                        packs.forEach { pack ->
+                        if (state.chips.isNotEmpty()) {
+                            fullWidth("chips") {
+                                PackFilterChips(
+                                    chips = state.chips,
+                                    selected = selectedChip(state.chips, state.packFilter),
+                                    onSelect = onFilterPack,
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                )
+                            }
+                        }
+                        state.visiblePacks.forEach { pack ->
                             fullWidth("pack/${pack.packId}") { PackHeader(pack.name) }
                             items(pack.characters, key = { "character/${it.packId}/${it.id}" }) { character ->
                                 val voice = character.voice
@@ -408,29 +435,6 @@ private fun CharacterCell(
     }
 }
 
-@Composable
-private fun EmptyPicker(onOpenPacks: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().padding(24.dp),
-    ) {
-        CuckooDoor(beat = null, modifier = Modifier.size(140.dp))
-        Text(
-            stringResource(R.string.picker_empty_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.semantics { heading() },
-        )
-        Text(
-            text = stringResource(R.string.picker_empty_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        FilledTonalButton(onClick = onOpenPacks) { Text(stringResource(R.string.home_open_packs)) }
-    }
-}
-
 /** How long the picker stays after an assignment: the burst (0.65 s) and the call play out before it closes. */
 private const val ASSIGN_LINGER_MS = 900L
 private val CELL_MIN_WIDTH = 104.dp
@@ -459,14 +463,15 @@ internal fun previewPickerState(): PickerState {
         id: String,
         name: String,
         seed: Int,
+        packId: String = "app.mauri.demo.critters",
     ) = VoiceCharacter(
-        packId = "app.mauri.demo.critters",
+        packId = packId,
         id = id,
         name = name,
         sprite = null,
         spriteAnimated = null,
         seedColor = seed,
-        clips = emptyList(),
+        clips = listOf(File("/packs/$packId/$id.ogg")),
         haptic = Haptic.Keep,
     )
     val pack =
@@ -480,12 +485,18 @@ internal fun previewPickerState(): PickerState {
                     character("cat", "Purr the cat", 0xFF9C27B0.toInt()),
                 ),
         )
+    val kitchen =
+        VoicePack(
+            packId = "app.mauri.demo.kitchen",
+            name = "Kitchen orchestra",
+            characters = listOf(character("kettle", "Tootle the kettle", 0xFFE57373.toInt(), "app.mauri.demo.kitchen")),
+        )
     val key = ChatKey("com.whatsapp", "100000000000001@lid")
     return PickerState(
         loading = false,
         chatKey = key,
         chat = Chat(key, null, "Ada", false, null, 0L, 1),
-        packs = listOf(pack),
+        packs = listOf(pack, kitchen),
         selected = ChatVoice(pack.packId, "bee"),
     )
 }

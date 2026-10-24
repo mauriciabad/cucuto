@@ -1,7 +1,8 @@
 # 0057. The ringtone picker, and phone ringtones in backups
 
 - Status: accepted (defaults the owner may override: #242); previews amended by the owner (#242 item 3, see
-  [Owner update](#owner-update-2026-10-24-242-previews-play-like-the-call))
+  [Owner update](#owner-update-2026-10-24-242-previews-play-like-the-call)); mixing and the meaning of
+  `followsVoice` amended by [ADR 0063](0063-independent-voice-and-ringtone.md) (owner update 2026-10-24, #245)
 - Date: 2026-10-24
 - Issues: #53 (ringtone picker UI), #198 (back up and restore phone ringtones)
 
@@ -37,6 +38,8 @@ a dead end.
 
 Below it, a grid of album covers, grouped by pack: every installed character that has at least one ringtone. A
 **bottom bar** saves ("Ring with Tootle the kettle"). It reads "Already chosen" and is disabled when nothing changed.
+Since ADR 0063, pack filter chips with counts appear when two or more packs have such characters, and the empty state
+links to Packs and Discover.
 
 **Game feel**, like the character picker (#132), through the Feedback engine (#112):
 
@@ -57,7 +60,9 @@ chosen place (ADR 0037).
 **Mixing.** Picking the voice's character stores no character of its own (`packId` null), so the ringtone keeps
 following the voice when the voice changes. That is the brief's "assigning a character assigns both". Any other
 character is stored explicitly: a mix. A contact without a voice can still get a ringtone, if it already exists as a
-contact.
+contact. Amended by ADR 0063 (owner update 2026-10-24, #245): the voice and the ringtone are independent choices. A
+following ringtone keeps the character that rang last while the voice has no ringtones, removing the voice keeps the
+ringtone, and saving a ringtone for a chat without a contact creates the contact.
 
 **Rules** keep the current choice when the new character offers it, else the pack's rules. A character with one
 version saves the pack's rule. "Random per call" asks for the phone permission before saving and saves either way,
@@ -69,7 +74,7 @@ as the card did.
 them):
 
 - `ringtone.followsVoice: true`: the ringtone follows the message character. `packId` and `characterId` still name the
-  voice's character at backup time.
+  voice's character at backup time (since ADR 0063: or the character it kept while the voice had no ringtones).
 - `ringtone.undo`: `{ originalRingtone?, writtenUri }`, the Android contact's own ringtone before Cucuto and the file
   Cucuto wrote last.
 

@@ -17,6 +17,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -72,12 +73,18 @@ class BackupRestorerTest {
     fun `restoring twice changes nothing the second time`() =
         runTest {
             val first = restorer.restore(fixture, encrypted = false)
-            assertEquals(3, first.created)
+            assertEquals(5, first.created)
             assertEquals(
-                listOf(VoiceOutcome.APPLIED, VoiceOutcome.APPLIED, VoiceOutcome.NONE),
+                listOf(
+                    VoiceOutcome.APPLIED,
+                    VoiceOutcome.APPLIED,
+                    VoiceOutcome.APPLIED,
+                    VoiceOutcome.NONE,
+                    VoiceOutcome.NONE,
+                ),
                 first.contacts.map { it.voice },
             )
-            assertEquals(2, first.ringtonesApplied)
+            assertEquals(4, first.ringtonesApplied)
             val contactsAfterFirst = db.contactDao().observeAll().first()
             val assignmentsAfterFirst = db.assignmentDao().observeAll().first()
             val ringtonesAfterFirst = db.phoneRingtoneDao().observeAll().first()
@@ -86,15 +93,21 @@ class BackupRestorerTest {
             val second = restorer.restore(fixture, encrypted = false)
             assertEquals(0, second.created)
             assertEquals(
-                listOf(ContactMatch.MESSENGER_KEY, ContactMatch.MESSENGER_KEY, ContactMatch.MESSENGER_KEY),
+                List(5) { ContactMatch.MESSENGER_KEY },
                 second.contacts.map { it.match },
             )
             assertEquals(
-                listOf(VoiceOutcome.UNCHANGED, VoiceOutcome.UNCHANGED, VoiceOutcome.NONE),
+                listOf(
+                    VoiceOutcome.UNCHANGED,
+                    VoiceOutcome.UNCHANGED,
+                    VoiceOutcome.UNCHANGED,
+                    VoiceOutcome.NONE,
+                    VoiceOutcome.NONE,
+                ),
                 second.contacts.map { it.voice },
             )
             assertEquals(
-                listOf(RingtoneOutcome.UNCHANGED, RingtoneOutcome.UNCHANGED),
+                List(4) { RingtoneOutcome.UNCHANGED },
                 second.ringtones.map { it.outcome },
             )
             assertEquals(emptyList<String>(), second.repositoriesAdded)
@@ -267,11 +280,26 @@ class BackupRestorerTest {
             // Follows the voice: no character of its own, so a later voice change changes the ringtone too.
             assertNull(brunoRow.packId)
             assertNull(brunoRow.characterId)
+            assertTrue(brunoRow.followsVoice)
             assertEquals(RingtoneMode.TIME, brunoRow.mode)
             assertNull(brunoRow.variant)
             assertEquals("content://media/external/audio/media/1042", bruno.undo!!.writtenUri)
             // The undo record is the app's to seed (it needs the contacts permission), never the restorer's.
             assertEquals(emptyList<Any>(), db.phoneRingtoneDao().writes())
+            assertFalse("picked by the user", adaRow.followsVoice)
+
+            // Kept (ADR 0063): the voice (a bird) has no ringtones, so the song that rang stays and still follows.
+            val carla = db.phoneRingtoneDao().get(report.ringtones.single { it.backupId == "c3" }.contactId)!!
+            assertEquals("com.example.private.songs.day" to "bubblegum", carla.packId to carla.characterId)
+            assertTrue(carla.followsVoice)
+
+            // A ringtone and no message voice: the two are independent.
+            val dani = report.contacts.single { it.backupId == "c4" }
+            assertNull(db.assignmentDao().get(dani.contactId))
+            val daniRow = db.phoneRingtoneDao().get(dani.contactId)!!
+            assertEquals("bubblegum", daniRow.characterId)
+            assertFalse(daniRow.followsVoice)
+            assertEquals(RingtoneMode.RANDOM, daniRow.mode)
         }
 
     @Test
