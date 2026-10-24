@@ -67,8 +67,9 @@ data class SyncResult(
  * - **Android default** (ADR 0073). A contact whose choice is the phone's default gets a ringtone of its own cleared,
  *   recorded like any write; one without a ringtone is never written.
  * - **Undo.** Before the first write to an Android contact, its own ringtone is recorded ([ContactRingtoneWriteEntity]).
- *   A contact that no longer has a phone ringtone (removed, unlinked, linked elsewhere) gets that ringtone back, unless
- *   someone changed it in the meantime.
+ *   An Android contact no linked chat wants any more (phone ringtone removed or "Leave as is", chat unlinked or
+ *   linked elsewhere) gets that ringtone back from the record alone, whether or not its chat is still linked, unless
+ *   someone changed it in the meantime (#369).
  * - **Respect.** A ringtone that is neither what Cucuto wrote nor one of its ring files was set by the user (or another
  *   app); Cucuto stops writing that contact and reports [RingtoneProblem.ChangedElsewhere].
  * - **Ring files.** Every variant of a used character is exported once (shared by every contact with that character),
@@ -95,7 +96,7 @@ class RingtoneSync(
         val writes = store.writes().associateBy { it.lookupKey }.toMutableMap()
         val existing = exports.list()
         val ours = existing.mapTo(HashSet()) { it.uri }
-        val byBase = existing.associateBy { it.displayName.substringBeforeLast('.') }
+        val byBase = existing.associateBy { baseOf(it.displayName) }
         val problems = HashMap<Long, RingtoneProblem>()
         val used = HashSet<String>()
         var boundary: LocalDateTime? = null
@@ -112,7 +113,8 @@ class RingtoneSync(
             }
         }
 
-        for (row in linked) {
+        // Android default first: it never renders, so it never waits behind ring files still to render (#369).
+        for (row in linked.sortedBy { it.choice != RingtoneChoice.ANDROID_DEFAULT }) {
             val lookupKey = row.lookupKey!!
             if (row.choice == RingtoneChoice.ANDROID_DEFAULT) {
                 syncDefault(row, lookupKey, writes, ours)?.let { problems[row.contactId] = it }
@@ -334,6 +336,17 @@ class RingtoneSync(
 
         /** The undo record's marker for a contact Cucuto cleared (ADR 0073). */
         private const val DEFAULT = ContactRingtoneWriteEntity.DEFAULT_RINGTONE
+
+        /**
+         * The [exportBase] of a ring file's display name. MediaStore adds " (1)", " (2)", … when the name is taken,
+         * which happens when Cucuto's earlier files outlived its ownership of them (a data clear or a reinstall leaves
+         * them in `Ringtones/cucuto/` with no owner, invisible to Cucuto). Without stripping it, every sync would
+         * render every file again (#369).
+         */
+        internal fun baseOf(displayName: String): String =
+            displayName.substringBeforeLast('.').replace(MEDIASTORE_SUFFIX, "")
+
+        private val MEDIASTORE_SUFFIX = Regex(" \\(\\d+\\)$")
 
         /** Bump when rendering changes, so every phone renders its ring files again. */
         const val RENDER_VERSION = 1

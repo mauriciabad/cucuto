@@ -563,3 +563,11 @@ group; ADR 0073 and brand/motion.md updated.)
 > backup worked
 
 (Ticked on #329: restore onto a wiped phone.)
+
+## 2026-10-24 (night): Android default and Leave as is on the phone
+
+> Android default and "Leave as is" doesnt work.
+
+(Tested on v0.2.1 with the owner's own contact. The chat had lost its Android link through the "Change" button, and
+every ringtone sync rendered all ring files again because MediaStore had renamed them after the restore onto a wiped
+phone, so choices waited behind it. Fixed in #369; ADR 0039 and 0073 amended.)

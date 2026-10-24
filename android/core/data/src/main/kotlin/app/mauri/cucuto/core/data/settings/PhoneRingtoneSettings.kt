@@ -40,8 +40,16 @@ class PhoneRingtoneSettings
             dataStore.edit { if (json == null) it.remove(PENDING_RESTORE) else it[PENDING_RESTORE] = json }
         }
 
+        /** Whether the one-time repair of lost Android links ran (#369, ADR 0039's amendment). */
+        suspend fun linkRepairDone(): Boolean = dataStore.data.first()[LINK_REPAIR_DONE] ?: false
+
+        suspend fun setLinkRepairDone() {
+            dataStore.edit { it[LINK_REPAIR_DONE] = true }
+        }
+
         private companion object {
             val ENABLED = booleanPreferencesKey("phone_ringtones_enabled")
             val PENDING_RESTORE = stringPreferencesKey("phone_ringtones_pending_restore")
+            val LINK_REPAIR_DONE = booleanPreferencesKey("phone_ringtones_link_repair_done")
         }
     }

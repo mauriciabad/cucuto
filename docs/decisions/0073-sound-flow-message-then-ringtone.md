@@ -1,7 +1,8 @@
 # 0073. The sound flow: the message sound, then the ringtone, with "Android default" and "Leave as is"
 
 - Status: accepted (owner update 2026-10-24, #298; the defaults below can be overridden on #282); contact detail's
-  Phone calls row and set-up card amended 2026-10-24 (#348), the rule chips moved to the rules screen (#347, ADR 0074)
+  Phone calls row and set-up card amended 2026-10-24 (#348), the rule chips moved to the rules screen (#347, ADR 0074);
+  undo without a link amended 2026-10-24 (#369)
 - Date: 2026-10-24
 - Issue: #298
 - Amends: [ADR 0063](0063-independent-voice-and-ringtone.md) (ringtone choices, first-assign flow, display),
@@ -81,6 +82,12 @@ How the two new choices compare, for a linked contact with phone ringtones on:
 
 Turning phone ringtones off, unlinking, or switching to Leave as is gives an Android default contact its original
 ringtone back, as for ring files (ADR 0039).
+
+Amended 2026-10-24 (#369): Android default and Leave as is give the contact back from the undo record by its lookup
+key, whether or not the chat is still linked, and only while the contact still has what Cucuto left there. A chat
+without a link has no Android contact to clear, so for it Android default means "give back the recorded contact, then
+nothing". The sync writes Android default before rendering any ring file. "Change" under the Phone calls row no longer
+unlinks, and a one-time repair re-links chats that lost their link this way (ADR 0039's amendment).
 
 ### Data
 
