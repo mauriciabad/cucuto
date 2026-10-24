@@ -99,9 +99,11 @@ ringtone back, as for ring files (ADR 0039).
 - **Contact detail header**: the message character's avatar with the ringtone's record cover tucked against it, and a
   second line under "Speaks as …": "Rings with K.K. Slider", or "Rings with the phone's default ringtone". There is no
   line and no cover for "Leave as is", or when nothing rings.
-- **Home list rows**: a small record cover (32 dp) at the end of the row for a character ringtone, or a call icon for
-  Android default. TalkBack reads it with the row ("Ringtone: K.K. Slider", "Ringtone: phone default").
-- The **Phone calls** row says what rings: the character with its rule, "Android default", "Left as is", or "Not set".
+- **Home list rows**: a small record cover (24 dp) tucked against the avatar for a character ringtone, or a call icon
+  for Android default, as in the header, so the row's text keeps its width. TalkBack reads it with the row
+  ("Ringtone: K.K. Slider", "Ringtone: phone default").
+- The **Phone calls** row says what rings: the character with its rule, "Android default", "Left as is", or "No
+  ringtone yet".
 
 ### Pickers
 

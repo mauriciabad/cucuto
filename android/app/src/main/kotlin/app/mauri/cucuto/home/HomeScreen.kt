@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -498,22 +499,25 @@ internal fun ChatListItem(
             )
         },
         leadingContent = {
-            SharedElement(if (shared) ChatAvatarKey(row.key) else null) {
-                VoiceAvatar(character = row.character, name = row.chat.displayName, contentDescription = null)
-            }
-        },
-        // The ringtone, compact (ADR 0073); TalkBack reads it with the row.
-        trailingContent =
-            row.ringtone?.let { ringtone ->
-                {
+            // The ringtone's cover tucked against the avatar, like contact detail's header (ADR 0073), so the text
+            // keeps its width. TalkBack reads it with the row.
+            Box {
+                SharedElement(if (shared) ChatAvatarKey(row.key) else null) {
+                    VoiceAvatar(character = row.character, name = row.chat.displayName, contentDescription = null)
+                }
+                row.ringtone?.let { ringtone ->
                     val description = ringtoneDescription(ringtone)
                     RingtoneBadge(
                         ringtone,
                         RINGTONE_BADGE_SIZE,
-                        Modifier.semantics { contentDescription = description },
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 6.dp, y = 4.dp)
+                            .semantics { contentDescription = description },
                     )
                 }
-            },
+            }
+        },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         modifier =
             Modifier
@@ -555,7 +559,7 @@ internal fun Chat.name(): String =
         ?: stringResource(if (isGroup) R.string.chat_unnamed_group else R.string.chat_unnamed)
 
 private val FAB_CLEARANCE = 96.dp
-private val RINGTONE_BADGE_SIZE = 32.dp
+private val RINGTONE_BADGE_SIZE = 24.dp
 private val RECENT_ITEM_WIDTH = 88.dp
 
 @Preview(showBackground = true)

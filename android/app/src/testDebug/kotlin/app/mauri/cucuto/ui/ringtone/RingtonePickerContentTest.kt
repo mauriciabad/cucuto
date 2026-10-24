@@ -123,6 +123,8 @@ class RingtonePickerContentTest {
     }
 
     @Test
+    // Tall enough to show the chips under the header, the other choices and the search field.
+    @Config(qualifiers = "w411dp-h1200dp")
     fun packChipsOfferThePacksWithRingtonesAndTheirCount() {
         show(state())
         compose.onNodeWithText("All · 2").assertIsDisplayed()
