@@ -219,8 +219,10 @@ What a backup holds (a zip named `cucuto-backup-YYYY-MM-DD.zip`, owner update 20
 Where backups go:
 
 - **Manual export** through the Storage Access Framework, for example straight into Google Drive.
-- **Automatic backup** to a folder the user picks once (persistent folder permission). It is written shortly after any change, keeping the last 10 copies.
-- Android's built-in app backup is left on for the settings database (no packs, no secrets) as a bonus, but nothing depends on it.
+- **Automatic backup** to a folder the user picks once (persistent folder permission). It is written shortly after any change, keeping the last 10 copies. Or to one file the user picks, for example in Google Drive, replaced on each change ([ADR 0040](decisions/0040-google-drive-backups-and-pack-folders.md)). Automatic backups are never encrypted and never hold credentials ([ADR 0028](decisions/0028-settings-and-backup-ui.md)).
+- Cucuto itself uploads nothing: a backup goes only where the user chooses.
+- Android's built-in app backup and device-to-device transfer are off: `data_extraction_rules.xml` excludes every domain, so nothing reaches Google through them ([ADR 0001](decisions/0001-android-build-and-versions.md)). Correction 2026-10-24 (#256): this line used to say Android backup stayed on for the settings database; the app has shipped with it off since #69 (owner can override on #262).
+- Never in a backup: device-specific state, such as the automatic backup target, permissions and the location for day and night clips ([ADR 0037](decisions/0037-day-and-night-clips.md)). Settings travel only from an explicit list ([ADR 0013](decisions/0013-backup-and-restore.md)).
 
 Restore on a new phone:
 

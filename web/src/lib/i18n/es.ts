@@ -492,8 +492,12 @@ export const es: Messages = {
 		networkHtml:
 			'Solo para acceder a los repositorios de packs de tu lista (el de esta web viene por defecto): para mostrar sus packs, buscar actualizaciones y descargar los packs que elijas. Las descargas pueden venir del servidor del propio repositorio, como GitHub en el caso de los packs de esta web. Si un repositorio privado necesita contraseña o token, se guarda cifrado con el almacén de claves de Android y solo se envía al servidor de ese repositorio.',
 		backupTitle: 'Copias de seguridad',
-		backupHtml:
-			'La copia de seguridad en la nube de Android y la transferencia entre dispositivos están desactivadas para Cucuto, así que no se copia nada a Google. Está prevista una copia de seguridad propia de Cucuto, en un archivo que guardas donde quieras.',
+		backup: [
+			'Cucuto puede guardar su propia copia de seguridad en un archivo, para que un móvil nuevo lo recupere todo. Incluye los chats que Cucuto conoce (nombres, números de teléfono, los identificadores de chat de WhatsApp y el contacto con el que está vinculado cada uno), sus voces y tonos de llamada, el interruptor de voces, tu lista de repositorios y los packs que usas, y también los archivos de los packs, salvo que los dejes fuera.',
+			'Nunca va en una copia: tu ubicación para el día y la noche, ni las contraseñas o tokens de los repositorios, salvo que los añadas a una copia que protejas con una contraseña tuya. Entonces todo el archivo va cifrado. Las copias automáticas nunca se cifran, así que nunca llevan contraseñas.',
+			'Las copias van solo adonde tú elijas: un archivo que guardas a mano, o una carpeta o un archivo que eliges para las copias automáticas. Si eliges Google Drive, es la app de Drive la que sube el archivo; Cucuto nunca sube nada.',
+			'La copia de seguridad en la nube de Android y la transferencia entre dispositivos están desactivadas para Cucuto, así que por esa vía no se copia nada a Google.'
+		],
 		permissionsTitle: 'Permisos',
 		permissions: [
 			'<strong>Internet</strong>: para los repositorios de packs de arriba.',
