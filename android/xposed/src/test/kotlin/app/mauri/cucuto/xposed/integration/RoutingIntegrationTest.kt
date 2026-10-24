@@ -432,6 +432,23 @@ class RoutingIntegrationTest {
         }
 
     @Test
+    fun customHapticsWaitForTheVibratorsCapabilities() =
+        runBlocking<Unit> {
+            // Right after boot, before the background thread has read the vibrator (#190, ADR 0044).
+            val p = pipeline(capabilities = null)
+            p.started()
+            val (early, earlyEvent) = p.alert(Notifications.oneToOne(ana, "Ana"))
+            assertEquals(Outcome.SWAPPED.name, earlyEvent!!.outcome)
+            assertTrue("the sound changes at once", p.mirrored(earlyEvent.clipUri))
+            assertEquals("WhatsApp's vibration until then", FakeFramework.WHATSAPP_VIBRATION, early.vibration)
+            assertTrue("Off needs no capabilities", p.alert(Notifications.oneToOne(cy, "Cy")).first.vibrationSuppressed)
+
+            p.hooks.useCapabilities(Pipeline.CAPABILITIES, read = true)
+            assertEquals(expectedEffect(frogHaptic), p.alert(Notifications.oneToOne(ana, "Ana")).first.vibration)
+            assertTrue(p.moduleLog.any { it.startsWith("Vibrator: ") })
+        }
+
+    @Test
     fun aSilentChannelOnlyChangesTheVibration() =
         runBlocking<Unit> {
             val p = pipeline()
