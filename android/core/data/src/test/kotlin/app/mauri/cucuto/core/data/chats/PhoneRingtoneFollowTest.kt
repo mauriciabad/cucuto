@@ -157,6 +157,62 @@ class PhoneRingtoneFollowTest {
         }
 
     @Test
+    fun followingAnotherCharacterDropsTheVersionAndOwnRulesOfThePreviousOne() =
+        runTest {
+            // "One version" and "Your own rules" name Pikachu's ringtone files: once Raichu rings, they mean nothing.
+            for (mode in listOf(RingtoneMode.FIXED, RingtoneMode.CUSTOM)) {
+                val id = assign(PIKACHU)
+                db.phoneRingtoneDao().upsert(
+                    PhoneRingtoneEntity(
+                        contactId = id,
+                        mode = mode,
+                        variant = "creatures/pikachu/night.ogg".takeIf { mode == RingtoneMode.FIXED },
+                        rules =
+                            """[{"variant":"creatures/pikachu/night.ogg"}]""".takeIf {
+                                mode == RingtoneMode.CUSTOM
+                            },
+                        updatedAt = 1,
+                    ),
+                )
+
+                assign(RAICHU)
+
+                val row = row(id)!!
+                assertEquals(mode.name, RingtoneMode.PACK, row.mode)
+                assertNull(mode.name, row.variant)
+                assertNull(mode.name, row.rules)
+                assertTrue(mode.name, row.followsVoice)
+                assertEquals(mode.name, RAICHU, ringsWith(id))
+            }
+        }
+
+    @Test
+    fun theRuleStaysWhileTheSameCharacterRings() =
+        runTest {
+            // Pikachu is kept while Tweet (no ringtones) speaks, then Pikachu speaks again: the same ringtone.
+            val id = assign(PIKACHU)
+            db.phoneRingtoneDao().upsert(
+                PhoneRingtoneEntity(
+                    id,
+                    mode = RingtoneMode.FIXED,
+                    variant = "creatures/pikachu/night.ogg",
+                    updatedAt = 1,
+                ),
+            )
+            assign(TWEET)
+            assertEquals(RingtoneMode.FIXED, row(id)!!.mode)
+
+            assign(PIKACHU)
+            assertEquals(RingtoneMode.FIXED, row(id)!!.mode)
+            assertEquals("creatures/pikachu/night.ogg", row(id)!!.variant)
+
+            // Rules that work for any character stay when another one rings.
+            db.phoneRingtoneDao().upsert(row(id)!!.copy(mode = RingtoneMode.TIME, variant = null))
+            assign(RAICHU)
+            assertEquals(RingtoneMode.TIME, row(id)!!.mode)
+        }
+
+    @Test
     fun removingTheVoiceKeepsTheRingtone() =
         runTest {
             val id = assign(PIKACHU)

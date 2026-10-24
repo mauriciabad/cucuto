@@ -708,7 +708,8 @@ authority: readers detect the type from the contents.
   - `ringtoneChoice` replaces `ringtone` for a ringtone that is not a pack character
     ([ADR 0073](decisions/0073-sound-flow-message-then-ringtone.md)): `"android-default"` (the phone's default
     ringtone; Cucuto clears a ringtone of the contact's own) or `"unchanged"` (Cucuto never touches the contact's
-    ringtone). A contact has at most one of the two. Older readers ignore it and leave the contact's ringtone alone.
+    ringtone). A contact has at most one of the two. Cucuto before 0.2.0 refuses a backup that uses it
+    (or the `custom` rule): contacts allow no unknown field, so its schema check fails.
   - `ringtone.undo` is device-local: the Android contact's own ringtone before Cucuto (`originalRingtone`, absent for
     the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
     contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later

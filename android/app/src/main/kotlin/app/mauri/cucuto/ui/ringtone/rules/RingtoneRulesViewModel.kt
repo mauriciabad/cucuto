@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import app.mauri.cucuto.core.data.di.WallClock
@@ -298,9 +299,14 @@ class RingtoneRulesViewModel
         private fun now(): LocalDateTime =
             LocalDateTime.ofInstant(Instant.ofEpochMilli(clock.now()), ZoneId.systemDefault())
 
-        /** What rings for the chat: its stored ringtone, else its voice's own (which then rings by the pack's rules). */
+        /**
+         * What rings for the chat: its stored ringtone, else its voice's own (which then rings by the pack's rules).
+         * Nothing for "Android default" and "Leave as is" (ADR 0073): no character rings, even when the voice has
+         * ringtones, so the rules can only be changed once a character is saved in the picker.
+         */
         private fun ringing(data: RingtoneRulesData): RingtoneSelection? {
             val chat = data.chat
+            if (data.saved != null && data.saved.choice != RingtoneChoice.CHARACTER) return null
             RingtonePickerViewModel.saved(data.saved, chat?.voice)?.let { return it }
             val voice = chat?.voice ?: return null
             return if (voice == this.voice &&
