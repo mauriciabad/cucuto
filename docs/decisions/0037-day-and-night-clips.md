@@ -1,6 +1,6 @@
 # 0037. Day and night clips from sunrise and sunset
 
-- Status: accepted (the owner may override the defaults below, see the `question` issue linked from #118)
+- Status: accepted (the owner may override the defaults below, #199)
 - Date: 2026-10-24
 - Issues: #118 (day and night from sunrise and sunset), #75 item 3 (owner: "i want sunrise and sunset from the
   phone's location, or a user setting"), #120 (battery-free condition ideas), #52 (rule-based ringtone variants)
@@ -77,6 +77,6 @@ seasons and weekdays (a weekend voice, a spooky autumn night) with no extra modu
 - If the app is not opened for over a year, conditions become unknown and every clip plays until it is.
 - Ringtone variants (#52) can reuse `ConditionCompiler` and `TimeCondition.nextToggleAfter` for their boundary
   alarms; the brief's `:core:ringtone` work is unchanged otherwise.
-- Defaults the owner may change (question issue): cities plus coordinates first and location only on request,
+- Defaults the owner may change (#199): cities plus coordinates first and location only on request,
   polar day and night as the sky says, the 07:00 to 19:00 fallback not editable yet, the place not in backups, and
   "no matching clip plays the whole pool".
