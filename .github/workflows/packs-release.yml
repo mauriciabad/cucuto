@@ -62,10 +62,10 @@ jobs:
           for pack in packs/*/pack.yaml; do
             "$packer" build "$(dirname "$pack")" -o dist/
           done
-          "$packer" bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.0.0 \
+          "$packer" bundle --id app.mauri.demo.all --name "Cucuto demo packs" --version 1.1.0 \
             --author "Cucuto contributors" --license CC0-1.0 \
             --description "Every Cucuto demo pack in one file." \
-            --cover packs/chiptune-critters/cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
+            --cover packs/demo-bundle-cover.svg -o dist/ packs/chiptune-critters packs/kitchen-orchestra
           "$packer" validate --strict dist/*.soundpack.zip
 
       - name: Build repository index

@@ -27,6 +27,10 @@ androidx-hilt = "1.4.0"
 androidx-room3 = "3.0.3"
 androidx-sqlite = "2.7.1"
 androidx-datastore = "1.3.0"
+# Baseline Profile (#226): the Gradle plugin and Macrobenchmark share one version; ProfileInstaller compiles the
+# profile on sideloaded installs (F-Droid, Obtainium, GitHub), where Play's cloud profiles never arrive.
+androidx-benchmark = "1.5.0"
+androidx-profileinstaller = "1.4.1"
 compose-bom = "2026.09.00"
 compose-material3 = "1.5.0-beta02"
 compose-material-icons = "1.7.8"
@@ -54,6 +58,7 @@ androidx-test-core = "1.7.0"
 androidx-test-ext-junit = "1.3.0"
 androidx-test-runner = "1.7.0"
 androidx-test-espresso = "3.7.0"
+androidx-test-uiautomator = "2.4.0"
 
 # Code style
 spotless = "8.10.4"
@@ -76,6 +81,7 @@ androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.re
 androidx-room3-testing = { module = "androidx.room3:room3-testing", version.ref = "androidx-room3" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "androidx-profileinstaller" }
 
 # Compose (versions from the BOM, except Material 3 which is pinned to the Expressive beta)
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
@@ -120,6 +126,8 @@ androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "a
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
 # Compose UI tests pull Espresso 3.5, which cannot find InputManager on Android 17 (Robolectric); 3.7 can.
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-test-espresso" }
+androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidx-test-uiautomator" }
+androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "androidx-benchmark" }
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 
@@ -133,6 +141,7 @@ hilt-gradlePlugin = { module = "com.google.dagger:hilt-android-gradle-plugin", v
 room3-gradlePlugin = { module = "androidx.room3:room3-gradle-plugin", version.ref = "androidx-room3" }
 spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 roborazzi-gradlePlugin = { module = "io.github.takahirom.roborazzi:roborazzi-gradle-plugin", version.ref = "roborazzi" }
+baselineprofile-gradlePlugin = { module = "androidx.benchmark:benchmark-baseline-profile-gradle-plugin", version.ref = "androidx-benchmark" }
 
 # Not resolved by Gradle: read by the spotless convention plugin to pin the ktlint engine and Compose rules.
 ktlint-cli = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "ktlint" }
@@ -145,6 +154,7 @@ cucuto-android-library = { id = "cucuto.android.library" }
 cucuto-android-compose = { id = "cucuto.android.compose" }
 cucuto-android-hilt = { id = "cucuto.android.hilt" }
 cucuto-android-screenshots = { id = "cucuto.android.screenshots" }
+cucuto-android-baselineprofile = { id = "cucuto.android.baselineprofile" }
 cucuto-android-room = { id = "cucuto.android.room" }
 cucuto-kotlin-library = { id = "cucuto.kotlin.library" }
 cucuto-kotlin-serialization = { id = "cucuto.kotlin.serialization" }

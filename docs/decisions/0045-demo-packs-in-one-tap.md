@@ -18,7 +18,8 @@ shared import review. Minimum intrusion still holds: nothing bundled in the APK,
 next to it). The tap queues a request in `DemoPacksRequests` (a singleton like `IncomingRepoLinks`) and opens
 Discover. Discover takes the request and:
 
-1. shows only the demo bundle (a `focus` filter on the entry ID, shown as a "Demo packs only" chip that clears it);
+1. shows only the demo bundle (a `focus` filter on the entry ID, shown as a "Demo packs only" chip that clears it),
+   whose card holds every demo pack ([ADR 0064](0064-bundles-in-discover.md), #247);
 2. makes sure the default repository is there and on (a user who turned it off asked for its packs by tapping);
 3. reuses the index fetched when Discover opened, or waits for that fetch, so the index is requested once;
 4. starts `install` for the bundle's card: download, verify, read, check, and the review sheet, where the user still

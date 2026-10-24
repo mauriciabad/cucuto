@@ -6,6 +6,8 @@ const paths = [
 	'/',
 	'/packs/',
 	'/create/',
+	'/create/bundle/',
+	'/create/repository/',
 	'/install/',
 	'/authors/',
 	'/authors/pack-format/',

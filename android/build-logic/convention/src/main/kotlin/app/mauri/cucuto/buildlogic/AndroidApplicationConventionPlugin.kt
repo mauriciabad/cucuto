@@ -35,6 +35,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 }
             }
             configureReleaseBuild()
+            configureBaselineProfileConsumer()
         }
     }
 }

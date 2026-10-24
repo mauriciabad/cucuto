@@ -50,7 +50,7 @@ notification sound and vibration per contact, using clips from user-imported sou
 ## Repository layout
 
 ```
-android/        Gradle project (:app, :xposed, :core:*) — Kotlin, Compose, Material 3 Expressive
+android/        Gradle project (:app, :xposed, :core:*, :baselineprofile) — Kotlin, Compose, Material 3 Expressive
 web/            SvelteKit static site + PWA pack creator
 tools/packer/   Kotlin JVM CLI: build packs, bundles, repository indexes
 shared/         pack-spec: the pack format rules (Kotlin Multiplatform), included by tools/packer and android/

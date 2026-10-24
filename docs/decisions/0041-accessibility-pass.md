@@ -66,10 +66,33 @@ rules itself on every screen with made-up content (`A11yScreens`):
 (`LargeFontScreenshotTest`, `screenshot(…, fontScale = 2f)`): `<screen>-font200-light.png` in English and
 `<screen>-font200-es-light.png` in Spanish, light theme only (dark adds nothing to reflow, and contrast has its own
 test). They are verified on every build like the other goldens, so a layout that stops reflowing shows up in review.
-The phone ringtone card is checked but has no golden: in a full run it sometimes renders blank on Robolectric (#226).
 
-The touch-target check only sees what fits in the first screenful (nodes cut by a scrolling edge are skipped);
-controls further down are covered by the code scan done in this pass, not by the test.
+**Follow-ups (#226, 2026-10-24).**
+
+- *Blank captures.* In a full test run, the phone ringtone card sometimes came out as an empty window, status bar
+  included. Robolectric's hardware capture replays the display lists the window recorded last. The card is the only
+  still screen in the large-font set, so it records them only in its first frames. Drawing the same views in software
+  at the same moment showed the card, and a fresh frame before the capture fixed it. `ScreenshotTest` now invalidates
+  every window's views and draws the last frame of the settle time right before each capture. The total time stays
+  the same, so no other golden changed. The card now has its 200% golden.
+- *Touch targets, measured for real and on the whole screen.* Compose stretches the touch area of any clickable
+  under 48 dp to 48 dp, and `touchBoundsInRoot` reports that stretched area. So the first version of the check, which
+  measured it, could never fail. Now a control under 48 dp fails when its 48 dp area overlaps the area of another
+  control in the same window and scrolling container, unless one contains the other or sits behind it (a scrim, a
+  card). That is the case where the stretch doesn't help. The check also scrolls every scrolling container to its
+  end, through the containers' own scroll action, and checks each screenful. `A11yAssertionsTest` proves it catches
+  crowded controls far down lazy lists, columns and rows. It found the restore flow's "select all" row (a 24 dp
+  checkbox row next to the first contact, now 48 dp).
+- *More screens.* Diagnostics and Day and night now have stateless `DiagnosticsContent` and `DayNightContent`.
+  Together with the creator's cropper and the restore steps before the summary (passphrase, packs, conflicts), they
+  joined `A11yScreens` (`A11yMoreScreens`) and the 200% goldens. They sit next to the screens that ADR 0055 made out
+  of dialogs and sheets (`A11yPushedScreens`, which has the restore summary and "Check and finish"). A dialog or a
+  sheet opens its own window, which on Robolectric gets neither the test's font scale nor its language, so checked
+  content belongs in the main window.
+- Fixes found by the new checks: in the restore flow, the installed pack's check icon no longer repeats "Installed",
+  and with large fonts the "Choose file" and "Try again" buttons sit under the pack's text instead of squeezing it to a
+  word per line. The haptic editor uses `CucutoTopBar` (a medium flexible top bar), so its title shows in full at
+  200% and in Spanish.
 
 ## Consequences
 

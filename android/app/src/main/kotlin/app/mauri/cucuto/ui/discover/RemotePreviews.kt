@@ -42,6 +42,7 @@ import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl
 import java.io.File
 
 /**
@@ -110,15 +111,17 @@ internal fun RemoteCharacterBadge(
     }
 }
 
-/** The entry's cover, fetched when shown, or its initial on a cookie while missing. */
+/** A cover ([url]) of repository [repositoryId], fetched when shown, or [name]'s initial on a cookie while missing. */
 @Composable
 internal fun RemoteCover(
-    card: PackCard,
+    url: HttpUrl?,
+    name: String,
+    repositoryId: Long,
     previews: PreviewLoader,
     modifier: Modifier = Modifier,
 ) {
-    val cover by produceState<File?>(null, card.cover, card.repositoryId) {
-        value = card.cover?.let { previews.load(it, card.repositoryId) }
+    val cover by produceState<File?>(null, url, repositoryId) {
+        value = url?.let { previews.load(it, repositoryId) }
     }
     val file = cover
     if (file != null) {
@@ -136,7 +139,7 @@ internal fun RemoteCover(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = card.name.take(1).uppercase(),
+                    text = name.take(1).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
                     // Decorative: the card's title says the name.
                     modifier = Modifier.clearAndSetSemantics {},

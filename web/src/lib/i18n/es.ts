@@ -419,7 +419,7 @@ export const es: Messages = {
 			'¿No tienes Java a mano? Elige aquí un archivo de pack. Esta página aplica las mismas reglas que la app y <code>packer</code> (el mismo código, compilado para la web) y da los mismos códigos. El archivo no sale de tu dispositivo: no se sube nada.',
 		hostTitle: 'Aloja tu propio repositorio',
 		hostIntroHtml:
-			'Un repositorio de packs es cualquier ubicación HTTPS que sirva un índice <code>repository.json</code> y los archivos que lista: GitHub Pages, Cloudflare Pages, un bucket o tu propio servidor. Sin código de servidor. <code>packer index</code> genera una carpeta lista para subir con el índice, vistas previas pequeñas y los packs:',
+			'Un repositorio de packs es cualquier ubicación HTTPS que sirva un índice <code>repository.json</code> y los archivos que lista: GitHub Pages, Cloudflare Pages, un bucket o tu propio servidor. Sin código de servidor. <code>packer index</code> genera una carpeta lista para subir con el índice, vistas previas pequeñas y los packs (¿sin Java? <a href="{createRepository}">crea la carpeta en el navegador</a>):',
 		hostShareHtml:
 			'Sube la carpeta y comparte su URL. La gente la pega en la app (o la escanea como código QR), explora tus packs, escucha los clips y descarga los que le gusten. En una web, un enlace <strong>Añadir a la app</strong> lo hace con un toque:',
 		hostPrivateHtml:
@@ -470,7 +470,7 @@ export const es: Messages = {
 		siteTitle: 'Esta web',
 		site: [
 			'Todas las páginas, fuentes, imágenes y clips de muestra se sirven desde esta web; no hace peticiones a otros servicios. Para funcionar sin conexión y cargar más rápido, tu navegador guarda una copia de la web en su caché (un service worker). Esa copia se queda en tu dispositivo y puedes borrarla en los ajustes del navegador.',
-			'La página <a href="{create}">Crear</a> usa tu micrófono solo mientras grabas, y solo si lo permites. Las imágenes y los sonidos que añades allí se procesan en tu navegador y nunca salen de tu dispositivo.',
+			'La página <a href="{create}">Crear</a> usa tu micrófono solo mientras grabas, y solo si lo permites. Las imágenes y los sonidos que añades allí se procesan en tu navegador y nunca salen de tu dispositivo. Los borradores se guardan en el almacenamiento del navegador de este dispositivo hasta que los borres o borres los datos de la web.',
 			'La web está alojada en GitHub Pages, y el APK y los packs se descargan como archivos de versiones de GitHub. Como cualquier alojamiento web, GitHub recibe datos técnicos como tu dirección IP al servir un archivo; consulta la <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="external">declaración de privacidad de GitHub</a>.'
 		],
 		appTitle: 'La app',
@@ -484,7 +484,7 @@ export const es: Messages = {
 			'<strong>El registro de decisiones</strong>: qué hizo Cucuto con cada notificación reciente (qué voz sonó, o por qué sonó el tono de WhatsApp). Guarda las 500 entradas más recientes, para que puedas ver por qué sonó algo.'
 		],
 		storedNoteHtml:
-			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Al desinstalar la app se borra todo.',
+			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Cucuto nunca abre las bases de datos, los chats ni los archivos multimedia de WhatsApp: solo conoce un chat por sus notificaciones o por un contacto que vinculas tú. Al desinstalar la app se borra todo.',
 		moduleTitle: 'Cómo funciona el módulo',
 		moduleHtml:
 			'El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las notificaciones de WhatsApp y WhatsApp Business. Lo que anota se lo pasa a la app por un canal privado que rechaza a cualquier otra app. Nunca se conecta a internet y nunca toca la app de WhatsApp.',
@@ -492,15 +492,23 @@ export const es: Messages = {
 		networkHtml:
 			'Solo para acceder a los repositorios de packs de tu lista (el de esta web viene por defecto): para mostrar sus packs, buscar actualizaciones y descargar los packs que elijas. Las descargas pueden venir del servidor del propio repositorio, como GitHub en el caso de los packs de esta web. Si un repositorio privado necesita contraseña o token, se guarda cifrado con el almacén de claves de Android y solo se envía al servidor de ese repositorio.',
 		backupTitle: 'Copias de seguridad',
-		backupHtml:
-			'La copia de seguridad en la nube de Android y la transferencia entre dispositivos están desactivadas para Cucuto, así que no se copia nada a Google. Está prevista una copia de seguridad propia de Cucuto, en un archivo que guardas donde quieras.',
+		backup: [
+			'Cucuto puede guardar su propia copia de seguridad en un archivo, para que un móvil nuevo lo recupere todo. Incluye los chats que Cucuto conoce (nombres, números de teléfono, los identificadores de chat de WhatsApp y el contacto con el que está vinculado cada uno), sus voces y tonos de llamada, el interruptor de voces, tu lista de repositorios y los packs que usas, y también los archivos de los packs, salvo que los dejes fuera.',
+			'Nunca va en una copia: tu ubicación para el día y la noche, ni las contraseñas o tokens de los repositorios, salvo que los añadas a una copia que protejas con una contraseña tuya. Entonces todo el archivo va cifrado. Las copias automáticas nunca se cifran, así que nunca llevan contraseñas.',
+			'Las copias van solo adonde tú elijas: un archivo que guardas a mano, o una carpeta o un archivo que eliges para las copias automáticas. Si eliges Google Drive, es la app de Drive la que sube el archivo; Cucuto nunca sube nada.',
+			'La copia de seguridad en la nube de Android y la transferencia entre dispositivos están desactivadas para Cucuto, así que por esa vía no se copia nada a Google.'
+		],
 		permissionsTitle: 'Permisos',
 		permissions: [
 			'<strong>Internet</strong>: para los repositorios de packs de arriba.',
-			'<strong>Notificaciones</strong>: solo para la notificación de prueba de Diagnóstico.'
+			'<strong>Notificaciones</strong>: solo para la notificación de prueba de Diagnóstico.',
+			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono, el mismo ajuste que cambia la app Contactos.',
+			'<strong>Teléfono</strong>: solo para los tonos «Al azar en cada llamada», para saber cuándo termina una llamada. Nunca se lee el número.',
+			'<strong>Ubicación aproximada</strong>: una sola lectura, solo cuando tocas «Usar mi ubicación una vez» en «Día y noche». Nunca la ubicación exacta, nunca en segundo plano.',
+			'<strong>Micrófono</strong>: solo mientras grabas un sonido en el creador de packs.'
 		],
 		permissionsNoteHtml:
-			'Sin acceso a tus contactos, archivos, ubicación, cámara ni micrófono. Si una función futura necesita más (por ejemplo el micrófono para el creador de packs previsto), la app lo pedirá antes y esta página explicará por qué.',
+			'Contactos, teléfono, ubicación y micrófono se piden solo cuando usas la función que los necesita, y todo lo demás sigue funcionando si dices que no. Sin acceso a tu cámara, a tus archivos (eliges tú cada archivo que abres o guardas) ni a los datos de WhatsApp. Si una función futura necesita más, la app lo pedirá antes y esta página explicará por qué.',
 		checkTitle: 'Compruébalo tú',
 		checkHtml:
 			'La web y la app son de código abierto: lee el código en <a href="{repo}" rel="external">GitHub</a>. ¿Dudas sobre privacidad? <a href="{issues}" rel="external">Abre una incidencia</a>.'
@@ -511,7 +519,9 @@ export const es: Messages = {
 		leadHtml:
 			'Cucuto comprueba los archivos de pack que abras aquí (<code>.soundpack.zip</code>, o cualquier <code>.zip</code> de pack) con las mismas reglas que la app, en tu dispositivo. Para hacer el tuyo, usa la página <a href="{create}">Crear</a>; para instalar un pack, impórtalo en la app Cucuto de tu móvil.',
 		opened: 'Has abierto:',
-		browse: 'Ver packs gratuitos'
+		browse: 'Ver packs gratuitos',
+		edit: 'Editar en el creador de packs',
+		editFailed: 'No se ha podido pasar el pack al creador ({error}).'
 	},
 	packCheck: {
 		choose: 'Elegir archivos de pack',
@@ -543,6 +553,41 @@ export const es: Messages = {
 			'No se ha podido cargar el creador de packs ({error}). Recarga la página para reintentarlo.',
 		wavNotice:
 			'Este navegador no sabe codificar Opus, así que los clips se guardan en WAV. Ocupan más, pero funcionan igual. Chrome, Edge y Firefox en el ordenador guardan Opus.',
+		drafts: {
+			title: 'Tus borradores',
+			intro:
+				'El pack que estás haciendo se guarda en este navegador después de cada cambio, también sin conexión. No se sube nada; si borras los datos de la web, se borran los borradores.',
+			saved: 'Borrador guardado en este dispositivo',
+			saving: 'Guardando el borrador…',
+			unavailable:
+				'Este navegador no puede guardar borradores (una ventana privada, o los datos de la web están bloqueados). Descarga el pack antes de salir de la página.',
+			saveFailed: 'No se ha podido guardar el borrador ({error}).',
+			loadFailed: 'No se ha podido abrir este borrador ({error}).',
+			untitled: 'Pack sin nombre',
+			summary: 'Personajes: {characters} · clips: {clips} · {date}',
+			current: 'Abierto ahora',
+			resume: 'Seguir',
+			delete: 'Borrar',
+			confirmDelete: '¿Borrar «{name}»? No se puede deshacer.',
+			confirm: 'Borrar',
+			cancel: 'Conservarlo',
+			new: 'Empezar un pack nuevo',
+			open: 'Abrir un archivo de pack',
+			openHint: 'Edita un .soundpack.zip hecho aquí, en la app o con packer.'
+		},
+		opening: {
+			busy: 'Abriendo {name}…',
+			invalid: 'No se puede abrir {name}: no pasa la comprobación de packs.',
+			bundle: '{name} es un paquete de varios packs. Elige el que quieres editar:',
+			failed: 'No se ha podido abrir {name} ({error}).',
+			editing: 'Editando {name} {version}',
+			update:
+				'Se guarda como actualización: el mismo ID de pack, versión {version}. La app sustituye el pack instalado y conserva la voz de cada contacto.',
+			copy: 'Guardarlo como un pack nuevo, con su propio ID y la versión 1.0.0, para instalarlo junto al original',
+			kept: 'Se conservan tal cual del original, aunque esta página aún no los edita. Tonos de llamada: {ringtones}. Imágenes animadas: {animations}.',
+			undecodable:
+				'Clips que este navegador no puede reproducir: {n}. Se quedan en el pack tal cual, sin vista previa ni edición.'
+		},
 		details: {
 			title: 'Datos del pack',
 			name: 'Nombre del pack',
@@ -561,7 +606,20 @@ export const es: Messages = {
 				'Un <a href="https://spdx.org/licenses/" rel="external">identificador SPDX</a> como <code>MIT</code>, o tus propias palabras, como «Solo uso personal».',
 			descriptionLabel: 'Descripción (opcional)',
 			packId: 'ID del pack',
-			packIdHint: 'Se forma con el autor y el nombre; no cambia en este borrador.'
+			packIdHint: 'Se forma con el autor y el nombre; no cambia en este borrador.',
+			packIdKept:
+				'El ID del pack que has abierto, para que la app lo trate como una actualización.',
+			version: 'Versión',
+			versionHint: 'Súbela en cada actualización que compartas, por ejemplo 1.0.1 o 1.1.0.'
+		},
+		cover: {
+			title: 'Portada (opcional)',
+			hint: 'Se muestra en la tarjeta del pack en la app. Sin portada, la app muestra el primer personaje.',
+			choose: 'Elegir una portada',
+			change: 'Cambiar portada',
+			remove: 'Quitar portada',
+			alt: 'Portada de {name}',
+			none: 'Sin portada'
 		},
 		characters: {
 			title: 'Personajes',
@@ -634,7 +692,74 @@ export const es: Messages = {
 		},
 		haptics: {
 			title: 'Vibración',
-			text: 'Cada personaje vibra al ritmo de su voz: la app calcula el patrón a partir de cada clip al importar el pack. Los patrones personalizados se hacen en la app, porque los navegadores no pueden reproducirlos.'
+			text: 'Cada personaje vibra al ritmo de su voz: la app calcula el patrón a partir de cada clip al importar el pack. Para quitarla o diseñar tu propio patrón, usa Vibración en la tarjeta del personaje. Los navegadores no pueden reproducir estas vibraciones: importa el pack en la app para sentirlas.'
+		},
+		hapticEditor: {
+			title: 'Vibración',
+			auto: 'Seguir la voz (automática)',
+			none: 'Sin vibración',
+			custom: 'Patrón personalizado',
+			intro:
+				'Toques y ondas en una línea de tiempo, en milisegundos desde el inicio del sonido. Los navegadores no pueden reproducirlos: importa el pack en la app y prueba el patrón allí.',
+			timeline: 'Línea de tiempo del patrón: {n} eventos en {ms} ms',
+			empty: 'Todavía no hay eventos. Añade un toque o una onda, o pega un patrón.',
+			emptyNote: 'Hasta que el patrón tenga un evento, el pack usa la vibración automática.',
+			tap: 'Toque',
+			swell: 'Onda',
+			addTap: 'Añadir un toque',
+			addSwell: 'Añadir una onda',
+			event: 'Evento {n}: {kind}',
+			start: 'Inicio (ms)',
+			preset: 'Tipo de toque',
+			presets: {
+				CLICK: 'Clic (nítido)',
+				TICK: 'Tic (más suave)',
+				LOW_TICK: 'Tic grave (el más suave)'
+			},
+			strength: 'Fuerza',
+			point: 'Punto {n}',
+			intensity: 'Intensidad',
+			sharpness: 'Nitidez',
+			duration: 'Tiempo hasta llegar (ms)',
+			addPoint: 'Añadir un punto',
+			removePoint: 'Quitar el punto {n}',
+			removeEvent: 'Quitar el evento {n}',
+			valid: 'Patrón válido: {n} eventos, {ms} ms.',
+			copyAi: 'Copiar para IA',
+			copyAiHint:
+				'Copia un texto con la duración y el volumen de los clips, el patrón actual y el formato. Pégalo en cualquier chat de IA (adjunta el sonido si el chat acepta audio) y luego pega la respuesta abajo. Cucuto nunca envía nada a una IA por su cuenta.',
+			copied: 'Copiado. Pégalo en un chat de IA.',
+			copyFailed: 'El navegador no ha dejado copiar. Selecciona el texto de abajo y cópialo.',
+			paste: 'Pegar un patrón',
+			pasteHint: 'JSON de un chat de IA o de otro pack: la vibración entera o solo sus eventos.',
+			usePattern: 'Usar el patrón',
+			pasted: 'Patrón sustituido. Deshacer recupera el anterior.',
+			undo: 'Deshacer',
+			where: {
+				pattern: 'El patrón',
+				event: 'Evento {event}',
+				point: 'Evento {event}, punto {point}'
+			},
+			problems: {
+				NotJson: 'No hay ningún patrón JSON en el texto.',
+				NotCustom: 'El modo es «{value}»; un patrón pegado tiene que ser «custom».',
+				NoEvents: 'El patrón no tiene eventos.',
+				TooManyEvents: 'Un patrón puede tener hasta 64 eventos.',
+				NotAnEvent: 'El evento {event} necesita «preset» o «envelope» (solo uno de los dos).',
+				MissingField: '{where}: falta «{field}».',
+				UnknownField: '{where}: «{field}» no forma parte del formato.',
+				NotWholeNumber:
+					'{where}: «{field}» tiene que ser un número entero de milisegundos, no {value}.',
+				OutOfRange: '{where}: «{field}» tiene que estar entre {min} y {max}, no {value}.',
+				UnknownPreset: 'Evento {event}: «{value}» no es un tipo de toque (CLICK, TICK o LOW_TICK).',
+				PointCount: 'Evento {event}: una onda necesita de 1 a 16 puntos, no {count}.',
+				NotClosed: 'Evento {event}: el último punto de una onda tiene que tener intensidad 0.',
+				Unsorted:
+					'El evento {event} empieza antes que el de arriba. Ordena los eventos por inicio.',
+				Overlap:
+					'El evento {event} empieza a los {ms} ms, antes de que acabe la onda de arriba a los {until} ms.',
+				TooLong: 'El patrón dura {ms} ms; tiene que acabar antes de los 5000 ms.'
+			}
 		},
 		build: {
 			title: 'Comprobar y descargar',
@@ -663,6 +788,142 @@ export const es: Messages = {
 				TOO_MANY_CLIPS: '{name} tiene más de 200 clips.',
 				UNSUPPORTED_FILE: '{name} tiene un archivo que el formato de pack no acepta.'
 			}
+		},
+		tools: {
+			title: 'Más herramientas',
+			bundle: 'Juntar varios packs',
+			bundleText: 'Junta packs terminados en un solo archivo que los instala todos a la vez.',
+			repository: 'Aloja tu propio repositorio',
+			repositoryText:
+				'Crea una carpeta con repository.json, vistas previas y tus packs, lista para subir a GitHub Pages o a cualquier alojamiento web.'
+		}
+	},
+	bundle: {
+		title: 'Juntar packs',
+		description:
+			'Junta varios packs de sonidos de Cucuto en un solo paquete .soundpack.zip en el navegador, como packer bundle. No se sube nada.',
+		leadHtml:
+			'Un paquete es un solo archivo con varios packs dentro, cada uno con su propia licencia. La app instala todos sus packs a la vez. Esta página crea la misma estructura que <code>packer bundle</code>, en tu dispositivo.',
+		back: 'Volver al creador de packs',
+		packs: {
+			title: 'Packs',
+			add: 'Añadir archivos de pack',
+			hint: 'Archivos .soundpack.zip hechos aquí, en la app o con packer. Un paquete no puede contener otro paquete.',
+			empty: 'Todavía no hay packs.',
+			item: '{id} · versión {version} · {characters} personajes',
+			remove: 'Quitar {name}',
+			invalid: '{name} no pasa la comprobación de packs, así que no puede ir en un paquete.',
+			isBundle: '{name} ya es un paquete. Añade los packs que lleva dentro.',
+			failed: 'No se ha podido leer {name} ({error}).'
+		},
+		details: {
+			title: 'Datos del paquete',
+			name: 'Nombre del paquete',
+			author: 'Autor (opcional)',
+			id: 'ID del paquete',
+			idHint:
+				'Se forma con el autor y el nombre. Tiene que ser distinto de los ID de los packs, e igual en cada actualización.',
+			version: 'Versión',
+			versionHint: 'Súbela en cada actualización que compartas, por ejemplo 1.0.1.',
+			license: 'Licencia (opcional)',
+			licenseHint: 'Cada pack conserva su propia licencia.',
+			description: 'Descripción (opcional)'
+		},
+		build: {
+			title: 'Comprobar y descargar',
+			check: 'Comprobar el paquete',
+			checking: 'Creando y comprobando…',
+			download: 'Descargar el paquete',
+			incomplete: 'Ya casi está:',
+			stale:
+				'Has cambiado el paquete desde esta comprobación. Vuelve a comprobarlo antes de descargarlo.',
+			failed: 'No se ha podido crear el paquete ({error}).',
+			problems: {
+				BUNDLE_ID_INVALID:
+					'El ID del paquete tiene que ser palabras en minúscula separadas por puntos, por ejemplo local.yo.todos-mis-packs.',
+				BUNDLE_NAME_MISSING: 'Ponle un nombre al paquete.',
+				VERSION_INVALID: 'La versión tiene que tener la forma 1.0.0.',
+				NO_PACKS: 'Añade al menos un pack.',
+				TOO_MANY_PACKS: 'Un paquete puede llevar hasta 100 packs.',
+				PACK_TWICE: 'Dos packs tienen el mismo ID. Deja solo uno.',
+				ID_CLASH: 'El ID del paquete es igual que el de uno de sus packs. Elige otro.',
+				UNSUPPORTED_FILE: 'La portada no es una imagen que el formato de pack acepte.'
+			}
+		}
+	},
+	repository: {
+		title: 'Aloja tu propio repositorio',
+		description:
+			'Crea en el navegador un repositorio de packs de Cucuto listo para subir (repository.json, vistas previas y packs), como packer index. No se sube nada.',
+		leadHtml:
+			'Un repositorio de packs es una carpeta en cualquier alojamiento HTTPS: un índice <code>repository.json</code>, vistas previas pequeñas y los archivos de pack. La app lo muestra en Descubrir y avisa de las actualizaciones. Esta página crea la misma carpeta que <code>packer index</code>, en tu dispositivo.',
+		back: 'Volver al creador de packs',
+		files: {
+			title: 'Packs y paquetes',
+			add: 'Añadir archivos de pack',
+			hint: 'Packs o paquetes .soundpack.zip. Si un pack está dos veces, el índice muestra la versión más alta.',
+			empty: 'Todavía no hay packs.',
+			item: '{kind} · {id} · versión {version} · {size}',
+			pack: 'Pack',
+			bundle: 'Paquete',
+			remove: 'Quitar {name}',
+			invalid: '{name} no pasa la comprobación de packs, así que no se puede incluir.',
+			failed: 'No se ha podido leer {name} ({error}).'
+		},
+		details: {
+			title: 'Datos del repositorio',
+			name: 'Nombre del repositorio',
+			description: 'Descripción (opcional)',
+			homepage: 'Página web (opcional)',
+			homepageHint: 'Una dirección https:// sobre ti o tus packs.',
+			where: 'Dónde están los archivos de pack',
+			here: 'En la misma carpeta, dentro de packs/ (lo más sencillo)',
+			elsewhere: 'En otro sitio, por ejemplo GitHub Releases',
+			baseUrl: 'Dirección de la carpeta con los archivos de pack',
+			baseUrlHint:
+				'Solo https://. Cada pack aparece como esta dirección seguida del nombre de su archivo.',
+			httpsOnly: 'Usa una dirección https://.'
+		},
+		build: {
+			title: 'Crear la carpeta',
+			make: 'Crear el repositorio',
+			making: 'Creando el índice…',
+			incomplete: 'Ya casi está:',
+			nameMissing: 'Ponle un nombre al repositorio.',
+			noFiles: 'Añade al menos un archivo de pack.',
+			failed: 'No se ha podido crear el repositorio ({error}).',
+			invalid: 'El índice no pasa la comprobación de repositorios:',
+			ready:
+				'Listo. Entradas en el índice: {n}. Descomprime la carpeta y sube todo lo que lleva dentro.',
+			download: 'Descargar la carpeta (.zip)',
+			copy: 'Copiar repository.json',
+			copied: 'Copiado.',
+			stale:
+				'Has cambiado algo desde que se creó la carpeta. Vuelve a crearla antes de descargarla.'
+		},
+		host: {
+			title: 'Ponlo en internet',
+			githubTitle: 'GitHub Pages (gratis)',
+			github: [
+				'Crea un repositorio público en GitHub, por ejemplo <code>mis-packs</code>.',
+				'Descomprime la carpeta. En la página del repositorio, elige <strong>Add file → Upload files</strong>, suelta todo lo que había dentro de la carpeta (<code>repository.json</code>, <code>previews</code> y <code>packs</code>) y haz commit.',
+				'Abre <strong>Settings → Pages</strong>. En <strong>Build and deployment</strong>, pon como origen <strong>Deploy from a branch</strong>, elige <code>main</code> y <code>/ (root)</code>, y guarda.',
+				'En un par de minutos el repositorio estará en <code>https://&lt;tu usuario&gt;.github.io/mis-packs/</code>. En la app, abre <strong>Descubrir → Añadir un repositorio</strong> y pega esa dirección.'
+			],
+			githubNote:
+				'La página de subida de GitHub acepta archivos de hasta 25 MB, y Git rechaza los de más de 100 MB. Pon los packs más grandes en GitHub Releases y elige «En otro sitio» con la dirección de descarga de la release.',
+			driveTitle: 'Google Drive',
+			driveHtml:
+				'Drive no puede servir un repositorio: sus enlaces apuntan a ID de archivo, no a rutas junto a <code>repository.json</code>. Comparte los packs uno a uno: sube el <code>.soundpack.zip</code>, compártelo con <strong>Cualquier persona con el enlace</strong> y pega el enlace en <strong>Descubrir → Añadir un repositorio</strong> de la app, que lo descarga directamente. Para una lista de packs con actualizaciones, usa GitHub Pages u otro alojamiento web.',
+			otherTitle: 'Otros alojamientos web',
+			otherHtml:
+				'Cloudflare Pages, Netlify, un bucket de almacenamiento o tu propio servidor funcionan igual: sube lo que hay dentro de la carpeta y comparte su dirección <code>https://</code>. No hace falta código de servidor.',
+			address: 'La dirección de tu repositorio (opcional)',
+			addressHint:
+				'Dónde estará la carpeta en internet, para tener un enlace que la añade a la app de un toque.',
+			addLink: 'Enlace para añadirlo a la app:',
+			docsHtml:
+				'Más información en <a href="{authors}#host">Aloja tu propio repositorio</a> y en el <a href="{packFormat}#pack-repositories">formato de pack</a>.'
 		}
 	},
 	error: {

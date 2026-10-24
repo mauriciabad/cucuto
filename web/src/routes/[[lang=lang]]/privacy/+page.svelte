@@ -62,7 +62,9 @@
 	<p><Html text={t.networkHtml} /></p>
 
 	<h3 class="title-large">{t.backupTitle}</h3>
-	<p><Html text={t.backupHtml} /></p>
+	{#each t.backup as paragraph (paragraph)}
+		<p><Html text={paragraph} /></p>
+	{/each}
 
 	<h3 class="title-large">{t.permissionsTitle}</h3>
 	<ul>
