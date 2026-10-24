@@ -113,7 +113,7 @@ class RingtonePickerContentTest {
     fun theStoredRingtoneShowsItsVersionsAndRule() {
         show(state())
         compose.onNodeWithText("When Iris calls").assertIsDisplayed()
-        compose.onNodeWithText("Same character as the messages").assertIsDisplayed()
+        compose.onNodeWithText("Same as the messages").assertIsDisplayed()
         compose.onNodeWithText("Pond song (night)").assertIsDisplayed()
         compose.onNodeWithContentDescription("Play Pond song (night)").performClick()
         compose.onNodeWithText("By season").assertDoesNotExist()

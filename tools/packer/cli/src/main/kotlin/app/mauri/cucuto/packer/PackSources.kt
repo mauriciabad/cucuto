@@ -260,14 +260,68 @@ object PackSources {
             return result.sortedBy { it.toString() }
         }
 
+        /**
+         * `when` shorthands: a word or a list of words, each a time of day (`day`, `night`, `22:00-06:00`), a season, a
+         * weekday or a date (`12-25`, `12-24..01-06`). Words of the same kind are alternatives (a list in pack.json),
+         * different kinds must all hold: `[night, sat, sun]` is `{ time: night, weekday: [sat, sun] }`. In the full
+         * form, `time: 22:00-06:00` and dates written as `12-24..01-06` are expanded too.
+         */
         private fun whenShorthand(v: JsonElement): JsonElement {
-            val s = (v as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return v
-            return when (s) {
-                "day", "night" -> buildJsonObject { put("time", s) }
-                "spring", "summer", "autumn", "winter" -> buildJsonObject { put("season", s) }
-                "mon", "tue", "wed", "thu", "fri", "sat", "sun" -> buildJsonObject { put("weekday", s) }
-                else -> fail("when: '$s' is not day, night, a season or a weekday")
+            val words = when {
+                v is JsonPrimitive && v.isString -> listOf(v.content)
+                v is JsonArray && v.isNotEmpty() && v.all { it is JsonPrimitive && it.isString } -> v.map { (it as JsonPrimitive).content }
+                v is JsonObject -> return expandFullWhen(v)
+                else -> return v
             }
+            val times = mutableListOf<JsonElement>()
+            val seasons = mutableListOf<JsonElement>()
+            val weekdays = mutableListOf<JsonElement>()
+            val dates = mutableListOf<JsonElement>()
+            for (word in words.map { it.trim() }) {
+                when {
+                    word == "day" || word == "night" -> times += JsonPrimitive(word)
+                    word in SEASONS -> seasons += JsonPrimitive(word)
+                    word in WEEKDAYS -> weekdays += JsonPrimitive(word)
+                    TIME_RANGE.matches(word) -> times += timeRange(word)
+                    DATE.matches(word) || DATE_RANGE.matches(word) -> dates += date(word)
+                    else -> fail("when: '$word' is not day, night, hours (22:00-06:00), a season, a weekday or a date (12-25, 12-24..01-06)")
+                }
+            }
+            if (times.size > 1) fail("when: only one time of day (${words.joinToString()})")
+            return buildJsonObject {
+                times.firstOrNull()?.let { put("time", it) }
+                oneOrList(seasons)?.let { put("season", it) }
+                oneOrList(weekdays)?.let { put("weekday", it) }
+                oneOrList(dates)?.let { put("date", it) }
+            }
+        }
+
+        private fun expandFullWhen(v: JsonObject): JsonObject = JsonObject(
+            v.mapValues { (key, value) ->
+                when {
+                    key == "time" && value is JsonPrimitive && value.isString && TIME_RANGE.matches(value.content.trim()) -> timeRange(value.content.trim())
+                    key == "date" && value is JsonPrimitive && value.isString -> date(value.content.trim())
+                    key == "date" && value is JsonArray -> JsonArray(value.map { if (it is JsonPrimitive && it.isString) date(it.content.trim()) else it })
+                    else -> value
+                }
+            },
+        )
+
+        private fun timeRange(word: String): JsonObject {
+            val (from, to) = word.split('-')
+            return buildJsonObject { put("from", from); put("to", to) }
+        }
+
+        private fun date(word: String): JsonElement {
+            if (!DATE_RANGE.matches(word)) return JsonPrimitive(word)
+            val (from, to) = word.split("..")
+            return buildJsonObject { put("from", from); put("to", to) }
+        }
+
+        private fun oneOrList(items: List<JsonElement>): JsonElement? = when (items.size) {
+            0 -> null
+            1 -> items.single()
+            else -> JsonArray(items)
         }
 
         private fun haptic(v: JsonElement): JsonElement = when {
@@ -277,6 +331,12 @@ object PackSources {
             else -> v
         }
     }
+
+    private val SEASONS = setOf("spring", "summer", "autumn", "winter")
+    private val WEEKDAYS = setOf("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+    private val TIME_RANGE = Regex("""^\d{2}:\d{2}-\d{2}:\d{2}$""")
+    private val DATE = Regex("""^\d{2}-\d{2}$""")
+    private val DATE_RANGE = Regex("""^\d{2}-\d{2}\.\.\d{2}-\d{2}$""")
 
     /** Lowercase [a-z0-9] words joined by single hyphens. */
     fun slug(text: String): String =

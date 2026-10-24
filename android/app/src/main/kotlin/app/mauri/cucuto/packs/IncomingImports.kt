@@ -3,13 +3,13 @@ package app.mauri.cucuto.packs
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import app.mauri.cucuto.core.pack.ImportSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -67,26 +67,39 @@ fun importSourceOf(
 }
 
 /**
- * Accepts `content:` and `file:` URIs, except ones that point back into Cucuto itself (its own providers or private
- * files): another app must not be able to make Cucuto read its own data as a "pack".
+ * Accepts `content:` URIs of other apps' providers only. Another app must not be able to make Cucuto read its own
+ * data (its providers or private files) as a "pack" (ADR 0079). `file:` URIs are refused: without storage permission
+ * Cucuto can only read its own files and world-readable system files through them, never a file another app shares.
  */
 private fun isAcceptable(
     context: Context,
     uri: Uri,
 ): Boolean =
-    when (uri.scheme) {
-        ContentResolver.SCHEME_CONTENT -> {
-            val authority = uri.authority.orEmpty()
-            authority.isNotEmpty() && !authority.startsWith(context.packageName)
+    uri.scheme == ContentResolver.SCHEME_CONTENT &&
+        isForeignContentAuthority(uri.authority, context.packageName) { authority ->
+            try {
+                context.packageManager
+                    .resolveContentProvider(authority, PackageManager.ComponentInfoFlags.of(0))
+                    ?.packageName
+            } catch (_: RuntimeException) {
+                null
+            }
         }
 
-        ContentResolver.SCHEME_FILE -> {
-            val file = uri.path?.let { runCatching { File(it).canonicalFile }.getOrNull() }
-            val ownData = File(context.applicationInfo.dataDir).canonicalFile
-            file != null && !file.toPath().startsWith(ownData.toPath())
-        }
+/**
+ * Whether [authority] names a provider of another app (pure, unit-tested). A content URI may address another user's
+ * provider as `<userId>@<authority>`, so the user prefix is dropped before the provider's package ([ownerOf]) is
+ * compared with [ownPackage]. Cucuto's own authorities all start with its package name, which is checked too.
+ */
+internal fun isForeignContentAuthority(
+    authority: String?,
+    ownPackage: String,
+    ownerOf: (String) -> String?,
+): Boolean {
+    val bare = authority?.substringAfterLast('@').orEmpty()
+    if (bare.isEmpty() || bare.startsWith(OWN_AUTHORITY_PREFIX) || bare.startsWith(ownPackage)) return false
+    return ownerOf(bare) != ownPackage
+}
 
-        else -> {
-            false
-        }
-    }
+/** Every authority Cucuto declares (`app.mauri.cucuto.clips`, `.events`, `<applicationId>.creator`). */
+private const val OWN_AUTHORITY_PREFIX = "app.mauri.cucuto."

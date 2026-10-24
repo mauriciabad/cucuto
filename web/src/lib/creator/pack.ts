@@ -41,19 +41,34 @@ export interface ClipState {
 	/** The audio the clip was cut from, so it can be edited again; null when not kept (see drafts.ts). */
 	source: Float32Array | null;
 	edit: ClipEdit;
-	/** The clip's condition from an opened pack (day and night clips, moments), kept as it is. */
+	/** The clip's condition as in pack.json (day and night clips, moments), from the condition editor. */
 	when: Record<string, unknown> | null;
-	/** A rare clip's chance from an opened pack (`oneIn`), kept as it is. */
+	/** A rare clip's chance (`oneIn`), from the condition editor. */
 	oneIn?: number | null;
 }
 
-/** A file kept as it is from an opened pack: the creator does not edit it yet. */
+/** A file written to the pack as it is: a ringtone (kept in its own format) or an animated sprite. */
 export interface KeptFile {
 	/** Stable within the draft: ringtone variants that share a file share its ID. */
 	id: string;
 	bytes: Uint8Array;
 	/** File extension, without the dot. */
 	extension: string;
+	/** An audio file's length, when known. */
+	durationMs?: number | null;
+	/** The file's name when it was added, for the editors. */
+	name?: string | null;
+}
+
+/**
+ * A ringtone version: `entry` is its pack.json entry (from shared/pack-spec's RingtoneForm, or as an opened pack had
+ * it), written with only its `file` replaced. Versions that share `file` share one file in the pack.
+ */
+export interface RingtoneState {
+	/** Missing in drafts saved before ringtones were editable. */
+	uid?: string;
+	file: KeptFile;
+	entry: Record<string, unknown>;
 }
 
 /** A character's vibration: the format's `auto` (follows the voice), `none`, or a custom timeline. */
@@ -71,11 +86,11 @@ export interface CharacterState {
 	seedColor: string | null;
 	clips: ClipState[];
 	haptic: HapticState;
-	/** Pass-through data from an opened pack (the rules of the app's "Duplicate and edit"). */
 	description: string | null;
+	/** Pass-through data from an opened pack (the rules of the app's "Duplicate and edit"). */
 	tags: string[];
 	spriteAnimated: KeptFile | null;
-	ringtones: { file: KeptFile; entry: Record<string, unknown> }[];
+	ringtones: RingtoneState[];
 }
 
 /** Where a draft came from when it was opened from a pack file. */
@@ -97,7 +112,6 @@ export interface PackState {
 	description: string;
 	cover: EncodedImage | null;
 	characters: CharacterState[];
-	/** Pass-through data from an opened pack. */
 	homepage: string | null;
 	tags: string[];
 	/** The pack this draft was opened from, if any. */

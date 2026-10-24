@@ -10,9 +10,9 @@
     <string name="sample_chat_voice_current">Voice: %1$s</string>
     <string name="sample_chat_play_message">Play a sample message</string>
     <string name="sample_chat_play_message_hint">Plays one of the character\'s clips with its vibration, like a message from this chat would.</string>
-    <string name="sample_chat_voice_section">Message voice</string>
-    <string name="sample_chat_ringtone_section">Call ringtone</string>
-    <string name="sample_chat_ringtone_same">Same as the voice</string>
+    <string name="sample_chat_voice_section">Messages</string>
+    <string name="sample_chat_ringtone_section">Phone calls</string>
+    <string name="sample_chat_ringtone_same">Same as the messages</string>
     <string name="sample_chat_ringtone_none">None of your packs has ringtones yet.</string>
     <string name="sample_chat_ringtone_pick">Pick a ringtone to hear a sample call.</string>
     <string name="sample_chat_play_call">Play a sample call</string>

@@ -105,11 +105,29 @@ The character and ringtone pickers stay as they are: they open for a chat that a
 
 `AddFromContacts` is one pushed destination with three steps:
 
-1. **The explainer**, shown every time. Saying once more what is read costs one tap, and the screen is reached only
-   on purpose. It has "Continue" and a link to the code.
+1. **The explainer, only while `READ_CONTACTS` is missing** (owner update 2026-10-24, #337: "add from contact shoudl
+   not show the warning every time, just the first time"). It has "Continue" and a link to the code. The rule is
+   the permission itself, not a "seen it" flag:
+   - **Granted** (here, through phone ringtones, or in Android's settings): no explainer. The screen opens on the
+     list and reads the entries at once.
+   - **Missing**, because it was never granted or was revoked: the explainer, every time, so nothing is read without
+     the user first seeing what is read. Revoking is the user saying no again, so they see why it is asked again.
+   - **Blocked**: Android no longer shows its prompt ("don't ask again", or a second refusal). An app can't tell
+     this before asking, so after a refusal Cucuto checks `shouldShowRequestPermissionRationale`: false right after
+     a refusal means blocked. It remembers that in a settings key that is never backed up (a permission belongs to
+     the phone), and clears it once the permission is granted. While blocked, the explainer adds a card saying
+     Android won't ask again and where the permission is in Android's settings, and its button becomes "Open
+     settings".
+   - **Coming back** to the screen (from Android's settings, say) with the permission granted meanwhile: the
+     explainer, or the refusal step, gives way to the list.
 2. **Android's prompt** for `READ_CONTACTS` only, and only when it is missing. Phone ringtones still ask for both
    contacts permissions when they are turned on (ADR 0039). A refusal shows a step that says nothing was read and
-   offers Android's app settings.
+   offers Android's app settings, and "Try again" unless Android has blocked the prompt.
+
+   The other contacts explainers already follow the same rule: phone ringtones (`READ_CONTACTS` and
+   `WRITE_CONTACTS`, ADR 0039) and the restore summary's "Find contacts" (ADR 0028) show their explainer dialog only
+   when a permission is missing, and go straight on when it is granted. They stay as they are; when Android has
+   blocked the prompt, their refusal dialog already offers Android's settings.
 3. **The list**: every Android contact with a WhatsApp entry, sorted by name, with a search field (case and accents
    ignored) and a check box per person. One row per Android contact and app: a contact with WhatsApp and WhatsApp
    Business entries has two rows, the second marked "WhatsApp Business". Each row shows the WhatsApp number, so two

@@ -23,7 +23,7 @@ class SampleChatSmokeTest : SmokeTest() {
         // Choosing a voice plays it: the character says it is speaking, and no playback error shows.
         tap(FROG)
         waitForText(R.string.sample_chat_voice_current, FROG)
-        val playing = str(R.string.picker_state_playing)
+        val playing = str(R.string.a11y_playing)
         waitFor(
             hasContentDescription(FROG) and hasStateDescription(str(R.string.picker_state_selected) + ", " + playing),
         )

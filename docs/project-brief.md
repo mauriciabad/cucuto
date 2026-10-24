@@ -434,6 +434,23 @@ The app should feel like a small game: every action answers with synchronized mo
 
 Screens over dialogs (owner, #166): a flow or a body of content gets a real screen with predictive back; dialogs and bottom sheets are only for very minimal, temporary content (a confirmation, a short choice, a blocking progress card). Conversions: #218 (ADR 0055).
 
+Words (update 2026-10-24 (#343)): the app uses one word for each thing, in every screen, in English and Spanish
+(`values-es/strings.xml` lists the Spanish shared terms):
+
+| Thing | English | Spanish |
+| --- | --- | --- |
+| A figure from a pack, with its sprite or album cover | character | personaje |
+| The character whose clips play when a chat messages you; giving one is "give a voice" | voice | voz |
+| One sound a character plays for a message | clip | clip |
+| What rings when a contact calls; the song a character can have | ringtone | tono |
+| The two sounds of a chat, as rows and section titles (contact detail, sample chat, Settings) | Messages · Phone calls | Mensajes · Llamadas |
+| The ringtone choices that are not a character | Android default · Leave as is | Predeterminado de Android · Dejar como está |
+| What plays without a voice | WhatsApp's tone | el tono de WhatsApp |
+| A file of characters · several packs in one file | pack · bundle | pack · colección |
+
+"Message sound" and "notification sound" are not used in the app: say "voice" or "clip". A call is "calls you", not
+"phones you". Buttons that open a file say "Choose …".
+
 Screens:
 
 1. **Status and onboarding.** One card that turns green when everything works: module active in `system_server`, correct LSPosed scope, WhatsApp detected, at least one pack installed. Each failing check has a one-tap fix or a clear instruction.
@@ -511,7 +528,7 @@ How the app and the module talk:
 - **Clip files (system to app):** an exported read-only `ContentProvider` at `content://<appId>.clips/<pack>/<character>/<clip>`. It checks the calling UID and allows only the system and the process that actually opens notification sounds (historically SystemUI's ringtone player; confirm in M0). It refuses everyone else.
 - **Seen senders (module to app):** the module posts a lightweight event (package, conversation key, display name, group flag) that the app records. The event goes through the provider or a protected broadcast, so the home screen can offer "recent senders" for one-tap assignment.
 
-Contact identity: the stable key is `package + conversation key`. Prefer the notification's conversation shortcut ID if M0 shows it is the WhatsApp JID; otherwise fall back to the MessagingStyle conversation title. Contacts who have not written yet can be added from Android's contacts: WhatsApp's own sync adapter keeps an entry with a phone JID for each WhatsApp contact saved on the phone. Cucuto reads those entries (`READ_CONTACTS`, already used for phone ringtones), never WhatsApp's database. "Add a chat from contacts" lists them behind an explainer screen and saves only the people the user picks. They can get a voice and a phone ringtone right away; the ringtone works at once. The chat's `@lid` is linked by name on its first notification, so that first message still plays WhatsApp's tone. Only an exact, unique match links by itself, with no namesake in the phone's contacts; anything else is asked on Home. Groups appear when they first notify. Owner update 2026-10-24 (#254): "contacts" ([ADR 0065](decisions/0065-chats-before-they-message.md), built in #292); the kickoff plan was a root read of WhatsApp's local database.
+Contact identity: the stable key is `package + conversation key`. Prefer the notification's conversation shortcut ID if M0 shows it is the WhatsApp JID; otherwise fall back to the MessagingStyle conversation title. Contacts who have not written yet can be added from Android's contacts: WhatsApp's own sync adapter keeps an entry with a phone JID for each WhatsApp contact saved on the phone. Cucuto reads those entries (`READ_CONTACTS`, already used for phone ringtones), never WhatsApp's database. "Add a chat from contacts" lists them behind an explainer screen (shown only while the contacts permission is missing; owner update 2026-10-24 (#337): "add from contact shoudl not show the warning every time, just the first time") and saves only the people the user picks. They can get a voice and a phone ringtone right away; the ringtone works at once. The chat's `@lid` is linked by name on its first notification, so that first message still plays WhatsApp's tone. Only an exact, unique match links by itself, with no namesake in the phone's contacts; anything else is asked on Home. Groups appear when they first notify. Owner update 2026-10-24 (#254): "contacts" ([ADR 0065](decisions/0065-chats-before-they-message.md), built in #292); the kickoff plan was a root read of WhatsApp's local database.
 
 ## Milestones and acceptance criteria
 

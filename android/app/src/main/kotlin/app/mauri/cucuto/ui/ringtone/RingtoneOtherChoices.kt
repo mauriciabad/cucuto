@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.db.RingtoneChoice
+import app.mauri.cucuto.ui.components.isLargeFont
 
 /** The ringtone choices that are not a pack character (ADR 0073), in display order. */
 internal val OtherRingtoneChoices: List<RingtoneChoice> =
@@ -105,13 +106,8 @@ internal fun RingtoneOtherHeader(
     choice: RingtoneChoice,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        ChoiceIcon(choice.icon, 104.dp)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val text: @Composable (Modifier) -> Unit = { textModifier ->
+        Column(textModifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(choice.title), style = MaterialTheme.typography.titleLarge)
             Text(
                 stringResource(choice.body),
@@ -120,7 +116,26 @@ internal fun RingtoneOtherHeader(
             )
         }
     }
+    // With large fonts the words go under the icon, so "Predeterminado de Android" keeps whole words (#226).
+    if (isLargeFont()) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = modifier.fillMaxWidth()) {
+            ChoiceIcon(choice.icon, LARGE_FONT_ICON)
+            text(Modifier)
+        }
+        return
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        ChoiceIcon(choice.icon, ICON)
+        text(Modifier.weight(1f))
+    }
 }
+
+private val ICON = 104.dp
+private val LARGE_FONT_ICON = 72.dp
 
 @Composable
 private fun ChoiceIcon(

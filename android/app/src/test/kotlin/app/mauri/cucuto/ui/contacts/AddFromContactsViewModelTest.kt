@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.KnownContacts
 import app.mauri.cucuto.core.data.chats.WhatsAppContact
 import app.mauri.cucuto.testing.FakeContactChats
+import app.mauri.cucuto.testing.FakeContactsPromptStore
 import app.mauri.cucuto.testing.FakeWhatsAppContactsSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,6 +29,7 @@ class AddFromContactsViewModelTest {
     private val jose = entry("lk-jose", "José Test", "34600000003")
     private val source = FakeWhatsAppContactsSource(listOf(ana, bruno, brunoBusiness, jose))
     private val chats = FakeContactChats()
+    private val prompt = FakeContactsPromptStore()
 
     @Before
     fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -42,17 +44,53 @@ class AddFromContactsViewModelTest {
         packageName: String = ChatKey.WHATSAPP,
     ) = WhatsAppContact(key, name, packageName, listOf("$number@s.whatsapp.net"))
 
-    private fun viewModel() = AddFromContactsViewModel(source, chats)
+    private fun viewModel() = AddFromContactsViewModel(source, chats, prompt)
 
     private val AddFromContactsViewModel.now get() = state.value
 
     @Test
-    fun `the explainer comes first and nothing is read before the user continues`() {
+    fun `the first time the explainer comes first and nothing is read before the user continues`() {
         val vm = viewModel()
 
         assertEquals(AddStep.Explainer, vm.now.step)
+        assertFalse(vm.now.blocked)
         assertTrue(vm.needsPermission())
+        vm.refresh()
+        assertEquals("coming back without the permission changes nothing", AddStep.Explainer, vm.now.step)
         assertEquals(0, source.loads)
+
+        // Android's prompt granted it.
+        source.granted = true
+        vm.load()
+        assertEquals(AddStep.List, vm.now.step)
+        assertEquals(1, source.loads)
+    }
+
+    @Test
+    fun `with the permission already granted the explainer is skipped`() {
+        source.granted = true
+        prompt.blocked = true
+
+        val vm = viewModel()
+
+        assertEquals(AddStep.List, vm.now.step)
+        assertEquals(1, source.loads)
+        assertFalse("a granted permission is no longer blocked", prompt.blocked)
+        vm.refresh()
+        assertEquals("coming back does not read again", 1, source.loads)
+    }
+
+    @Test
+    fun `a revoked permission shows the explainer again`() {
+        source.granted = true
+        viewModel()
+        source.granted = false
+
+        val vm = viewModel()
+
+        assertEquals(AddStep.Explainer, vm.now.step)
+        assertFalse(vm.now.blocked)
+        assertEquals(1, source.loads)
     }
 
     @Test
@@ -60,6 +98,7 @@ class AddFromContactsViewModelTest {
         val vm = viewModel()
         vm.denied()
         assertEquals(AddStep.Denied, vm.now.step)
+        assertFalse(prompt.blocked)
 
         // Continuing without the permission (revoked meanwhile) also ends there.
         vm.load()
@@ -68,13 +107,28 @@ class AddFromContactsViewModelTest {
     }
 
     @Test
+    fun `once Android stops asking the explainer points to settings, and granting there opens the list`() {
+        viewModel().denied(blocked = true)
+        assertTrue(prompt.blocked)
+
+        val vm = viewModel()
+        assertEquals(AddStep.Explainer, vm.now.step)
+        assertTrue(vm.now.blocked)
+
+        // Back from Android's settings with the permission granted.
+        source.granted = true
+        vm.refresh()
+        assertEquals(AddStep.List, vm.now.step)
+        assertFalse(vm.now.blocked)
+        assertFalse(prompt.blocked)
+    }
+
+    @Test
     fun `with the permission the list shows every entry, people already in Cucuto checked and locked`() {
         source.granted = true
         chats.known = KnownContacts(keys = setOf(ChatKey(ChatKey.WHATSAPP, "34600000001@s.whatsapp.net")))
         val vm = viewModel()
         assertFalse(vm.needsPermission())
-
-        vm.load()
 
         assertEquals(AddStep.List, vm.now.step)
         assertEquals(4, vm.now.total)
@@ -94,7 +148,6 @@ class AddFromContactsViewModelTest {
     fun `search ignores case and accents`() {
         source.granted = true
         val vm = viewModel()
-        vm.load()
 
         vm.setQuery("JOSE")
         assertEquals(listOf("lk-jose"), vm.now.rows.map { it.entry.lookupKey })
@@ -110,7 +163,6 @@ class AddFromContactsViewModelTest {
         runTest {
             source.granted = true
             val vm = viewModel()
-            vm.load()
             val rows = vm.now.rows
             vm.toggle(rows.single { it.entry == brunoBusiness }.id)
             vm.toggle(rows.single { it.entry == jose }.id)
@@ -129,7 +181,6 @@ class AddFromContactsViewModelTest {
         runTest {
             source.granted = true
             val vm = viewModel()
-            vm.load()
             vm.save()
             assertTrue(chats.added.isEmpty())
 
@@ -152,7 +203,6 @@ class AddFromContactsViewModelTest {
         source.granted = true
         source.entries = emptyList()
         val vm = viewModel()
-        vm.load()
 
         assertEquals(AddStep.List, vm.now.step)
         assertEquals(0, vm.now.total)

@@ -5,6 +5,9 @@
     <string name="a11y_refreshing">Actualizando</string>
     <string name="a11y_checking">Comprobando</string>
     <string name="a11y_playing">Sonando</string>
+    <string name="a11y_paused">En pausa</string>
+    <string name="a11y_saved">Guardado</string>
+    <string name="a11y_surprise_picked">Ha salido %1$s</string>
     <string name="a11y_label_and_hint">%1$s. %2$s</string>
     <string name="haptic_editor_rhythm_tap_action">grabar un golpe</string>
     <string name="haptic_editor_add_action">Añadir %1$s después del último evento</string>

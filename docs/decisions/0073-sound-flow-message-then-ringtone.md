@@ -101,7 +101,7 @@ ringtone back, as for ring files (ADR 0039).
   line and no cover for "Leave as is", or when nothing rings.
 - **Home list rows**: a small record cover (24 dp) tucked against the avatar for a character ringtone, or a call icon
   for Android default, as in the header, so the row's text keeps its width. TalkBack reads it with the row
-  ("Ringtone: K.K. Slider", "Ringtone: phone default").
+  ("Ringtone: K.K. Slider", "Ringtone: Android default").
 - The **Phone calls** row says what rings: the character with its rule, "Android default", "Left as is", or "No
   ringtone yet". For a character with several versions, "See and edit the rules" under it opens the rules screen of
   [ADR 0074](0074-ringtone-rules-screen.md).
@@ -118,8 +118,9 @@ also shows its two choices when no pack has ringtones.
 `ringtone`. A contact never has both. A restore stores the choice with the voice rule of ADR 0013 (applied, unchanged
 or kept). An Android default contact is matched to an Android contact on the new phone like any phone ringtone
 (ADR 0057), so its own ringtone can be cleared there. "Leave as is" needs no match: Cucuto writes nothing for it.
-Older readers ignore the field and leave the contact's ringtone alone, which is "Leave as is". The valid backup fixture
-gains both cases, and an invalid fixture has both `ringtone` and `ringtoneChoice`.
+Cucuto before 0.2.0 refuses the whole backup instead: its schema allows no unknown contact field (corrected
+2026-10-24 in the ringtone review; it said older readers ignore the field). Backwards compatibility is not a goal
+(#67). The valid backup fixture gains both cases, and an invalid fixture has both `ringtone` and `ringtoneChoice`.
 
 ## Consequences
 

@@ -108,7 +108,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs only the jobs w
 ### Testing on a device
 
 The module needs a rooted Android 17 phone with LSPosed (libxposed API 102). Install a debug build as in the
-[install guide](docs/install.md#before-the-first-release), enable Cucuto in LSPosed with the System Framework scope and
+[install guide](docs/install.md#debug-builds), enable Cucuto in LSPosed with the System Framework scope and
 reboot. Learn the [recovery steps](docs/install.md#if-the-phone-does-not-boot) first: a broken module in
 `system_server` can stop the phone from booting. [`docs/device-testing.md`](docs/device-testing.md) is the full test
 plan, with the log lines to look for. Work that can only be verified on a device is labeled `needs-device`.

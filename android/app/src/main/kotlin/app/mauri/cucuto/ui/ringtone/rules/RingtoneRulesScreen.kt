@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -200,7 +201,8 @@ fun RingtoneRulesContent(
         ) { padding ->
             if (state.loading) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    LoadingIndicator(Modifier.size(56.dp))
+                    val loading = stringResource(R.string.a11y_loading)
+                    LoadingIndicator(Modifier.size(56.dp).semantics { contentDescription = loading })
                 }
                 return@PushedScreen
             }
@@ -499,6 +501,8 @@ private fun <T> Menu(
             for ((value, text) in options) {
                 DropdownMenuItem(
                     text = { Text(text) },
+                    // The check mark is drawn only: TalkBack hears "selected" (#226).
+                    modifier = Modifier.semantics { this.selected = value == selected },
                     leadingIcon =
                         if (value == selected) {
                             ({ Icon(Icons.Rounded.Check, contentDescription = null) })

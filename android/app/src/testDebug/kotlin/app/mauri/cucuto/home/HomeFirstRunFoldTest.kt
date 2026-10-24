@@ -69,7 +69,7 @@ class HomeFirstRunFoldTest {
             }
         }
         compose.onNodeWithText("Get the demo packs").assertIsDisplayed()
-        compose.onNodeWithText("Restore a backup").assertIsDisplayed()
+        compose.onNodeWithText("Restore from backup").assertIsDisplayed()
         val button = compose.onNodeWithText("Get the demo packs").getUnclippedBoundsInRoot()
         val card = compose.onNodeWithText("Getting Cucuto ready").getUnclippedBoundsInRoot()
         assertTrue("the journey comes before the setup card", button.bottom < card.top)

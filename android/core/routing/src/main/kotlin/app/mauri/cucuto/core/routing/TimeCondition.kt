@@ -28,7 +28,10 @@ public class TimeCondition(
 
     init {
         require(untilMs > fromMs) { "Empty span $fromMs..$untilMs" }
-        require((untilMs - fromMs) / BUCKET_MS < MAX_BUCKETS) { "Span too long: ${untilMs - fromMs} ms" }
+        // A span wider than Long.MAX_VALUE wraps to a negative length; state() would then index before the buckets.
+        require(untilMs - fromMs > 0 && (untilMs - fromMs) / BUCKET_MS < MAX_BUCKETS) {
+            "Span too long: $fromMs..$untilMs"
+        }
         var previous = fromMs
         for (t in this.toggles) {
             require(t > previous && t < untilMs) { "Toggles must increase strictly inside the span" }

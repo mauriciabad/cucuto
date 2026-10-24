@@ -14,7 +14,7 @@
     <!-- Ringtone picker as step 2 after the message sound -->
     <string name="ringtone_picker_step">Step 2 of 2 · optional</string>
     <string name="ringtone_picker_skip">Skip</string>
-    <string name="ringtone_picker_step_hint">Messages are set. Now pick what rings when %1$s phones you, or skip this step.</string>
+    <string name="ringtone_picker_step_hint">Messages are set. Now pick what rings when %1$s calls you, or skip this step.</string>
 
     <!-- Contact detail: the Phone calls row and the header -->
     <string name="ringtone_row_default">Android default</string>
@@ -30,5 +30,5 @@
 
     <!-- Home: the ringtone on each row, for TalkBack -->
     <string name="home_chat_ringtone_a11y">Ringtone: %1$s</string>
-    <string name="home_chat_ringtone_default_a11y">Ringtone: phone default</string>
+    <string name="home_chat_ringtone_default_a11y">Ringtone: Android default</string>
 </resources>
