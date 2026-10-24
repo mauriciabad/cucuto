@@ -72,7 +72,8 @@ trash in one rename. `deleteLeftovers()` at startup removes staging and trash fo
 - Large entries are streamed (#84). Extraction copies each file in 64 KiB chunks (`PackSource.copyTo`). The audio
   header probes read pages of the entry on demand (`PackSource.useFile`): stored entries straight from the archive,
   deflated ones from their first and last MiB kept in memory, with the middle inflated again when needed. Every read
-  still checks the whole entry (inflated size and CRC-32), so the error codes did not change. Entries up to 4 MiB, the
+  still checks the whole entry (inflated size and CRC-32), so the error codes did not change. (Since #241, only the
+  first read of an entry checks its CRC-32; later reads trust it, see ADR 0061.) Entries up to 4 MiB, the
   usual clip, sprite or manifest, are still read whole. pack-spec's tests run on a 64 MiB heap with entries larger
   than that.
 - `:core:data` (#14) can mirror `PackStore` state in Room, but the folders and `active` pointers are the truth about
