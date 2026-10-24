@@ -17,7 +17,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -60,7 +59,6 @@ internal fun JourneyCard(
     modifier: Modifier = Modifier,
     onRestoreBackup: () -> Unit = {},
     onAddFromContacts: () -> Unit = {},
-    onTrySampleChat: () -> Unit = {},
 ) {
     when (step) {
         JourneyStep.None -> {
@@ -72,7 +70,7 @@ internal fun JourneyCard(
         }
 
         JourneyStep.WaitForMessages -> {
-            WaitForMessagesCard(onTrySampleChat, onPreviewCharacters, onAddFromContacts, modifier)
+            WaitForMessagesCard(onPreviewCharacters, onAddFromContacts, modifier)
         }
 
         is JourneyStep.GiveFirstVoice -> {
@@ -127,13 +125,11 @@ private fun ImportPacksCard(
 }
 
 /**
- * Packs are in, nobody has messaged since: say what happens next, offer the sample chat (ADR 0075: a demo that plays a
- * voice in the app, without the module), let the user hear the characters, or add someone from contacts before they
- * message (ADR 0065).
+ * Packs are in, nobody has messaged since: say what happens next, let the user hear the characters, or add someone
+ * from contacts before they message (ADR 0065).
  */
 @Composable
 private fun WaitForMessagesCard(
-    onTrySampleChat: () -> Unit,
     onPreviewCharacters: () -> Unit,
     onAddFromContacts: () -> Unit,
     modifier: Modifier = Modifier,
@@ -147,11 +143,6 @@ private fun WaitForMessagesCard(
         JourneyTitle(stringResource(R.string.home_journey_wait_title))
         JourneyBody(stringResource(R.string.home_journey_wait_body))
         Button(
-            onClick = onTrySampleChat,
-            shapes = ButtonDefaults.shapes(),
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.home_journey_sample)) }
-        OutlinedButton(
             onClick = onPreviewCharacters,
             shapes = ButtonDefaults.shapes(),
             modifier = Modifier.fillMaxWidth(),

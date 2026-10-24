@@ -33,8 +33,8 @@ The Play-only machinery is removed, so it doesn't rot or ask for secrets nobody 
   `android/app/build.gradle.kts` goes too.
 - `fastlane/metadata/android/`, the feature graphic and the 9:16 store screenshots **stay**: F-Droid and IzzyOnDroid
   read the same layout.
-- The sample chat (ADR 0075) **stays**. It was built for Play reviewers, but it also lets anyone without the module
-  hear a character before setting up LSPosed.
+- The sample chat (ADR 0075), built for Play reviewers, was ~~kept~~ then removed the same day: the owner found a demo
+  that changes nothing not worth maintaining (ADR 0075's status).
 
 **Android developer verification** (worldwide on certified phones from 2027, APKs from outside Play included) no
 longer comes with a Play Console account. The owner registers through the free-standing

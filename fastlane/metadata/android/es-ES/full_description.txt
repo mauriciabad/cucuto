@@ -6,7 +6,7 @@ Cucuto reproduce el sonido y la vibración de un personaje distinto para cada co
 • <b>LSPosed</b> que cargue módulos modernos (libxposed API 102). Ahí activas Cucuto con el ámbito System Framework y reinicias.
 • <b>WhatsApp o WhatsApp Business</b>, con su propio tono y vibración de notificación activados.
 
-Sin root ni LSPosed no puede cambiar los sonidos de WhatsApp, pero con el chat de ejemplo oyes y notas cualquier personaje en la app. Cucuto es una versión temprana: puede tener asperezas, y conviene saber cómo entrar en el modo seguro de tu gestor de root por si el móvil no arranca.
+Sin root ni LSPosed no puede cambiar los sonidos de WhatsApp. Cucuto es una versión temprana: puede tener asperezas, y conviene saber cómo entrar en el modo seguro de tu gestor de root por si el móvil no arranca.
 
 <b>Cómo funciona</b>
 • <b>Importa un pack de sonidos.</b> Abre un archivo .soundpack.zip, descárgalo de un repositorio de packs o crea el tuyo en la app. Un pack es un reparto de personajes: criaturas con clips cortos y su propia vibración, o canciones para las llamadas.

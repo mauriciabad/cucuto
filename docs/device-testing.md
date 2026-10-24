@@ -58,16 +58,6 @@ adb shell content query --uri content://com.android.contacts/contacts --projecti
 - [ ] Packs → import your largest private pack (the 268-character one) from a file. Time it: from picking the file to
       the review screen, and from **Install** to done. Post both times on #329 (and 0.1.8's, if you remember them).
 
-**5. The sample chat** (#310, ADR 0075)
-
-It shows only with packs and no chats, so use a second phone or an Android 17 emulator, no root needed (the Play
-reviewer's path).
-
-- [ ] Install the APK, **Skip** the onboarding, **Get the demo packs**, then **Try a sample chat** on Home.
-- [ ] The Demo banner shows. Tap a character: it previews and becomes the voice. **Play a sample message** plays a
-      clip with its vibration; **Play a sample call** rings until **Stop**.
-- [ ] Nothing appears in the notification shade. More checks: [Sample chat](#sample-chat-285-adr-0075-the-play-reviewers-path).
-
 ## 0. Recovery ladder (read first)
 
 1. Phone usable: `adb uninstall app.mauri.cucuto`, then reboot. LSPosed drops a module whose APK is gone.
@@ -209,14 +199,6 @@ the packs on the Packs tab first to see the import step). The demo bundle comes 
 - When the setup card turns green on Home it celebrates, says it moves to Settings, and collapses after about 4 s.
 - Back: from a pushed screen it pops; from another tab's root it goes to Home (predictive back previews Home); from
   Home it leaves the app. Tapping the selected tab again pops it to its root. Each tab keeps its scroll and stack.
-
-### Sample chat (#285, ADR 0075), the Play reviewer's path
-
-Works with the module off. With packs but no chat yet, Home's "Your characters are ready" card → **Try a sample
-chat**: the Demo banner shows, tapping a character previews it and makes it the voice, **Play a sample message** plays
-a clip with the character's vibration, and **Play a sample call** rings the ringtone until **Stop**. Nothing appears
-in the notification shade, Diagnostics' routing table keeps the same key count, and the sample chat isn't in a new
-backup.
 
 ## 3. Real WhatsApp messages
 

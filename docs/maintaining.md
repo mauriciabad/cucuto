@@ -68,7 +68,6 @@ tells you whether you broke one of them:
 | --- | --- |
 | `FirstRunSmokeTest` | onboarding ends on Home; the demo pack imports from the file picker; "Open with" imports a download (a media provider `content:` URI) |
 | `VoiceSmokeTest` | message voice then the optional ringtone step (#318), then "Android default" and "Leave as is"; own ringtone rules saved and reset; "Surprise me" in the picker; each change checked in the routing table the publisher writes for the module |
-| `SampleChatSmokeTest` | the sample chat plays a message and a call |
 | `BackupSmokeTest` | full backup export, wipe, restore from Home; the voice is back in the routing table |
 
 Pick one way to run it (both build the demo packs with the packer first, the `demoPacks` task):

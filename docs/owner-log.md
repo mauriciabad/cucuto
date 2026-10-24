@@ -480,6 +480,27 @@ in `web/static/video/` and `web/src/lib/assets/images/`, so Home plays it instea
 
 > the video is ready to be published it is a moment
 
+## 2026-10-24 — Chat with an agent (remove the sample chat)
+
+(After ADR 0080, the agent said the sample chat stays for people without the module, and the owner asked about it.)
+
+> did you cancel the simple chat?
+
+(The agent answered that it was kept, as a "try before you set up" preview.)
+
+> but they can hear means that it will work or that is just a demo?
+
+(The agent answered that it is only a demo: it plays in the app and changes nothing in WhatsApp.)
+
+> if it is just a demo is a completely useless feature that is a waste of time to develop and a burden to mantain!
+
+> speak with the other session about the simple chat. i want it completely removed
+
+(The sample chat is removed: the `sample` package, its settings store, its destination, Home's "Try a sample chat"
+button, its strings, tests and goldens, and its mentions in the README, install guide, device testing, website and
+store descriptions. "Hear the characters" is now the main action of Home's "Your characters are ready" card. ADR 0075
+withdrawn. The lead session agreed; PR #364 and issues #346 and #308 closed.)
+
 ## 2026-10-24 — Testing v0.2.0 on the phone (ringtone badge in the Home → contact detail transition, #339)
 
 > the animation that moves the character from the list to the contact detail is smooth but the image of the ringtone has an issue with the zposition, while moving charavter is avobe but when stops (begining and end) the ringtone pops avobe the character. i think it should move along with the character as a group
