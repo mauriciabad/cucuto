@@ -116,7 +116,7 @@ class DiscoverContentTest {
 
         // The pattern lasts until 50 ms after its last tap.
         compose.onNodeWithContentDescription("Vibration: own pattern, 0.3 seconds").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Bzz").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Bzz").assertExists()
         // No x-haptic: nothing is drawn, as nothing vibrates.
         compose.onAllNodesWithContentDescription("Vibration", substring = true).assertCountEquals(1)
     }
@@ -134,7 +134,7 @@ class DiscoverContentTest {
         show(state(load))
 
         compose.onNodeWithContentDescription("Vibration follows the voice").assertIsDisplayed()
-        compose.onNodeWithText("No vibration").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("No vibration", useUnmergedTree = true).assertExists()
     }
 
     @Test

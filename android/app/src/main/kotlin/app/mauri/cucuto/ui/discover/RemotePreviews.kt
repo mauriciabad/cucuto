@@ -4,8 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -120,7 +120,7 @@ internal fun RemoteCharacterBadge(
             modifier = Modifier.clearAndSetSemantics {},
         )
         CharacterTheme(seed = character.seedColor?.let(::Color)) {
-            RemoteCharacterHaptic(character.haptic, Modifier.width(size))
+            RemoteCharacterHaptic(character.haptic, Modifier.fillMaxWidth())
         }
     }
 }
@@ -143,6 +143,7 @@ internal fun RemoteCharacterHaptic(
                 events = haptic.events,
                 modifier =
                     modifier
+                        .padding(horizontal = 8.dp)
                         .height(HAPTIC_THUMBNAIL_HEIGHT)
                         .clearAndSetSemantics { contentDescription = description },
             )
@@ -150,12 +151,14 @@ internal fun RemoteCharacterHaptic(
 
         Haptic.Auto -> {
             val description = stringResource(R.string.haptic_preview_auto_spoken)
-            Row(
+            // The level meter takes the drawing's place, the words go under it with the badge's whole width.
+            Column(
                 modifier = modifier.clearAndSetSemantics { contentDescription = description },
-                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                VoiceWave(MaterialTheme.colorScheme.primary, Modifier.size(width = 12.dp, height = 12.dp))
+                Box(Modifier.height(HAPTIC_THUMBNAIL_HEIGHT), contentAlignment = Alignment.Center) {
+                    VoiceWave(MaterialTheme.colorScheme.primary, Modifier.size(width = 14.dp, height = 12.dp))
+                }
                 HapticLabel(stringResource(R.string.haptic_preview_auto))
             }
         }
