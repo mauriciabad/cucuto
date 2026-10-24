@@ -64,10 +64,10 @@ import app.mauri.cucuto.R
 import app.mauri.cucuto.backup.PackFailure
 import app.mauri.cucuto.core.backup.PackRestoreAction
 import app.mauri.cucuto.core.data.db.GroupPolicy
-import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.PushedScreen
+import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.settings.ZIP_TYPES
