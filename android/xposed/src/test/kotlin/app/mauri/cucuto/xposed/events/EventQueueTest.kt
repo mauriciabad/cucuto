@@ -136,6 +136,32 @@ class EventQueueTest {
     }
 
     @Test
+    fun groupLogLinesShowOnlyTheSendersShape() {
+        val line =
+            CucutoModule.describe(
+                event(5).copy(
+                    conversationKey = "120363000000000005@g.us",
+                    isGroup = true,
+                    senderKey = "424242424242424@lid",
+                    senderName = "Sender Name",
+                ),
+            )
+        assertTrue(line, line.contains("key=@g.us group=true sender=@lid"))
+        assertFalse(line, line.contains("424242"))
+        assertFalse(line, line.contains("Sender"))
+        assertFalse(line, CucutoModule.describe(event(6)).contains("sender="))
+    }
+
+    @Test
+    fun senderShapeTellsWhatTheRecordCarried() {
+        assertEquals("@lid", ModuleLog.senderShape("123@lid", hasName = true))
+        assertEquals("@s.whatsapp.net", ModuleLog.senderShape("34600000000@s.whatsapp.net", hasName = false))
+        assertEquals("<other>", ModuleLog.senderShape("some person", hasName = true))
+        assertEquals("<name only>", ModuleLog.senderShape(null, hasName = true))
+        assertEquals("<none>", ModuleLog.senderShape(null, hasName = false))
+    }
+
+    @Test
     fun keyShapeKeepsOnlyTheJidDomain() {
         assertEquals("@lid", ModuleLog.keyShape("123@lid"))
         assertEquals("@g.us", ModuleLog.keyShape("120363@g.us"))

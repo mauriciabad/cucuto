@@ -64,5 +64,19 @@ internal class ModuleLog(
             val at = key.lastIndexOf('@')
             return if (at in 1 until key.length - 1 && key.indexOf(' ') < 0) key.substring(at) else "<title>"
         }
+
+        /**
+         * A loggable shape of a group message's sender, for the device check of the per-sender policy (#20): the
+         * JID domain of its `Person` key, `<other>` for a key that is not a JID, `<name only>` when the message
+         * named the sender without a key, `<none>` when the record carried no sender. Never the key or the name.
+         */
+        fun senderShape(
+            key: String?,
+            hasName: Boolean,
+        ): String {
+            if (key == null) return if (hasName) "<name only>" else "<none>"
+            val shape = keyShape(key)
+            return if (shape == "<title>") "<other>" else shape
+        }
     }
 }

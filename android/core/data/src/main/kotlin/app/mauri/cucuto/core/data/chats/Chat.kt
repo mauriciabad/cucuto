@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.data.db.AssignmentEntity
 import app.mauri.cucuto.core.data.db.ContactKeyEntity
 import app.mauri.cucuto.core.data.db.ContactKeyKind
 import app.mauri.cucuto.core.data.db.ContactWithKeys
+import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.SeenSenderEntity
 import kotlinx.serialization.Serializable
 
@@ -22,6 +23,14 @@ data class ChatKey(
 ) {
     /** Whether the key is a WhatsApp group (`@g.us`). */
     val isGroupKey: Boolean get() = ContactKeyKind.classify(conversationKey) == ContactKeyKind.GROUP_JID
+
+    companion object {
+        /** WhatsApp's package. */
+        const val WHATSAPP: String = "com.whatsapp"
+
+        /** WhatsApp Business's package: same flows, separate keys (#21). */
+        const val WHATSAPP_BUSINESS: String = "com.whatsapp.w4b"
+    }
 
     /** Redacted form for logs and test names: only the key's JID domain. */
     override fun toString(): String = "ChatKey($packageName, …@${conversationKey.substringAfterLast('@', "?")})"
@@ -44,6 +53,8 @@ data class ChatVoice(
  * @property lastSeenAt When the module last saw one of its notifications (ms since the epoch), or null if never.
  * @property messageCount Notifications seen across all its keys.
  * @property keys Every messenger key of the chat ([key] included).
+ * @property groupPolicy Groups only: one voice for the whole group, or each sender's own voice (#20). A group that is
+ *   not a contact yet has the default, [GroupPolicy.GROUP].
  */
 data class Chat(
     val key: ChatKey,
@@ -54,7 +65,11 @@ data class Chat(
     val lastSeenAt: Long?,
     val messageCount: Int,
     val keys: List<ChatKey> = listOf(key),
-)
+    val groupPolicy: GroupPolicy = GroupPolicy.GROUP,
+) {
+    /** Whether the chat lives in WhatsApp Business rather than WhatsApp; its keys and voices are its own (#21). */
+    val isBusiness: Boolean get() = key.packageName == ChatKey.WHATSAPP_BUSINESS
+}
 
 /**
  * Joins contacts, their assignments and the recent senders feed into chats, most recently seen first (chats never
@@ -94,6 +109,7 @@ internal fun mergeChats(
                 lastSeenAt = newest?.lastSeenAt,
                 messageCount = seenRows.sumOf { it.messageCount },
                 keys = chatKeys,
+                groupPolicy = contact.contact.groupPolicy,
             )
     }
     for ((key, row) in sightings) {

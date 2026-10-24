@@ -3,6 +3,7 @@ package app.mauri.cucuto.core.data.chats
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.FakeClock
 import app.mauri.cucuto.core.data.db.CucutoDatabase
+import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.inMemoryDatabase
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
@@ -154,6 +155,102 @@ class ChatDirectoryTest {
             assertEquals(setOf(ChatKey(WA, ADA), ChatKey(WA, ADA_PHONE)), chats[0].keys.toSet())
             assertEquals(ChatVoice(PACK, "frog"), chats[0].voice)
             assertNull(chats[2].voice)
+        }
+
+    @Test
+    fun aSeenGroupCanBeSwitchedToPerSenderWithoutAVoice() =
+        runTest {
+            seen.record(WA, CLUB, "Book club", isGroup = true, seenAt = 1_000)
+            assertEquals(
+                GroupPolicy.GROUP,
+                directory
+                    .observeChats()
+                    .first()
+                    .single()
+                    .groupPolicy,
+            )
+
+            val contactId = directory.setGroupPolicy(ChatKey(WA, CLUB), GroupPolicy.PER_SENDER)
+
+            val chat = directory.observeChats().first().single()
+            assertEquals(contactId, chat.contactId)
+            assertEquals(GroupPolicy.PER_SENDER, chat.groupPolicy)
+            assertNull(chat.voice)
+            assertEquals("Book club", chat.displayName)
+            val group = contacts.get(contactId)!!.contact
+            assertTrue(group.isGroup)
+
+            // Switching back keeps the contact (and any voice) as it was.
+            assertEquals(contactId, directory.setGroupPolicy(ChatKey(WA, CLUB), GroupPolicy.GROUP))
+            assertEquals(
+                GroupPolicy.GROUP,
+                directory
+                    .observeChats()
+                    .first()
+                    .single()
+                    .groupPolicy,
+            )
+        }
+
+    @Test
+    fun theGroupPolicyIsKeptPerApp() =
+        runTest {
+            directory.setGroupPolicy(ChatKey(WA, CLUB), GroupPolicy.PER_SENDER)
+            directory.assign(ChatKey(W4B, CLUB), PACK, "owl")
+
+            val chats = directory.observeChats().first().associateBy { it.key }
+            assertEquals(GroupPolicy.PER_SENDER, chats.getValue(ChatKey(WA, CLUB)).groupPolicy)
+            assertEquals(GroupPolicy.GROUP, chats.getValue(ChatKey(W4B, CLUB)).groupPolicy)
+            assertFalse(chats.getValue(ChatKey(WA, CLUB)).isBusiness)
+            assertTrue(chats.getValue(ChatKey(W4B, CLUB)).isBusiness)
+        }
+
+    @Test
+    fun perSenderGroupMembersBecomeRecentSenders() =
+        runTest {
+            val sightings = AlertSightings(seen, contacts)
+            directory.setGroupPolicy(ChatKey(WA, CLUB), GroupPolicy.PER_SENDER)
+
+            sightings.record(WA, CLUB, "Book club", isGroup = true, seenAt = 1_000, senderKey = ADA, senderName = "Ada")
+
+            val chats = directory.observeChats().first()
+            assertEquals(setOf(ChatKey(WA, CLUB), ChatKey(WA, ADA)), chats.map { it.key }.toSet())
+            val ada = chats.single { it.key == ChatKey(WA, ADA) }
+            assertEquals("Ada", ada.displayName)
+            assertFalse(ada.isGroup)
+            assertNull(ada.contactId)
+
+            // A voice given to the member is her 1:1 key, which is what the per-sender lookup lands on.
+            val adaId = directory.assign(ChatKey(WA, ADA), PACK, "frog")
+            assertEquals(adaId, contacts.findByKey(WA, ADA)?.id)
+        }
+
+    @Test
+    fun onlyPerSenderGroupsAddTheirMembers() =
+        runTest {
+            val sightings = AlertSightings(seen, contacts)
+            // Default policy, seen only.
+            sightings.record(WA, CLUB, "Club", isGroup = true, seenAt = 1_000, senderKey = ADA, senderName = "Ada")
+            // Default policy, with a voice.
+            directory.assign(ChatKey(WA, CLUB), PACK, "owl")
+            sightings.record(WA, CLUB, "Club", isGroup = true, seenAt = 2_000, senderKey = BEA, senderName = "Bea")
+            // Per sender, but the sender is not a person JID, or is missing.
+            directory.setGroupPolicy(ChatKey(WA, CLUB), GroupPolicy.PER_SENDER)
+            sightings.record(WA, CLUB, "Club", isGroup = true, seenAt = 3_000, senderKey = "Ada", senderName = "Ada")
+            sightings.record(WA, CLUB, "Club", isGroup = true, seenAt = 4_000, senderKey = null, senderName = "Ada")
+            // A 1:1 alert never adds a second row.
+            sightings.record(WA, BEA, "Bea", isGroup = false, seenAt = 5_000, senderKey = ADA, senderName = "Ada")
+            // A Business alert does not look at the WhatsApp group's policy.
+            sightings.record(W4B, CLUB, "Club", isGroup = true, seenAt = 6_000, senderKey = ADA, senderName = "Ada")
+
+            val keys =
+                directory
+                    .observeChats()
+                    .first()
+                    .map { it.key }
+                    .toSet()
+            assertEquals(setOf(ChatKey(WA, CLUB), ChatKey(WA, BEA), ChatKey(W4B, CLUB)), keys)
+            assertEquals(4, seen.get(WA, CLUB)!!.messageCount)
         }
 
     @Test
