@@ -42,13 +42,15 @@ people pick the app's language in the system settings, separately from the phone
 
 ## Language row in Settings
 
-There is no in-app picker yet: the Settings screen (#28) had not landed on `main` when this shipped. The system's
-per-app language page already works. To add the row, put a "Language" item in Settings that opens
-`Settings.ACTION_APP_LOCALE_SETTINGS` with `package:app.mauri.cucuto` as the data URI, the system page.
-Alternatively, show an in-app choice (System default, English, Español) that sets
-`context.getSystemService(LocaleManager::class.java).applicationLocales`: `LocaleList.forLanguageTags("es")`, or
-`LocaleList.getEmptyLocaleList()` for the system default. No AppCompat is needed, because `minSdk` is 37. Add its
-strings in both languages.
+Settings has a **Language** section (`ui/settings/LanguageSection.kt`) with one row, "App language". Its summary
+is the language picked for Cucuto, named in itself ("Español"), or "Same as the phone". Tapping it opens Android's
+own page (`Settings.ACTION_APP_LOCALE_SETTINGS` for `package:app.mauri.cucuto`), the documented place for the
+choice. That page keeps the "System default" entry and syncs with Android's App languages list. Choosing a language
+recreates the activity in that language.
+
+If an in-app picker is ever wanted instead, set
+`context.getSystemService(LocaleManager::class.java).applicationLocales` to `LocaleList.forLanguageTags("es")`, or
+to `LocaleList.getEmptyLocaleList()` for the system default. No AppCompat is needed, because `minSdk` is 37.
 
 ## Consequences
 

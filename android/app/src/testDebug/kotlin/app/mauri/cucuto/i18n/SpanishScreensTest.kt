@@ -17,6 +17,9 @@ import app.mauri.cucuto.home.HomeState
 import app.mauri.cucuto.home.previewHomeState
 import app.mauri.cucuto.picker.PickerContent
 import app.mauri.cucuto.picker.previewPickerState
+import app.mauri.cucuto.ui.settings.SettingsActions
+import app.mauri.cucuto.ui.settings.SettingsContent
+import app.mauri.cucuto.ui.settings.SettingsState
 import app.mauri.cucuto.ui.status.ModuleCheck
 import app.mauri.cucuto.ui.status.PacksCheck
 import app.mauri.cucuto.ui.status.ScopeCheck
@@ -98,6 +101,15 @@ class SpanishScreensTest {
         }
         compose.onNodeWithText("Preparando Cucuto").assertIsDisplayed()
         compose.onNodeWithText("Importar un pack").assertExists()
+        assertNoClippedText()
+    }
+
+    @Test
+    fun settingsWithTheLanguageRow() {
+        show { SettingsContent(state = SettingsState(), systemRemovesAnimations = false, actions = SettingsActions()) }
+        compose.onNodeWithText("Ajustes").assertIsDisplayed()
+        compose.onNodeWithText("Idioma de la app").assertExists()
+        compose.onNodeWithText("El mismo que el móvil").assertExists()
         assertNoClippedText()
     }
 
