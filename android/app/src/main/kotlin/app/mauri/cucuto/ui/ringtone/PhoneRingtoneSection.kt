@@ -2,19 +2,23 @@ package app.mauri.cucuto.ui.ringtone
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -47,21 +52,22 @@ data class PhoneRingtoneActions(
     val onPickContact: () -> Unit = {},
     val onUnlink: () -> Unit = {},
     val onUse: () -> Unit = {},
-    val onMode: (RingtoneMode) -> Unit = {},
-    val onVariant: (String) -> Unit = {},
+    /** Opens the ringtone picker (#53): character, versions and rule. */
+    val onChoose: () -> Unit = {},
     val onStop: () -> Unit = {},
     val onTakeOver: () -> Unit = {},
     val onAllowPhone: () -> Unit = {},
 )
 
 /**
- * The phone ringtone (#52) of [chat], as a self-contained card for the contact detail screen: turn the feature on
- * (with the contacts permission explained first), link the Android contact (suggested by phone number, or picked),
- * choose how the version is picked, and see what rings. The album-cover picker and previews are #53.
+ * The phone ringtone (#52) of [chat], as a self-contained card for the contact detail screen: what rings (its album
+ * cover and rule; a tap opens the ringtone picker, [onChoose]), turn the feature on (with the contacts permission
+ * explained first), link the Android contact (suggested by phone number, or picked), and see what rings.
  */
 @Composable
 fun PhoneRingtoneSection(
     chat: ChatKey,
+    onChoose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel =
@@ -89,11 +95,7 @@ fun PhoneRingtoneSection(
                 onPickContact = { runCatching { picker.launch(null) } },
                 onUnlink = viewModel::unlink,
                 onUse = viewModel::use,
-                onMode = { mode ->
-                    viewModel.setMode(mode)
-                    if (mode == RingtoneMode.RANDOM) allowPhone()
-                },
-                onVariant = viewModel::setVariant,
+                onChoose = onChoose,
                 onStop = viewModel::stop,
                 onTakeOver = viewModel::takeOver,
                 onAllowPhone = allowPhone,
@@ -127,13 +129,14 @@ fun PhoneRingtoneContent(
                 modifier = Modifier.semantics { heading() },
             )
             if (state.loading) return@Column
+            if (state.contactId == null) {
+                Body(stringResource(R.string.ringtone_no_character))
+                return@Column
+            }
+            Summary(state, tap(actions.onChoose))
             when {
-                !state.hasCharacter -> {
-                    Body(stringResource(R.string.ringtone_no_character))
-                }
-
                 state.variants.isEmpty() -> {
-                    Body(stringResource(R.string.ringtone_no_ringtones, state.characterName.orEmpty()))
+                    Body(stringResource(R.string.ringtone_choose_other))
                 }
 
                 !state.enabled -> {
@@ -201,30 +204,6 @@ private fun Linked(
         }
         return@Column
     }
-    if (state.modes.isNotEmpty()) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (mode in state.modes) {
-                FilterChip(
-                    selected = state.mode == mode,
-                    onClick = tap { if (state.mode != mode) actions.onMode(mode) },
-                    label = { Text(stringResource(mode.label)) },
-                )
-            }
-        }
-        Body(stringResource(state.mode.body))
-    }
-    if (state.mode == RingtoneMode.FIXED && state.variants.size > 1) {
-        val selected = state.fixedVariant ?: state.variants.first().file
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (variant in state.variants) {
-                FilterChip(
-                    selected = selected == variant.file,
-                    onClick = tap { actions.onVariant(variant.file) },
-                    label = { Text(variant.label) },
-                )
-            }
-        }
-    }
     Text(
         status(state),
         style = MaterialTheme.typography.bodyMedium,
@@ -254,6 +233,85 @@ private fun Linked(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     TextButton(onClick = tap(actions.onStop)) { Text(stringResource(R.string.ringtone_stop)) }
+}
+
+/**
+ * What rings, as one row that opens the ringtone picker: the album cover, the character and the rule (or that the
+ * character has no ringtone, or that none is chosen yet).
+ */
+@Composable
+private fun Summary(
+    state: PhoneRingtoneUiState,
+    onChoose: () -> Unit,
+) {
+    val character = state.ringingCharacter
+    val headline = state.characterName ?: stringResource(R.string.ringtone_summary_none)
+    val rule =
+        when {
+            state.variants.isEmpty() && state.characterName != null -> {
+                stringResource(R.string.ringtone_no_ringtones, state.characterName)
+            }
+
+            state.variants.isEmpty() -> {
+                stringResource(R.string.ringtone_summary_pick)
+            }
+
+            !state.using -> {
+                stringResource(R.string.ringtone_summary_not_used)
+            }
+
+            state.fixedLabel != null -> {
+                stringResource(R.string.ringtone_summary_fixed, state.fixedLabel!!)
+            }
+
+            state.modes.isEmpty() -> {
+                stringResource(R.string.ringtone_summary_single)
+            }
+
+            else -> {
+                stringResource(state.mode.label)
+            }
+        }
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier =
+            Modifier.fillMaxWidth().clickable(
+                onClickLabel = stringResource(R.string.ringtone_choose),
+                role = Role.Button,
+                onClick = onChoose,
+            ),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(12.dp),
+        ) {
+            if (character != null) {
+                RecordCover(character, size = 48.dp, pulledOut = state.using)
+            }
+            Column(Modifier.weight(1f)) {
+                Text(headline, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    rule,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (state.mixed && state.using) {
+                    Text(
+                        stringResource(R.string.ringtone_summary_mixed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+            Icon(
+                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable
@@ -306,26 +364,6 @@ private fun Body(
         modifier = modifier,
     )
 }
-
-private val RingtoneMode.label: Int
-    get() =
-        when (this) {
-            RingtoneMode.PACK -> R.string.ringtone_rule_pack
-            RingtoneMode.RANDOM -> R.string.ringtone_rule_random
-            RingtoneMode.TIME -> R.string.ringtone_rule_time
-            RingtoneMode.SEASON -> R.string.ringtone_rule_season
-            RingtoneMode.FIXED -> R.string.ringtone_rule_fixed
-        }
-
-private val RingtoneMode.body: Int
-    get() =
-        when (this) {
-            RingtoneMode.PACK -> R.string.ringtone_rule_pack_body
-            RingtoneMode.RANDOM -> R.string.ringtone_rule_random_body
-            RingtoneMode.TIME -> R.string.ringtone_rule_time_body
-            RingtoneMode.SEASON -> R.string.ringtone_rule_season_body
-            RingtoneMode.FIXED -> R.string.ringtone_rule_fixed_body
-        }
 
 @Preview(showBackground = true)
 @Composable

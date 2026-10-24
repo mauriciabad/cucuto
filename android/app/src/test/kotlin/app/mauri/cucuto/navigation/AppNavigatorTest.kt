@@ -163,6 +163,7 @@ class AppNavigatorTest {
                 ada,
                 CucutoDestination.Picker(),
                 CucutoDestination.ContactDetail(ada.chat!!),
+                CucutoDestination.RingtonePicker(ada.chat!!),
                 CucutoDestination.HapticEditor(),
                 CucutoDestination.Diagnostics,
                 CucutoDestination.Developer,
