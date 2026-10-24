@@ -157,6 +157,11 @@ data class StatusInputs(
     val packCount: Int,
     /** The installed app replaced an earlier install after this boot ([StatusChecks.updatedSinceBoot]). */
     val appUpdatedSinceBoot: Boolean = false,
+    /**
+     * The module already holds the app's latest table without the framework service: it pulled it from the app's
+     * provider (ADR 0048, [StatusChecks.providerDelivered]). Then a lost service needs no reboot.
+     */
+    val providerDelivered: Boolean = false,
 )
 
 /** The four checks of the status card. */
@@ -221,6 +226,23 @@ object StatusChecks {
         bootTimeMillis: Long,
     ): Boolean = lastUpdateMillis > firstInstallMillis && lastUpdateMillis > bootTimeMillis
 
+    /**
+     * Whether the module holds [latestGeneration], the table the app published last: the module fetched it from the
+     * provider in this process ([servedGeneration]), or reported it since this boot. False when the app has not
+     * published anything yet.
+     */
+    fun providerDelivered(
+        latestGeneration: Long?,
+        servedGeneration: Long?,
+        moduleStatus: ReceivedStatus?,
+        bootTimeMillis: Long,
+    ): Boolean {
+        if (latestGeneration == null || latestGeneration <= 0) return false
+        if (servedGeneration == latestGeneration) return true
+        val status = moduleStatus?.status ?: return false
+        return isSameBoot(status.bootTimeMillis, bootTimeMillis) && status.tableGeneration == latestGeneration
+    }
+
     private fun module(
         inputs: StatusInputs,
         reportedThisBoot: Boolean,
@@ -228,8 +250,10 @@ object StatusChecks {
         val systemTarget = inputs.framework?.targets?.let(::systemServerTarget)
         val stale = systemTarget?.state == TargetState.STALE || systemTarget?.state == TargetState.FAILED
         // No framework service after an update: LSPosed only hands it over again after a reboot (ADR 0043). The
-        // module may still run and report, but no voice change can reach it, so this is not "active".
-        val frameworkLost = inputs.connection == SinkConnection.Disconnected && inputs.appUpdatedSinceBoot
+        // module may still run and report, but voice changes reach it only if it pulls them from the app's provider
+        // (ADR 0048); when it does not (module code from before that, loaded at boot), this is not "active".
+        val serviceLost = inputs.connection == SinkConnection.Disconnected && inputs.appUpdatedSinceBoot
+        val frameworkLost = serviceLost && !inputs.providerDelivered
         if (reportedThisBoot) {
             val status = checkNotNull(inputs.moduleStatus).status
             return when {
@@ -240,10 +264,13 @@ object StatusChecks {
         }
         return when (val connection = inputs.connection) {
             SinkConnection.Disconnected -> {
-                if (frameworkLost) {
-                    ModuleCheck.NeedsReboot(afterUpdate = true, frameworkLost = true)
-                } else {
-                    ModuleCheck.NotEnabled
+                when {
+                    frameworkLost -> ModuleCheck.NeedsReboot(afterUpdate = true, frameworkLost = true)
+
+                    // The module pulled the table, so it runs; its report follows within seconds.
+                    serviceLost -> ModuleCheck.AwaitingSelfTest
+
+                    else -> ModuleCheck.NotEnabled
                 }
             }
 

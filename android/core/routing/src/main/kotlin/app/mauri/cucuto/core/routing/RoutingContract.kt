@@ -22,8 +22,21 @@ public object RoutingContract {
      */
     public const val REMOTE_FILE: String = "routing.table"
 
-    /** Broadcast the app sends to `system_server` after every publication, so the module re-reads [REMOTE_FILE]. */
+    /**
+     * Broadcast the app sends to `system_server` after every publication, so the module re-reads [REMOTE_FILE], or
+     * pulls the table from the app ([PROVIDER_PATH]) when the file does not have it (ADR 0048). Sent also when the
+     * app has no framework service.
+     */
     public const val ACTION_TABLE_PUBLISHED: String = "app.mauri.cucuto.action.ROUTING_TABLE_PUBLISHED"
+
+    /** Long extra of [ACTION_TABLE_PUBLISHED]: the generation just published. Absent from apps before ADR 0048. */
+    public const val EXTRA_GENERATION: String = "generation"
+
+    /**
+     * Path of the app's event provider (`content://app.mauri.cucuto.events/routing`) that `openFile` serves to the
+     * system only: the latest table the app published, framed by [RoutingFile] (ADR 0048).
+     */
+    public const val PROVIDER_PATH: String = "routing"
 
     /** Package of the receivers registered by `system_server` with its system context: the nudge targets it only. */
     public const val SYSTEM_PACKAGE: String = "android"

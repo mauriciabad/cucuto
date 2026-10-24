@@ -52,6 +52,7 @@ class RoutingPublisherTest {
     private val clock = FakeClock()
     private val sink = FakeSink()
     private val mirror = FakeMirror()
+    private val publishedTable = FakeStore()
 
     @Before
     fun setUp() {
@@ -81,7 +82,7 @@ class RoutingPublisherTest {
                 DayNightSettings(store),
                 { flowOf(LocalDay(LocalDate.of(2026, 10, 24), ZoneId.of("Europe/Madrid"))) },
             )
-        return RoutingPublisher(source, sink, mirror, clock, scope) to settings
+        return RoutingPublisher(source, sink, publishedTable, mirror, clock, scope) to settings
     }
 
     /** An owl with [clips] clips, each with its own 16-point auto envelope (off the grid: the long syntax). */
@@ -257,14 +258,24 @@ class RoutingPublisherTest {
 
             publisher.start()
             publisher.start() // idempotent
-            testScheduler.advanceUntilIdle()
-            assertEquals(PublishState.Idle, publisher.state.value)
+            // No service: only the app's copy, for the module's provider pull, and a nudge (ADR 0048).
+            val local = published(publisher) { it.throughProvider }
+            assertTrue(local.throughProvider)
             assertTrue(sink.writes.value.isEmpty())
+            assertEquals(listOf(local.generation), sink.nudges)
+            assertEquals(local.generation, RoutingCodec.decode(publishedTable.encoded!!).generation)
+            assertTrue(mirror.retained.isEmpty()) // the module may still run an older table
 
+            clock.advance()
             sink.connect()
-            val first = publisher.state.filterIsInstance<PublishState.Published>().first()
+            val first = published(publisher) { !it.throughProvider }
+            assertFalse(first.throughProvider)
             assertEquals(1, first.routes)
             assertEquals(1, sink.writes.value.size)
+            // Through the service with a newer generation, and the app's copy follows.
+            assertTrue(first.generation > local.generation)
+            assertEquals(listOf(local.generation, first.generation), sink.nudges)
+            assertEquals(sink.writes.value.single(), publishedTable.encoded)
 
             // Reconnecting (for example after LSPosed restarts) with the same content does not rewrite it.
             sink.disconnect()
@@ -272,6 +283,47 @@ class RoutingPublisherTest {
             sink.connect()
             testScheduler.advanceUntilIdle()
             assertEquals(1, sink.writes.value.size)
+            assertEquals(2, sink.nudges.size)
+        }
+
+    @Test
+    fun publishesThroughTheProviderWhenTheServiceIsLost() =
+        runTest {
+            val (publisher, settings) = publisher()
+            sink.connect()
+            publisher.start()
+            val connected = published(publisher) { !it.throughProvider }
+
+            // LSPosed dropped the service after an app update (ADR 0043): a change still reaches the app's copy.
+            sink.disconnect()
+            clock.advance()
+            settings.setEnabled(false)
+            val local = published(publisher) { it.throughProvider && it.generation > connected.generation }
+            assertTrue(local.throughProvider)
+            assertTrue(local.generation > connected.generation)
+            assertEquals(1, sink.writes.value.size)
+            assertEquals(local.generation, sink.nudges.last())
+            assertFalse(RoutingCodec.decode(publishedTable.encoded!!).enabled)
+
+            // The service comes back: the change goes to Remote Preferences with a newer generation still.
+            clock.advance()
+            sink.connect()
+            published(publisher) { !it.throughProvider && it.generation > local.generation }
+            val back = RoutingCodec.decode(sink.writes.value.last())
+            assertFalse(back.enabled)
+            assertTrue(back.generation > local.generation)
+        }
+
+    @Test
+    fun nudgesEvenWhenTheServiceWriteFails() =
+        runTest {
+            val (publisher, _) = publisher()
+            sink.failWrites = true
+            sink.connect()
+            publisher.start()
+            publisher.state.first { it is PublishState.Failed }
+            val generation = RoutingCodec.decode(publishedTable.encoded!!).generation
+            assertEquals(listOf(generation), sink.nudges)
         }
 
     @Test
@@ -322,6 +374,32 @@ class RoutingPublisherTest {
             if (failWrites) error("boom")
             assertEquals(generation, RoutingCodec.decode(encoded).generation)
             writes.value += encoded
+        }
+
+        val nudges = mutableListOf<Long>()
+
+        override fun nudge(generation: Long) {
+            nudges += generation
+        }
+    }
+
+    private suspend fun published(
+        publisher: RoutingPublisher,
+        predicate: (PublishState.Published) -> Boolean,
+    ): PublishState.Published = publisher.state.filterIsInstance<PublishState.Published>().first(predicate)
+
+    /** The app's copy of the table, in memory. */
+    private class FakeStore : PublishedTableStore {
+        var encoded: String? = null
+
+        override suspend fun read(): String? = encoded
+
+        override suspend fun write(
+            encoded: String,
+            generation: Long,
+        ) {
+            assertEquals(generation, RoutingCodec.decode(encoded).generation)
+            this.encoded = encoded
         }
     }
 

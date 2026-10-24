@@ -130,9 +130,14 @@ internal class EventReporter(
     }
 }
 
-/** Why a batch was not delivered. Carries no stack trace: the reason is the whole story, logged on one line. */
+/**
+ * Why a batch was not delivered (or a table not pulled). Carries no stack trace: the reason is the whole story,
+ * logged on one line. [unavailable] means the provider could not be reached at all (not installed for user 0, or the
+ * user is still locked), so the app's process was not started.
+ */
 internal class DeliveryRefused(
     reason: String,
+    val unavailable: Boolean = false,
 ) : Exception(reason) {
     override fun fillInStackTrace(): Throwable = this
 }
@@ -160,22 +165,16 @@ internal fun providerRefusal(
     }
 
 /**
- * [EventSender] that calls the app's event provider through the system context's `ContentResolver` (user 0, the
- * system context's user).
- *
- * The provider is verified before every call ([providerRefusal]): it must belong to the module's package and be
- * signed by the certificate that signed the module's APK, so that if Cucuto were uninstalled while the module is
- * still loaded, another app claiming the authority would receive nothing. The certificate is read from the module's
- * APK once ([prepare], right after boot, while that file still exists; an app update replaces it but the module
- * keeps running until the next reboot). Every refusal throws [DeliveryRefused] so the reporter logs why. Starting
- * the app's process for a call is the system's normal provider behaviour; [EventQueue] keeps that to at most one
- * wake-up per interval.
+ * The app's event provider, seen from `system_server` (user 0, the system context's user), verified before every
+ * use ([providerRefusal]): it must belong to the module's package and be signed by the certificate that signed the
+ * module's APK, so that if Cucuto were uninstalled while the module is still loaded, another app claiming the
+ * authority would receive nothing. The certificate is read from the module's APK once ([prepare], right after boot,
+ * while that file still exists; an app update replaces it but the module keeps running until the next reboot).
+ * Shared by [ProviderEventSender] and the routing table pull (ADR 0048).
  */
-internal class ProviderEventSender(
+internal class AppProvider(
     private val moduleInfo: () -> ApplicationInfo?,
-) : EventSender {
-    private val uri: Uri = Uri.parse("content://${EventContract.AUTHORITY}")
-
+) {
     @Volatile private var context: Context? = null
 
     @Volatile private var moduleSigners: List<ByteArray>? = null
@@ -186,19 +185,21 @@ internal class ProviderEventSender(
             val ctx = context() ?: return
             signers(ctx)
         } catch (_: Throwable) {
-            // Retried on the first delivery.
+            // Retried on the first use.
         }
     }
 
-    override fun send(
-        events: List<DecisionEvent>,
-        status: ModuleStatus,
-    ): Boolean {
-        val ctx = context() ?: throw DeliveryRefused("no system context")
+    /**
+     * The system context, once the provider is verified as the module's own app. Throws [DeliveryRefused] with the
+     * reason otherwise. Background thread only (package manager calls).
+     */
+    fun verified(): Context {
+        val ctx = context() ?: throw DeliveryRefused("no system context", unavailable = true)
         val pm = ctx.packageManager
+        // Without match flags, a provider that is not direct-boot aware does not resolve while the user is locked.
         val provider =
             pm.resolveContentProvider(EventContract.AUTHORITY, PackageManager.ComponentInfoFlags.of(0))
-                ?: throw DeliveryRefused("the event provider is not installed for user 0")
+                ?: throw DeliveryRefused("the event provider is not installed for user 0", unavailable = true)
         val refusal =
             providerRefusal(
                 providerPackage = provider.packageName,
@@ -206,19 +207,7 @@ internal class ProviderEventSender(
                 moduleSigners = signers(ctx),
             ) { cert -> pm.hasSigningCertificate(provider.packageName, cert, PackageManager.CERT_INPUT_RAW_X509) }
         if (refusal != null) throw DeliveryRefused(refusal)
-
-        val extras =
-            Bundle().apply {
-                putInt(EventContract.EXTRA_VERSION, EventContract.VERSION)
-                putParcelableArrayList(EventContract.EXTRA_EVENTS, ArrayList(events.map { it.toMap().toBundle() }))
-                putBundle(EventContract.EXTRA_STATUS, status.toMap().toBundle())
-            }
-        val result =
-            ctx.contentResolver.call(uri, EventContract.METHOD_REPORT, null, extras)
-                ?: throw DeliveryRefused("the event provider returned no result")
-        val accepted = result.getInt(EventContract.RESULT_ACCEPTED, -1)
-        if (accepted < 0) throw DeliveryRefused("the event provider did not accept the batch")
-        return true
+        return ctx
     }
 
     private fun context(): Context? = context ?: systemContext()?.also { context = it }
@@ -241,6 +230,37 @@ internal class ProviderEventSender(
         val signing = (installed ?: pm.getPackageArchiveInfo(apk, flags))?.signingInfo ?: return null
         val certs = signing.apkContentsSigners.orEmpty().map { it.toByteArray() }
         return certs.takeIf { it.isNotEmpty() }?.also { moduleSigners = it }
+    }
+}
+
+/**
+ * [EventSender] that calls the app's event provider through the system context's `ContentResolver`, once
+ * [AppProvider] verified it. Every refusal throws [DeliveryRefused] so the reporter logs why. Starting the app's
+ * process for a call is the system's normal provider behaviour; [EventQueue] keeps that to at most one wake-up per
+ * interval.
+ */
+internal class ProviderEventSender(
+    private val provider: AppProvider,
+) : EventSender {
+    private val uri: Uri = Uri.parse("content://${EventContract.AUTHORITY}")
+
+    override fun send(
+        events: List<DecisionEvent>,
+        status: ModuleStatus,
+    ): Boolean {
+        val ctx = provider.verified()
+        val extras =
+            Bundle().apply {
+                putInt(EventContract.EXTRA_VERSION, EventContract.VERSION)
+                putParcelableArrayList(EventContract.EXTRA_EVENTS, ArrayList(events.map { it.toMap().toBundle() }))
+                putBundle(EventContract.EXTRA_STATUS, status.toMap().toBundle())
+            }
+        val result =
+            ctx.contentResolver.call(uri, EventContract.METHOD_REPORT, null, extras)
+                ?: throw DeliveryRefused("the event provider returned no result")
+        val accepted = result.getInt(EventContract.RESULT_ACCEPTED, -1)
+        if (accepted < 0) throw DeliveryRefused("the event provider did not accept the batch")
+        return true
     }
 }
 

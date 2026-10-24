@@ -67,6 +67,8 @@ Make the app say the truth. Leave the transport and the build as they are.
 5. **Follow-up (#204).** A fallback that needs no service: when nudged, the module pulls the table from the app's
    event provider, which it already calls. It is tracked separately. It only helps once a module that has it was
    loaded at boot.
+   Done in [ADR 0048](0048-routing-table-pull-without-the-service.md): Setup now asks for the reboot only when that
+   pull also fails.
 
 ## Consequences
 

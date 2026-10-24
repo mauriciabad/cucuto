@@ -105,7 +105,7 @@ fun DiagnosticsScreen(
                     rows =
                         listOf(
                             stringResource(R.string.diag_framework) to
-                                connectionText(state.connection, state.appUpdatedSinceBoot),
+                                connectionText(state.connection, state.appUpdatedSinceBoot, state.providerDelivered),
                             stringResource(R.string.diag_routing) to publishText(state.publish),
                         ) + moduleRows(state.moduleStatus, state.publish),
                 )
@@ -243,14 +243,18 @@ private fun SectionHeader(
 private fun connectionText(
     connection: SinkConnection,
     appUpdatedSinceBoot: Boolean,
+    providerDelivered: Boolean,
 ): String =
     when (connection) {
         SinkConnection.Disconnected -> {
             stringResource(
-                if (appUpdatedSinceBoot) {
-                    R.string.diag_framework_disconnected_update
-                } else {
-                    R.string.diag_framework_disconnected
+                when {
+                    // The module pulls voice changes from Cucuto's provider: no reboot needed (ADR 0048).
+                    appUpdatedSinceBoot && providerDelivered -> R.string.diag_framework_disconnected_update_provider
+
+                    appUpdatedSinceBoot -> R.string.diag_framework_disconnected_update
+
+                    else -> R.string.diag_framework_disconnected
                 },
             )
         }
@@ -277,7 +281,11 @@ private fun publishText(state: PublishState): String =
 
         is PublishState.Published -> {
             stringResource(
-                R.string.diag_routing_published,
+                if (state.throughProvider) {
+                    R.string.diag_routing_published_provider
+                } else {
+                    R.string.diag_routing_published
+                },
                 state.generation,
                 state.routes,
                 state.voices,
