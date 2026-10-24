@@ -21,6 +21,7 @@ import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.repo.RepositorySnapshot
+import app.mauri.cucuto.core.ringtone.sync.RingtoneProblem
 import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
@@ -146,6 +147,8 @@ internal object A11yScreens {
                         modes = listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.TIME, RingtoneMode.FIXED),
                         ringingWith = "Morning croak",
                         exportTitle = "Bleep the frog · Morning croak",
+                        // The card shows up only when it asks for something (#348).
+                        problem = RingtoneProblem.ChangedElsewhere,
                     ),
                 actions = PhoneRingtoneActions(),
             )

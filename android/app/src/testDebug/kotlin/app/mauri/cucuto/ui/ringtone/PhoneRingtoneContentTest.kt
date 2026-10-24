@@ -58,6 +58,7 @@ class PhoneRingtoneContentTest {
                     onChoose = { events += "choose" },
                     onTogglePreview = { events += "preview" },
                     onStopPreview = { events += "stop-preview" },
+                    onChangeContact = { events += "change-contact" },
                 )
             }
         }
@@ -78,25 +79,45 @@ class PhoneRingtoneContentTest {
         assertEquals(listOf("link:ada-key", "pick"), events)
     }
 
-    @Test
-    fun linkedShowsWhatRingsTheStatusAndTheWhatsAppHint() {
-        show(
-            base.copy(
-                linked = true,
-                linkedName = "Ada",
-                using = true,
-                modes = listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.FIXED),
-                mode = RingtoneMode.FIXED,
-                fixedVariant = "radio.ogg",
-                ringingWith = "Radio",
-                exportTitle = "K.K. Slider · Radio",
-            ),
+    private val linked =
+        base.copy(
+            linked = true,
+            linkedName = "Ada",
+            using = true,
+            modes = listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.FIXED),
+            mode = RingtoneMode.FIXED,
+            fixedVariant = "radio.ogg",
+            ringingWith = "Radio",
+            exportTitle = "K.K. Slider · Radio",
         )
+
+    @Test
+    fun linkedAndRingingTheCardHasNothingToAsk() {
+        // What rings is said once, on the Phone calls row (#348).
+        show(linked)
+        compose.onNodeWithText("Phone calls").assertDoesNotExist()
+        compose.onNodeWithText("Rings with Radio").assertDoesNotExist()
+        compose.onNodeWithText("Android contact: Ada").assertDoesNotExist()
+    }
+
+    @Test
+    fun linkedTheRowShowsTheContactAndTheWhatsAppHint() {
+        showRow(linked)
         compose.onNodeWithText("Android contact: Ada").assertIsDisplayed()
-        compose.onNodeWithText("Rings with Radio").assertIsDisplayed()
         compose.onNodeWithText("“K.K. Slider · Radio”", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Change").performClick()
+        assertEquals(listOf("change-contact"), events)
         // "Leave as is" in the ringtone picker replaced "Stop using for calls" (ADR 0073).
         compose.onNodeWithText("Stop using for calls").assertDoesNotExist()
+    }
+
+    @Test
+    fun theCardIsTitledLikeTheRowAndAsksForThePhonePermission() {
+        show(linked.copy(needsPhonePermission = true))
+        compose.onNodeWithText("Phone calls").assertIsDisplayed()
+        compose.onNodeWithText("Phone ringtone").assertDoesNotExist()
+        compose.onNodeWithText("Rings with Radio").assertDoesNotExist()
+        compose.onNodeWithText("To change the version after each call", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -194,7 +215,7 @@ class PhoneRingtoneContentTest {
     @Test
     fun theCardHasNothingToSetUpWithoutARingtone() {
         show(base.copy(variants = emptyList()))
-        compose.onNodeWithText("Phone ringtone").assertDoesNotExist()
+        compose.onNodeWithText("Phone calls").assertDoesNotExist()
         compose.onNodeWithText("Turn on phone ringtones").assertDoesNotExist()
     }
 
@@ -206,32 +227,11 @@ class PhoneRingtoneContentTest {
     }
 
     @Test
-    fun theRowOpensTheRulesOfACharacterWithSeveralVersions() {
-        val kk =
-            app.mauri.cucuto.core.data.voices.VoiceCharacter(
-                "app.mauri.songs",
-                "kk",
-                "K.K. Slider",
-                null,
-                null,
-                null,
-                emptyList(),
-                app.mauri.cucuto.core.routing.Haptic.Keep,
-                ringtoneCount = 2,
-            )
-        var opened: app.mauri.cucuto.core.data.chats.ChatVoice? = null
-        compose.setContent {
-            CucutoTheme(dynamicColor = false) {
-                PhoneCallsRowContent(
-                    base.copy(ringingCharacter = kk, modes = listOf(RingtoneMode.PACK, RingtoneMode.FIXED)),
-                    onChoose = {},
-                    onTogglePreview = {},
-                    onOpenRules = { opened = it },
-                )
-            }
-        }
-        compose.onNodeWithText("See and edit the rules").performClick()
-        assertEquals(kk.voice, opened)
+    fun theRowHasNoRulesLinkOfItsOwn() {
+        // The rules are one tap further, from the picker's "Which version rings" row (#347, #348).
+        showRow(base.copy(using = true, modes = listOf(RingtoneMode.PACK, RingtoneMode.FIXED)))
+        compose.onNodeWithText("See and edit the rules").assertDoesNotExist()
+        compose.onNodeWithText("Android contact", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -250,8 +250,8 @@ class PhoneRingtoneContentTest {
     }
 
     @Test
-    fun androidDefaultNeedsTheLinkedContactToClearItsRingtone() {
-        show(
+    fun androidDefaultShowsTheLinkedContactWithoutTheWhatsAppHint() {
+        showRow(
             base.copy(
                 characterName = null,
                 hasCharacter = false,
@@ -262,8 +262,22 @@ class PhoneRingtoneContentTest {
                 using = true,
             ),
         )
-        compose.onNodeWithText("Rings with the phone's default ringtone.").assertIsDisplayed()
+        compose.onNodeWithText("Android contact: Ada").assertIsDisplayed()
         compose.onNodeWithText("WhatsApp calls ring on their own", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun androidDefaultAsksToLinkTheContactToClearItsRingtone() {
+        show(
+            base.copy(
+                characterName = null,
+                hasCharacter = false,
+                variants = emptyList(),
+                choice = RingtoneChoice.ANDROID_DEFAULT,
+            ),
+        )
+        compose.onNodeWithText("Phone calls").assertIsDisplayed()
+        compose.onNodeWithText("Choose contact").assertIsDisplayed()
     }
 
     @Test
@@ -277,7 +291,7 @@ class PhoneRingtoneContentTest {
     @Test
     fun leaveAsIsHidesTheCard() {
         show(base.copy(choice = RingtoneChoice.UNCHANGED, linked = true, using = false))
-        compose.onNodeWithText("Phone ringtone").assertDoesNotExist()
+        compose.onNodeWithText("Phone calls").assertDoesNotExist()
     }
 
     @Test
