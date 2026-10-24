@@ -101,3 +101,5 @@ previous table.
 - If LSPosed fixes the callback loss, both paths still converge and the nudge only costs one file read per
   publication.
 - Device check: [`docs/device-testing.md`](../device-testing.md), section 4b.
+- Follow-up: when the app has no framework service at all (LSPosed dropped it after an update), the module pulls the
+  table from the app's provider instead ([ADR 0048](0048-routing-table-pull-without-the-service.md)).

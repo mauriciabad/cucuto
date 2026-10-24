@@ -34,7 +34,17 @@ class StatusChecksTest {
         messengers: Map<String, Boolean> = mapOf("com.whatsapp" to true),
         packCount: Int = 1,
         appUpdatedSinceBoot: Boolean = false,
-    ) = StatusInputs(connection, framework, moduleStatus, boot, messengers, packCount, appUpdatedSinceBoot)
+        providerDelivered: Boolean = false,
+    ) = StatusInputs(
+        connection,
+        framework,
+        moduleStatus,
+        boot,
+        messengers,
+        packCount,
+        appUpdatedSinceBoot,
+        providerDelivered,
+    )
 
     @Test
     fun everythingWorkingTurnsTheCardGreen() {
@@ -165,6 +175,35 @@ class StatusChecksTest {
                 ).module,
         )
         assertEquals(OnboardingStep.Reboot, OnboardingStep.resumeAt(lost))
+    }
+
+    @Test
+    fun noRebootWhenTheModulePullsFromTheProvider() {
+        // ADR 0048: the module fetched the app's latest table without the service, so voice changes still arrive.
+        val pulled =
+            inputs(
+                connection = SinkConnection.Disconnected,
+                framework = null,
+                appUpdatedSinceBoot = true,
+                providerDelivered = true,
+            )
+        assertEquals(
+            ModuleCheck.Active(listOf("playSound", "playVibration"), updatePending = false),
+            StatusChecks.evaluate(pulled).module,
+        )
+        // Pulled, report still on its way: the module runs.
+        assertEquals(ModuleCheck.AwaitingSelfTest, StatusChecks.evaluate(pulled.copy(moduleStatus = null)).module)
+    }
+
+    @Test
+    fun theProviderDeliveredTheLatestTable() {
+        // status() reports generation 1.
+        assertTrue(StatusChecks.providerDelivered(1, null, status(), boot))
+        assertTrue(StatusChecks.providerDelivered(2, 2, status(), boot))
+        assertFalse(StatusChecks.providerDelivered(2, 1, status(), boot))
+        assertFalse(StatusChecks.providerDelivered(1, null, status(bootTime = boot - 3_600_000), boot))
+        assertFalse(StatusChecks.providerDelivered(null, 1, status(), boot))
+        assertFalse(StatusChecks.providerDelivered(2, null, null, boot))
     }
 
     @Test

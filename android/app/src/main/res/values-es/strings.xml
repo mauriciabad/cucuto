@@ -17,11 +17,13 @@
     <string name="diag_framework">Framework de Xposed</string>
     <string name="diag_framework_disconnected">Sin conexión. Activa Cucuto en LSPosed (ámbito: System Framework) y reinicia.</string>
     <string name="diag_framework_disconnected_update">Sin conexión: Cucuto se ha actualizado desde el último arranque y LSPosed solo vuelve a conectarse a él tras reiniciar. Reinicia el móvil para publicar los cambios de voz.</string>
+    <string name="diag_framework_disconnected_update_provider">Sin conexión: Cucuto se ha actualizado desde el último arranque y LSPosed solo vuelve a conectarse a él tras reiniciar. Mientras tanto, el módulo recoge los cambios de voz del propio Cucuto, así que no hace falta reiniciar para ellos.</string>
     <string name="diag_framework_connected">Conectado: %1$s, API %2$d</string>
     <string name="diag_framework_unsupported">%1$s no admite Remote Preferences</string>
     <string name="diag_routing">Tabla de enrutamiento</string>
     <string name="diag_routing_idle">Aún no se ha publicado</string>
     <string name="diag_routing_published">Generación %1$d: %2$d claves, %3$d voces</string>
+    <string name="diag_routing_published_provider">Generación %1$d: %2$d claves, %3$d voces, para que el módulo la recoja de Cucuto (sin servicio de LSPosed)</string>
     <string name="diag_routing_too_large">Demasiado grande para publicarla (%1$d caracteres)</string>
     <string name="diag_routing_failed">No se ha podido publicar: %1$s</string>
     <string name="diag_module">Módulo en system_server</string>

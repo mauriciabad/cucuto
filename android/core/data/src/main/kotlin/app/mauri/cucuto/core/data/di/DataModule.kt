@@ -20,6 +20,8 @@ import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.routing.CharacterCatalog
 import app.mauri.cucuto.core.data.routing.LocalCalendar
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
+import app.mauri.cucuto.core.data.routing.PublishedTableFile
+import app.mauri.cucuto.core.data.routing.PublishedTableStore
 import app.mauri.cucuto.core.data.routing.RoutingSink
 import app.mauri.cucuto.core.data.routing.SystemCalendar
 import app.mauri.cucuto.core.data.routing.XposedFramework
@@ -35,6 +37,7 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import java.io.File
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -87,12 +90,21 @@ object DataModule {
 
     @Provides
     fun localCalendar(clock: WallClock): LocalCalendar = SystemCalendar(clock)
+
+    /** The app's copy of the published routing table, which the event provider serves to the module (ADR 0048). */
+    @Provides
+    @Singleton
+    fun publishedTable(
+        @ApplicationContext context: Context,
+    ): PublishedTableFile = PublishedTableFile(File(context.noBackupFilesDir, "routing/routing.table"))
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
 interface DataBindings {
     @Binds fun routingSink(sink: XposedRoutingSink): RoutingSink
+
+    @Binds fun publishedTableStore(file: PublishedTableFile): PublishedTableStore
 
     @Binds fun xposedFramework(sink: XposedRoutingSink): XposedFramework
 

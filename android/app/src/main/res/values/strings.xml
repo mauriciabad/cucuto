@@ -10,11 +10,13 @@
     <string name="diag_framework">Xposed framework</string>
     <string name="diag_framework_disconnected">Not connected. Enable Cucuto in LSPosed (scope: System Framework) and reboot.</string>
     <string name="diag_framework_disconnected_update">Not connected: Cucuto was updated since the last boot, and LSPosed only reconnects to it after a reboot. Reboot your phone to publish voice changes.</string>
+    <string name="diag_framework_disconnected_update_provider">Not connected: Cucuto was updated since the last boot, and LSPosed only reconnects to it after a reboot. Meanwhile the module fetches voice changes from Cucuto itself, so no reboot is needed for them.</string>
     <string name="diag_framework_connected">Connected: %1$s, API %2$d</string>
     <string name="diag_framework_unsupported">%1$s does not support Remote Preferences</string>
     <string name="diag_routing">Routing table</string>
     <string name="diag_routing_idle">Not published yet</string>
     <string name="diag_routing_published">Generation %1$d: %2$d keys, %3$d voices</string>
+    <string name="diag_routing_published_provider">Generation %1$d: %2$d keys, %3$d voices, for the module to fetch from Cucuto (no LSPosed service)</string>
     <string name="diag_routing_too_large">Too large to publish (%1$d characters)</string>
     <string name="diag_routing_failed">Publishing failed: %1$s</string>
     <string name="diag_module">Module in system_server</string>
