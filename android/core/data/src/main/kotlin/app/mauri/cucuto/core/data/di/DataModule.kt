@@ -18,8 +18,10 @@ import app.mauri.cucuto.core.data.db.PackRepositoryDao
 import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.routing.CharacterCatalog
+import app.mauri.cucuto.core.data.routing.LocalCalendar
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
 import app.mauri.cucuto.core.data.routing.RoutingSink
+import app.mauri.cucuto.core.data.routing.SystemCalendar
 import app.mauri.cucuto.core.data.routing.XposedFramework
 import app.mauri.cucuto.core.data.routing.XposedRoutingSink
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
@@ -82,6 +84,9 @@ object DataModule {
 
     @Provides
     fun wallClock(): WallClock = WallClock(System::currentTimeMillis)
+
+    @Provides
+    fun localCalendar(clock: WallClock): LocalCalendar = SystemCalendar(clock)
 }
 
 @Module

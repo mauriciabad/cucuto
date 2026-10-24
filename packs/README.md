@@ -5,7 +5,7 @@ sounds are synthesized with ffmpeg, pictures are hand-written SVG.
 
 | Pack | ID | Characters |
 | --- | --- | --- |
-| [Chiptune critters](chiptune-critters) | `app.mauri.demo.chiptune-critters` | frog (with a day/night ringtone), bird, cat, bee |
+| [Chiptune critters](chiptune-critters) | `app.mauri.demo.chiptune-critters` | frog (with day and night clips and a day/night ringtone), bird, cat, bee |
 | [Kitchen orchestra](kitchen-orchestra) | `app.mauri.demo.kitchen-orchestra` | pot, glass, whisk, kettle (with a ringtone that has an intro, a loop and an outro, and a clip cut from it) |
 
 CI (the `packs` job in `.github/workflows/ci.yml`) also builds them into one bundle, `app.mauri.demo.all`, and a repository index.

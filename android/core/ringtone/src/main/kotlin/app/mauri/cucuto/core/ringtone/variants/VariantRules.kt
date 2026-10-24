@@ -1,5 +1,8 @@
 package app.mauri.cucuto.core.ringtone.variants
 
+import app.mauri.cucuto.core.conditions.Place
+import app.mauri.cucuto.core.conditions.SolarCalculator
+import app.mauri.cucuto.core.conditions.SunTimes
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.packspec.LoopRange
 import app.mauri.cucuto.packspec.When
@@ -10,6 +13,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.Month
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import kotlin.random.Random
 
 /**
@@ -32,16 +37,19 @@ data class RingtoneVariant(
 /**
  * What a rule looks at: the phone's local time, the hours that count as day, and the hemisphere for seasons.
  *
- * Day is 07:00 to 19:00 (pack format, `when.time`) until sunrise and sunset from the phone's location land (#118); the
- * southern hemisphere flips seasons (pack format, `when.season`) and has no setting yet, so it defaults to northern.
+ * Day runs from sunrise to sunset at the place chosen for day and night clips (ADR 0037, [at]), and from 07:00 to
+ * 19:00 until a place is chosen (pack format, `when.time`). [allDay] is true on a polar day and false on a polar
+ * night. The southern hemisphere flips seasons (pack format, `when.season`); there is no setting yet, so it defaults
+ * to northern.
  */
 data class RuleContext(
     val time: LocalDateTime,
     val dayStart: LocalTime = DEFAULT_DAY_START,
     val dayEnd: LocalTime = DEFAULT_DAY_END,
     val southernHemisphere: Boolean = false,
+    val allDay: Boolean? = null,
 ) {
-    val isDay: Boolean get() = inRange(time.toLocalTime(), dayStart, dayEnd)
+    val isDay: Boolean get() = allDay ?: inRange(time.toLocalTime(), dayStart, dayEnd)
 
     /** Meteorological season of [time], flipped in the southern hemisphere. */
     val season: String
@@ -69,6 +77,47 @@ data class RuleContext(
         const val SUMMER = "summer"
         const val AUTUMN = "autumn"
         const val WINTER = "winter"
+
+        /** The context at [time] with day from sunrise to sunset at [place] (07:00 to 19:00 without one). */
+        fun at(
+            time: LocalDateTime,
+            place: Place?,
+            zone: ZoneId,
+        ): RuleContext {
+            if (place == null) return RuleContext(time)
+            val sun =
+                runCatching { SolarCalculator.sunTimes(time.toLocalDate(), place.latitude, place.longitude, zone) }
+                    .getOrNull()
+            return when (sun) {
+                is SunTimes.Regular -> {
+                    RuleContext(
+                        time,
+                        dayStart =
+                            sun.sunrise
+                                .atZone(zone)
+                                .toLocalTime()
+                                .truncatedTo(ChronoUnit.MINUTES),
+                        dayEnd =
+                            sun.sunset
+                                .atZone(zone)
+                                .toLocalTime()
+                                .truncatedTo(ChronoUnit.MINUTES),
+                    )
+                }
+
+                SunTimes.PolarDay -> {
+                    RuleContext(time, allDay = true)
+                }
+
+                SunTimes.PolarNight -> {
+                    RuleContext(time, allDay = false)
+                }
+
+                null -> {
+                    RuleContext(time)
+                }
+            }
+        }
 
         /** `[from, to)`, wrapping midnight when `to` is before `from`. */
         fun inRange(

@@ -22,8 +22,8 @@
       "seedColor": "#E65100",
       "tags": ["bird"],
       "clips": [
-        { "file": "characters/robin/clips/chirp.ogg", "label": "Chirp", "weight": 2 },
-        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5 }
+        { "file": "characters/robin/clips/chirp.ogg", "label": "Chirp", "weight": 2, "when": { "time": "day" } },
+        { "file": "characters/robin/clips/tweet.mp3", "label": "Tweet", "weight": 0.5, "when": { "time": "night", "season": ["autumn", "winter"] } }
       ],
       "haptic": {
         "mode": "custom",

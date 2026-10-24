@@ -79,8 +79,9 @@ how every change can be undone.
      minutes late is fine.
    - A second receiver (also disabled while the feature is off) re-applies the rules after `BOOT_COMPLETED`,
      `TIME_SET` and `TIMEZONE_CHANGED`. All three are exempt from the implicit-broadcast limits.
-   - Day is 07:00 to 19:00 (pack format) until sunrise and sunset land (#118). Seasons use the northern hemisphere
-     until a hemisphere setting exists.
+   - Day runs from sunrise to sunset at the place chosen for day and night clips (`SolarCalculator`, ADR 0037),
+     and from 07:00 to 19:00 until a place is chosen. A polar day counts as day and a polar night as night.
+   - Seasons use the northern hemisphere until a hemisphere setting exists.
 7. **Permissions are asked in context, explained first.**
    - Contacts (`READ_CONTACTS` + `WRITE_CONTACTS`) are asked when the user turns phone ringtones on, in Settings or in
      a contact's detail screen. The dialog says what is read, what is changed, that contacts never leave the phone,

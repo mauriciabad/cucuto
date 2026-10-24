@@ -21,6 +21,8 @@ android {
 dependencies {
     // Contacts (Android links), phone ringtones and the undo record, installed packs, the settings DataStore.
     implementation(projects.core.data)
+    // Sunrise and sunset for "day" and "night" (ADR 0037), shared with day and night clips.
+    implementation(projects.core.conditions)
     // RingFiles (the ring file rule shared with packer) and the pack manifest model.
     implementation("app.mauri.cucuto:pack-spec")
     implementation(libs.kotlinx.coroutines.android)

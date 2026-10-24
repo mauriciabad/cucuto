@@ -14,6 +14,7 @@ import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
+import app.mauri.cucuto.core.data.settings.DayNightSettings
 import app.mauri.cucuto.core.data.settings.PhoneRingtoneSettings
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContacts
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -94,6 +96,7 @@ class PhoneRingtones
     constructor(
         @ApplicationContext private val context: Context,
         private val settings: PhoneRingtoneSettings,
+        private val dayNight: DayNightSettings,
         private val dao: PhoneRingtoneDao,
         private val contactRepository: ContactRepository,
         private val assignments: AssignmentRepository,
@@ -117,7 +120,7 @@ class PhoneRingtones
                 renderer = renderer,
                 workDir = File(context.cacheDir, "ring-render"),
                 wallClock = clock::now,
-                ruleContext = { RuleContext(LocalDateTime.now()) },
+                ruleContext = { RuleContext.at(LocalDateTime.now(), dayNight.place.first(), ZoneId.systemDefault()) },
             )
         private val mutex = Mutex()
         private val started = AtomicBoolean(false)
@@ -132,11 +135,15 @@ class PhoneRingtones
         fun start() {
             if (!started.compareAndSet(false, true)) return
             scope.launch {
-                combine(settings.enabled, dao.observeSyncRows(), installedPacks.observeAll()) { on, rows, packs ->
-                    Triple(on, rows, packs.map { it.packId to it.version })
-                }.distinctUntilChanged()
+                combine(
+                    settings.enabled,
+                    dao.observeSyncRows(),
+                    installedPacks.observeAll(),
+                    dayNight.place,
+                ) { on, rows, packs, place -> listOf(on, rows, packs.map { it.packId to it.version }, place) }
+                    .distinctUntilChanged()
                     .debounce(DEBOUNCE_MS)
-                    .collect { (on, _, _) -> if (on) syncNow(SyncReason.Changed) }
+                    .collect { values -> if (values[0] == true) syncNow(SyncReason.Changed) }
             }
         }
 

@@ -211,6 +211,22 @@ Issue closed by the owner: the delivery default stands. The two requirements (sa
 
 The defaults stand. Automatic backups skip a backup identical to the last one, and include the pack files by default (#28, ADR 0028; new defaults in #166). The Google Drive backup request is #163.
 
+> I did this https://github.com/mauriciabad/cucuto/issues/140 . is it working? i want to install the apk on my pnohe
+
+(Owner set up release signing and pushed v0.1.0; the run failed on a workflow bug, fixed in #168.)
+
+> i allow you making releases
+
+(Lead released v0.1.1 and v0.1.2, signed with the owner's key, and installed them on the phone.)
+
+> it is unlocked. but i will go to sleep and i wont be able to reboot it. i will tell you when i go to sleep
+
+> can i disconnect my phone for a while?
+
+> check that all agents are unblocked
+
+> i go to sleep i leave you working alone
+
 ## 2026-10-24 — Answer on #145 (WhatsApp call ringtones set by hand in WhatsApp for v1?)
 
 > Not hooking the WhatsApp app is a preference, not a requirement. My main concern is that users may think the app could spy them or something, that was why the no hooking rule (in adition to being compatible with WA Enhancer X). but if we inform the user why we need each permision they will understand, and ultimately they dont have to give the permission if they wont use ringtones. we have to think how to inform them well and proof we wont hack them, maybe telling them that the code is open source and they can read it (or their AI agent) may be a good point.

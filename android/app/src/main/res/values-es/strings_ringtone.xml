@@ -22,7 +22,7 @@
     <string name="ringtone_rule_fixed">Una versión</string>
     <string name="ringtone_rule_pack_body">Sigue al pack: la versión que elige para esta hora, día o estación.</string>
     <string name="ringtone_rule_random_body">Una versión distinta después de cada llamada.</string>
-    <string name="ringtone_rule_time_body">La versión de día de 7:00 a 19:00, la de noche el resto del tiempo.</string>
+    <string name="ringtone_rule_time_body">La versión de día del amanecer al atardecer en tu lugar de día y noche (de 7:00 a 19:00 hasta que elijas uno), la de noche el resto del tiempo.</string>
     <string name="ringtone_rule_season_body">La versión de la estación actual.</string>
     <string name="ringtone_rule_fixed_body">Siempre la versión que elijas.</string>
     <string name="ringtone_status_ringing">Suena con %1$s</string>

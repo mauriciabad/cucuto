@@ -353,8 +353,8 @@ failed`.
 **Rules.**
 
 - **One version**: pick another chip; `custom_ringtone` changes within a second.
-- **Day and night** (07:00 to 19:00 until #118): `adb shell dumpsys alarm | grep -A3 app.mauri.cucuto` shows
-  one `RINGTONE_BOUNDARY` alarm at the next 07:00 or 19:00.
+- **Day and night** (sunrise and sunset at the Day and night place, else 07:00 to 19:00): `adb shell dumpsys alarm |
+  grep -A3 app.mauri.cucuto` shows one `RINGTONE_BOUNDARY` alarm at the next sunrise or sunset.
 - **Random per call**: the phone permission dialog follows its explanation. After a call ends (place and end one,
   #143), `custom_ringtone` changes to a different variant. `adb shell pm dump app.mauri.cucuto | grep -A2
   CallEndedReceiver` shows the receiver enabled only while some contact uses this rule.

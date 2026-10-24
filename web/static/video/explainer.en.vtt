@@ -1,0 +1,110 @@
+WEBVTT
+
+NOTE
+Draft captions for the Cucuto explainer video (docs/explainer-video.md). They follow the script's timeline;
+adjust the times to the final edit and keep the cue IDs (s<shot>-<what>), shared with explainer.es.vtt.
+
+s1-ping
+00:00:00.500 --> 00:00:02.900
+[The same plain ping, three times]
+
+s1-vo
+00:00:03.000 --> 00:00:04.900
+Same sound every time. Who was that?
+
+s2-call
+00:00:05.300 --> 00:00:06.200
+[Cuckoo call: cu-cu]
+
+s2-vo
+00:00:06.200 --> 00:00:09.000
+Cucuto gives each WhatsApp
+contact a voice.
+
+s3-vo
+00:00:09.300 --> 00:00:13.600
+Set it up once on a rooted
+Android 17 phone with LSPosed.
+
+s3-chime
+00:00:13.800 --> 00:00:15.000
+[Success chime]
+
+s4-vo
+00:00:15.400 --> 00:00:19.800
+Import a sound pack. The free demo
+packs bring eight characters.
+
+s4-chime
+00:00:20.000 --> 00:00:21.000
+[Success chime]
+
+s5-vo
+00:00:21.300 --> 00:00:25.600
+Everyone who messaged you shows up here.
+Let's give Ada a voice.
+
+s6-vo-hear
+00:00:26.100 --> 00:00:27.700
+Tap a character to hear it.
+
+s6-cat
+00:00:27.800 --> 00:00:28.900
+[Cat mews]
+
+s6-kettle
+00:00:28.900 --> 00:00:30.000
+[Kettle whistles]
+
+s6-frog
+00:00:30.000 --> 00:00:30.900
+[Frog ribbits]
+
+s6-vo-assign
+00:00:30.900 --> 00:00:32.500
+Tap it again, and it's Ada's.
+
+s6-assign
+00:00:32.600 --> 00:00:34.400
+[Cuckoo call, then the frog ribbits]
+
+s7-door
+00:00:36.400 --> 00:00:37.400
+[Cuckoo call, the frog croaks]
+
+s7-vo
+00:00:37.400 --> 00:00:40.000
+Next time Ada writes,
+you hear Bleep the frog.
+
+s8-vo
+00:00:40.300 --> 00:00:43.000
+Simulate a message to hear
+exactly what's coming.
+
+s8-clip
+00:00:43.300 --> 00:00:45.500
+[Frog ribbits, the phone vibrates twice]
+
+s9-ada
+00:00:46.800 --> 00:00:49.200
+[WhatsApp message from Ada:
+the frog ribbits]
+
+s9-bea
+00:00:49.400 --> 00:00:50.500
+[Message from Bea: the kettle whistles]
+
+s9-vo
+00:00:50.600 --> 00:00:52.800
+Now you know who wrote,
+without looking.
+
+s10-call
+00:00:53.200 --> 00:00:54.000
+[Cuckoo call: cu-cu]
+
+s10-vo
+00:00:54.000 --> 00:00:57.600
+Cucuto. Free and open source,
+at cucuto.mauri.app.

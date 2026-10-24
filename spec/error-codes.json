@@ -28,7 +28,7 @@
     { "code": "BUNDLE_PACK_MISSING", "severity": "error", "stage": "references", "description": "A folder listed in bundle.json has no pack.json." },
     { "code": "BUNDLE_LAYOUT_INVALID", "severity": "error", "stage": "references", "description": "Bundle pack folders overlap, contain a nested bundle.json, or are the bundle root." },
     { "code": "HAPTIC_INVALID", "severity": "error", "stage": "references", "description": "A custom haptic breaks a timeline rule: events out of order, overlapping envelopes, an envelope not ending at zero intensity, or longer than 5 s." },
-    { "code": "WHEN_INVALID", "severity": "error", "stage": "references", "description": "A ringtone 'when' condition is empty or contradictory (for example a time range whose start equals its end)." },
+    { "code": "WHEN_INVALID", "severity": "error", "stage": "references", "description": "A ringtone or clip 'when' condition is empty or contradictory (for example a time range whose start equals its end)." },
     { "code": "LOOP_POINTS_INVALID", "severity": "error", "stage": "references", "description": "Ringtone loop points are reversed, closer than 1 s, or (media stage) beyond the end of the audio." },
     { "code": "LICENSE_NOT_SPDX", "severity": "warning", "stage": "references", "description": "The license is not an SPDX license expression; it is shown as free text." },
     { "code": "UNREFERENCED_FILE", "severity": "warning", "stage": "references", "description": "A media file is not referenced by any manifest and will not be installed." },

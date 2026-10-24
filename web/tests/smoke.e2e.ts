@@ -5,6 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
 const pages = [
 	{ path: '/', heading: 'Give each contact a voice.', lang: 'en', nav: 'Main' },
 	{ path: '/packs/', heading: 'Packs', lang: 'en', nav: 'Main' },
+	{ path: '/create/', heading: 'Create a pack', lang: 'en', nav: 'Main' },
 	{ path: '/install/', heading: 'Install guide', lang: 'en', nav: 'Main' },
 	{ path: '/authors/', heading: 'For pack authors', lang: 'en', nav: 'Main' },
 	{ path: '/authors/pack-format/', heading: 'Pack format', lang: 'en', nav: 'Main' },
@@ -12,6 +13,7 @@ const pages = [
 	{ path: '/open/', heading: 'Open a pack', lang: 'en', nav: 'Main' },
 	{ path: '/es/', heading: 'Dale voz a cada contacto.', lang: 'es', nav: 'Principal' },
 	{ path: '/es/packs/', heading: 'Packs', lang: 'es', nav: 'Principal' },
+	{ path: '/es/create/', heading: 'Crear un pack', lang: 'es', nav: 'Principal' },
 	{ path: '/es/install/', heading: 'Guía de instalación', lang: 'es', nav: 'Principal' },
 	{ path: '/es/authors/', heading: 'Crear packs', lang: 'es', nav: 'Principal' },
 	{

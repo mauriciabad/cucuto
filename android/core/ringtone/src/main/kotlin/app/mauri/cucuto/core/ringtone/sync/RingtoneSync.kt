@@ -77,7 +77,7 @@ class RingtoneSync(
     private val renderer: RingFileRenderer,
     private val workDir: File,
     private val wallClock: () -> Long,
-    private val ruleContext: () -> RuleContext,
+    private val ruleContext: suspend () -> RuleContext,
     private val random: Random = Random.Default,
 ) {
     /** Brings every linked Android contact in line. Call with one sync at a time. */

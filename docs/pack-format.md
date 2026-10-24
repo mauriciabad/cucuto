@@ -177,6 +177,13 @@ cut a notification clip from it only if the user asks.
 | `file` | yes | Path to an [audio file](#audio), 0.2 to 30 s. |
 | `label` | no | Shown in the clip list. |
 | `weight` | no | Relative probability, greater than 0 and at most 100, default 1. The app picks clips at random by weight with a shuffle bag, so the same clip never plays twice in a row. |
+| `when` | no | [Condition](#ringtones-and-variants) under which the clip may play, for example `{ "time": "night" }` for a night-only clip. |
+
+**Clip conditions** (day and night clips): when a message arrives, the clips whose `when` matches at that moment and
+the clips without `when` form the pool the shuffle bag draws from. If no clip matches (every clip has a condition
+and none holds), the whole pool plays, so a character is never silent. A character with only unconditional clips
+behaves exactly as before. Example: `ribbit` always, `croak` with `{ "time": "night" }` and `hop` with
+`{ "time": "day" }` make the frog hop by day and croak at night.
 
 ### Ringtones and variants
 
@@ -197,13 +204,15 @@ Importer rules for loops: the loop must last at least 1 s (`LOOP_POINTS_INVALID`
 end of the audio (checked after measuring the file, with the 50 ms tolerance). An open loop (`startMs` without
 `endMs`) must start at least 1 s before the end of the audio.
 
-**`when` conditions.** All present keys must match (AND); a list matches any of its values (OR). Times are the
-phone's local time.
+**`when` conditions** (on ringtone variants and on clips). All present keys must match (AND); a list matches any of
+its values (OR). Times are the phone's local time, and seasons and weekdays follow the local date of the moment
+being checked (so `{ "time": { "from": "22:00", "to": "06:00" }, "weekday": "sat" }` also matches Saturday 05:00,
+the end of Friday night).
 
 | Key | Values | Meaning |
 | --- | --- | --- |
-| `time` | `"day"`, `"night"`, or `{ "from": "HH:MM", "to": "HH:MM" }` | Day is 07:00 to 19:00, night the rest. A range includes `from` and excludes `to`, and may wrap midnight (`22:00` to `06:00`). `from` equal to `to` is invalid (`WHEN_INVALID`). |
-| `season` | `"spring"`, `"summer"`, `"autumn"`, `"winter"` or a list | Meteorological seasons: spring is March to May, summer June to August, autumn September to November, winter December to February. The app flips them when the user sets the southern hemisphere. |
+| `time` | `"day"`, `"night"`, or `{ "from": "HH:MM", "to": "HH:MM" }` | Day is from local sunrise to sunset, night the rest. The app computes sunrise and sunset on the phone (NOAA's algorithm) for a place the user sets: a city, coordinates or one approximate location fix; until they set one, day is 07:00 to 19:00. Polar day is all day and polar night all night. A range includes `from` and excludes `to`, and may wrap midnight (`22:00` to `06:00`). `from` equal to `to` is invalid (`WHEN_INVALID`). |
+| `season` | `"spring"`, `"summer"`, `"autumn"`, `"winter"` or a list | Meteorological seasons: spring is March to May, summer June to August, autumn September to November, winter December to February. The app flips them when the place set for day and night is south of the equator. |
 | `weekday` | `"mon"` … `"sun"` or a list | |
 
 **Variant resolution** when a contact follows the pack's conditions: take the entries whose `when` matches (an entry
@@ -483,7 +492,7 @@ contract and may be localized. The canonical list with severities and stages is
 | `BUNDLE_PACK_MISSING` | error | references | A bundle folder without `pack.json`. |
 | `BUNDLE_LAYOUT_INVALID` | error | references | Overlapping pack folders or a nested bundle. |
 | `HAPTIC_INVALID` | error | references | Custom haptic breaks a timeline rule. |
-| `WHEN_INVALID` | error | references | Empty or contradictory `when` (time range from = to). |
+| `WHEN_INVALID` | error | references | Empty or contradictory `when` on a ringtone or clip (time range from = to). |
 | `LOOP_POINTS_INVALID` | error | references, media | Loop reversed, shorter than 1 s, or past the end of the audio. |
 | `LICENSE_NOT_SPDX` | warning | references | License is free text. |
 | `UNREFERENCED_FILE` | warning | references | Media file not referenced by any manifest. |
@@ -594,6 +603,9 @@ directly.
   [ADR 0008](decisions/0008-pack-importer.md)).
 - The website validates with the same Kotlin code, `shared/pack-spec` compiled to JavaScript (owner decision on #60,
   [ADR 0022](decisions/0022-pack-spec-in-the-browser.md)), so it reports the same codes by construction.
+- The pack creators (the app's and the website's Create page) share `shared/pack-spec`'s `authoring` package: the
+  canonical layout, file names, `pack.json` serialization and clip processing, so both write the same packs
+  ([ADR 0038](decisions/0038-web-pack-creator.md)).
 - CI runs every fixture through all three: the JVM module (packer's build), the Android importer (`:core:pack` tests)
   and the browser build (`web/tests/pack-spec.test.ts` under Bun).
 - [`spec/fixtures/fixtures.json`](../spec/fixtures/fixtures.json) lists every golden fixture with its `kind`

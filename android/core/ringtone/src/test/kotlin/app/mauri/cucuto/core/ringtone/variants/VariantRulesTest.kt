@@ -174,6 +174,31 @@ class VariantRulesTest {
         )
     }
 
+    @Test
+    fun dayFollowsSunriseAndSunsetAtThePlace() {
+        val madrid =
+            app.mauri.cucuto.core.conditions
+                .Place(40.42, -3.70)
+        val zone = java.time.ZoneId.of("Europe/Madrid")
+        // 24 October in Madrid: sunrise about 08:30, sunset about 19:20 local time.
+        val morning = RuleContext.at(LocalDateTime.parse("2026-10-24T08:00"), madrid, zone)
+        assertEquals(false, morning.isDay)
+        assert(morning.dayStart.hour == 8) { "sunrise ${morning.dayStart}" }
+        assert(morning.dayEnd.hour == 19) { "sunset ${morning.dayEnd}" }
+        assertEquals(true, RuleContext.at(LocalDateTime.parse("2026-10-24T19:05"), madrid, zone).isDay)
+        assertEquals(true, RuleContext.at(LocalDateTime.parse("2026-10-24T08:00"), null, zone).isDay)
+    }
+
+    @Test
+    fun polarDayAndNightFollowTheSky() {
+        val svalbard =
+            app.mauri.cucuto.core.conditions
+                .Place(78.22, 15.65)
+        val zone = java.time.ZoneId.of("Arctic/Longyearbyen")
+        assertEquals(true, RuleContext.at(LocalDateTime.parse("2026-06-21T02:00"), svalbard, zone).isDay)
+        assertEquals(false, RuleContext.at(LocalDateTime.parse("2026-12-21T12:00"), svalbard, zone).isDay)
+    }
+
     private fun range(
         from: String,
         to: String,
