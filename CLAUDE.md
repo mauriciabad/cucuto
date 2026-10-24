@@ -39,7 +39,8 @@ notification sound and vibration per contact, using clips from user-imported sou
   scope is System Framework only (`system` in `META-INF/xposed/scope.list`, which is `system_server` for modern
   modules; `android` would be wrong, see ADR 0002), and Cucuto must work fully with only that scope. The one
   exception: a feature that cannot work without WhatsApp's process (only automatic WhatsApp call ringtones so far,
-  #215) may use an **optional, opt-in** WhatsApp scope. It stays off until the user turns that feature on; a full
+  #215) may use an **optional, opt-in** WhatsApp scope (`com.whatsapp`, and `com.whatsapp.w4b` for WhatsApp
+  Business, owner #229). It stays off until the user turns that feature on; a full
   screen first explains what is hooked and why, that nothing of messages is read, and links the open-source hook
   code; the feature works only while the user has enabled that scope in LSPosed. Inside WhatsApp, minimum intrusion
   still applies: hook as little as possible, substitute values downstream of WhatsApp's own decisions, read nothing
