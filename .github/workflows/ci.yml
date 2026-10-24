@@ -382,6 +382,10 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
+      # ffmpeg (with libopus) for the ring file and auto-cut clip tests; building the demo packs never needs it.
+      - name: Install ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
+
       - name: Build and test packer
         working-directory: tools/packer
         run: ./gradlew build installDist --build-cache --configuration-cache --stacktrace

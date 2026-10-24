@@ -68,6 +68,10 @@
       "description": "Loop end after the end of a 6 s ringtone." },
     { "path": "invalid/loop-reversed", "kind": "package", "valid": false, "errors": ["LOOP_POINTS_INVALID"], "warnings": [],
       "description": "Loop points with the end before the start." },
+    { "path": "invalid/loop-start-beyond-end", "kind": "package", "valid": false, "errors": ["LOOP_POINTS_INVALID"], "warnings": [],
+      "description": "An open loop (no endMs) starting 500 ms before the end of a 6 s ringtone: shorter than 1 s." },
+    { "path": "invalid/loop-too-short", "kind": "package", "valid": false, "errors": ["LOOP_POINTS_INVALID"], "warnings": [],
+      "description": "A loop section of 500 ms (the minimum is 1 s)." },
     { "path": "invalid/manifest-ambiguous", "kind": "package", "valid": false, "errors": ["MANIFEST_AMBIGUOUS"], "warnings": [],
       "description": "Both pack.json and bundle.json at the root." },
     { "path": "invalid/manifest-missing", "kind": "package", "valid": false, "errors": ["MANIFEST_MISSING"], "warnings": [],
@@ -146,6 +150,8 @@
       "description": "The minimal pack as a zip archive, written the way packer writes archives." },
     { "path": "valid/repository.json", "kind": "repository", "valid": true, "errors": [], "warnings": [],
       "description": "Repository index with a pack and a bundle, relative and absolute URLs." },
+    { "path": "valid/ringtone-song", "kind": "package", "valid": true, "errors": [], "warnings": [],
+      "description": "A song with only ringtones (no clips): an intro with a loop and an outro, an open loop ending 1 s before the end (the shortest allowed), and a play-once variant." },
     { "path": "valid/with-warnings", "kind": "package", "valid": true, "errors": [], "warnings": ["IGNORED_ENTRY", "LICENSE_NOT_SPDX", "UNREFERENCED_FILE"],
       "description": "Valid, with warnings: a free-text license, an unreferenced clip and a macOS __MACOSX artifact." }
   ]

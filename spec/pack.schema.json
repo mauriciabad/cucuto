@@ -72,7 +72,7 @@
       "additionalProperties": false
     },
     "ringtone": {
-      "description": "Call ringtone, 5 s to 6 min. Several entries of the same song are variants.",
+      "description": "Call ringtone, 5 s to 6 min. Several entries of the same song are variants. Apps export it as a ring file that renders the loop settings (docs/pack-format.md#ring-files).",
       "type": "object",
       "required": ["file"],
       "properties": {
@@ -81,14 +81,14 @@
         "tags": { "$ref": "common.schema.json#/$defs/tags" },
         "when": { "$ref": "#/$defs/when" },
         "loop": { "$ref": "#/$defs/loop" },
-        "fadeInMs": { "description": "Fade-in applied when the ringtone starts. Default 0.", "type": "integer", "minimum": 0, "maximum": 10000, "default": 0 },
+        "fadeInMs": { "description": "Fade-in applied once when the ringtone starts, not on every loop. Default 0.", "type": "integer", "minimum": 0, "maximum": 10000, "default": 0 },
         "weight": { "description": "Relative probability for the 'random per call' variant rule. Default 1.", "type": "number", "exclusiveMinimum": 0, "maximum": 100, "default": 1 }
       },
       "patternProperties": { "^x-": true },
       "additionalProperties": false
     },
     "loop": {
-      "description": "true (default): loop the whole file. false: play once. Object: loop between startMs and endMs (endMs defaults to the end of the file).",
+      "description": "true (default): loop the whole file. false: play once. Object: play [0, startMs) once as an intro, then loop [startMs, endMs); audio after endMs is an outro that never plays in a loop (startMs defaults to 0, endMs to the end of the file). The loop lasts at least 1 s (LOOP_POINTS_INVALID).",
       "default": true,
       "oneOf": [
         { "type": "boolean" },
