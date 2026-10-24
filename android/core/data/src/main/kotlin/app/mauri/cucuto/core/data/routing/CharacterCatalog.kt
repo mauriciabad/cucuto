@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.data.routing
 
+import app.mauri.cucuto.core.conditions.ClipWhen
 import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.haptics.auto.AutoHapticFile
 import app.mauri.cucuto.core.routing.Haptic
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
@@ -46,11 +48,13 @@ data class CatalogCharacter(
  * @property file Path from `pack.json` (also the last part of the clip URI).
  * @property milliWeight The pack's `weight` in thousandths.
  * @property autoHaptic The clip's analysed envelope for `auto` haptics, when the app has one.
+ * @property condition The clip's `when` (day or night only, and so on), or null when it always plays (ADR 0037).
  */
 data class CatalogClip(
     val file: String,
     val milliWeight: Int,
     val autoHaptic: Haptic.Custom? = null,
+    val condition: ClipWhen? = null,
 )
 
 /** Looks up installed characters for the routing table. */
@@ -131,7 +135,12 @@ class PackManifestCatalog
                             val file = (clip["file"] as? JsonPrimitive)?.content ?: return@mapNotNull null
                             val weight = (clip["weight"] as? JsonPrimitive)?.doubleOrNull ?: 1.0
                             val autoHaptic = snapped.getOrPut(file) { autoHaptics[file]?.let(HapticGrid::snap) }
-                            CatalogClip(file, (weight * 1000).roundToInt().coerceAtLeast(1), autoHaptic)
+                            CatalogClip(
+                                file,
+                                (weight * 1000).roundToInt().coerceAtLeast(1),
+                                autoHaptic,
+                                parseWhen(clip["when"]),
+                            )
                         }
                     result[id] =
                         CatalogCharacter(
@@ -148,5 +157,26 @@ class PackManifestCatalog
 
             private fun JsonObject.string(key: String): String? =
                 (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+
+            /** A clip's `when` object; null when absent or not understood (the clip then always plays). */
+            fun parseWhen(element: JsonElement?): ClipWhen? {
+                val condition = element as? JsonObject ?: return null
+                val time = condition["time"]
+                val range = time as? JsonObject
+                return ClipWhen.of(
+                    time = (time as? JsonPrimitive)?.takeIf { it.isString }?.content,
+                    from = range?.string("from"),
+                    to = range?.string("to"),
+                    seasons = stringOrList(condition["season"]),
+                    weekdays = stringOrList(condition["weekday"]),
+                )
+            }
+
+            private fun stringOrList(element: JsonElement?): List<String> =
+                when (element) {
+                    is JsonPrimitive -> listOfNotNull(element.takeIf { it.isString }?.content)
+                    is JsonArray -> element.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content }
+                    else -> emptyList()
+                }
         }
     }

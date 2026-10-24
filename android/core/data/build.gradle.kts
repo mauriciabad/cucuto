@@ -25,6 +25,8 @@ android {
 dependencies {
     // The routing table model and codec are part of this module's API (publisher state, builder output).
     api(projects.core.routing)
+    // Clip conditions (day and night, seasons, weekdays) compiled into the routing table (ADR 0037).
+    api(projects.core.conditions)
     // Reads the auto haptics stored next to installed packs (AutoHapticFile) into the routing table.
     implementation(projects.core.haptics)
 

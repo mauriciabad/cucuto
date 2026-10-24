@@ -245,6 +245,11 @@ class PackValidator(private val checkMedia: Boolean = true) {
             }
             m.characters.forEachIndexed { ci, c ->
                 val cp = "/characters/$ci"
+                c.clips.forEachIndexed { i, clip ->
+                    clip.`when`?.timeRange?.let { (from, to) ->
+                        if (from == to) sink.add(ErrorCode.WHEN_INVALID, "Time range starts and ends at $from", file = manifestFile, pointer = "$cp/clips/$i/when/time")
+                    }
+                }
                 c.ringtones.forEachIndexed { i, r ->
                     val rp = "$cp/ringtones/$i"
                     r.`when`?.timeRange?.let { (from, to) ->
