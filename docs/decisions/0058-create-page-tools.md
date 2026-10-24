@@ -1,6 +1,6 @@
 # 0058. Create page tools: drafts, editing packs, covers, custom haptics, bundles and the repository helper
 
-- Status: accepted (defaults open for the owner in the `question` issue linked from #191)
+- Status: accepted (defaults open for the owner in #252)
 - Date: 2026-10-24
 - Issue: #191 (follow-ups to #48 and [ADR 0038](0038-web-pack-creator.md))
 
