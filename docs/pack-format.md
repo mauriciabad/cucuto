@@ -622,6 +622,9 @@ authority: readers detect the type from the contents.
     then gives the contact its own ringtone back. Every other phone ignores it.
   - On restore, Android contacts are matched again by phone number, then by lookup key, then by exact name. A contact
     with no match on the new phone keeps its ringtone choice and waits for the user to link it.
+  - A 1:1 contact whose only keys are phone JIDs (`…@s.whatsapp.net`) was added from Android's contacts and is waiting
+    for its first message, which links its `@lid` ([ADR 0065](decisions/0065-chats-before-they-message.md)). A
+    restore keeps it waiting; the `@lid` is linked on the new phone.
 
 Restore is idempotent: running it twice gives the same result, and it never overwrites assignments made on the new
 phone without asking.
