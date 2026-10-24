@@ -18,6 +18,14 @@ android {
         versionName = "0.1.0"
     }
 
+    androidResources {
+        // Per-app language (Android 13+ system settings, ADR 0036): AGP writes the LocaleConfig and the manifest's
+        // android:localeConfig from the values-* folders; res/resources.properties names the default (English).
+        generateLocaleConfig = true
+        // Ship only the app's languages, so library strings never mix a third language into the UI.
+        localeFilters += listOf("en", "es")
+    }
+
     buildFeatures {
         // BuildConfig.DEBUG gates the design gallery.
         buildConfig = true
@@ -102,12 +110,17 @@ dependencies {
 
     // Compose UI tests on the JVM (Robolectric) live in src/testDebug: the test activity comes from the
     // debug-only ui-test-manifest.
+    // View model tests run the real settings classes on a DataStore in a temporary folder.
+    testImplementation(libs.androidx.datastore.preferences)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.test.espresso.core)
+    // Discover's tests talk to a fake pack repository over real TLS.
+    testImplementation(libs.okhttp.mockwebserver3)
+    testImplementation(libs.okhttp.tls)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

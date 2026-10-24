@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Settings, backup and restore (#28, #43, ADR 0028). In their own file so parallel screen work does not collide in
+    strings.xml.
+-->
+<resources>
+    <string name="settings_title">Settings</string>
+
+    <!-- Cucuto voices -->
+    <string name="settings_section_voices">Cucuto voices</string>
+    <string name="settings_voices_switch">Cucuto voices</string>
+    <string name="settings_voices_on">On: each contact speaks with their character.</string>
+    <string name="settings_voices_off">Off: every chat uses WhatsApp\'s own tone and vibration.</string>
+    <string name="settings_voices_tile_hint">You can also switch it from Quick Settings: edit the tiles and add Cucuto voices.</string>
+
+    <!-- Sound and feel -->
+    <string name="settings_section_feel">Sound and feel</string>
+    <string name="settings_ui_sounds">App sounds</string>
+    <string name="settings_ui_sounds_body">The little sounds Cucuto makes when you tap, assign and import. Character voices aren\'t affected.</string>
+    <string name="settings_ui_sounds_off">Off</string>
+    <string name="settings_ui_sounds_quiet">Quiet</string>
+    <string name="settings_ui_sounds_normal">Normal</string>
+    <string name="settings_ui_haptics">App vibration</string>
+    <string name="settings_ui_haptics_body">Taps and ticks under your finger. Android\'s vibration settings still apply.</string>
+    <string name="settings_remove_animations">Remove animations</string>
+    <string name="settings_remove_animations_body">No particles, bounces or swinging door in Cucuto. Sounds and vibration still play.</string>
+    <string name="settings_remove_animations_system">On for every app in Android\'s accessibility settings.</string>
+
+    <!-- Language (#107, ADR 0036): opens Android's per-app language page -->
+    <string name="settings_section_language">Language</string>
+    <string name="settings_language">App language</string>
+    <string name="settings_language_system">Same as the phone</string>
+
+    <!-- Backup and restore -->
+    <string name="settings_section_backup">Backup and restore</string>
+    <string name="settings_backup_now">Back up to a file</string>
+    <string name="settings_backup_now_body">Your contacts, voices, repositories and settings in one file.</string>
+    <string name="settings_restore">Restore from backup</string>
+    <string name="settings_restore_body">Bring everything back, for example on a new phone.</string>
+    <string name="settings_auto_backup">Automatic backups</string>
+    <string name="settings_auto_backup_off">Off. Pick a folder and Cucuto saves a backup there shortly after every change, keeping the newest 10.</string>
+    <string name="settings_auto_backup_on">To %1$s. Shortly after every change, keeping the newest 10.</string>
+    <string name="settings_auto_backup_folder_unknown">the chosen folder</string>
+    <string name="settings_auto_backup_choose">Choose folder</string>
+    <string name="settings_auto_backup_change">Change folder</string>
+    <string name="settings_auto_backup_turn_off">Turn off</string>
+    <string name="settings_auto_backup_run">Back up now</string>
+    <string name="settings_auto_backup_packs">Include sound packs</string>
+    <string name="settings_auto_backup_packs_body">Restores work even if a pack\'s website is gone. Takes more space.</string>
+    <string name="settings_auto_backup_last">Last backup: %1$s</string>
+    <string name="settings_auto_backup_never">No backup yet.</string>
+    <string name="settings_auto_backup_error">The last backup failed: %1$s</string>
+    <string name="settings_backup_busy">Backing up…</string>
+
+    <!-- Export dialog -->
+    <string name="export_title">Back up to a file</string>
+    <string name="export_packs">Include sound packs</string>
+    <string name="export_packs_body">A full backup. Restores work without downloads, but the file can be large.</string>
+    <string name="export_encrypt">Protect with a password</string>
+    <string name="export_encrypt_body">Nobody can open the backup without it, and nobody can recover it if you forget it.</string>
+    <string name="export_passphrase">Password</string>
+    <string name="export_passphrase_confirm">Repeat password</string>
+    <string name="export_passphrase_short">At least %1$d characters.</string>
+    <string name="export_passphrase_mismatch">The passwords don\'t match.</string>
+    <string name="export_credentials">Include repository passwords</string>
+    <string name="export_credentials_body">Only possible in a password-protected backup.</string>
+    <string name="export_choose_place">Choose where to save</string>
+    <string name="export_cancel">Cancel</string>
+    <string name="export_show_password">Show password</string>
+    <string name="export_hide_password">Hide password</string>
+
+    <!-- Backup results -->
+    <plurals name="backup_exported">
+        <item quantity="one">Backup saved: %1$d contact.</item>
+        <item quantity="other">Backup saved: %1$d contacts.</item>
+    </plurals>
+    <string name="backup_exported_encrypted">Password-protected backup saved.</string>
+    <string name="backup_export_failed">The backup couldn\'t be saved: %1$s</string>
+    <string name="backup_auto_written">Backup saved as %1$s.</string>
+    <string name="backup_auto_unchanged">Nothing changed since the last backup.</string>
+    <string name="backup_auto_failed">The backup failed: %1$s</string>
+    <string name="backup_auto_off">Automatic backups are off.</string>
+    <string name="backup_folder_failed">Cucuto can\'t keep access to that folder. Pick another one.</string>
+
+    <!-- Restore flow -->
+    <string name="restore_title">Restore from backup</string>
+    <string name="restore_close">Close</string>
+    <string name="restore_opening">Opening the backup…</string>
+    <string name="restore_restoring">Restoring contacts and voices…</string>
+    <string name="restore_passphrase_title">This backup is protected</string>
+    <string name="restore_passphrase_body">Type the password that was set when the backup was made.</string>
+    <string name="restore_passphrase_wrong">That password doesn\'t open this backup.</string>
+    <string name="restore_passphrase_open">Open</string>
+    <string name="restore_problem_pack_title">This is a sound pack</string>
+    <string name="restore_problem_pack_body">It isn\'t a backup. Import it from Packs instead.</string>
+    <string name="restore_problem_invalid_title">This isn\'t a Cucuto backup</string>
+    <string name="restore_problem_invalid_body">The file is damaged or isn\'t a backup made by Cucuto.</string>
+    <string name="restore_problem_failed_title">The restore stopped</string>
+    <string name="restore_problem_failed_body">Something went wrong while reading the file or restoring. Nothing was overwritten.</string>
+    <string name="restore_problem_details">Details</string>
+    <string name="restore_pick_other">Pick another file</string>
+
+    <string name="restore_packs_title">Sound packs</string>
+    <string name="restore_packs_body">Backup from %1$s. Cucuto gets the packs it can by itself; packs you imported from a file need that file again.</string>
+    <string name="restore_pack_installed">Installed</string>
+    <string name="restore_pack_waiting">Waiting…</string>
+    <string name="restore_pack_working">Getting it…</string>
+    <string name="restore_pack_from_backup">From this backup</string>
+    <string name="restore_pack_from_repository">From its repository</string>
+    <string name="restore_pack_from_url">From its download link</string>
+    <string name="restore_pack_pick">Imported from %1$s: pick that file again</string>
+    <string name="restore_pack_pick_unknown">Imported from a file: pick it again</string>
+    <string name="restore_pack_pick_button">Choose file</string>
+    <string name="restore_pack_retry">Try again</string>
+    <string name="restore_pack_failed_download">Couldn\'t download it. Check your connection.</string>
+    <string name="restore_pack_failed_missing">Its repository doesn\'t list it any more.</string>
+    <string name="restore_pack_failed_hash">The download isn\'t the file in the backup.</string>
+    <string name="restore_pack_failed_wrong_file">That file doesn\'t contain this pack.</string>
+    <string name="restore_pack_failed_invalid">That file isn\'t a valid sound pack.</string>
+    <string name="restore_pack_failed_other">Couldn\'t install it.</string>
+    <string name="restore_packs_continue">Continue</string>
+    <plurals name="restore_packs_continue_missing">
+        <item quantity="one">Continue without %1$d pack</item>
+        <item quantity="other">Continue without %1$d packs</item>
+    </plurals>
+
+    <string name="restore_conflicts_title">Different voices on this phone</string>
+    <plurals name="restore_conflicts_body">
+        <item quantity="one">%1$d contact already has a different voice here. Cucuto keeps this phone\'s voice unless you tick the contact.</item>
+        <item quantity="other">%1$d contacts already have a different voice here. Cucuto keeps this phone\'s voice unless you tick the contact.</item>
+    </plurals>
+    <string name="restore_conflicts_select_all">Use the backup\'s voice for all</string>
+    <string name="restore_conflict_unnamed">Unnamed chat</string>
+    <string name="restore_conflict_here">Here: %1$s</string>
+    <string name="restore_conflict_backup">Backup: %1$s</string>
+    <string name="restore_conflict_no_voice">no voice</string>
+    <string name="restore_conflict_voice">%1$s (%2$s)</string>
+    <string name="restore_conflict_per_sender">each sender\'s own voice</string>
+    <string name="restore_conflict_group">one voice for the group</string>
+    <string name="restore_conflicts_keep">Keep this phone\'s voices</string>
+    <plurals name="restore_conflicts_apply">
+        <item quantity="one">Use the backup\'s voice for %1$d</item>
+        <item quantity="other">Use the backup\'s voice for %1$d</item>
+    </plurals>
+
+    <string name="restore_done_title">Restored</string>
+    <plurals name="restore_done_contacts">
+        <item quantity="one">%1$d contact restored, %2$d new.</item>
+        <item quantity="other">%1$d contacts restored, %2$d new.</item>
+    </plurals>
+    <plurals name="restore_done_voices">
+        <item quantity="one">%1$d voice applied.</item>
+        <item quantity="other">%1$d voices applied.</item>
+    </plurals>
+    <plurals name="restore_done_kept">
+        <item quantity="one">%1$d contact kept this phone\'s voice.</item>
+        <item quantity="other">%1$d contacts kept this phone\'s voice.</item>
+    </plurals>
+    <plurals name="restore_done_keys">
+        <item quantity="one">%1$d chat already belongs to another contact here and was left alone.</item>
+        <item quantity="other">%1$d chats already belong to another contact here and were left alone.</item>
+    </plurals>
+    <plurals name="restore_done_repositories">
+        <item quantity="one">%1$d repository added.</item>
+        <item quantity="other">%1$d repositories added.</item>
+    </plurals>
+    <plurals name="restore_done_credentials">
+        <item quantity="one">%1$d repository password restored.</item>
+        <item quantity="other">%1$d repository passwords restored.</item>
+    </plurals>
+    <plurals name="restore_done_packs_missing">
+        <item quantity="one">%1$d pack is still missing. Its contacts hear WhatsApp\'s tone until you import it from Packs.</item>
+        <item quantity="other">%1$d packs are still missing. Their contacts hear WhatsApp\'s tone until you import them from Packs.</item>
+    </plurals>
+    <plurals name="restore_done_ringtones">
+        <item quantity="one">%1$d call ringtone is saved for a later version of Cucuto.</item>
+        <item quantity="other">%1$d call ringtones are saved for a later version of Cucuto.</item>
+    </plurals>
+    <string name="restore_checklist_title">What a backup can\'t do</string>
+    <string name="restore_checklist_body">The module itself lives in LSPosed, outside Cucuto. On a new phone:</string>
+    <string name="restore_checklist_enable">Enable Cucuto in LSPosed.</string>
+    <string name="restore_checklist_scope">Tick only System Framework in its scope.</string>
+    <string name="restore_checklist_reboot">Reboot the phone.</string>
+    <string name="restore_checklist_test">Post a test notification from Diagnostics.</string>
+    <string name="restore_open_setup">Open the setup guide</string>
+    <string name="restore_finish">Done</string>
+
+    <!-- Setup -->
+    <string name="settings_section_setup">Setup</string>
+    <string name="settings_setup_status">Status checks</string>
+    <string name="settings_setup_status_body">Module, scope, WhatsApp and packs, with a fix for each.</string>
+    <string name="settings_setup_guide">Setup guide</string>
+    <string name="settings_setup_guide_body">The first-run steps again: requirements, LSPosed, reboot and the self-test.</string>
+
+    <!-- Diagnostics -->
+    <string name="settings_section_diagnostics">Diagnostics</string>
+    <string name="settings_diagnostics">Diagnostics and decision log</string>
+    <string name="settings_diagnostics_body">What the module did with each recent notification, and why.</string>
+
+    <!-- About -->
+    <string name="settings_section_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_version_value">%1$s (%2$d)</string>
+    <string name="settings_website">Website</string>
+    <string name="settings_website_url" translatable="false">https://cucuto.mauri.app</string>
+    <string name="settings_source">Source code</string>
+    <string name="settings_source_url" translatable="false">https://github.com/mauriciabad/cucuto</string>
+    <string name="settings_licenses">Licenses</string>
+    <string name="settings_licenses_body">Cucuto is free software under the GPL, version 3 or later.</string>
+    <string name="licenses_title">Licenses</string>
+    <string name="licenses_close">Close</string>
+    <string name="licenses_app" translatable="false">Cucuto</string>
+    <string name="licenses_app_body">GNU General Public License, version 3 or later. You may share and change it under the same terms.</string>
+    <string name="licenses_font" translatable="false">Google Sans Flex</string>
+    <string name="licenses_font_body">SIL Open Font License 1.1.</string>
+    <string name="licenses_packs">Demo sound packs</string>
+    <string name="licenses_packs_body">CC0 1.0: public domain, free for any use.</string>
+    <string name="licenses_libraries">Libraries</string>
+    <string name="licenses_libraries_body">Android Jetpack, Kotlin, kotlinx, Material Color Utilities, Coil, OkHttp, Dagger Hilt and libxposed (Apache License 2.0); Bouncy Castle (the MIT-style Bouncy Castle Licence); jxl-rs and its Rust dependencies (BSD 3-Clause, MIT or Apache License 2.0).</string>
+    <string name="licenses_your_packs">Packs you import keep their own licenses, shown on each pack.</string>
+    <string name="licenses_read">Read the license</string>
+    <string name="licenses_gpl_url" translatable="false">https://www.gnu.org/licenses/gpl-3.0.html</string>
+    <string name="licenses_ofl_url" translatable="false">https://openfontlicense.org</string>
+    <string name="licenses_cc0_url" translatable="false">https://creativecommons.org/publicdomain/zero/1.0/</string>
+
+    <!-- Developer (debug builds only) -->
+    <string name="settings_section_developer">Developer</string>
+    <string name="settings_gallery">Design gallery</string>
+    <string name="settings_gallery_body">Theme, shapes, motion and every feedback event.</string>
+    <string name="settings_build">Build</string>
+    <string name="settings_build_value">%1$s, %2$s</string>
+
+    <!-- Quick Settings tile -->
+    <string name="tile_voices">Cucuto voices</string>
+    <string name="tile_voices_on">On</string>
+    <string name="tile_voices_off">Off</string>
+
+    <string name="settings_open_link_failed">No app can open this link.</string>
+</resources>

@@ -41,6 +41,17 @@ interface VoicePreview {
     ): Long?
 
     /**
+     * Plays [clip] and, when it is [Haptic.Custom], [haptic], the way a notification plays them. Stops the previous
+     * preview. Contact detail uses it for single clips and for the in-app "Simulate message".
+     *
+     * @return The clip's duration in milliseconds, or null when nothing could play.
+     */
+    suspend fun playClip(
+        clip: File,
+        haptic: Haptic? = null,
+    ): Long?
+
+    /**
      * Plays one of [character]'s clips with [haptic] instead of the character's own vibration: a per-contact override
      * or the pattern in the haptic editor. [Haptic.Auto] plays the chosen clip's own envelope.
      *
@@ -81,19 +92,19 @@ class MediaVoicePreview
             character: VoiceCharacter,
             withHaptic: Boolean,
             atNanos: Long?,
-        ): Long? = playClip(character, if (withHaptic) character.haptic else null, atNanos)
+        ): Long? = playCharacter(character, if (withHaptic) character.haptic else null, atNanos)
 
         override suspend fun play(
             character: VoiceCharacter,
             haptic: Haptic,
-        ): Long? = playClip(character, haptic, atNanos = null)
+        ): Long? = playCharacter(character, haptic, atNanos = null)
 
         override fun vibrate(haptic: Haptic.Custom): Boolean {
             stop()
             return vibrate(haptic, clipEnvelope = null)
         }
 
-        private suspend fun playClip(
+        private suspend fun playCharacter(
             character: VoiceCharacter,
             haptic: Haptic?,
             atNanos: Long?,
@@ -101,6 +112,24 @@ class MediaVoicePreview
             stop()
             val clip = pickClip(character.clips, lastClip) ?: return null
             lastClip = clip
+            return start(clip, haptic, atNanos, clipEnvelope = character.autoHapticOf(clip))
+        }
+
+        override suspend fun playClip(
+            clip: File,
+            haptic: Haptic?,
+        ): Long? {
+            stop()
+            // The router already resolved Auto against this clip (forClip), so no envelope is needed here.
+            return start(clip, haptic, atNanos = null, clipEnvelope = null)
+        }
+
+        private suspend fun start(
+            clip: File,
+            haptic: Haptic?,
+            atNanos: Long?,
+            clipEnvelope: Haptic.Custom?,
+        ): Long? {
             val prepared = MediaPlayer()
             try {
                 withContext(Dispatchers.IO) {
@@ -127,7 +156,7 @@ class MediaVoicePreview
                 finished.release()
             }
             prepared.start()
-            if (haptic != null) vibrate(haptic, clipEnvelope = character.autoHapticOf(clip))
+            if (haptic != null) vibrate(haptic, clipEnvelope)
             return prepared.duration.toLong().takeIf { it > 0 }
         }
 

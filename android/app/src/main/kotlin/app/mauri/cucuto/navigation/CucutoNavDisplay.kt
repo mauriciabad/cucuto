@@ -22,17 +22,20 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import app.mauri.cucuto.contact.ContactDetailScreen
 import app.mauri.cucuto.core.pack.ImportSource
 import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.haptics.HapticEditorScreen
 import app.mauri.cucuto.ui.motion.SharedElementEntry
 import app.mauri.cucuto.ui.motion.SharedElementsHost
 import app.mauri.cucuto.ui.onboarding.OnboardingScreen
 import app.mauri.cucuto.ui.placeholder.PlaceholderScreen
+import app.mauri.cucuto.ui.settings.SettingsScreen
 import app.mauri.cucuto.ui.status.StatusScreen
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -45,6 +48,7 @@ import kotlinx.coroutines.flow.filterNotNull
 fun CucutoNavDisplay(
     modifier: Modifier = Modifier,
     pendingImport: StateFlow<ImportSource?>? = null,
+    pendingRepoLink: StateFlow<String?>? = null,
     startViewModel: StartViewModel = hiltViewModel(),
 ) {
     val onboarded by startViewModel.onboarded.collectAsStateWithLifecycle()
@@ -73,6 +77,13 @@ fun CucutoNavDisplay(
     LaunchedEffect(pendingImport) {
         pendingImport?.filterNotNull()?.collect {
             if (backStack.lastOrNull() != CucutoDestination.Packs) backStack.add(CucutoDestination.Packs)
+        }
+    }
+
+    // An "Add to app" link opens Discover, which shows the add sheet (#36).
+    LaunchedEffect(pendingRepoLink) {
+        pendingRepoLink?.filterNotNull()?.collect {
+            if (backStack.lastOrNull() != CucutoDestination.Discover) backStack.add(CucutoDestination.Discover)
         }
     }
 
@@ -110,6 +121,7 @@ private fun entries(
                 onOpenChat = { chat -> navigate(CucutoDestination.Picker(chat)) },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onBack = goBack,
+                onOpenDetail = { chat -> navigate(CucutoDestination.ContactDetail(chat)) },
             )
         }
     }
@@ -124,15 +136,24 @@ private fun entries(
             )
         }
     }
-    entry<CucutoDestination.ContactDetail> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.ContactDetail> { key ->
+        SharedElementEntry {
+            ContactDetailScreen(
+                chat = key.chat,
+                onBack = goBack,
+                onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
+                onEditPattern = { navigate(CucutoDestination.HapticEditor(key.chat)) },
+            )
+        }
+    }
     entry<CucutoDestination.Packs> {
         PacksScreen(onBack = goBack, onDiscover = { navigate(CucutoDestination.Discover) })
     }
-    entry<CucutoDestination.Discover> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Discover> { DiscoverScreen(onBack = goBack) }
     entry<CucutoDestination.HapticEditor> { key ->
         HapticEditorScreen(chat = key.chat, onBack = goBack, onDone = { backStack.remove(key) })
     }
-    entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Settings> { SettingsScreen(onNavigate = navigate) }
     entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
     entry<CucutoDestination.Gallery> { GalleryScreen(onBack = goBack) }
 }

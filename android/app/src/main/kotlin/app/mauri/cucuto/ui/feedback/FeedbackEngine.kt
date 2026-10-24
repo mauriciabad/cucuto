@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.hapticfeedback.HapticFeedback
@@ -11,6 +13,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import app.mauri.cucuto.core.data.di.ApplicationScope
 import app.mauri.cucuto.core.data.settings.UiFeedbackSettings
 import app.mauri.cucuto.core.data.settings.UiSoundLevel
+import app.mauri.cucuto.ui.theme.LocalReducedMotion
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,8 +33,9 @@ import javax.inject.Singleton
  * sound, haptic and motion never drift apart.
  *
  * Settings: "UI sounds" (default quiet) and "UI haptics" (default on) from [UiFeedbackSettings]; on top of them the
- * system ringer mode, "Touch sounds" and "Vibration and haptics" settings apply. "Remove animations" only affects
- * visuals (components read `LocalReducedMotion`): sound and haptics still carry meaning (brand/motion.md).
+ * system ringer mode, "Touch sounds" and "Vibration and haptics" settings apply. "Remove animations" (the system's or
+ * Cucuto's own, see [ProvideFeedback]) only affects visuals (components read `LocalReducedMotion`): sound and haptics
+ * still carry meaning (brand/motion.md).
  *
  * In composables use [LocalFeedback], which binds the engine to the window's [HapticFeedback].
  */
@@ -53,6 +57,14 @@ class FeedbackEngine
 
         /** The current "UI haptics" switch. */
         val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled.stateIn(scope, SharingStarted.Eagerly, true)
+
+        /** Cucuto's own "Remove animations" (the system setting is read by [LocalReducedMotion]'s provider). */
+        val removeAnimations: StateFlow<Boolean> =
+            settings.removeAnimations.stateIn(
+                scope,
+                SharingStarted.Eagerly,
+                false,
+            )
 
         /** Every beat fired, for visuals that are not next to the control that fired them. */
         val beats: SharedFlow<FeedbackBeat> = beatFlow.asSharedFlow()
@@ -100,7 +112,10 @@ class FeedbackController internal constructor(
 
 val LocalFeedback = staticCompositionLocalOf { FeedbackController(engine = null, haptics = null) }
 
-/** Provides [LocalFeedback] for [content], bound to this window's haptics. */
+/**
+ * Provides [LocalFeedback] for [content], bound to this window's haptics. Also turns [LocalReducedMotion] on when
+ * Cucuto's own "Remove animations" setting is on (the theme already sets it from the system setting).
+ */
 @Composable
 fun ProvideFeedback(
     engine: FeedbackEngine,
@@ -108,5 +123,10 @@ fun ProvideFeedback(
 ) {
     val haptics = LocalHapticFeedback.current
     val controller = remember(engine, haptics) { FeedbackController(engine, haptics) }
-    CompositionLocalProvider(LocalFeedback provides controller, content = content)
+    val removeAnimations by engine.removeAnimations.collectAsState()
+    CompositionLocalProvider(
+        LocalFeedback provides controller,
+        LocalReducedMotion provides (LocalReducedMotion.current || removeAnimations),
+        content = content,
+    )
 }
