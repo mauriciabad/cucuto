@@ -72,6 +72,28 @@ class ClipMirrorStoreTest {
     }
 
     @Test
+    fun replacesACopyWithTheSameSizeAndANewerDateButOtherBytes() {
+        // Another app with all-files access plants (or edits) the copy before this process checks it.
+        val copy = mirrored("characters/frog/clips/ribbit.ogg")
+        copy.parentFile!!.mkdirs()
+        copy.writeBytes(byteArrayOf(6, 6, 6))
+        copy.setLastModified(System.currentTimeMillis() + 60_000)
+        mirror("characters/frog/clips/ribbit.ogg")
+        assertArrayEquals(byteArrayOf(1, 2, 3), copy.readBytes())
+    }
+
+    @Test
+    fun keepsACopyThatAlreadyHasTheSourceBytes() {
+        val copy = mirrored("characters/frog/clips/ribbit.ogg")
+        copy.parentFile!!.mkdirs()
+        copy.writeBytes(byteArrayOf(1, 2, 3))
+        val stamp = System.currentTimeMillis() - 3_600_000
+        copy.setLastModified(stamp)
+        mirror("characters/frog/clips/ribbit.ogg")
+        assertEquals(stamp / 1000, copy.lastModified() / 1000)
+    }
+
+    @Test
     fun refusesWhatItCannotMirrorSafely() {
         assertNull(mirror("characters/frog/clips/missing.ogg"))
         assertNull(mirror("../escape.ogg"))
