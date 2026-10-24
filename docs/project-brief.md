@@ -357,7 +357,7 @@ In the app (Discover screen):
 
 1. **Repositories:** the default one plus user-added ones. Add by URL, QR code, or the deep link `cucuto://repo/add?url=…` from a website.
 2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges. A bundle is one card with its packs inside, each with its own badge, and a pack the repository also lists on its own shows only there, so nothing appears twice (owner report 2026-10-24, #247, [ADR 0064](decisions/0064-bundles-in-discover.md)).
-3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched.
+3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched. The index carries each character's haptic (`x-haptic`) and the phone computes auto envelopes from the sample (owner update 2026-10-24 (#272), [ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 4. **Download:** animated progress, then size and SHA-256 checks, then the standard importer (bundles show their pack checklist).
 5. **Updates:** repositories are checked when the app opens, with ETag caching. No background jobs.
 
@@ -559,7 +559,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M5 — Pack repositories and bundles
 
 - [ ] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
-- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews need haptic data in `repository.json`; the owner wants them done eventually (#175, item 7): #272.
+- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 - [ ] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
 - [ ] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
 - [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.

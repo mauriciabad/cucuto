@@ -89,10 +89,8 @@ import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.navigation.OnEntryPopped
 import app.mauri.cucuto.navigation.parentViewModel
 import app.mauri.cucuto.packs.plainWords
-import app.mauri.cucuto.packs.ui.ClipPlayer
 import app.mauri.cucuto.packs.ui.ImportReviewRoute
 import app.mauri.cucuto.packs.ui.installedText
-import app.mauri.cucuto.packs.ui.rememberClipPlayer
 import app.mauri.cucuto.packs.ui.sizeText
 import app.mauri.cucuto.ui.components.ParticleBurst
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
@@ -170,6 +168,7 @@ fun DiscoverScreen(
         state = state,
         previews = previews,
         actions = actions,
+        haptics = viewModel.sampleHaptics,
         onOpenRepositories = { onNavigate(CucutoDestination.Repositories) },
         onBack = onBack,
         modifier = modifier,
@@ -315,10 +314,11 @@ internal fun DiscoverContent(
     onOpenRepositories: () -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
+    haptics: SampleHaptics = SampleHaptics.None,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackbar = remember { SnackbarHostState() }
-    val player = rememberClipPlayer()
+    val player = rememberSamplePlayer(haptics)
     val feedback = LocalFeedback.current
     val resources = LocalResources.current
     var celebration by remember { mutableStateOf<FeedbackBeat?>(null) }
@@ -427,7 +427,7 @@ internal fun DiscoverMessage.feedback(): Feedback? =
 private fun LazyListScope.discoverItems(
     state: DiscoverUiState,
     previews: PreviewLoader,
-    player: ClipPlayer,
+    player: SamplePlayer,
     actions: DiscoverActions,
 ) {
     val sections = state.sections
@@ -643,7 +643,7 @@ private fun SectionProblem(
 private fun RemotePackCard(
     card: PackCard,
     previews: PreviewLoader,
-    player: ClipPlayer,
+    player: SamplePlayer,
     onInstall: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -676,7 +676,7 @@ private fun RemotePackCard(
 private fun RemoteBundleCard(
     card: PackCard,
     previews: PreviewLoader,
-    player: ClipPlayer,
+    player: SamplePlayer,
     onInstall: (PackCard) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -716,7 +716,7 @@ private fun BundleMemberRow(
     member: BundleMember,
     repositoryId: Long,
     previews: PreviewLoader,
-    player: ClipPlayer,
+    player: SamplePlayer,
     onInstall: (PackCard) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -849,7 +849,7 @@ private fun CharacterRow(
     characters: List<RemoteCharacter>,
     repositoryId: Long,
     previews: PreviewLoader,
-    player: ClipPlayer,
+    player: SamplePlayer,
     avatarSize: Dp = 72.dp,
 ) {
     if (characters.isEmpty()) return

@@ -18,6 +18,11 @@ export interface CharacterPreview {
 	/** A short preview clip, relative to the index URL. */
 	sample?: string;
 	seedColor?: string;
+	/**
+	 * The character's haptic from pack.json, for the app's haptic previews (ADR 0069). Browsers can't play rich
+	 * haptics, so the website keeps sound-only previews and never reads it.
+	 */
+	'x-haptic'?: { mode: 'auto' | 'custom' | 'none'; events?: unknown[] };
 }
 
 export interface BundledPack {

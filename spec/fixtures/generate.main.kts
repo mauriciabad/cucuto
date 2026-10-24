@@ -397,7 +397,7 @@ archive(
     ),
 )
 
-document("valid/repository.json", "repository", "Repository index with a pack and a bundle, relative and absolute URLs.", """
+document("valid/repository.json", "repository", "Repository index with a pack and a bundle, relative and absolute URLs, without haptic previews (as indexes written before x-haptic).", """
 {
   "formatVersion": 1,
   "name": "Fixture repository",
@@ -439,6 +439,41 @@ document("valid/repository.json", "repository", "Repository index with a pack an
         "size": 4096,
         "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
       }
+    }
+  ]
+}
+""")
+document("valid/repository-haptics.json", "repository", "Haptic previews (x-haptic): a custom pattern, none and auto in a pack, auto inside a bundle, and a character without one (older indexes).", """
+{
+  "formatVersion": 1,
+  "name": "Fixture repository with haptic previews",
+  "packs": [
+    {
+      "id": "app.mauri.fixtures.full",
+      "type": "pack",
+      "name": "Full pack",
+      "version": "1.0.0",
+      "characters": [
+        { "id": "robin", "name": "Robin", "sample": "previews/app.mauri.fixtures.full/robin-sample.ogg",
+          "x-haptic": { "mode": "custom", "events": [
+            { "at": 0, "preset": "CLICK", "scale": 0.8 },
+            { "at": 220, "initialSharpness": 0.3, "envelope": [{ "intensity": 1.0, "sharpness": 0.8, "ms": 120 }, { "intensity": 0.0, "sharpness": 0.4, "ms": 180 }] }
+          ] } },
+        { "id": "song", "name": "Song", "sample": "previews/app.mauri.fixtures.full/song-sample.flac", "x-haptic": { "mode": "none" } },
+        { "id": "beep", "name": "Beep", "sample": "previews/app.mauri.fixtures.full/beep-sample.ogg", "x-haptic": { "mode": "auto" } },
+        { "id": "old", "name": "Old", "sample": "previews/app.mauri.fixtures.full/old-sample.ogg" }
+      ],
+      "download": { "url": "packs/full.soundpack.zip", "size": 4096, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
+    },
+    {
+      "id": "app.mauri.fixtures.bundle",
+      "type": "bundle",
+      "name": "Fixture bundle",
+      "version": "1.0.0",
+      "packs": [
+        { "id": "app.mauri.fixtures.bundle.first", "name": "Bundle first", "version": "1.0.0", "characters": [{ "id": "beep", "name": "Beep", "sample": "previews/b/beep.ogg", "x-haptic": { "mode": "auto" } }] }
+      ],
+      "download": { "url": "packs/bundle.soundpack.zip", "size": 4096, "sha256": "1111111111111111111111111111111111111111111111111111111111111111" }
     }
   ]
 }
@@ -842,6 +877,18 @@ document(
     repo(repoEntry.replace("\"type\": \"pack\"", "\"type\": \"bundle\"")), listOf("SCHEMA_VIOLATION"),
 )
 document("invalid/repository-format-version-2.json", "repository", "An index from a future format version.", repo(repoEntry).replace("\"formatVersion\": 1", "\"formatVersion\": 2"), listOf("FORMAT_VERSION_UNSUPPORTED"))
+val repoHapticEntry = repoEntry.replace(
+    "\"version\": \"1.0.0\",",
+    "\"version\": \"1.0.0\",\n      \"characters\": [{ \"id\": \"beep\", \"name\": \"Beep\", \"sample\": \"beep.ogg\", HAPTIC }],",
+)
+document(
+    "invalid/repository-haptic-without-events.json", "repository", "A custom x-haptic without its events.",
+    repo(repoHapticEntry.replace("HAPTIC", "\"x-haptic\": { \"mode\": \"custom\" }")), listOf("SCHEMA_VIOLATION"),
+)
+document(
+    "invalid/repository-haptic-plain-key.json", "repository", "A character preview with \"haptic\" instead of \"x-haptic\" (apps released before haptic previews would reject it).",
+    repo(repoHapticEntry.replace("HAPTIC", "\"haptic\": { \"mode\": \"auto\" }")), listOf("SCHEMA_VIOLATION"),
+)
 document(
     "invalid/backup-missing-contacts.json", "backup", "A backup without the contacts list.",
     backupJson.substringBefore("  \"contacts\": [").trimEnd().removeSuffix(",") + "\n}\n", listOf("SCHEMA_VIOLATION"),
