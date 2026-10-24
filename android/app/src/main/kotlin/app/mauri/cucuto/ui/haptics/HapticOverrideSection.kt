@@ -45,7 +45,7 @@ import app.mauri.cucuto.ui.theme.CucutoTheme
 /**
  * The per-contact vibration (#33) for [chat], as a self-contained card for the contact detail screen: keep the pack's
  * haptic, follow the voice, no vibration, or a custom pattern. "Custom" without a pattern, and "Edit pattern", open the
- * haptic editor ([onEditPattern], route `CucutoDestination.HapticEditor(chat)`). Changes are stored at once and reach
+ * haptic editor ([onEditPattern], route `CucutoDestination.HapticEditor(HapticTarget.Chat(chat))`). Changes are stored at once and reach
  * the module through the routing table.
  */
 @Composable

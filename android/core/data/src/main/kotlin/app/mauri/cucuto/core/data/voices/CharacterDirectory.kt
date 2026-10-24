@@ -33,6 +33,8 @@ data class VoicePack(
  *   toggles store (`AssignmentEntity.disabledClips`). Empty when unknown (previews and tests).
  * @property clipAutoHaptics Each clip's auto envelope (analysed at import, ADR 0020), aligned with [clips]; null for
  *   a clip without one. Empty when unknown.
+ * @property clipLabels Each clip's `label` from `pack.json`, aligned with [clips]; null for a clip without one. Empty
+ *   when unknown.
  * @property clipMoments Each clip's [Moment] (rare, first of the day, burst; ADR 0059), aligned with [clips]. Empty
  *   when unknown.
  * @property ringtoneCount How many call ringtones the character has (0: messages only).
@@ -48,6 +50,7 @@ data class VoiceCharacter(
     val haptic: Haptic,
     val clipPaths: List<String> = emptyList(),
     val clipAutoHaptics: List<Haptic.Custom?> = emptyList(),
+    val clipLabels: List<String?> = emptyList(),
     val clipMoments: List<Moment> = emptyList(),
     val ringtoneCount: Int = 0,
 ) {
@@ -109,6 +112,7 @@ class InstalledCharacterDirectory
                                 haptic = character.haptic,
                                 clipPaths = clips.map { it.second.file },
                                 clipAutoHaptics = clips.map { it.second.autoHaptic },
+                                clipLabels = clips.map { it.second.label },
                                 clipMoments = clips.map { it.second.moment },
                                 ringtoneCount = character.ringtoneCount,
                             )
