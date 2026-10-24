@@ -87,3 +87,4 @@ handed out to work that never merged or is still in a PR (0049 is in #225, 0059 
 | [0075](0075-sample-chat-without-root.md) | A sample chat to try a voice without root | withdrawn: removed by the owner |
 | [0079](0079-security-review-hardening.md) | Security review before the Play release: content: intake only, byte-checked clip mirror, bounded table counts | accepted; default open in #341 |
 | [0080](0080-no-google-play.md) | No Google Play: the closed test is too hard to meet; Play bundle and checks removed | accepted |
+| [0081](0081-signal-support.md) | Signal and Molly: one voice per person across WhatsApp and Signal | accepted (owner, #374) |

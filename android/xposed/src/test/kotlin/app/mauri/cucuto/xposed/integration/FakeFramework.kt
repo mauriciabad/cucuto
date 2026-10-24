@@ -209,6 +209,8 @@ internal class FakeFramework {
 internal object Notifications {
     const val WHATSAPP = "com.whatsapp"
     const val BUSINESS = "com.whatsapp.w4b"
+    const val SIGNAL = "org.thoughtcrime.securesms"
+    const val MOLLY = "im.molly.app"
     private const val INDIVIDUAL_CHANNEL = "individual_chat_defaults_5"
     private const val GROUP_CHANNEL = "group_chat_defaults_6"
     private var nextId = 1
@@ -278,6 +280,40 @@ internal object Notifications {
                         .addMessage("text", 2L, sender),
                 ).build()
         return record(pkg, notification, shortcut(groupKey, groupName))
+    }
+
+    /**
+     * A Signal (or Molly) conversation as `NotificationFactory.notifyForConversation` posts it (ADR 0081): the
+     * conversation's own notification alerts (`GROUP_ALERT_CHILDREN`), its shortcut ID is the recipient ID, and it
+     * adds one `Person` whose URI is the Android contact's lookup URI when the person is a saved contact.
+     */
+    fun signal(
+        recipientId: String,
+        name: String,
+        lookupUri: String?,
+        pkg: String = SIGNAL,
+    ): FakeNotificationRecord {
+        val me =
+            Person
+                .Builder()
+                .setName("Me")
+                .setKey("1")
+                .build()
+        val them =
+            Person
+                .Builder()
+                .setName(name)
+                .setKey(recipientId)
+                .setUri(lookupUri)
+                .build()
+        val notification =
+            builder(pkg, "messages_3", recipientId, name)
+                .setGroup("messages")
+                .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
+                .addPerson(them)
+                .setStyle(Notification.MessagingStyle(me).setConversationTitle(name).addMessage("text", 1L, them))
+                .build()
+        return record(pkg, notification, shortcut(recipientId, name))
     }
 
     /** The Diagnostics screen's test notification. */

@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.data.db.RoutingRow
 import app.mauri.cucuto.core.routing.Clip
+import app.mauri.cucuto.core.routing.ContactKeys
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
@@ -32,6 +33,8 @@ import javax.inject.Inject
  * - Clips with a `when` (day or night only, and so on) point at a [TimeCondition] compiled by [ConditionCompiler]:
  *   each distinct condition once, as the instants it starts and stops applying (ADR 0037). Without a compiler,
  *   conditions are left out and every clip always plays.
+ * - A 1:1 contact linked to an Android contact also routes its derived Signal and Molly key `contact:<lookupKey>`
+ *   (ADR 0081), so one voice covers WhatsApp and Signal. When two rows have the same key, the first wins.
  * - Rare and moment clips keep their [Clip.moment] (ADR 0059). When any clip plays on the first message of the day,
  *   the table carries the compiler's local days, so the module knows where they start.
  */
@@ -55,8 +58,12 @@ class RoutingTableBuilder
             val voiceIndex = HashMap<Voice, Int>()
             val voiceByContact = HashMap<Long, Int>()
             val routes = ArrayList<Route>(rows.size)
+            val routed = HashSet<Pair<String, String>>(rows.size * 2)
 
             for (row in rows) {
+                // One route per key: the first row wins (a stored key before a derived Signal key, ADR 0081).
+                if (row.derived && row.keyValue.length > ContactKeys.MAX_KEY_LENGTH) continue
+                if ((row.packageName to row.keyValue) in routed) continue
                 val voice =
                     voiceByContact.getOrPut(row.contactId) {
                         val built = voiceFor(row, packs, conditions) ?: return@getOrPut Route.NO_VOICE
@@ -67,6 +74,7 @@ class RoutingTableBuilder
                     }
                 val perSender = row.isGroup && row.groupPolicy == GroupPolicy.PER_SENDER
                 if (voice == Route.NO_VOICE && !perSender) continue
+                routed += row.packageName to row.keyValue
                 var flags = 0
                 if (row.isGroup) flags = flags or Route.FLAG_GROUP
                 if (perSender) flags = flags or Route.FLAG_PER_SENDER

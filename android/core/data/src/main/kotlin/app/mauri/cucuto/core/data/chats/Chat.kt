@@ -8,11 +8,13 @@ import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.SeenSenderEntity
+import app.mauri.cucuto.core.routing.ContactKeys
 import kotlinx.serialization.Serializable
 
 /**
- * A WhatsApp conversation as the module reports it: the messenger package plus the conversation key (the alerting
- * notification's shortcut ID, `…@lid` for 1:1 chats and `…@g.us` for groups; ADR 0010). It is the stable identity
+ * A conversation as the module reports it: the messenger package plus the conversation key (the alerting
+ * notification's shortcut ID, `…@lid` for 1:1 chats and `…@g.us` for groups; ADR 0010; on Signal and Molly,
+ * `contact:<lookupKey>` for a saved contact, else the recipient ID; ADR 0081). It is the stable identity
  * the app uses to address a chat in navigation and when assigning a voice.
  *
  * Serializable so it can live in Navigation 3 keys (the back stack is saved state, private to the app). Never log
@@ -32,10 +34,21 @@ data class ChatKey(
 
         /** WhatsApp Business's package: same flows, separate keys (#21). */
         const val WHATSAPP_BUSINESS: String = "com.whatsapp.w4b"
+
+        /** Signal's package (ADR 0081). */
+        const val SIGNAL: String = ContactKeys.SIGNAL
+
+        /** Molly's package, the Signal fork (ADR 0081). */
+        const val MOLLY: String = ContactKeys.MOLLY
     }
 
     /** Redacted form for logs and test names: only the key's JID domain. */
-    override fun toString(): String = "ChatKey($packageName, …@${conversationKey.substringAfterLast('@', "?")})"
+    override fun toString(): String =
+        if (conversationKey.startsWith(ContactKeys.PREFIX)) {
+            "ChatKey($packageName, contact:…)"
+        } else {
+            "ChatKey($packageName, …@${conversationKey.substringAfterLast('@', "?")})"
+        }
 }
 
 /** The character that speaks for a chat, by its stable `(packId, characterId)`. */
@@ -83,6 +96,18 @@ data class Chat(
 ) {
     /** Whether the chat lives in WhatsApp Business rather than WhatsApp; its keys and voices are its own (#21). */
     val isBusiness: Boolean get() = key.packageName == ChatKey.WHATSAPP_BUSINESS
+
+    /**
+     * Signal or Molly, when the chat lives there or one of its keys was seen there (ADR 0081): the newest key's app
+     * if it is one of them, else the first such key's. Null for a chat only in WhatsApp.
+     */
+    val signalApp: String?
+        get() =
+            key.packageName.takeIf(ContactKeys::isSignalFamily)
+                ?: keys.firstOrNull { ContactKeys.isSignalFamily(it.packageName) }?.packageName
+
+    /** Whether the chat has a WhatsApp or WhatsApp Business key. */
+    val onWhatsApp: Boolean get() = keys.any { !ContactKeys.isSignalFamily(it.packageName) }
 
     /**
      * The character that would ring for calls: the ringtone's own, else the message voice while the ringtone follows
@@ -204,11 +229,13 @@ internal fun mergeChats(
     val sightings = seen.associateBy { ChatKey(it.packageName, it.conversationKey) }
     val claimed = HashSet<ChatKey>()
     val chats = ArrayList<Chat>(contacts.size + seen.size)
+    val derived = derivedSignalKeys(contacts, sightings.keys)
 
     for (contact in contacts) {
         val keys = contact.keys.filter { it.packageName != ContactKeyEntity.NO_PACKAGE }
-        if (keys.isEmpty()) continue
-        val chatKeys = keys.map { ChatKey(it.packageName, it.value) }
+        val signalKeys = derived[contact.contact.id].orEmpty()
+        if (keys.isEmpty() && signalKeys.isEmpty()) continue
+        val chatKeys = keys.map { ChatKey(it.packageName, it.value) } + signalKeys
         claimed += chatKeys
         val seenRows = chatKeys.mapNotNull { sightings[it] }
         val newest = seenRows.maxByOrNull { it.lastSeenAt }
@@ -280,6 +307,39 @@ internal fun mergeChats(
             )
     }
     return chats.sortedWith(ChatOrder)
+}
+
+/**
+ * The Signal and Molly sightings that belong to a contact through its Android link (ADR 0081), by contact ID: a seen
+ * `contact:<lookupKey>` that no contact stores goes to the oldest 1:1 contact linked to that Android contact, the same
+ * owner the routing table and [app.mauri.cucuto.core.data.repository.ContactRepository.findByKey] pick.
+ */
+internal fun derivedSignalKeys(
+    contacts: List<ContactWithKeys>,
+    seen: Set<ChatKey>,
+): Map<Long, List<ChatKey>> {
+    val candidates =
+        seen.filter {
+            ContactKeys.isSignalFamily(it.packageName) &&
+                it.conversationKey.startsWith(ContactKeys.PREFIX)
+        }
+    if (candidates.isEmpty()) return emptyMap()
+    val stored =
+        contacts.flatMapTo(HashSet()) { contact -> contact.keys.map { ChatKey(it.packageName, it.value) } }
+    val owners = HashMap<String, Long>()
+    for (contact in contacts) {
+        val lookupKey = contact.contact.androidLookupKey?.takeIf { it.isNotEmpty() } ?: continue
+        if (contact.contact.isGroup) continue
+        val id = contact.contact.id
+        owners.merge(lookupKey, id) { a, b -> minOf(a, b) }
+    }
+    val result = HashMap<Long, MutableList<ChatKey>>()
+    for (key in candidates) {
+        if (key in stored) continue
+        val owner = owners[ContactKeys.lookupKeyOf(key.conversationKey) ?: continue] ?: continue
+        result.getOrPut(owner) { ArrayList(2) } += key
+    }
+    return result
 }
 
 private val ChatOrder: Comparator<Chat> =

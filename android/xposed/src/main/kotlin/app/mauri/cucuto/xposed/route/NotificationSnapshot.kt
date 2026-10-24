@@ -1,5 +1,7 @@
 package app.mauri.cucuto.xposed.route
 
+import app.mauri.cucuto.core.routing.ContactKeys
+
 /**
  * What the hook reads off one alerting `NotificationRecord`, as plain values. Reading happens once per alert in
  * `RecordReader` (reflection, fail-soft); everything after that, key extraction and routing, works on this snapshot
@@ -19,6 +21,9 @@ package app.mauri.cucuto.xposed.route
  * @property senderKey Groups only: `Person.getKey()` of the newest message's sender (MessagingStyle), when present.
  * @property senderName Groups only: `Person.getName()` (or the legacy sender text) of the newest message. Message
  *   text is never read.
+ * @property personUri Signal and Molly only, 1:1 conversations only: the `uri` of the first `Person` in
+ *   `EXTRA_PEOPLE_LIST`, the conversation's Android contact lookup URI when it is a saved contact (ADR 0081).
+ * @property senderUri Signal and Molly only, groups only: the newest message's sender `Person.getUri()`.
  * @property simulatePackage Cucuto's own simulate notifications only ([Targets.SIMULATE_CHANNEL]): the messenger
  *   package of the chat to simulate ([Targets.EXTRA_SIMULATE_PACKAGE]). Never read from any other app.
  * @property simulateKey Likewise: the chat's conversation key ([Targets.EXTRA_SIMULATE_KEY]).
@@ -34,6 +39,8 @@ data class NotificationSnapshot(
     val isGroupConversation: Boolean = false,
     val senderKey: String? = null,
     val senderName: String? = null,
+    val personUri: String? = null,
+    val senderUri: String? = null,
     val simulatePackage: String? = null,
     val simulateKey: String? = null,
 )
@@ -80,7 +87,7 @@ object ConversationKeys {
             keys = keys,
             isGroup = group,
             displayName = displayName(snapshot),
-            senderKey = if (group) clean(snapshot.senderKey) else null,
+            senderKey = if (group) senderKey(snapshot) else null,
             senderName = if (group) clean(snapshot.senderName) else null,
         )
     }
@@ -92,13 +99,27 @@ object ConversationKeys {
     fun candidateKeys(snapshot: NotificationSnapshot): List<String> {
         val shortcut = clean(snapshot.shortcutId)
         val resolved = clean(snapshot.shortcutInfoId)
-        if (shortcut != null || resolved != null) {
-            return when {
-                shortcut == null -> listOf(resolved!!)
-                resolved == null || resolved == shortcut -> listOf(shortcut)
-                else -> listOf(shortcut, resolved)
+        // Signal and Molly (ADR 0081): a saved contact's 1:1 conversation is the Android contact itself, ahead of
+        // the install-local recipient ID.
+        val contact =
+            if (ContactKeys.isSignalFamily(
+                    snapshot.packageName,
+                )
+            ) {
+                ContactKeys.fromPersonUri(snapshot.personUri)
+            } else {
+                null
             }
+        if (shortcut != null || resolved != null) {
+            val ids =
+                when {
+                    shortcut == null -> listOf(resolved!!)
+                    resolved == null || resolved == shortcut -> listOf(shortcut)
+                    else -> listOf(shortcut, resolved)
+                }
+            return if (contact == null) ids else listOf(contact) + ids
         }
+        if (contact != null) return listOf(contact)
         val conversationTitle = clean(snapshot.conversationTitle)
         if (conversationTitle != null) return listOf(conversationTitle)
         val title = clean(snapshot.title)
@@ -126,6 +147,17 @@ object ConversationKeys {
         }
         if (key != null && key.endsWith(GROUP_JID_SUFFIX)) return true
         return isGroupConversation
+    }
+
+    /**
+     * A group's newest sender: on Signal and Molly their Android contact when they are a saved contact (so a
+     * per-sender group plays the voice they have on WhatsApp too), else the `Person` key.
+     */
+    private fun senderKey(snapshot: NotificationSnapshot): String? {
+        if (ContactKeys.isSignalFamily(snapshot.packageName)) {
+            ContactKeys.fromPersonUri(snapshot.senderUri)?.let { return it }
+        }
+        return clean(snapshot.senderKey)
     }
 
     fun displayName(snapshot: NotificationSnapshot): String? =

@@ -8,4 +8,7 @@
     <string name="chat_group_policy_per_sender_body">Members with a voice of their own speak with it. Everyone else uses the group\'s voice, or WhatsApp\'s tone if the group has none. Members you have not given a voice yet show up in your recent senders.</string>
     <string name="chat_kind_business">Business · %1$s</string>
     <string name="chat_kind_business_group">Business group · %1$s</string>
+    <string name="chat_kind_app">%1$s · %2$s</string>
+    <string name="chat_kind_app_group">%1$s group · %2$s</string>
+    <string name="chat_kind_whatsapp_and_app">WhatsApp and %1$s · %2$s</string>
 </resources>

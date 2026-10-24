@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.data.db.ContactKeyKind
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.repository.ContactRepository
 import app.mauri.cucuto.core.data.repository.SeenSenderRepository
+import app.mauri.cucuto.core.routing.ContactKeys
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,7 +14,9 @@ import javax.inject.Singleton
  * Every alerting conversation is recorded. In a group switched to per sender (#20), the message's sender is also
  * recorded as a chat of its own, so the user can give a voice to a member who never wrote to them directly. This
  * only happens when the sender's `Person` key is a WhatsApp person JID (`…@lid` or `…@s.whatsapp.net`): that is
- * exactly the key their 1:1 chat has, so the voice also plays there, and a key of any other shape is not a chat.
+ * exactly the key their 1:1 chat has, so the voice also plays there, and a key of any other shape is not a chat. On
+ * Signal and Molly, a sender who is a saved contact has the contact key `contact:<lookupKey>` (ADR 0081), which is
+ * their 1:1 key too.
  * Groups with the default policy add nobody, so busy groups do not flood the list with strangers.
  *
  * A 1:1 chat that belongs to no contact may be someone added from Android's contacts, waiting for this first message:
@@ -65,6 +68,8 @@ class AlertSightings
         private fun isPersonJid(key: String): Boolean =
             when (ContactKeyKind.classify(key)) {
                 ContactKeyKind.LID, ContactKeyKind.PHONE_JID -> true
-                else -> false
+
+                // Signal and Molly: a sender who is a saved contact is keyed by that contact, as their 1:1 chat is.
+                else -> ContactKeys.lookupKeyOf(key) != null
             }
     }

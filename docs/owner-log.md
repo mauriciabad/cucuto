@@ -571,3 +571,10 @@ group; ADR 0073 and brand/motion.md updated.)
 (Tested on v0.2.1 with the owner's own contact. The chat had lost its Android link through the "Change" button, and
 every ringtone sync rendered all ring files again because MediaStore had renamed them after the restore onto a wiped
 phone, so choices waited behind it. Fixed in #369; ADR 0039 and 0073 amended.)
+
+## 2026-10-24 (night): Signal support
+
+> Okay lunch an agent that investigates signal support and implements it if feasable. if i set a voice to a contact it is for both whatsapp and signal at the same time.
+
+(Feasible from `system_server` alone, because Signal's notification names the Android contact. Built in #374
+(ADR 0081): Signal and Molly join WhatsApp, and the F-Droid recipe drops `NonFreeDep`.)

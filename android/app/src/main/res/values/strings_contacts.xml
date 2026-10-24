@@ -9,25 +9,26 @@
     <!-- Explainer -->
     <string name="contacts_explainer_lead">Give a voice and a ringtone to someone before they message you.</string>
     <string name="contacts_explainer_reads_title">What Cucuto reads</string>
-    <string name="contacts_explainer_reads_body">The WhatsApp entries your phone\'s contacts already hold: each person\'s name and WhatsApp number. WhatsApp itself puts them there.</string>
+    <string name="contacts_explainer_reads_body">The WhatsApp and Signal entries your phone\'s contacts already hold: each person\'s name and number. WhatsApp and Signal put them there themselves.</string>
     <string name="contacts_explainer_never_title">What it never reads</string>
-    <string name="contacts_explainer_never_body">Your messages, chats and groups, or any of WhatsApp\'s files. Nothing else about your contacts either.</string>
+    <string name="contacts_explainer_never_body">Your messages, chats and groups, or any of WhatsApp\'s or Signal\'s files. Nothing else about your contacts either.</string>
     <string name="contacts_explainer_saves_title">What it saves</string>
     <string name="contacts_explainer_saves_body">Only the people you pick. Nothing leaves your phone.</string>
     <string name="contacts_explainer_why_title">Why it asks for your contacts</string>
     <string name="contacts_explainer_why_body">Android keeps these entries with your contacts, so Cucuto needs permission to read them. It is the same permission phone ringtones use.</string>
     <string name="contacts_explainer_first_title">Their first message</string>
-    <string name="contacts_explainer_first_body">WhatsApp names a chat only when it messages you. So when someone you add first writes, Cucuto checks their name against these entries and links the chat. That first message plays WhatsApp\'s tone; their voice plays from the next one. Phone ringtones work right away.</string>
+    <string name="contacts_explainer_first_body">Signal names the contact on each notification, so a Signal voice plays from the first message. WhatsApp names a chat only when it messages you: when someone you add first writes there, Cucuto checks their name against these entries and links the chat. That first WhatsApp message plays WhatsApp\'s tone; their voice plays from the next one. Phone ringtones work right away.</string>
     <string name="contacts_explainer_code">Read the code on GitHub</string>
     <string name="contacts_continue">Continue</string>
     <string name="contacts_not_now">Not now</string>
 
     <!-- List -->
-    <string name="contacts_loading">Reading WhatsApp entries</string>
+    <string name="contacts_loading">Reading WhatsApp and Signal entries</string>
     <string name="contacts_search_hint">Search contacts</string>
     <string name="contacts_search_clear">Clear search</string>
     <string name="contacts_list_hint">Pick who you want to give a voice. Only they are saved.</string>
     <string name="contacts_business">WhatsApp Business · %1$s</string>
+    <string name="contacts_signal">Signal · %1$s</string>
     <string name="contacts_known">Already in your chats</string>
     <string name="contacts_no_matches">No contacts match</string>
     <plurals name="contacts_add_button">
@@ -36,13 +37,13 @@
     </plurals>
     <string name="contacts_add_none">Pick someone to add</string>
     <string name="contacts_failed">Couldn\'t save. Try again.</string>
-    <string name="contacts_empty_title">No WhatsApp contacts found</string>
-    <string name="contacts_empty_body">Your contacts have no WhatsApp entries. WhatsApp adds them when it is allowed to see your contacts. People who message you still show up on Home.</string>
+    <string name="contacts_empty_title">No WhatsApp or Signal contacts found</string>
+    <string name="contacts_empty_body">Your contacts have no WhatsApp or Signal entries. Each app adds them when it is allowed to see your contacts. People who message you still show up on Home.</string>
     <string name="contacts_back">Back</string>
 
     <!-- Permission refused -->
     <string name="contacts_denied_title">Nothing was read</string>
-    <string name="contacts_denied_body">Without the contacts permission, Cucuto can\'t see the WhatsApp entries. People who message you still show up on Home. You can allow it in Android\'s settings at any time.</string>
+    <string name="contacts_denied_body">Without the contacts permission, Cucuto can\'t see the WhatsApp and Signal entries. People who message you still show up on Home. You can allow it in Android\'s settings at any time.</string>
     <string name="contacts_open_settings">Open settings</string>
     <string name="contacts_try_again">Try again</string>
     <string name="contacts_blocked_title">The contacts permission is off</string>

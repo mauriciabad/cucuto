@@ -8,7 +8,7 @@
     Enviar notificación de prueba, interruptor de voces, gorjeo (chirp), clic (click-tick), reiniciar (reboot).
 -->
 <resources>
-    <string name="module_description">Da voz a cada contacto de WhatsApp: sonidos y vibraciones de notificación por contacto, sacados de tus packs de sonidos. Ámbito: solo System Framework.</string>
+    <string name="module_description">Da voz a cada contacto de WhatsApp y Signal: sonidos y vibraciones de notificación por contacto, sacados de tus packs de sonidos. Ámbito: solo System Framework.</string>
 
     <string name="navigate_back">Atrás</string>
 
@@ -76,7 +76,7 @@
     <string name="status_outcome_unknown">No se puede comprobar desde la app</string>
     <string name="status_check_module">Módulo activo en system_server</string>
     <string name="status_check_scope">Ámbito de LSPosed: solo System Framework</string>
-    <string name="status_check_whatsapp">WhatsApp detectado</string>
+    <string name="status_check_whatsapp">App de mensajería detectada</string>
     <string name="status_check_packs">Al menos un pack instalado</string>
     <string name="status_module_active">El módulo ha informado desde system_server en este arranque. Hooks: %1$s.</string>
     <string name="status_module_active_update">El módulo está activo, pero aún ejecuta la versión anterior a tu última actualización de Cucuto. Reinicia para cargar la nueva.</string>
@@ -95,7 +95,7 @@
     <string name="status_scope_unknown">Cucuto puede leer su ámbito cuando el módulo está activado. Para comprobarlo a mano: en LSPosed, abre Módulos y luego Cucuto. Solo debe estar marcado System Framework.</string>
     <string name="status_whatsapp_found">Encontrado: %1$s.</string>
     <string name="status_whatsapp_disabled">%1$s está instalado pero desactivado. Actívalo en los ajustes del sistema.</string>
-    <string name="status_whatsapp_missing">Instala WhatsApp o WhatsApp Business. Cucuto da voz a sus notificaciones.</string>
+    <string name="status_whatsapp_missing">Instala WhatsApp, WhatsApp Business, Signal o Molly. Cucuto da voz a sus notificaciones.</string>
     <string name="status_list_separator">", "</string>
     <plurals name="status_packs_installed">
         <item quantity="one">%d pack instalado.</item>
@@ -126,7 +126,7 @@
     <string name="onboarding_door_description">El reloj de cuco de Cucuto: se abre una puertecita y un pájaro canta</string>
 
     <string name="onboarding_welcome_title">Dale voz a cada contacto</string>
-    <string name="onboarding_welcome_body">Cuando alguien te escribe por WhatsApp, tu móvil reproduce un clip del personaje que le elegiste, con su propia vibración. Las llamadas también pueden sonar con el tono de un personaje.</string>
+    <string name="onboarding_welcome_body">Cuando alguien te escribe por WhatsApp o Signal, tu móvil reproduce un clip del personaje que le elegiste, con su propia vibración. Las llamadas también pueden sonar con el tono de un personaje.</string>
     <string name="onboarding_welcome_point_packs">Los personajes vienen de los packs de sonidos que importas. Cucuto viene vacío.</string>
     <string name="onboarding_welcome_point_android">Android sigue decidiendo cuándo suena: los chats silenciados, No molestar y el modo silencio funcionan como siempre.</string>
     <string name="onboarding_welcome_point_private">Todo se queda en tu móvil. Sin cuentas ni analíticas.</string>
@@ -141,11 +141,11 @@
     <string name="onboarding_risk_bootloop">Un fallo en un módulo del sistema puede bloquear Android o impedir que el móvil arranque. Cucuto captura todos los errores y vuelve al tono de WhatsApp, pero ningún código es perfecto.</string>
     <string name="onboarding_risk_root">El root y LSPosed debilitan la seguridad de Android y pueden romper apps de bancos, Google Play Integrity y tu garantía. Pasa con cualquier módulo de LSPosed.</string>
     <string name="onboarding_risk_updates">Una actualización de Android puede mover el código que engancha Cucuto. Entonces el módulo deja de cambiar los sonidos y suena el tono de WhatsApp hasta que Cucuto se actualice.</string>
-    <string name="onboarding_risk_privacy">Para elegir una voz, el módulo lee quién envió cada notificación de WhatsApp (nombre e ID del chat). Eso se queda en el almacenamiento privado de Cucuto en este móvil.</string>
+    <string name="onboarding_risk_privacy">Para elegir una voz, el módulo lee quién envió cada notificación de WhatsApp o Signal (nombre e ID del chat). Eso se queda en el almacenamiento privado de Cucuto en este móvil.</string>
     <string name="onboarding_risk_recovery">Aprende a recuperarlo antes de activarlo: la guía de instalación explica cómo desactivar el módulo o LSPosed si el móvil no arranca.</string>
 
     <string name="onboarding_enable_title">Activa el módulo</string>
-    <string name="onboarding_enable_body">Abre el gestor de LSPosed, ve a Módulos y activa Cucuto. Su ámbito es System Framework, que ya viene marcado. No añadas WhatsApp ni ninguna otra app: Cucuto nunca las engancha.</string>
+    <string name="onboarding_enable_body">Abre el gestor de LSPosed, ve a Módulos y activa Cucuto. Su ámbito es System Framework, que ya viene marcado. No añadas WhatsApp, Signal ni ninguna otra app: Cucuto nunca las engancha.</string>
     <string name="onboarding_enable_hint">Estas comprobaciones se actualizan cuando vuelves a Cucuto. Puede que LSPosed no se lo diga a Cucuto hasta después de reiniciar.</string>
 
     <string name="onboarding_reboot_title">Reinicia</string>
@@ -171,11 +171,11 @@
     <string name="home_recent_hide_label">Ocultar de remitentes recientes</string>
     <string name="home_chats_header">Chats</string>
     <string name="home_chat_voice">%1$s · %2$s</string>
-    <string name="home_chat_no_voice">Sin voz: tono de WhatsApp</string>
+    <string name="home_chat_no_voice">Sin voz: tono predeterminado</string>
     <string name="home_chat_voice_missing">Voz no disponible: se quitó su pack</string>
     <string name="home_chat_group">Grupo · %1$s</string>
     <string name="home_empty_title">Aún no hay chats</string>
-    <string name="home_empty_body">Cuando alguien te escriba por WhatsApp, aparecerá aquí. Tócalo para darle una voz.</string>
+    <string name="home_empty_body">Cuando alguien te escriba por WhatsApp o Signal, aparecerá aquí. Tócalo para darle una voz.</string>
     <string name="home_empty_door">Una puerta de reloj de cuco cerrada, esperando a que alguien llame</string>
     <string name="home_no_matches">Ningún chat coincide</string>
     <string name="home_open_packs">Abrir Packs</string>
@@ -191,7 +191,7 @@
     <string name="picker_hint">Toca un personaje para oírlo. Vuelve a tocarlo para dárselo a este chat.</string>
     <string name="picker_hint_preview">Toca un personaje para oírlo. Abre un chat desde Inicio para darle una voz.</string>
     <string name="picker_speaks_as">Habla como %1$s</string>
-    <string name="picker_no_voice">Sin voz: tono de WhatsApp</string>
+    <string name="picker_no_voice">Sin voz: tono predeterminado</string>
     <string name="picker_assigned">%1$s ahora habla por %2$s</string>
     <string name="picker_tap_again">Vuelve a tocar para asignar</string>
     <string name="picker_current">Voz actual</string>
@@ -463,9 +463,12 @@
     <string name="contact_subtitle_group">Grupo de WhatsApp</string>
     <string name="contact_subtitle_business_chat">Chat de WhatsApp Business</string>
     <string name="contact_subtitle_business_group">Grupo de WhatsApp Business</string>
+    <string name="contact_subtitle_signal_chat">Chat de %1$s</string>
+    <string name="contact_subtitle_signal_group">Grupo de %1$s</string>
+    <string name="contact_subtitle_whatsapp_and_signal">Chat de WhatsApp y %1$s</string>
     <string name="contact_speaks_as">Habla como %1$s</string>
     <string name="contact_from_pack">De %1$s</string>
-    <string name="contact_no_voice">Aún sin voz: suena el tono de WhatsApp.</string>
+    <string name="contact_no_voice">Aún sin voz: suena el tono predeterminado.</string>
     <string name="contact_voice_missing">Su personaje venía de un pack que ya no está instalado. Suena el tono de WhatsApp hasta que elijas otro.</string>
     <string name="contact_change">Cambiar personaje</string>
     <string name="contact_choose">Elegir un personaje</string>
@@ -520,10 +523,10 @@
     <string name="contact_decisions_empty">Aún no hay avisos de este chat. Simula un mensaje o espera al siguiente.</string>
     <string name="contact_decision_played">Ha sonado %1$s</string>
     <string name="contact_decision_played_voice">Ha sonado su voz</string>
-    <string name="contact_decision_unassigned">Tono de WhatsApp: sin voz</string>
-    <string name="contact_decision_disabled">Tono de WhatsApp: Cucuto estaba desactivado</string>
-    <string name="contact_decision_no_key">Tono de WhatsApp: chat no identificado</string>
-    <string name="contact_decision_error">Tono de WhatsApp: algo ha fallado</string>
+    <string name="contact_decision_unassigned">Tono predeterminado: sin voz</string>
+    <string name="contact_decision_disabled">Tono predeterminado: Cucuto estaba desactivado</string>
+    <string name="contact_decision_no_key">Tono predeterminado: chat no identificado</string>
+    <string name="contact_decision_error">Tono predeterminado: algo ha fallado</string>
     <string name="contact_decision_simulated">Simulado</string>
     <string name="contact_decision_message">Mensaje</string>
     <string name="contact_decision_per_sender">voz del remitente</string>

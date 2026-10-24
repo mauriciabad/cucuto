@@ -1,6 +1,7 @@
 package app.mauri.cucuto.xposed.route
 
 import app.mauri.cucuto.core.haptics.forClip
+import app.mauri.cucuto.core.routing.ContactKeys
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
@@ -10,8 +11,17 @@ import app.mauri.cucuto.xposed.events.Outcome
 
 /** The packages Cucuto acts on, and the app's own self-test notification. */
 object Targets {
-    /** WhatsApp and WhatsApp Business. Every other package is ignored without being read. */
-    val MESSENGERS: Set<String> = setOf("com.whatsapp", "com.whatsapp.w4b")
+    /** Signal and Molly, the Signal fork (ADR 0081). Their 1:1 notifications name the Android contact. */
+    val SIGNAL_FAMILY: Set<String> = ContactKeys.PACKAGES.toSet()
+
+    /**
+     * WhatsApp, WhatsApp Business, Signal and Molly. Every other package is ignored without being read. WhatsApp
+     * stays first: the warm-up routes under it.
+     */
+    val MESSENGERS: Set<String> = setOf("com.whatsapp", "com.whatsapp.w4b") + SIGNAL_FAMILY
+
+    /** Whether [packageName] is Signal or Molly, whose notifications name the Android contact. */
+    fun isSignalFamily(packageName: String): Boolean = ContactKeys.isSignalFamily(packageName)
 
     /** The app itself, which posts the Diagnostics screen's test notification. */
     const val SELF_PACKAGE: String = "app.mauri.cucuto"

@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.mauri.cucuto.R
+import app.mauri.cucuto.ui.chat.messengerName
 
 /** A one-tap fix offered under a failing check. */
 enum class CheckAction(
@@ -265,19 +266,7 @@ fun checkRows(report: StatusReport?): List<CheckRowModel> =
 private fun joined(items: List<String>): String = items.joinToString(stringResource(R.string.status_list_separator))
 
 @Composable
-private fun messengerNames(packages: List<String>): String {
-    val whatsApp = stringResource(R.string.status_whatsapp_name)
-    val business = stringResource(R.string.status_whatsapp_business_name)
-    return joined(
-        packages.map {
-            when (it) {
-                "com.whatsapp" -> whatsApp
-                "com.whatsapp.w4b" -> business
-                else -> it
-            }
-        },
-    )
-}
+private fun messengerNames(packages: List<String>): String = joined(packages.map { messengerName(it) })
 
 /**
  * One check: its icon in a cookie, title, explanation, a status icon that also says the outcome to TalkBack (never
