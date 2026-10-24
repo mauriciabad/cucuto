@@ -1,0 +1,6 @@
+Importar packs vuelve a funcionar (en la 0.1.1 siempre fallaba).
+Novedades:
+• Editor de vibraciones: crea una o marca su ritmo con el dedo, y dale a un contacto la suya
+• Los packs pueden traer tonos de llamada, con clips de notificación recortados de la canción
+• Descubrir: explora repositorios de packs, escucha los personajes e instala packs
+Más: https://github.com/mauriciabad/cucuto/releases/tag/v0.1.2

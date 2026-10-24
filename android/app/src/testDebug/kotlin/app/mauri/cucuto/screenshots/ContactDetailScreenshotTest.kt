@@ -15,7 +15,7 @@ class ContactDetailScreenshotTest(
 ) : ScreenshotTest(variant) {
     @Test
     fun contactDetail() =
-        screenshot("contact-detail") {
+        screenshot("contact-detail", store = 3) {
             val now = System.currentTimeMillis()
             val chat = DemoContent.chats(now).first { it.voice == DemoContent.critters.voice("frog") }
             val frog =

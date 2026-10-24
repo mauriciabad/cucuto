@@ -1,0 +1,3 @@
+Primera versión de prueba para Android 17 con root y LSPosed: voces y vibraciones por contacto en WhatsApp y WhatsApp Business, voces en grupos, remitentes recientes, comprobaciones de estado y Diagnóstico.
+Problema conocido: importar un pack siempre falla («Flow invariant is violated»), así que aún no puedes dar voz a nadie. Actualiza a la 0.1.2.
+Más: https://github.com/mauriciabad/cucuto/releases/tag/v0.1.1

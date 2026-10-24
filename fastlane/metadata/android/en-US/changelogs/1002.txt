@@ -1,0 +1,6 @@
+Pack import works again (it always failed in 0.1.1).
+New:
+• Haptic editor: make a vibration or tap out its rhythm, and give a contact its own
+• Packs can carry ringtones, with notification clips cut from the song
+• Discover: browse pack repositories, preview characters, install packs
+More: https://github.com/mauriciabad/cucuto/releases/tag/v0.1.2

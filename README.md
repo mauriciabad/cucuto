@@ -19,7 +19,7 @@ character's own vibration. Like a cuckoo clock, it announces who's there.
 
 <!-- Screenshot slot: app screenshots made from the demo packs go here (#41). -->
 
-Cucuto is in development and has no release yet. The website is [cucuto.mauri.app](https://cucuto.mauri.app).
+Cucuto is an early test version: see the [changelog](CHANGELOG.md) for what each release brings. The website is [cucuto.mauri.app](https://cucuto.mauri.app).
 
 ## Install
 
@@ -30,7 +30,7 @@ Cucuto is in development and has no release yet. The website is [cucuto.mauri.ap
 5. Import a pack and give a contact a character.
 
 Details, troubleshooting and recovery: [install guide](docs/install.md) (also on the
-[website](https://cucuto.mauri.app/install/)). Before the first release, build a debug APK as described there.
+[website](https://cucuto.mauri.app/install/)). Cucuto never checks for updates itself: watch the releases, or let [Obtainium](https://github.com/ImranR98/Obtainium) do it (the website's Install page has a one-tap setup). Where else it is distributed: [docs/distribution.md](docs/distribution.md).
 
 ## Build
 

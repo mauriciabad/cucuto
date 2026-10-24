@@ -7,7 +7,15 @@
 	import Seo from '#lib/components/Seo.svelte';
 	import appIcon from '#lib/assets/images/cucuto-icon.png?w=192&picture';
 	import { localeFromPath, messages } from '#lib/i18n/index.js';
-	import { RELEASES_URL } from '#lib/site.js';
+	import {
+		OBTAINIUM_APK_FILTER,
+		OBTAINIUM_CONFIG,
+		OBTAINIUM_LINK,
+		OBTAINIUM_TITLE_FILTER,
+		OBTAINIUM_URL,
+		RELEASE_CERT_COLONS
+	} from '#lib/obtainium.js';
+	import { RELEASES_URL, REPO_URL } from '#lib/site.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -63,6 +71,32 @@
 
 	<h2 class="headline-small">{t.testTitle}</h2>
 	<p><Html text={t.testHtml} /></p>
+
+	<h2 class="headline-small" id="updates">{t.updatesTitle}</h2>
+	<p><Html text={t.updatesHtml} values={{ obtainium: OBTAINIUM_URL }} /></p>
+	<div class="obtainium">
+		<a class="button tonal" href={OBTAINIUM_LINK}>
+			<Icon name="download" />
+			{t.obtainiumButton}
+		</a>
+		<p class="body-medium on-surface-variant">{t.obtainiumHint}</p>
+	</div>
+	<details class="obtainium-manual">
+		<summary class="title-medium">{t.obtainiumManualTitle}</summary>
+		<p><Html text={t.obtainiumManualHtml} /></p>
+		<dl>
+			<dt>{t.obtainiumFields.source}</dt>
+			<dd><code>{REPO_URL}</code></dd>
+			<dt>{t.obtainiumFields.apkFilter}</dt>
+			<dd><code>{OBTAINIUM_APK_FILTER}</code></dd>
+			<dt>{t.obtainiumFields.titleFilter}</dt>
+			<dd><code>{OBTAINIUM_TITLE_FILTER}</code></dd>
+			<dt>{t.obtainiumFields.cert}</dt>
+			<dd><code class="cert">{RELEASE_CERT_COLONS}</code></dd>
+		</dl>
+		<p>{t.obtainiumJson}</p>
+		<pre><code>{JSON.stringify(OBTAINIUM_CONFIG, null, 2)}</code></pre>
+	</details>
 
 	<h2 class="headline-small">{t.troubleTitle}</h2>
 	<dl class="trouble">
@@ -202,6 +236,49 @@
 		.with-icon {
 			flex-direction: column;
 		}
+	}
+
+	.obtainium {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem 1rem;
+		margin-top: 1rem;
+	}
+
+	.obtainium p {
+		flex: 1 1 16rem;
+		margin: 0;
+	}
+
+	.obtainium-manual {
+		margin-top: 1rem;
+		padding: 1rem 1.25rem;
+		border-radius: 1.5rem;
+		box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant);
+	}
+
+	.obtainium-manual summary {
+		cursor: pointer;
+	}
+
+	.obtainium-manual dt {
+		margin-top: 0.75rem;
+		font-weight: 600;
+	}
+
+	.obtainium-manual dd {
+		margin: 0.25rem 0 0;
+		overflow-wrap: anywhere;
+	}
+
+	.obtainium-manual pre {
+		overflow-x: auto;
+		max-width: 100%;
+		padding: 1rem;
+		border-radius: 1rem;
+		background: var(--md-sys-color-surface-container);
+		font-size: 0.8125rem;
 	}
 
 	.trouble {
