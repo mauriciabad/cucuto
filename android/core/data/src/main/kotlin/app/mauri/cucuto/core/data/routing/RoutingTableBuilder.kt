@@ -6,7 +6,6 @@ import app.mauri.cucuto.core.data.db.RoutingRow
 import app.mauri.cucuto.core.routing.Clip
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Route
-import app.mauri.cucuto.core.routing.RoutingContract
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.core.routing.Voice
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +22,8 @@ import javax.inject.Inject
  * - Per-sender groups always get a route, with [Route.NO_VOICE] when the group itself has no usable voice, so the
  *   module knows to look up the sender.
  * - Identical voices (same character, enabled clips and haptic) are stored once.
+ * - Clip URIs come from [ClipMirror]: a `file://` copy SystemUI reads without starting the app, or the clip
+ *   provider's `content://` URI (ADR 0018).
  * - Clips carry their auto envelope only in voices whose haptic is [Haptic.Auto], the only case where the module
  *   uses it, which keeps the table small (issue #98).
  */
@@ -30,6 +31,7 @@ class RoutingTableBuilder
     @Inject
     constructor(
         private val catalog: CharacterCatalog,
+        private val mirror: ClipMirror,
     ) {
         /** [CharacterCatalog.revisions]: the same rows can give a different table after these. */
         val catalogRevisions: Flow<Long> get() = catalog.revisions
@@ -60,7 +62,13 @@ class RoutingTableBuilder
                 if (perSender) flags = flags or Route.FLAG_PER_SENDER
                 routes += Route(row.packageName, row.keyValue, voice, row.shuffleSeed, flags, row.contactId)
             }
-            return RoutingTable(generation = 0, enabled = enabled, voices = voices, routes = routes)
+            return RoutingTable(
+                generation = 0,
+                enabled = enabled,
+                voices = voices,
+                routes = routes,
+                selfTestClip = mirror.selfTestUri(),
+            )
         }
 
         private suspend fun voiceFor(
@@ -78,7 +86,7 @@ class RoutingTableBuilder
                     .filter { it.file !in disabled }
                     .map { clip ->
                         Clip(
-                            uri = RoutingContract.clipUri(packId, characterId, clip.file),
+                            uri = mirror.clipUri(pack, characterId, clip.file),
                             milliWeight = clip.milliWeight,
                             haptic = if (haptic == Haptic.Auto) clip.autoHaptic else null,
                         )

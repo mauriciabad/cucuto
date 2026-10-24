@@ -16,8 +16,9 @@ package app.mauri.cucuto.xposed.route
  * @property title `Notification.EXTRA_TITLE`.
  * @property conversationTitle `Notification.EXTRA_CONVERSATION_TITLE`.
  * @property isGroupConversation `Notification.EXTRA_IS_GROUP_CONVERSATION`.
- * @property senderKey `Person.getKey()` of the newest message's sender (MessagingStyle), when present.
- * @property senderName `Person.getName()` (or the legacy sender text) of the newest message.
+ * @property senderKey Groups only: `Person.getKey()` of the newest message's sender (MessagingStyle), when present.
+ * @property senderName Groups only: `Person.getName()` (or the legacy sender text) of the newest message. Message
+ *   text is never read.
  */
 data class NotificationSnapshot(
     val packageName: String,
@@ -103,14 +104,23 @@ object ConversationKeys {
     fun isGroup(
         snapshot: NotificationSnapshot,
         key: String?,
+    ): Boolean = isGroup(snapshot.channelId, key, snapshot.isGroupConversation)
+
+    /**
+     * The same rule on raw values, so `RecordReader` can decide before it reads the newest message: only a group
+     * needs its sender (for the per-sender policy, #20), so a 1:1 chat's messages are never touched.
+     */
+    fun isGroup(
+        channelId: String?,
+        key: String?,
+        isGroupConversation: Boolean,
     ): Boolean {
-        val channel = snapshot.channelId
-        if (channel != null) {
-            if (channel.startsWith(GROUP_CHANNEL_PREFIX)) return true
-            if (channel.startsWith(INDIVIDUAL_CHANNEL_PREFIX)) return false
+        if (channelId != null) {
+            if (channelId.startsWith(GROUP_CHANNEL_PREFIX)) return true
+            if (channelId.startsWith(INDIVIDUAL_CHANNEL_PREFIX)) return false
         }
         if (key != null && key.endsWith(GROUP_JID_SUFFIX)) return true
-        return snapshot.isGroupConversation
+        return isGroupConversation
     }
 
     fun displayName(snapshot: NotificationSnapshot): String? =

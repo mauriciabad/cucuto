@@ -10,12 +10,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
-        Package visibility (Android 11+): the status card checks that WhatsApp or WhatsApp Business is installed.
-        Only these two packages, never QUERY_ALL_PACKAGES.
+        Package visibility (Android 11+): the status card checks that WhatsApp or WhatsApp Business is installed, and
+        the clip mirror (ADR 0018) checks that SystemUI, which opens notification sounds, can read shared storage.
+        Only these packages, never QUERY_ALL_PACKAGES.
     -->
     <queries>
         <package android:name="com.whatsapp" />
         <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.android.systemui" />
     </queries>
 
     <!--

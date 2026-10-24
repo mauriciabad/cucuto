@@ -13,12 +13,15 @@ package app.mauri.cucuto.core.routing
  * @property voices What can be played, deduplicated: contacts that share a character with the same clip toggles and
  *   haptic share one entry.
  * @property routes One entry per contact key, pointing into [voices].
+ * @property selfTestClip Where the Diagnostics test chirp is, when the app mirrors it for SystemUI (ADR 0018);
+ *   null keeps the clip provider's `content://app.mauri.cucuto.clips/selftest/chirp.wav`.
  */
 public data class RoutingTable(
     val generation: Long,
     val enabled: Boolean,
     val voices: List<Voice>,
     val routes: List<Route>,
+    val selfTestClip: String? = null,
 ) {
     private val index: Map<String, Map<String, Route>> = buildIndex(routes)
 
@@ -137,7 +140,8 @@ public data class Voice(
 /**
  * One playable clip.
  *
- * @property uri `content://` URI served by the app's clip provider.
+ * @property uri What SystemUI opens: a `file://` URI into the app's clip mirror, readable without starting the app
+ *   (ADR 0018), or the `content://` URI of the app's clip provider when the clip is not mirrored.
  * @property milliWeight Relative probability in thousandths (the pack's `weight` × 1000; default 1000).
  * @property haptic The clip's own envelope ("haptics follow the voice"), used when the voice's haptic is
  *   [Haptic.Auto]. Null when the app has not analysed the clip.

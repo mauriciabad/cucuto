@@ -48,7 +48,8 @@ Preferences group `routing`. It republishes on every relevant change and when th
 identical tables, and refuses tables over 256 Ki characters (Binder). The module's `RoutingTableHolder` attaches
 lazily on first use, keeps a strong reference to its change listener (Remote Preferences hold listeners weakly),
 decodes on change, never throws, and keeps the last readable table when a newer format appears (an updated app
-before the reboot that updates `system_server`).
+before the reboot that updates `system_server`). LSPosed stops notifying the module after an app update since boot;
+[ADR 0024](0024-routing-updates-after-app-update.md) adds a remote-file mirror and a nudge broadcast for that case.
 
 **Character data comes from the installed `pack.json`** (`PackManifestCatalog`), behind a `CharacterCatalog`
 interface so the importer (`:core:pack`) can provide a richer source later. A contact whose pack or character is
