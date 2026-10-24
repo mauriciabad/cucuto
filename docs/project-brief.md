@@ -294,7 +294,7 @@ Tech and deployment:
 Images and media:
 
 - JPEG XL preferred, never required. Serve images with a `<picture>` element: a `.jxl` source first, then AVIF or PNG fallbacks generated at build time. Chrome 155 and later decode JPEG XL by default (since October 2026), Safari since version 17; Firefox still needs a preference ([JPEG XL in Chrome](https://developer.chrome.com/blog/jpeg-xl-in-chrome)).
-- The explainer video is produced by a separate subagent. The site expects `web/static/video/explainer.webm` and `.mp4`, a `poster.jxl` and WebVTT captions. Lazy-loaded, never autoplays with sound.
+- The explainer video is produced by a separate subagent from the brief in [`explainer-video.md`](explainer-video.md). The site expects `web/static/video/explainer.webm` and `.mp4`, a poster (served as JPEG XL with fallbacks, ADR 0042) and WebVTT captions. Lazy-loaded, never autoplays with sound.
 - Screenshots come from the app running the demo packs, captured by a script so they can be regenerated on every release.
 
 Design: same visual language as the app (Material 3 Expressive color, shape and spring motion), light and dark themes, responsive, accessible, Lighthouse scores of 95 or more.

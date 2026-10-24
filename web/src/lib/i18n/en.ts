@@ -71,6 +71,16 @@ export const en = {
 		videoSoonTitle: 'The explainer video is on its way',
 		videoSoonText:
 			'A short tour: a message arrives, the phone plays the sender’s character, and you know who wrote without looking.',
+		video: {
+			soonBadge: 'Coming soon',
+			posterAlt:
+				'Illustration: a phone shows Cucuto’s character picker, where Bleep the frog is being assigned in a burst of confetti. Next to it, the cuckoo clock sings and three chats each have their own character.',
+			label: 'Cucuto explainer video',
+			play: 'Play the video',
+			unsupported:
+				'Your browser can’t play this video. The transcript below has everything it says.',
+			transcript: 'Read the transcript'
+		},
 		howTitle: 'How it works',
 		steps: iconItems([
 			{
