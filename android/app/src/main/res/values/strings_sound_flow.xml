@@ -26,7 +26,6 @@
 
     <!-- Contact detail: the set-up card for Android default -->
     <string name="ringtone_default_off_body">To clear a ringtone this contact has of its own, Cucuto changes it in Android\'s Contacts.</string>
-    <string name="ringtone_status_default">Rings with the phone\'s default ringtone.</string>
 
     <!-- Home: the ringtone on each row, for TalkBack -->
     <string name="home_chat_ringtone_a11y">Ringtone: %1$s</string>

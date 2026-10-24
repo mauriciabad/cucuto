@@ -177,16 +177,13 @@ class RingtonePickerViewModelTest {
             assertNull(state.saved)
             assertEquals(RingtoneSelection(frog.voice, followsVoice = true), state.selection)
             assertEquals(frogItem, state.selectedCharacter)
-            // Two versions tagged day and night: every rule but season.
-            assertEquals(
-                listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.TIME, RingtoneMode.FIXED),
-                state.modes,
-            )
+            // Two versions: a rule to choose, on the rules screen (#347).
+            assertTrue(state.hasRules)
             assertTrue(state.canSave)
         }
 
     @Test
-    fun ownRulesShowAsTheirOwnChipAndComeBackWhenPickedAgain() =
+    fun ownRulesStayWithTheirCharacterAndComeBackWhenItIsPickedAgain() =
         runTest(dispatcher) {
             // Night by day (ADR 0074): stored on the rules screen.
             val rules = listOf(RingtoneRuleEntry("frog/night.ogg"))
@@ -200,28 +197,11 @@ class RingtonePickerViewModelTest {
             )
             val vm = viewModel()
             collect(vm)
-            val state = vm.state.value
             assertEquals(
-                listOf(
-                    RingtoneMode.PACK,
-                    RingtoneMode.CUSTOM,
-                    RingtoneMode.RANDOM,
-                    RingtoneMode.TIME,
-                    RingtoneMode.FIXED,
-                ),
-                state.modes,
-            )
-            assertEquals(RingtoneMode.CUSTOM, state.selection?.mode)
-            assertEquals(rules, state.selection?.rules)
-            assertFalse(state.canSave)
-
-            vm.setMode(RingtoneMode.TIME)
-            assertEquals(
-                emptyList<RingtoneRuleEntry>(),
+                RingtoneMode.CUSTOM,
                 vm.state.value.selection
-                    ?.rules,
+                    ?.mode,
             )
-            vm.setMode(RingtoneMode.CUSTOM)
             assertEquals(
                 rules,
                 vm.state.value.selection
@@ -229,9 +209,27 @@ class RingtonePickerViewModelTest {
             )
             assertFalse(vm.state.value.canSave)
 
-            // Another character never offers them.
+            // Another character starts from its pack's rules.
             vm.select(kettleItem)
-            assertFalse(RingtoneMode.CUSTOM in vm.state.value.modes)
+            assertEquals(
+                RingtoneMode.PACK,
+                vm.state.value.selection
+                    ?.mode,
+            )
+            assertEquals(
+                emptyList<RingtoneRuleEntry>(),
+                vm.state.value.selection
+                    ?.rules,
+            )
+
+            // The character that rings brings its own rules back: nothing to save.
+            vm.select(frogItem)
+            assertEquals(
+                rules,
+                vm.state.value.selection
+                    ?.rules,
+            )
+            assertFalse(vm.state.value.canSave)
         }
 
     @Test
@@ -240,9 +238,9 @@ class RingtonePickerViewModelTest {
             source.saved(PhoneRingtoneEntity(1, updatedAt = 1))
             val vm = viewModel()
             collect(vm)
-            vm.setMode(RingtoneMode.RANDOM)
+            vm.select(kettleItem)
             assertTrue(vm.state.value.canSave)
-            // The rules screen on top saves the user's own rules.
+            // The rules screen on top saves the user's own rules for the frog.
             source.saved(
                 PhoneRingtoneEntity(
                     1,
@@ -252,6 +250,11 @@ class RingtonePickerViewModelTest {
                 ),
             )
             assertNull(vm.state.value.edited)
+            assertEquals(
+                frog.voice,
+                vm.state.value.selection
+                    ?.voice,
+            )
             assertEquals(
                 RingtoneMode.CUSTOM,
                 vm.state.value.selection
@@ -361,11 +364,11 @@ class RingtonePickerViewModelTest {
             val selection = vm.state.value.selection!!
             assertEquals(kettle.voice, selection.voice)
             assertFalse(selection.followsVoice)
-            vm.setVariant("kettle/radio.ogg")
+            assertEquals(RingtoneMode.PACK, selection.mode)
 
             assertTrue(vm.save())
             assertEquals(
-                listOf(Saved(1, kettle.voice, followsVoice = false, RingtoneMode.FIXED, "kettle/radio.ogg")),
+                listOf(Saved(1, kettle.voice, followsVoice = false, RingtoneMode.PACK, null)),
                 source.saved,
             )
             assertTrue(preview.stops > 0)
@@ -391,9 +394,8 @@ class RingtonePickerViewModelTest {
                 vm.state.value.selection!!
                     .followsVoice,
             )
-            vm.setMode(RingtoneMode.TIME)
             vm.save()
-            assertEquals(Saved(1, null, followsVoice = true, RingtoneMode.TIME, null), source.saved.single())
+            assertEquals(Saved(1, null, followsVoice = true, RingtoneMode.PACK, null), source.saved.single())
         }
 
     @Test
@@ -439,57 +441,41 @@ class RingtonePickerViewModelTest {
         }
 
     @Test
-    fun theRuleIsKeptWhenTheNewCharacterHasItElseThePacksRules() =
+    fun aCoverKeepsTheStoredRuleOnlyForTheCharacterThatRings() =
         runTest(dispatcher) {
+            source.saved(PhoneRingtoneEntity(1, null, null, RingtoneMode.TIME, updatedAt = 1))
             val vm = viewModel()
             collect(vm)
-            vm.select(kettleItem)
-            vm.setMode(RingtoneMode.RANDOM)
-            vm.select(frogItem)
-            assertEquals(
-                RingtoneMode.RANDOM,
-                vm.state.value.selection
-                    ?.mode,
-            )
-            vm.setMode(RingtoneMode.TIME)
-            // The kettle has no day and night versions.
             vm.select(kettleItem)
             assertEquals(
                 RingtoneMode.PACK,
                 vm.state.value.selection
                     ?.mode,
             )
+            vm.select(frogItem)
+            assertEquals(
+                RingtoneMode.TIME,
+                vm.state.value.selection
+                    ?.mode,
+            )
+            assertFalse(vm.state.value.canSave)
         }
 
     @Test
-    fun oneVersionPicksTheFirstUntilAnotherIsChosen() =
+    fun aStoredVersionIsWhatTheCoverPlays() =
         runTest(dispatcher) {
+            source.saved(PhoneRingtoneEntity(1, null, null, RingtoneMode.FIXED, "frog/night.ogg", updatedAt = 1))
             val vm = viewModel()
             collect(vm)
-            vm.setMode(RingtoneMode.FIXED)
+            vm.select(kettleItem)
+            vm.select(frogItem)
             assertEquals(
-                "frog/day.ogg",
+                "frog/night.ogg",
                 vm.state.value.selection
                     ?.variant,
             )
-            vm.setVariant("frog/night.ogg")
-            assertEquals(
-                RingtoneMode.FIXED,
-                vm.state.value.selection
-                    ?.mode,
-            )
-            vm.setMode(RingtoneMode.PACK)
-            assertNull(
-                vm.state.value.selection
-                    ?.variant,
-            )
-            // A file the character does not have is ignored.
-            vm.setVariant("kettle/reel.ogg")
-            assertEquals(
-                RingtoneMode.PACK,
-                vm.state.value.selection
-                    ?.mode,
-            )
+            assertEquals("frog/night.ogg", preview.plays.last())
+            assertFalse(vm.state.value.canSave)
         }
 
     @Test
@@ -497,10 +483,8 @@ class RingtonePickerViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel()
             collect(vm)
-            vm.select(frogItem)
-            vm.setMode(RingtoneMode.RANDOM)
             vm.select(owlItem)
-            assertEquals(emptyList<RingtoneMode>(), vm.state.value.modes)
+            assertFalse(vm.state.value.hasRules)
             vm.save()
             assertEquals(Saved(1, owl.voice, followsVoice = false, RingtoneMode.PACK, null), source.saved.single())
         }
@@ -508,9 +492,9 @@ class RingtonePickerViewModelTest {
     @Test
     fun randomPerCallAsksForThePhonePermissionFirst() =
         runTest(dispatcher) {
+            source.saved(PhoneRingtoneEntity(1, null, null, RingtoneMode.RANDOM, updatedAt = 1))
             val vm = viewModel()
             collect(vm)
-            vm.setMode(RingtoneMode.RANDOM)
             source.phoneState = false
             assertTrue(vm.needsPhonePermission())
             source.phoneState = true
@@ -528,9 +512,9 @@ class RingtonePickerViewModelTest {
                 vm.state.value.saved,
             )
             assertFalse(vm.state.value.canSave)
-            vm.setMode(RingtoneMode.PACK)
+            vm.select(kettleItem)
             assertTrue(vm.state.value.canSave)
-            vm.setMode(RingtoneMode.TIME)
+            vm.select(frogItem)
             assertFalse(vm.state.value.canSave)
         }
 

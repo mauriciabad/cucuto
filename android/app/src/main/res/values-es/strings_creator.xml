@@ -48,7 +48,7 @@
     <string name="creator_add_character">Añadir un personaje</string>
     <string name="creator_character_unnamed">Personaje sin nombre</string>
     <string name="creator_character_needs_picture">Le falta una imagen</string>
-    <string name="creator_character_needs_clips">Le falta un sonido</string>
+    <string name="creator_character_needs_clips">Le falta un sonido o un tono de llamada</string>
     <string name="creator_check">Comprobar y terminar</string>
     <string name="creator_start_over">Empezar un pack nuevo</string>
     <string name="creator_start_over_title">¿Empezar un pack nuevo?</string>
@@ -82,7 +82,7 @@
     <string name="creator_color_auto_short">Auto</string>
     <string name="creator_clips_title">Sonidos</string>
     <string name="creator_clips_hint">Cada mensaje reproduce uno de ellos al azar.</string>
-    <string name="creator_clips_empty">Graba un sonido o elige un archivo de audio. Un personaje necesita al menos uno.</string>
+    <string name="creator_clips_empty">Graba un sonido o elige un archivo de audio, o añade un tono de llamada más abajo. Un personaje necesita al menos uno de ellos.</string>
     <string name="creator_record">Grabar</string>
     <string name="creator_pick_audio">Archivo de audio</string>
     <string name="creator_clip_play">Reproducir con vibración</string>
@@ -160,7 +160,7 @@
     <string name="creator_problem_too_many_characters">Un pack admite hasta 500 personajes.</string>
     <string name="creator_problem_character_name">%1$s necesita un nombre.</string>
     <string name="creator_problem_sprite">%1$s necesita una imagen.</string>
-    <string name="creator_problem_clips">%1$s necesita al menos un sonido.</string>
+    <string name="creator_problem_clips">%1$s necesita un sonido o un tono de llamada.</string>
     <string name="creator_problem_too_many_clips">%1$s tiene más de 200 sonidos.</string>
     <string name="creator_problem_file">%1$s tiene un archivo de un tipo que los packs no admiten.</string>
     <string name="creator_problem_cover_file">La portada es un archivo de un tipo que los packs no admiten.</string>
@@ -189,17 +189,97 @@
     <string name="creator_message_mic_denied">Para grabar hace falta el micrófono. Puedes permitirlo en los ajustes de la app.</string>
     <string name="creator_message_clip_saved">Sonido añadido</string>
     <string name="creator_message_duplicated">Tu copia está lista para editar</string>
-    <string name="creator_message_duplicated_kept">Tu copia está lista. Sus tonos de llamada e imágenes animadas se mantienen tal cual; aún no puedes editarlos aquí.</string>
+    <string name="creator_message_duplicated_kept">Tu copia está lista. Sus imágenes animadas se mantienen tal cual; aún no puedes editarlas aquí.</string>
     <string name="creator_message_duplicate_failed">No se ha podido copiar ese pack.</string>
-    <plurals name="creator_kept_ringtones">
-        <item quantity="one">%d tono de llamada viene del pack original y se mantiene tal cual. Aún no puedes editar tonos aquí.</item>
-        <item quantity="many">%d tonos de llamada vienen del pack original y se mantienen tal cual. Aún no puedes editar tonos aquí.</item>
-        <item quantity="other">%d tonos de llamada vienen del pack original y se mantienen tal cual. Aún no puedes editar tonos aquí.</item>
-    </plurals>
-    <plurals name="creator_kept_ringtones_and_animation">
-        <item quantity="one">%d tono de llamada y una imagen animada vienen del pack original y se mantienen tal cual. Si eliges otra imagen, la animada se descarta.</item>
-        <item quantity="many">%d tonos de llamada y una imagen animada vienen del pack original y se mantienen tal cual. Si eliges otra imagen, la animada se descarta.</item>
-        <item quantity="other">%d tonos de llamada y una imagen animada vienen del pack original y se mantienen tal cual. Si eliges otra imagen, la animada se descarta.</item>
-    </plurals>
     <string name="creator_kept_animation">Una imagen animada viene del pack original y se mantiene tal cual. Si eliges otra imagen, se descarta.</string>
+
+    <!-- When a clip plays (#322) -->
+    <string name="creator_clip_when">Cuándo suena</string>
+    <string name="creator_clip_when_summary">Suena: %1$s</string>
+    <string name="creator_when_summary_always">Suena con cualquier mensaje, por turnos con los demás sonidos</string>
+    <string name="creator_when_moment">Qué mensaje</string>
+    <string name="creator_when_moment_any">Cualquiera</string>
+    <string name="creator_when_moment_first">Primero del día</string>
+    <string name="creator_when_moment_burst">Seguidos</string>
+    <string name="creator_when_moment_any_hint">Se turna con los demás sonidos.</string>
+    <string name="creator_when_moment_first_hint">Suena con el primer mensaje del día del chat, en lugar de los demás. Los días empiezan a las 04:00, así que un mensaje de madrugada aún cuenta para la noche anterior.</string>
+    <string name="creator_when_moment_burst_hint">Suena una vez cuando los mensajes no paran, cada uno a menos de un minuto del anterior. Da números distintos a varios sonidos para que suenen cada vez más impacientes.</string>
+    <string name="creator_when_burst_number">Número de mensaje seguido (de 2 a 50)</string>
+    <string name="creator_when_rare">Sonido raro</string>
+    <string name="creator_when_rare_hint">Una sorpresa: de vez en cuando suena en lugar de los demás, nunca dos veces seguidas.</string>
+    <string name="creator_when_rare_switch">Hacerlo raro</string>
+    <string name="creator_when_one_in">Más o menos 1 de cada cuántos mensajes (de 2 a 10.000)</string>
+    <string name="creator_when_time">Hora del día</string>
+    <string name="creator_when_time_hint">El día va del amanecer al anochecer donde esté configurado el móvil. Las horas pueden cruzar la medianoche, como de 22:00 a 06:00.</string>
+    <string name="creator_when_time_hours">Horas</string>
+    <string name="creator_when_from">Desde (HH:MM)</string>
+    <string name="creator_when_to">Hasta (HH:MM)</string>
+    <string name="creator_when_seasons">Estaciones</string>
+    <string name="creator_when_seasons_hint">Sin elegir ninguna: todo el año.</string>
+    <string name="creator_when_weekdays">Días de la semana</string>
+    <string name="creator_when_weekdays_hint">Sin elegir ninguno: todos los días.</string>
+    <string name="creator_when_dates">Fechas</string>
+    <string name="creator_when_dates_hint">Días del año, cada año, escritos como mes-día: 12-25. Añade un último día para un intervalo; puede cruzar el año nuevo.</string>
+    <string name="creator_when_date_from">Día (MM-DD)</string>
+    <string name="creator_when_date_to">Hasta (opcional)</string>
+    <string name="creator_when_date_add">Añadir una fecha</string>
+    <string name="creator_when_date_remove">Quitar fecha</string>
+    <string name="creator_when_save">Guardar</string>
+    <string name="creator_when_problem_time">Escribe las horas como HH:MM, de 00:00 a 23:59.</string>
+    <string name="creator_when_problem_time_empty">Las horas empiezan y acaban a la misma hora. Elige otro final.</string>
+    <string name="creator_when_problem_date">La fecha %1$d no es un día del año. Escríbela como MM-DD, por ejemplo 12-25.</string>
+    <string name="creator_when_problem_dates">Un sonido o tono admite hasta 50 fechas.</string>
+    <string name="creator_when_problem_burst">Elige un número de mensaje de 2 a 50.</string>
+    <string name="creator_when_problem_one_in">Elige un número de 2 a 10.000.</string>
+
+    <!-- Ringtones (#322) -->
+    <string name="creator_ringtones_title">Tonos de llamada</string>
+    <string name="creator_ringtones_hint">Canciones para las llamadas. Una canción puede tener varias versiones que suenan en momentos distintos. Un personaje solo con tonos de llamada vale.</string>
+    <plurals name="creator_ringtones">
+        <item quantity="one">%d tono de llamada</item>
+        <item quantity="many">%d tonos de llamada</item>
+        <item quantity="other">%d tonos de llamada</item>
+    </plurals>
+    <string name="creator_ringtone_add">Añadir un tono de llamada</string>
+    <string name="creator_ringtone_play">Reproducir el tono</string>
+    <string name="creator_ringtone_stop">Detener el tono</string>
+    <string name="creator_ringtone_edit">Editar versión</string>
+    <string name="creator_ringtone_add_version">Añadir una versión</string>
+    <string name="creator_ringtone_remove">Quitar versión</string>
+    <string name="creator_ringtone_more">Más opciones de %1$s</string>
+    <string name="creator_ringtone_unnamed">Versión sin nombre</string>
+    <string name="creator_ringtone_title">Versión del tono</string>
+    <string name="creator_ringtone_label">Nombre de esta versión</string>
+    <string name="creator_ringtone_when">Cuándo suena</string>
+    <string name="creator_ringtone_when_hint">Para los contactos que siguen las reglas del pack. Si no se cumple ninguna condición, suena la primera versión.</string>
+    <string name="creator_ringtone_loop">Cómo se repite</string>
+    <string name="creator_ringtone_loop_whole">Entera</string>
+    <string name="creator_ringtone_loop_once">Una vez</string>
+    <string name="creator_ringtone_loop_section">Una parte</string>
+    <string name="creator_ringtone_loop_whole_hint">La canción entera se repite hasta que contestas.</string>
+    <string name="creator_ringtone_loop_once_hint">La canción suena una vez y luego hay silencio.</string>
+    <string name="creator_ringtone_loop_section_hint">El principio suena una vez como intro y luego se repite la parte que elijas. Lo que va después nunca suena.</string>
+    <string name="creator_ringtone_loop_range">Intro hasta %1$s s, luego se repite de %2$s s a %3$s s</string>
+    <string name="creator_ringtone_loop_start_ms">El bucle empieza en (ms)</string>
+    <string name="creator_ringtone_loop_end_ms">El bucle acaba en (ms, opcional)</string>
+    <string name="creator_ringtone_fade">Entrada suave: %1$s s</string>
+    <string name="creator_ringtone_fade_hint">La canción empieza bajita y va subiendo, una vez.</string>
+    <string name="creator_ringtone_weight">Con qué frecuencia</string>
+    <string name="creator_ringtone_weight_hint">Para los contactos cuyo tono se elige al azar en cada llamada.</string>
+    <string name="creator_ringtone_problem_duration">Los tonos de llamada duran de 5 segundos a 6 minutos.</string>
+    <string name="creator_ringtone_problem_loop">La parte que se repite debe durar al menos 1 segundo y acabar dentro de la canción.</string>
+    <string name="creator_ringtone_problem_fade">La entrada suave dura como mucho 10 segundos.</string>
+    <string name="creator_ringtone_problem_weight">Elige con qué frecuencia suena.</string>
+    <string name="creator_message_ringtone_added">Tono de llamada añadido</string>
+    <string name="creator_message_ringtone_unsupported">Ese archivo no puede ser un tono de llamada. Los packs admiten archivos Ogg, Opus, MP3, M4A, AAC, FLAC y WAV.</string>
+    <string name="creator_message_ringtone_out_of_range">Esa canción dura %1$s s. Los tonos de llamada duran de 5 segundos a 6 minutos.</string>
+
+    <!-- More details (#322) -->
+    <string name="creator_more_details">Más detalles</string>
+    <string name="creator_homepage">Página web (opcional)</string>
+    <string name="creator_homepage_hint">Una página web sobre el pack.</string>
+    <string name="creator_homepage_invalid">Empiézala por https:// o no se incluirá en el pack.</string>
+    <string name="creator_tags">Etiquetas (opcional)</string>
+    <string name="creator_tags_hint">Palabras que ayudan a encontrarlo, separadas por comas.</string>
+    <string name="creator_tags_result">Se guardan como: %1$s</string>
 </resources>

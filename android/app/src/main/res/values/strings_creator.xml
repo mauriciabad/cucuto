@@ -46,7 +46,7 @@
     <string name="creator_add_character">Add a character</string>
     <string name="creator_character_unnamed">Unnamed character</string>
     <string name="creator_character_needs_picture">Needs a picture</string>
-    <string name="creator_character_needs_clips">Needs a sound</string>
+    <string name="creator_character_needs_clips">Needs a sound or a ringtone</string>
     <string name="creator_check">Check and finish</string>
     <string name="creator_start_over">Start a new pack</string>
     <string name="creator_start_over_title">Start a new pack?</string>
@@ -80,7 +80,7 @@
     <string name="creator_color_auto_short">Auto</string>
     <string name="creator_clips_title">Sounds</string>
     <string name="creator_clips_hint">Each message plays one of them at random.</string>
-    <string name="creator_clips_empty">Record a sound or pick an audio file. A character needs at least one.</string>
+    <string name="creator_clips_empty">Record a sound or pick an audio file, or add a ringtone below. A character needs at least one of them.</string>
     <string name="creator_record">Record</string>
     <string name="creator_pick_audio">Audio file</string>
     <string name="creator_clip_play">Play with vibration</string>
@@ -158,7 +158,7 @@
     <string name="creator_problem_too_many_characters">A pack holds up to 500 characters.</string>
     <string name="creator_problem_character_name">%1$s needs a name.</string>
     <string name="creator_problem_sprite">%1$s needs a picture.</string>
-    <string name="creator_problem_clips">%1$s needs at least one sound.</string>
+    <string name="creator_problem_clips">%1$s needs a sound or a ringtone.</string>
     <string name="creator_problem_too_many_clips">%1$s has more than 200 sounds.</string>
     <string name="creator_problem_file">%1$s has a file of a type packs cannot hold.</string>
     <string name="creator_problem_cover_file">The cover is a file of a type packs cannot hold.</string>
@@ -187,15 +187,96 @@
     <string name="creator_message_mic_denied">Recording needs the microphone. You can allow it in the app\'s settings.</string>
     <string name="creator_message_clip_saved">Sound added</string>
     <string name="creator_message_duplicated">Your copy is ready to edit</string>
-    <string name="creator_message_duplicated_kept">Your copy is ready. Its ringtones and animated pictures come along as they are; you can\'t edit them here yet.</string>
+    <string name="creator_message_duplicated_kept">Your copy is ready. Its animated pictures come along as they are; you can\'t edit them here yet.</string>
     <string name="creator_message_duplicate_failed">That pack could not be copied.</string>
-    <plurals name="creator_kept_ringtones">
-        <item quantity="one">%d ringtone comes from the original pack and stays as it is. You can\'t edit ringtones here yet.</item>
-        <item quantity="other">%d ringtones come from the original pack and stay as they are. You can\'t edit ringtones here yet.</item>
-    </plurals>
-    <plurals name="creator_kept_ringtones_and_animation">
-        <item quantity="one">%d ringtone and an animated picture come from the original pack and stay as they are. Choosing a new picture leaves the animated one out.</item>
-        <item quantity="other">%d ringtones and an animated picture come from the original pack and stay as they are. Choosing a new picture leaves the animated one out.</item>
-    </plurals>
     <string name="creator_kept_animation">An animated picture comes from the original pack and stays as it is. Choosing a new picture leaves it out.</string>
+
+    <!-- When a clip plays (#322) -->
+    <string name="creator_clip_when">When it plays</string>
+    <string name="creator_clip_when_summary">Plays: %1$s</string>
+    <string name="creator_when_summary_always">Plays on any message, in turn with the other sounds</string>
+    <string name="creator_when_moment">Which message</string>
+    <string name="creator_when_moment_any">Any</string>
+    <string name="creator_when_moment_first">First of the day</string>
+    <string name="creator_when_moment_burst">In a row</string>
+    <string name="creator_when_moment_any_hint">It takes turns with the other sounds.</string>
+    <string name="creator_when_moment_first_hint">Plays on the chat\'s first message of the day, instead of the others. Days start at 04:00, so a late-night message still belongs to the evening before.</string>
+    <string name="creator_when_moment_burst_hint">Plays once when messages keep coming, each within a minute of the one before. Give several sounds different numbers to sound more and more impatient.</string>
+    <string name="creator_when_burst_number">Message number in a row (2 to 50)</string>
+    <string name="creator_when_rare">Rare sound</string>
+    <string name="creator_when_rare_hint">An easter egg: now and then it plays instead of the others, never twice in a row.</string>
+    <string name="creator_when_rare_switch">Make it rare</string>
+    <string name="creator_when_one_in">About 1 in how many messages (2 to 10,000)</string>
+    <string name="creator_when_time">Time of day</string>
+    <string name="creator_when_time_hint">Day runs from sunrise to sunset where the phone is set. Hours may cross midnight, such as 22:00 to 06:00.</string>
+    <string name="creator_when_time_hours">Hours</string>
+    <string name="creator_when_from">From (HH:MM)</string>
+    <string name="creator_when_to">To (HH:MM)</string>
+    <string name="creator_when_seasons">Seasons</string>
+    <string name="creator_when_seasons_hint">None picked: all year.</string>
+    <string name="creator_when_weekdays">Days of the week</string>
+    <string name="creator_when_weekdays_hint">None picked: every day.</string>
+    <string name="creator_when_dates">Dates</string>
+    <string name="creator_when_dates_hint">Days of the year, every year, written as month-day: 12-25. Add a last day for a range; it may cross the new year.</string>
+    <string name="creator_when_date_from">Day (MM-DD)</string>
+    <string name="creator_when_date_to">Until (optional)</string>
+    <string name="creator_when_date_add">Add a date</string>
+    <string name="creator_when_date_remove">Remove date</string>
+    <string name="creator_when_save">Save</string>
+    <string name="creator_when_problem_time">Write times as HH:MM, from 00:00 to 23:59.</string>
+    <string name="creator_when_problem_time_empty">The hours start and end at the same time. Pick another end.</string>
+    <string name="creator_when_problem_date">Date %1$d is not a day of the year. Write it as MM-DD, for example 12-25.</string>
+    <string name="creator_when_problem_dates">A sound or ringtone takes up to 50 dates.</string>
+    <string name="creator_when_problem_burst">Pick a message number from 2 to 50.</string>
+    <string name="creator_when_problem_one_in">Pick a number from 2 to 10,000.</string>
+
+    <!-- Ringtones (#322) -->
+    <string name="creator_ringtones_title">Ringtones</string>
+    <string name="creator_ringtones_hint">Songs for calls. A song can have several versions that ring at different times. A character with only ringtones is fine.</string>
+    <plurals name="creator_ringtones">
+        <item quantity="one">%d ringtone</item>
+        <item quantity="other">%d ringtones</item>
+    </plurals>
+    <string name="creator_ringtone_add">Add a ringtone</string>
+    <string name="creator_ringtone_play">Play the ringtone</string>
+    <string name="creator_ringtone_stop">Stop the ringtone</string>
+    <string name="creator_ringtone_edit">Edit version</string>
+    <string name="creator_ringtone_add_version">Add a version</string>
+    <string name="creator_ringtone_remove">Remove version</string>
+    <string name="creator_ringtone_more">More for %1$s</string>
+    <string name="creator_ringtone_unnamed">Unnamed version</string>
+    <string name="creator_ringtone_title">Ringtone version</string>
+    <string name="creator_ringtone_label">Name of this version</string>
+    <string name="creator_ringtone_when">When it rings</string>
+    <string name="creator_ringtone_when_hint">For contacts who follow the pack\'s rules. When none of the conditions hold, the first version rings.</string>
+    <string name="creator_ringtone_loop">How it loops</string>
+    <string name="creator_ringtone_loop_whole">Whole song</string>
+    <string name="creator_ringtone_loop_once">Once</string>
+    <string name="creator_ringtone_loop_section">A part</string>
+    <string name="creator_ringtone_loop_whole_hint">The whole song repeats until you answer.</string>
+    <string name="creator_ringtone_loop_once_hint">The song plays once, then silence.</string>
+    <string name="creator_ringtone_loop_section_hint">The start plays once as an intro, then the part you pick repeats. Anything after it never rings.</string>
+    <string name="creator_ringtone_loop_range">Intro until %1$s s, then %2$s s to %3$s s repeats</string>
+    <string name="creator_ringtone_loop_start_ms">Loop starts at (ms)</string>
+    <string name="creator_ringtone_loop_end_ms">Loop ends at (ms, optional)</string>
+    <string name="creator_ringtone_fade">Fade in: %1$s s</string>
+    <string name="creator_ringtone_fade_hint">The song starts quietly and grows louder, once.</string>
+    <string name="creator_ringtone_weight">How often</string>
+    <string name="creator_ringtone_weight_hint">For contacts whose ringtone is picked at random on each call.</string>
+    <string name="creator_ringtone_problem_duration">Ringtones last 5 seconds to 6 minutes.</string>
+    <string name="creator_ringtone_problem_loop">The repeating part must last at least 1 second and end within the song.</string>
+    <string name="creator_ringtone_problem_fade">Fade in for up to 10 seconds.</string>
+    <string name="creator_ringtone_problem_weight">Pick how often it rings.</string>
+    <string name="creator_message_ringtone_added">Ringtone added</string>
+    <string name="creator_message_ringtone_unsupported">That file can\'t be a ringtone. Packs hold Ogg, Opus, MP3, M4A, AAC, FLAC and WAV files.</string>
+    <string name="creator_message_ringtone_out_of_range">That song lasts %1$s s. Ringtones last 5 seconds to 6 minutes.</string>
+
+    <!-- More details (#322) -->
+    <string name="creator_more_details">More details</string>
+    <string name="creator_homepage">Homepage (optional)</string>
+    <string name="creator_homepage_hint">A web page about the pack.</string>
+    <string name="creator_homepage_invalid">Start it with https://, or it stays out of the pack.</string>
+    <string name="creator_tags">Tags (optional)</string>
+    <string name="creator_tags_hint">Words that help people find it, separated by commas.</string>
+    <string name="creator_tags_result">Saved as: %1$s</string>
 </resources>

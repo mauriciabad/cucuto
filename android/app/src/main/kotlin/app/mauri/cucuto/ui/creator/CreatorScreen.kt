@@ -55,7 +55,7 @@ import app.mauri.cucuto.ui.haptics.HapticTarget
 /**
  * The in-app pack creator (#47): a pack in a few steps, all on the phone. The Packs screen opens it ("Create a pack",
  * or "Duplicate and edit" with [sourcePackId]). Its own pages (pack, character, picture framing, recording, clip
- * editing) stack inside this one destination; system back walks them back before leaving. "Check and finish" is a
+ * editing, when a clip plays, ringtone versions) stack inside this one destination; system back walks them back before leaving. "Check and finish" is a
  * screen of its own above it ([onOpenFinish], [CreatorFinishScreen], ADR 0055) on this view model.
  *
  * @param onEditHaptic Opens the haptic editor for a character's pattern (#185); the editor hands the pattern back
@@ -102,6 +102,16 @@ fun CreatorScreen(
     val pickAudio: (String) -> Unit = { key ->
         audioFor = key
         audioPicker.launch(arrayOf("audio/*"))
+    }
+    var ringtoneFor by rememberSaveable { mutableStateOf<String?>(null) }
+    val ringtonePicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            val key = ringtoneFor
+            if (uri != null && key != null) viewModel.addRingtone(key, uri)
+        }
+    val pickRingtone: (String) -> Unit = { key ->
+        ringtoneFor = key
+        ringtonePicker.launch(arrayOf("audio/*"))
     }
     // The microphone is asked for on the Record tap, never before (brief: minimum intrusion).
     val micPermission =
@@ -175,6 +185,8 @@ fun CreatorScreen(
                                 onOpenFinish()
                             },
                             onStartOver = viewModel::startNew,
+                            onHomepage = viewModel::setHomepage,
+                            onTags = viewModel::setTags,
                         )
                     }
 
@@ -205,6 +217,14 @@ fun CreatorScreen(
                                 },
                                 onEditHaptic = { viewModel.hapticTarget(page.key)?.let { onEditHaptic?.invoke(it) } },
                                 onRemove = { viewModel.removeCharacter(page.key) },
+                                onDescription = { viewModel.setCharacterDescription(page.key, it) },
+                                onClipConditions = { viewModel.openClipConditions(page.key, it) },
+                                playingRingtone = state.playingRingtone,
+                                onAddRingtone = { pickRingtone(page.key) },
+                                onPlayRingtone = { viewModel.toggleRingtone(page.key, it) },
+                                onEditRingtone = { viewModel.openRingtone(page.key, it) },
+                                onAddRingtoneVersion = { viewModel.addRingtoneVersion(page.key, it) },
+                                onRemoveRingtone = { viewModel.removeRingtone(page.key, it) },
                             )
                         }
                     }
@@ -248,6 +268,30 @@ fun CreatorScreen(
                             )
                         }
                     }
+
+                    CreatorPage.ClipConditions -> {
+                        state.conditionEditor?.let { editor ->
+                            ClipConditionsPage(
+                                editor = editor,
+                                onBack = goBack,
+                                onChange = viewModel::setConditionForm,
+                                onSave = viewModel::saveClipConditions,
+                            )
+                        }
+                    }
+
+                    CreatorPage.RingtoneEditor -> {
+                        state.ringtoneEditor?.let { editor ->
+                            RingtoneEditorPage(
+                                editor = editor,
+                                playing = state.playingRingtone == RingtoneEditorUi.PLAYING_EDITOR,
+                                onBack = goBack,
+                                onChange = viewModel::setRingtoneForm,
+                                onPlay = viewModel::toggleEditorRingtone,
+                                onSave = viewModel::saveRingtone,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -272,7 +316,7 @@ private fun depth(page: CreatorPage): Int =
     when (page) {
         CreatorPage.Pack -> 0
         is CreatorPage.Character -> 1
-        CreatorPage.Recorder -> 2
+        CreatorPage.Recorder, CreatorPage.ClipConditions, CreatorPage.RingtoneEditor -> 2
         CreatorPage.Cropper, CreatorPage.ClipEditor -> 3
     }
 
@@ -373,7 +417,7 @@ private fun busyText(kind: Busy.Kind): Int =
 internal fun feedbackFor(message: CreatorMessage): Feedback =
     when (message) {
         is CreatorMessage.Installed, CreatorMessage.Exported -> Feedback.Success
-        CreatorMessage.ClipSaved, is CreatorMessage.Duplicated -> Feedback.Confirm
+        CreatorMessage.ClipSaved, CreatorMessage.RingtoneAdded, is CreatorMessage.Duplicated -> Feedback.Confirm
         else -> Feedback.Error
     }
 
@@ -423,7 +467,7 @@ internal fun messageText(
         }
 
         is CreatorMessage.Duplicated -> {
-            if (message.keptRingtones + message.keptAnimations == 0) {
+            if (message.keptAnimations == 0) {
                 resources.getString(R.string.creator_message_duplicated)
             } else {
                 resources.getString(R.string.creator_message_duplicated_kept)
@@ -432,5 +476,17 @@ internal fun messageText(
 
         CreatorMessage.DuplicateFailed -> {
             resources.getString(R.string.creator_message_duplicate_failed)
+        }
+
+        CreatorMessage.RingtoneAdded -> {
+            resources.getString(R.string.creator_message_ringtone_added)
+        }
+
+        CreatorMessage.RingtoneUnsupported -> {
+            resources.getString(R.string.creator_message_ringtone_unsupported)
+        }
+
+        is CreatorMessage.RingtoneOutOfRange -> {
+            resources.getString(R.string.creator_message_ringtone_out_of_range, seconds(message.durationMs))
         }
     }

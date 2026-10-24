@@ -5,7 +5,9 @@
   `followsVoice` amended by [ADR 0063](0063-independent-voice-and-ringtone.md) (owner update 2026-10-24, #245); the rules gain a
   screen and "your own rules" in [ADR 0074](0074-ringtone-rules-screen.md) (#288); "Stop using for calls" replaced by
   the picker's "Leave as is", "Android default" added, and `ringtoneChoice` in backups by
-  [ADR 0073](0073-sound-flow-message-then-ringtone.md) (owner update 2026-10-24, #298)
+  [ADR 0073](0073-sound-flow-message-then-ringtone.md) (owner update 2026-10-24, #298); the rule chips and the
+  version radio buttons replaced by a "Which version rings" row that opens the rules screen (#347,
+  [ADR 0074](0074-ringtone-rules-screen.md#the-picker)); the card shows only when it asks for something (#348, ADR 0073)
 - Date: 2026-10-24
 - Issues: #53 (ringtone picker UI), #198 (back up and restore phone ringtones)
 
@@ -35,9 +37,10 @@ a dead end.
 **Layout.** At the top, the chosen character:
 
 - its record and name, and whether it is the messages' character or a mix;
-- every version with a play/stop button and its tags (a radio button picks one under "One version");
-- the rule chips that make sense for its tags (the rules of ADR 0039: the pack's rules, random per call, day and
-  night, by season, one version).
+- every version with a play/stop button and its tags ~~(a radio button picks one under "One version")~~;
+- ~~the rule chips that make sense for its tags (the rules of ADR 0039: the pack's rules, random per call, day and
+  night, by season, one version)~~ since #347, a "Which version rings" row with the rule, which opens the rules screen
+  of ADR 0074, the one place where the rule is chosen.
 
 Below it, a grid of album covers, grouped by pack: every installed character that has at least one ringtone. A
 **bottom bar** saves ("Ring with Tootle the kettle"). It reads "Already chosen" and is disabled when nothing changed.
@@ -69,7 +72,9 @@ contact. Amended by ADR 0063 (owner update 2026-10-24, #245): the voice and the 
 following ringtone keeps the character that rang last while the voice has no ringtones, removing the voice keeps the
 ringtone, and saving a ringtone for a chat without a contact creates the contact.
 
-**Rules** keep the current choice when the new character offers it, else the pack's rules. Since ADR 0074 (#288),
+**Rules** ~~keep the current choice when the new character offers it, else the pack's rules~~ (since #347: a tapped
+cover keeps the rule stored for it when it is the character that rings, else the pack's rules; other rules are
+chosen on the rules screen). Since ADR 0074 (#288),
 "See and edit the rules" under the chips opens the rules screen: the pack's rules in plain words, and the contact's
 own rules, which the picker shows as a "Your own rules" chip. A character with one
 version saves the pack's rule. "Random per call" asks for the phone permission before saving and saves either way,
