@@ -17,6 +17,24 @@ fun interface AudioProbe {
         format: FileFormat,
         full: Boolean,
     ): AudioProbeResult
+
+    /**
+     * A probe for one worker that decodes files one after another and may keep decoders between them (#279, ADR
+     * 0077). Close it when done. The default has nothing to keep and probes with [probe].
+     */
+    fun session(): Session = Session { file, format, full -> probe(file, format, full) }
+
+    /** One worker's probe: not thread-safe, used for one file at a time, closed at the end. */
+    fun interface Session : AutoCloseable {
+        /** The same as [AudioProbe.probe]. */
+        fun probe(
+            file: File,
+            format: FileFormat,
+            full: Boolean,
+        ): AudioProbeResult
+
+        override fun close() {}
+    }
 }
 
 sealed interface AudioProbeResult {

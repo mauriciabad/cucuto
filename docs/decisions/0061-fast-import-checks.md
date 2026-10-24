@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-24
-- Issues: #241
+- Issues: #241 (batches and decoder reuse since #279: [ADR 0077](0077-batched-test-decodes.md))
 
 ## Context
 
@@ -50,7 +50,8 @@ Not done:
 
 - **Multiple frames per input buffer** (`FEATURE_MultipleFrames`, Android 15) would cut the round trips by up to 50x,
   and the emulator's software audio decoders support it. It needs MediaCodec's asynchronous mode and new output
-  callbacks, though, and could not be tested on a real device here. Left for a follow-up (#268).
+  callbacks, though, and could not be tested on a real device here. Left for a follow-up (#268). Done since #279,
+  together with one decoder per worker instead of one per file: [ADR 0077](0077-batched-test-decodes.md).
 - **Decoding less** (only the container length, or shorter windows) would weaken the check the brief asks for.
 - **Auto haptics** (ADR 0020) runs at install and decoded the first 2 s of every clip, one at a time. It was a
   separate change in `:core:haptics`: since #267 it uses the same bound, `DEFAULT_DECODE_PARALLELISM` (ADR 0020).
