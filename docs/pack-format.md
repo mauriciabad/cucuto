@@ -703,6 +703,9 @@ file names, character IDs from names, and shorthands such as `when: day` and `ha
 directly, with the shared authoring rules in `shared/pack-spec` (`packspec.authoring`, [ADR 0034](decisions/0034-in-app-pack-creator.md)):
 packer's canonical layout, slugs of the names for character IDs and clip file names, and suggested pack IDs of the form
 `local.<author>.<name>-<random>` (people without a domain of their own; the first install or export fixes the IDs).
+Both creators edit every field of this document except animated sprites: clip conditions, special clips, ringtone
+variants with their conditions, loops and fade-ins, haptics, the pack's homepage and tags and a character's
+description, through the shared `ConditionForm` and `RingtoneForm` ([ADR 0049](decisions/0049-creator-haptics-and-pass-through.md)).
 
 ## Implementations and fixtures
 

@@ -20,10 +20,7 @@ data class DraftFile(
     val extension: String,
 )
 
-/**
- * A pack being made in a creator. Blank optional texts are left out of the manifest. [homepage] and [tags] are not
- * edited by the creators yet: they come through unchanged from a duplicated pack.
- */
+/** A pack being made in a creator. Blank optional texts are left out of the manifest. */
 data class PackDraft(
     /** The pack ID; null to derive it with [Authoring.suggestPackId] from [author], [name] and [idSuffix]. */
     val id: String?,
@@ -40,8 +37,8 @@ data class PackDraft(
 )
 
 /**
- * A character of a [PackDraft]. [description], [tags], [spriteAnimated] and [ringtones] are pass-through data: the
- * creators do not edit them yet, but a duplicated pack keeps them.
+ * A character of a [PackDraft]. [tags] and [spriteAnimated] are pass-through data: the creators do not edit them yet
+ * (#324), but a duplicated pack keeps them.
  */
 data class CharacterDraft(
     /** The character ID; null to derive a unique slug from [name]. Fix it once the pack has been shared. */
@@ -65,15 +62,16 @@ data class ClipDraft(
     val label: String?,
     /** Null for the default weight (1). */
     val weight: Double? = null,
-    /** The clip's condition (day and night clips, moments), kept from a duplicated pack. */
+    /** The clip's condition (day and night clips, moments), as [ConditionForm.toWhen] writes it. */
     val `when`: When? = null,
-    /** A rare clip's chance, one in [oneIn], kept from a duplicated pack. */
+    /** A rare clip's chance, one in [oneIn]. */
     val oneIn: Int? = null,
 )
 
 /**
- * A ringtone variant, kept as it is from a duplicated pack: [entry] is written unchanged except its `file`, which
- * becomes [file]'s place in the pack. Several variants may share one [file] (the same [DraftFile.key]).
+ * A ringtone variant ([RingtoneForm.toEntry], or kept as it is from a duplicated pack): [entry] is written unchanged
+ * except its `file`, which becomes [file]'s place in the pack. Several variants may share one [file] (the same
+ * [DraftFile.key]).
  */
 data class RingtoneDraft(
     val file: DraftFile,
