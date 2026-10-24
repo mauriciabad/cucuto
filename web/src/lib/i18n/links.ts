@@ -11,7 +11,14 @@ import { localizePath, type Locale } from './index.js';
 
 /** The site's pages, as root-relative paths in the default locale. */
 export type PagePath =
-	'/' | '/packs/' | '/install/' | '/authors/' | '/authors/pack-format/' | '/privacy/' | '/open/';
+	| '/'
+	| '/packs/'
+	| '/create/'
+	| '/install/'
+	| '/authors/'
+	| '/authors/pack-format/'
+	| '/privacy/'
+	| '/open/';
 
 /** A link to one of the site's pages in the given locale, with the base path applied. */
 export function pageHref(path: PagePath, locale: Locale): string {
@@ -28,6 +35,7 @@ export function linkValues(locale: Locale): Record<string, string> {
 	return {
 		home: pageHref('/', locale),
 		packs: pageHref('/packs/', locale),
+		create: pageHref('/create/', locale),
 		install: pageHref('/install/', locale),
 		authors: pageHref('/authors/', locale),
 		packFormat: pageHref('/authors/pack-format/', locale),
