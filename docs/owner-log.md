@@ -272,3 +272,13 @@ pattern" in the haptic editor and the creators, is #217; auto haptics from the w
 > I did it https://github.com/mauriciabad/cucuto/releases/tag/v0.1.1
 
 (Already acted on: the lead released v0.1.1 and v0.1.2 with the owner's key, see the entries above. No change needed.)
+
+> the phone locks after30min of inactivity
+
+> you havent made a release in 4h?! my phone is unlocked
+
+(Lead released v0.1.3 and v0.1.4 right away and now releases whenever main has user-visible progress. After the owner's reboot, the full loop passed on the phone with v0.1.4: live assignment, Simulate message through the module, clip mirror, character vibration.)
+
+> when you finish this, run 2 agents that make the private packs about pokemon and kk i asked for initially (i think the plan file has more details)
+
+(Two agents build the private Pokémon and K.K. Slider packs under the gitignored `private/` folder, per the brief; nothing is committed or uploaded, and the zips go to the phone over adb.)
