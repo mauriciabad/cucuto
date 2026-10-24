@@ -6,26 +6,33 @@ Cucuto reproduce el sonido y la vibración de un personaje distinto para cada co
 • <b>LSPosed</b> que cargue módulos modernos (libxposed API 102). Ahí activas Cucuto con el ámbito System Framework y reinicias.
 • <b>WhatsApp o WhatsApp Business</b>, con su propio tono y vibración de notificación activados.
 
-Sin root ni LSPosed la app se abre, pero no puede cambiar ni un sonido. Cucuto es una versión temprana: puede tener asperezas, y conviene saber cómo entrar en el modo seguro de tu gestor de root por si el móvil no arranca.
+Sin root ni LSPosed no puede cambiar los sonidos de WhatsApp, pero con el chat de ejemplo oyes y notas cualquier personaje en la app. Cucuto es una versión temprana: puede tener asperezas, y conviene saber cómo entrar en el modo seguro de tu gestor de root por si el móvil no arranca.
 
 <b>Cómo funciona</b>
-• <b>Importa un pack de sonidos.</b> Abre un archivo .soundpack.zip o descárgalo de un repositorio de packs. Un pack es un reparto de personajes, cada uno con su imagen, unos cuantos clips cortos y su propia vibración.
-• <b>Dale un personaje a un contacto.</b> Elige un chat, toca un personaje para oírlo y vuelve a tocarlo para asignarlo.
+• <b>Importa un pack de sonidos.</b> Abre un archivo .soundpack.zip, descárgalo de un repositorio de packs o crea el tuyo en la app. Un pack es un reparto de personajes: criaturas con clips cortos y su propia vibración, o canciones para las llamadas.
+• <b>Dale un personaje a un contacto.</b> Elige un chat, toca un personaje para oírlo y vuelve a tocarlo para asignarlo. Después elige su tono de llamada, u omite el paso.
 • <b>Oye quién es.</b> Cuando te escriba, la notificación sonará y vibrará con su personaje.
+
+<b>Más que un tono nuevo</b>
+• Tonos de llamada: una canción de un pack, el predeterminado del móvil o el suyo tal cual. Cucuto siempre puede devolver el de antes.
+• Reglas del tono que se entienden: en directo de día, versión radio de noche. Lee las del pack o escribe las tuyas para un contacto.
+• Clips en el momento justo: saludo al primer mensaje del día, respuesta a una ráfaga, huevos de pascua, clips de noche y de fiestas. Sin rastreo ni gasto de batería.
+• Los packs grandes se pliegan, la búsqueda encuentra personajes por su nombre y Sorpréndeme elige uno al azar.
+• Añade personas desde tus contactos antes de que te escriban: su voz suena desde su segundo mensaje.
 
 <b>Hecho para no molestar</b>
 • Un sonido, sin duplicados: ni una segunda notificación ni un icono fijo en la barra de estado.
 • Tus ajustes mandan: los chats silenciados, No molestar y el modo silencio funcionan igual que siempre, porque Android sigue decidiendo si un mensaje avisa.
-• Si algo falla, suena lo de siempre: si el módulo está desactivado o algo falla, suena el tono normal. Nunca te pierdes un mensaje por culpa de Cucuto.
+• Si el módulo está desactivado o algo falla, suena el tono normal. Nunca te pierdes un mensaje por culpa de Cucuto.
 • También en grupos: un personaje para el grupo, o una voz para cada persona.
 • Una vibración por personaje, así sabes quién escribe con el móvil en vibración. Crea la tuya en el editor o marca el ritmo con el dedo.
 • Nada en segundo plano: sin servicio, sin notificación permanente y sin excepciones de batería.
 
 <b>Qué toca</b>
 • El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las de WhatsApp y WhatsApp Business. Nunca engancha la app de WhatsApp y nunca lee lo que dicen tus mensajes.
-• Sin cuentas, sin anuncios, sin analíticas y sin informes de errores. La app solo se conecta a internet cuando exploras o descargas packs de un repositorio. La ubicación se pide una vez, aproximada, y solo si quieres clips de día y de noche.
-• Cucuto nunca busca actualizaciones por su cuenta. Actualízala desde donde la instalaste y reinicia: el módulo carga la versión nueva al arrancar.
+• Sin cuentas, sin anuncios, sin analíticas y sin informes de errores. La app solo se conecta a internet cuando exploras o descargas packs de un repositorio. La ubicación se pide una vez, aproximada, y solo si quieres clips de día y de noche. Los contactos solo se leen para los tonos de llamada y al añadir un chat desde ellos.
+• Cucuto nunca busca actualizaciones por sí sola. Actualízala desde donde la instalaste y reinicia: el módulo carga la versión nueva al arrancar.
 
-La app viene vacía: no incluye contenido de terceros, y tú eres responsable de los packs que importas. Los packs de demostración gratuitos (CC0), la guía de instalación y el formato de los packs están en https://cucuto.mauri.app/es/
+La app viene vacía: no incluye contenido de terceros, y tú eres responsable de los packs que importas. Packs de demostración gratis (CC0), guía de instalación y formato de los packs: https://cucuto.mauri.app/es/
 
 Software libre con licencia GPL-3.0-or-later. Sin relación con WhatsApp ni Meta.

@@ -73,17 +73,57 @@ export const es: Messages = {
 			{
 				icon: 'library-music',
 				title: 'Importa un pack de sonidos',
-				text: 'Abre un archivo .soundpack.zip o descárgalo de un repositorio de packs. Un pack es un reparto de personajes, cada uno con su imagen, unos cuantos clips cortos y su propia vibración.'
+				text: 'Abre un archivo .soundpack.zip, descárgalo de un repositorio de packs o crea el tuyo. Un pack es un reparto de personajes: criaturas con clips cortos y su propia vibración, o canciones para usar como tono de llamada.'
 			},
 			{
 				icon: 'person-pin',
 				title: 'Dale un personaje a un contacto',
-				text: 'Elige un chat, toca un personaje para oírlo y vuelve a tocarlo para asignarlo. Son unos segundos por contacto.'
+				text: 'Elige un chat, toca un personaje para oírlo y vuelve a tocarlo para asignarlo. Después, si quieres, elige qué suena cuando te llame: una canción de un pack, el tono predeterminado del móvil o el suyo tal como está.'
 			},
 			{
 				icon: 'notifications-active',
 				title: 'Oye quién es',
 				text: 'Cuando te escriba, la notificación de WhatsApp sonará y vibrará con su personaje. Con el móvil en el bolsillo, ya sabes quién es.'
+			}
+		]),
+		extrasTitle: 'Más que un tono nuevo',
+		extrasLead:
+			'Pequeños detalles para que cada contacto suene a sí mismo. Todo se decide en tu móvil, sin gastar batería.',
+		extras: iconItems([
+			{
+				icon: 'ring-volume',
+				title: 'También tonos de llamada',
+				text: 'Ponle a un contacto una canción de un pack como tono de llamada, pásalo al tono predeterminado del móvil o deja el suyo como está. Cucuto lo pone en el contacto, igual que la app Contactos, y siempre puede devolverle el de antes.'
+			},
+			{
+				icon: 'tune',
+				title: 'Reglas del tono que se entienden',
+				text: 'Una canción puede sonar en directo de día y en versión radio de noche. Cucuto te enseña las reglas del pack en frases normales, y puedes escribir las tuyas para un contacto.'
+			},
+			{
+				icon: 'wb-twilight',
+				title: 'Clips en el momento justo',
+				text: 'Los packs pueden saludar al primer mensaje del día, responder a una ráfaga de mensajes, esconder un huevo de pascua poco frecuente o sonar distinto de noche o en fiestas. Sin sensores y sin rastreo.'
+			},
+			{
+				icon: 'casino',
+				title: 'El personaje que buscas, rápido',
+				text: 'Los packs grandes se pliegan por secciones, la búsqueda encuentra un personaje por su nombre y Sorpréndeme elige uno al azar para que lo oigas antes de quedártelo.'
+			},
+			{
+				icon: 'contacts',
+				title: 'Chats antes de que te escriban',
+				text: 'Añade personas desde tus contactos y dales voz desde ya. Su primer mensaje vincula el chat, y su voz suena a partir del siguiente.'
+			},
+			{
+				icon: 'play-circle',
+				title: 'Pruébalo sin root',
+				text: 'El chat de ejemplo reproduce en la app el sonido de mensaje, la vibración y el tono de llamada de un personaje, para que oigas lo que hace Cucuto antes de configurar el módulo.'
+			},
+			{
+				icon: 'edit',
+				title: 'Crea tus propios packs',
+				text: 'Graba o elige sonidos e imágenes en la app, o en la página Crear de esta web. No se sube nada.'
 			}
 		]),
 		featuresTitle: 'Hecho para no molestar',
@@ -205,17 +245,27 @@ export const es: Messages = {
 			{
 				q: '¿Y las llamadas?',
 				aHtml:
-					'Está previsto añadir tonos de llamada por contacto con los mismos packs. Cucuto empieza por las notificaciones de mensajes de WhatsApp.'
+					'Las llamadas de teléfono, sí. Ponle a un contacto un tono de un pack, pásalo al tono predeterminado del móvil o deja el suyo como está. Una canción con varias versiones sigue las reglas del pack (día y noche, estaciones, fiestas) o las que tú pongas para ese contacto. Cucuto pone el tono en el contacto de Android (vinculas el chat con su contacto una vez), y si desactivas los tonos de llamada, cada contacto recupera su tono de antes. Las llamadas de WhatsApp siguen con el tono de WhatsApp por ahora.'
+			},
+			{
+				q: '¿Puedo darle voz a alguien antes de que me escriba?',
+				aHtml:
+					'Sí, si está en los contactos del móvil: toca <strong>Añadir un chat desde contactos</strong> en Inicio. Cucuto solo lee las entradas de WhatsApp que ya tienen tus contactos y guarda solo a las personas que eliges. Su primer mensaje suena con el tono de WhatsApp y vincula el chat; su voz suena a partir del siguiente. Los grupos aparecen después de su primer mensaje.'
+			},
+			{
+				q: '¿Puedo probarlo sin root?',
+				aHtml:
+					'En parte. Sin el módulo, Cucuto no puede cambiar los sonidos de WhatsApp, pero en cuanto tienes un pack, Inicio te ofrece <strong>Prueba un chat de ejemplo</strong>: reproduce en la app el sonido de mensaje, la vibración y el tono de llamada de un personaje, para que oigas y notes lo que haría un chat.'
 			},
 			{
 				q: '¿Puedo crear mis propios packs?',
 				aHtml:
-					'Sí. El formato de los packs es abierto y está documentado, y cualquiera puede alojar un repositorio de packs en una web estática. Consulta la <a href="{authors}">guía para crear packs</a>. Crea uno en el navegador con la página <a href="{create}">Crear</a>; está previsto un creador de packs en la app.'
+					'Sí. Crea uno en la app (<strong>Packs › Crear un pack</strong>) o en el navegador con la página <a href="{create}">Crear</a>. El formato de los packs es abierto y está documentado, los packs pueden llevar tonos de llamada y clips para momentos especiales, y cualquiera puede alojar un repositorio de packs en una web estática. Consulta la <a href="{authors}">guía para crear packs</a>.'
 			},
 			{
-				q: '¿Por qué no está en Google Play?',
+				q: '¿Está en Google Play?',
 				aHtml:
-					'Cucuto necesita root y LSPosed, así que se publica como APK en <a href="{releases}" rel="external">GitHub</a>.'
+					'Todavía no. La ficha de Google Play está en preparación. Mientras tanto, descarga el APK de <a href="{releases}" rel="external">GitHub</a>, o deja que Obtainium lo mantenga al día (mira la <a href="{install}">guía de instalación</a>). Todas las copias están firmadas con el mismo certificado, así que una instalación desde Play y otra desde GitHub se actualizan entre sí. En cualquier caso, Cucuto necesita root y LSPosed para cambiar los sonidos de WhatsApp.'
 			},
 			{
 				q: '¿Es gratis? ¿Recoge datos?',
@@ -237,6 +287,10 @@ export const es: Messages = {
 		characters: 'Personajes',
 		play: 'Reproducir el clip de {name}',
 		stop: 'Parar el clip de {name}',
+		hapticCustom: 'Vibración: patrón propio, {seconds} segundos',
+		hapticAuto: 'Sigue la voz',
+		hapticAutoSpoken: 'La vibración sigue la voz',
+		hapticNone: 'Sin vibración',
 		contains: 'Incluye {names}.',
 		download: 'Descargar',
 		downloadHidden: '{name} .soundpack.zip',
@@ -298,20 +352,22 @@ export const es: Messages = {
 			{
 				title: 'Revisa la tarjeta de estado',
 				textHtml:
-					'Abre Cucuto. La primera vez, una guía de configuración te acompaña en estos pasos y termina con una notificación de prueba; puedes volver a abrirla desde la pantalla de estado. La tarjeta de estado de arriba comprueba que el módulo está activo, que el ámbito de LSPosed es correcto, que WhatsApp está instalado y que hay al menos un pack importado. Cada comprobación que falla te dice cómo arreglarla.'
+					'Abre Cucuto. La primera vez, una guía de configuración te acompaña en estos pasos y termina con una notificación de prueba; puedes volver a abrirla desde Ajustes. La tarjeta de estado de arriba comprueba que el módulo está activo, que el ámbito de LSPosed es correcto, que WhatsApp está instalado y que hay al menos un pack importado. Cada comprobación que falla te dice cómo arreglarla.'
 			},
 			{
 				title: 'Importa un pack y asigna personajes',
 				textHtml:
-					'Importa un archivo <code>.soundpack.zip</code> o elige uno de los <a href="{packs}">packs gratuitos</a>, luego escoge un chat y toca un personaje. Deja activados el tono y la vibración de las notificaciones de WhatsApp: Cucuto los sustituye por contacto.'
+					'Importa un archivo <code>.soundpack.zip</code> o elige uno de los <a href="{packs}">packs gratuitos</a>, luego escoge un chat, toca un personaje y, si quieres, un tono de llamada. ¿Alguien que aún no te ha escrito? Añádelo con <strong>Añadir un chat desde contactos</strong>. Deja activados el tono y la vibración de las notificaciones de WhatsApp: Cucuto los sustituye por contacto.'
 			}
 		],
 		testTitle: 'Pruébalo',
 		testHtml:
-			'En Cucuto, abre <strong>Diagnóstico</strong> y toca <strong>Enviar notificación de prueba</strong>. Con el módulo activo oirás un gorjeo corto de dos tonos y notarás un clic en lugar del sonido predeterminado, y la decisión aparecerá en la lista de abajo en unos segundos.',
+			'En Cucuto, abre <strong>Diagnóstico</strong> y toca <strong>Enviar notificación de prueba</strong>. Con el módulo activo oirás un gorjeo corto de dos tonos y notarás un clic en lugar del sonido predeterminado, y la decisión aparecerá en la lista de abajo en unos segundos. Antes de configurar el módulo, <strong>Prueba un chat de ejemplo</strong> en Inicio reproduce en la app el sonido, la vibración y el tono de llamada de un personaje.',
 		updatesTitle: 'Actualizaciones',
 		updatesHtml:
 			'Cucuto nunca busca actualizaciones ni se conecta a internet para buscarlas. Las versiones nuevas aparecen en la <a href="{releases}" rel="external">página de versiones</a>, y Cucuto sigue funcionando aunque te saltes alguna. Para recibirlas en el móvil sin mirar a mano, usa <a href="{obtainium}" rel="external">Obtainium</a>, una app gratuita que instala apps directamente desde sus versiones en GitHub. Después de cada actualización, reinicia: el módulo carga la versión nueva al arrancar.',
+		certificateHtml:
+			'Todos los APK de Cucuto están firmados con el mismo certificado, cuyo SHA-256 empieza por <code>{cert}</code> (el valor completo está en los ajustes de Obtainium de abajo y en cada versión publicada). Cuando Cucuto esté en Google Play, Play lo instalará con ese mismo certificado, así que una copia de Play y otra de GitHub u Obtainium se actualizan entre sí, sin desinstalar.',
 		obtainiumButton: 'Consíguelo con Obtainium',
 		obtainiumHint:
 			'Abre Obtainium con los ajustes de Cucuto ya rellenados. Funciona en un móvil con Obtainium instalado.',
@@ -366,7 +422,7 @@ export const es: Messages = {
 		toc: 'En esta página',
 		whatTitle: 'Qué lleva un pack',
 		whatHtml:
-			'Un pack es un archivo zip normal llamado <code>&lt;nombre&gt;.soundpack.zip</code>, con un manifiesto <code>pack.json</code> en la raíz y una carpeta por personaje. Cada personaje tiene una imagen, un conjunto de clips cortos para las notificaciones y, si quieres, un patrón de vibración y tonos de llamada. Un archivo también puede contener una <strong>colección</strong> de varios packs.',
+			'Un pack es un archivo zip normal llamado <code>&lt;nombre&gt;.soundpack.zip</code>, con un manifiesto <code>pack.json</code> en la raíz y una carpeta por personaje. Cada personaje tiene una imagen y clips cortos para las notificaciones, tonos de llamada o ambos, y si quieres un patrón de vibración. Un archivo también puede contener una <strong>colección</strong> de varios packs.',
 		mediaTitle: 'Archivos',
 		media: iconItems([
 			{
@@ -397,7 +453,7 @@ export const es: Messages = {
 			{
 				title: 'Con el creador de packs',
 				textHtml:
-					'Elige imágenes, graba o importa clips, recórtalos y descarga el pack en la página <a href="{create}">Crear</a>, en el navegador y sin herramientas. En la app: previsto.'
+					'Elige imágenes, graba o importa clips, recórtalos y descarga el pack en la página <a href="{create}">Crear</a>, en el navegador y sin herramientas. En el móvil, <strong>Packs › Crear un pack</strong> en la app hace lo mismo, y <strong>Duplicar y editar</strong> parte de un pack que ya tienes.'
 			},
 			{
 				title: 'A mano',
@@ -414,6 +470,26 @@ export const es: Messages = {
 			'Luego constrúyelo, valídalo y, si quieres, agrupa varios packs en un solo archivo. Hay opciones para normalizar el volumen, recortar silencios y convertir a Opus y JPEG XL (necesitan <code>ffmpeg</code> y <code>cjxl</code>):',
 		packerMoreHtml:
 			'Todos los comandos y opciones están en el <a href="{packerReadme}" rel="external">README de packer</a> (en inglés).',
+		momentsTitle: 'Clips y tonos para el momento justo',
+		momentsIntroHtml:
+			'Cualquier clip o tono de llamada puede llevar una condición <code>when</code>: <code>day</code> o <code>night</code> (amanecer y atardecer donde vive quien lo oye), una franja horaria, estaciones, días de la semana y fechas como <code>12-25</code>. Los clips tienen además tres momentos especiales, que suenan en lugar del clip al azar de siempre:',
+		moments: [
+			'<code>firstOfDay: true</code>: el primer mensaje del día en ese chat (los días empiezan a las 04:00). Un clip de buenos días.',
+			'<code>burst: 3</code>: el tercer mensaje seguido, cada uno a menos de un minuto del anterior. Para esa amiga impaciente; pon <code>6</code> o <code>10</code> en otros clips para ir a más.',
+			'<code>oneIn: 25</code>: un clip raro que suena más o menos en uno de cada 25 mensajes, nunca dos veces seguidas. Un huevo de pascua.'
+		],
+		momentsYamlHtml:
+			'En <code>pack.yaml</code> (las mismas claves van en <code>pack.json</code>). Las claves se combinan, así que un clip puede ser un grito raro de Halloween o un saludo solo antes del mediodía:',
+		momentsNoteHtml:
+			'Todo se decide en el móvil con el reloj y unos pocos contadores por chat, así que no gasta batería. Escribe las condiciones con <code>packer</code> o a mano; el creador de packs las conserva cuando abres y editas un pack. Las reglas están en el <a href="{packFormat}#special-clips">formato de los packs</a>.',
+		showTitle: 'Cómo muestra la app tu pack',
+		show: [
+			'<strong>Dos selectores.</strong> Los personajes con clips aparecen al elegir un sonido de mensaje; los personajes con tonos de llamada aparecen, como portadas de disco, al elegir un tono. Un pack solo de canciones es un pack de tonos: nunca sale entre los sonidos de mensaje, y no pasa nada. La mayoría de los packs son de un tipo o del otro.',
+			'<strong>Las reglas del tono, en palabras normales.</strong> Un personaje con varios tonos tiene una pantalla <strong>Reglas del tono</strong> que lee tus condiciones como frases: «Live de día, Radio de noche», «Suena el 25 de diciembre», «Suena el resto del tiempo». Ponle una <code>label</code> a cada tono; si no, se ve el nombre del archivo.',
+			'<strong>El orden importa.</strong> Cuando coinciden varios tonos, gana el que tiene más condiciones y, si empatan, el primero de la lista; cuando no coincide ninguno, suena el primero. Pon primero la versión de diario. La pantalla avisa si una versión no puede sonar nunca porque otra anterior tiene la misma condición.',
+			'<strong>Cada cual puede cambiarlas.</strong> Para cada contacto, se pueden mantener tus reglas, sonar una versión al azar en cada llamada, quedarse con una sola versión o editar una copia propia de tus reglas. Etiqueta las versiones con <code>day</code> y <code>night</code>, o con nombres de estaciones, para ofrecer también «Día y noche» y «Según la estación».',
+			'<strong>Los clips especiales llevan etiqueta</strong> en la lista de clips del contacto («Primer mensaje del día», «3º mensaje seguido», «Rara: más o menos 1 de cada 25 mensajes»), para que se sepa qué esperar.'
+		],
 		checkTitle: 'Comprueba un pack en el navegador',
 		checkHtml:
 			'¿No tienes Java a mano? Elige aquí un archivo de pack. Esta página aplica las mismas reglas que la app y <code>packer</code> (el mismo código, compilado para la web) y da los mismos códigos. El archivo no sale de tu dispositivo: no se sube nada.',
@@ -502,7 +578,7 @@ export const es: Messages = {
 		permissions: [
 			'<strong>Internet</strong>: para los repositorios de packs de arriba.',
 			'<strong>Notificaciones</strong>: solo para la notificación de prueba de Diagnóstico.',
-			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono, el mismo ajuste que cambia la app Contactos. Y cuando tocas «Añadir un chat desde contactos»: Cucuto lee las entradas de WhatsApp que ya tienen tus contactos (cada una, un nombre y un número de WhatsApp) y guarda solo a las personas que eliges. Cuando una de ellas te escribe por primera vez, vuelve a comparar ese nombre con esas entradas, para no vincular nunca a otra persona con el mismo nombre. No lee nada más de tus contactos.',
+			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono (o quitárselo, si eliges «Predeterminado de Android»), el mismo ajuste que cambia la app Contactos. Y cuando tocas «Añadir un chat desde contactos»: Cucuto lee las entradas de WhatsApp que ya tienen tus contactos (cada una, un nombre y un número de WhatsApp) y guarda solo a las personas que eliges. Cuando una de ellas te escribe por primera vez, vuelve a comparar ese nombre con esas entradas, para no vincular nunca a otra persona con el mismo nombre. No lee nada más de tus contactos.',
 			'<strong>Teléfono</strong>: solo para los tonos «Al azar en cada llamada», para saber cuándo termina una llamada. Nunca se lee el número.',
 			'<strong>Ubicación aproximada</strong>: una sola lectura, solo cuando tocas «Usar mi ubicación una vez» en «Día y noche». Nunca la ubicación exacta, nunca en segundo plano.',
 			'<strong>Micrófono</strong>: solo mientras grabas un sonido en el creador de packs.'
@@ -584,7 +660,7 @@ export const es: Messages = {
 			update:
 				'Se guarda como actualización: el mismo ID de pack, versión {version}. La app sustituye el pack instalado y conserva la voz de cada contacto.',
 			copy: 'Guardarlo como un pack nuevo, con su propio ID y la versión 1.0.0, para instalarlo junto al original',
-			kept: 'Se conservan tal cual del original, aunque esta página aún no los edita. Tonos de llamada: {ringtones}. Imágenes animadas: {animations}.',
+			kept: 'Las imágenes animadas se conservan tal cual del original, aunque esta página aún no las edita: {animations}.',
 			undecodable:
 				'Clips que este navegador no puede reproducir: {n}. Se quedan en el pack tal cual, sin vista previa ni edición.'
 		},
@@ -624,14 +700,16 @@ export const es: Messages = {
 		characters: {
 			title: 'Personajes',
 			intro:
-				'Cada personaje es una imagen y uno o más clips. La app elige al azar uno de los clips del personaje para cada mensaje.',
+				'Cada personaje es una imagen con clips para los mensajes, tonos para las llamadas o ambos. La app elige al azar uno de los clips del personaje para cada mensaje.',
 			add: 'Añadir un personaje',
 			empty: 'Todavía no hay personajes.',
 			heading: 'Personaje {n}',
 			name: 'Nombre',
 			remove: 'Quitar personaje',
 			color: 'Color',
-			colorHint: 'Sugerido a partir de la imagen. La app usa este color para el tema del personaje.'
+			colorHint:
+				'Sugerido a partir de la imagen. La app usa este color para el tema del personaje.',
+			description: 'Descripción (opcional)'
 		},
 		picture: {
 			choose: 'Elegir una imagen',
@@ -670,6 +748,123 @@ export const es: Messages = {
 			decodeFailed: 'No se ha podido abrir {name}: este navegador no sabe reproducirlo.',
 			tooLong: '{name} dura más de 6 minutos, el audio más largo que abre el creador.',
 			recordingLabel: 'Grabación {n}'
+		},
+		conditions: {
+			clipTitle: 'Cuándo suena',
+			ringtoneTitle: 'Cuándo suena',
+			intro: 'Déjalo todo como está para que el clip pueda sonar con cualquier mensaje.',
+			ringtoneIntro:
+				'La app hace sonar la versión más específica cuya condición se cumple, y la primera cuando no se cumple ninguna.',
+			moment: 'Qué mensaje',
+			momentAny: 'Cualquier mensaje, en la rotación',
+			momentFirst: 'El primer mensaje del día del chat (los días empiezan a las 4:00)',
+			momentBurst: 'Un mensaje seguido, cada uno a menos de un minuto del anterior',
+			burst: 'Número de mensaje',
+			rare: 'Clip raro: fuera de la rotación, suena de vez en cuando',
+			oneIn: 'Más o menos un mensaje de cada',
+			time: 'Momento del día',
+			timeAny: 'A cualquier hora',
+			timeDay: 'De día',
+			timeNight: 'De noche',
+			timeHours: 'Entre dos horas',
+			dayHint:
+				'El día va del amanecer al anochecer en el lugar configurado en la app (de 7:00 a 19:00 hasta que configures uno).',
+			from: 'Desde',
+			to: 'Hasta',
+			hoursHint: 'Incluye «desde», excluye «hasta» y puede pasar de medianoche (22:00 a 06:00).',
+			seasons: 'Estaciones',
+			seasonsHint: 'Sin elegir: todo el año. Se invierten al sur del ecuador.',
+			weekdays: 'Días de la semana',
+			weekdaysHint: 'Sin elegir: todos los días.',
+			dates: 'Fechas',
+			datesHint:
+				'Días del año, cada año, como mes-día (12-25). Añade un día final para un intervalo; puede pasar de año.',
+			dateFrom: 'Día',
+			dateTo: 'Hasta (opcional)',
+			date: 'Fecha {n}',
+			addDate: 'Añadir una fecha',
+			removeDate: 'Quitar la fecha {n}',
+			save: 'Guardar',
+			cancel: 'Cancelar',
+			problems: {
+				TIME_INVALID: 'Escribe las horas como HH:MM, por ejemplo 22:00.',
+				TIME_RANGE_EMPTY: 'Las horas empiezan y acaban a la vez. Elige otro final.',
+				DATE_INVALID:
+					'La fecha {n} no es un día del año. Escríbela como mes-día, por ejemplo 12-25.',
+				TOO_MANY_DATES: 'Una condición puede tener hasta 50 fechas.',
+				BURST_OUT_OF_RANGE: 'El número de mensaje va de 2 a 50.',
+				ONE_IN_OUT_OF_RANGE: 'Un clip raro suena más o menos en un mensaje de cada 2 a 10.000.',
+				RINGTONE_DURATION_OUT_OF_RANGE: 'Los tonos de llamada duran de 5 segundos a 6 minutos.',
+				LOOP_INVALID:
+					'El bucle debe durar al menos 1 segundo y acabar antes que la canción. Mueve su inicio o su final.',
+				FADE_IN_OUT_OF_RANGE: 'La entrada gradual dura de 0 a 10 segundos.',
+				WEIGHT_OUT_OF_RANGE: 'La frecuencia va de 0,1 a 100.'
+			} as Record<string, string>
+		},
+		summary: {
+			day: 'De día',
+			night: 'De noche',
+			hours: 'De {from} a {to}',
+			firstOfDay: 'Primer mensaje del día',
+			burst: 'Mensaje {n} seguido',
+			rare: 'Raro: más o menos 1 de cada {n}',
+			dateRange: 'Del {from} al {to}',
+			always: 'Siempre',
+			seasons: {
+				spring: 'Primavera',
+				summer: 'Verano',
+				autumn: 'Otoño',
+				winter: 'Invierno'
+			} as Record<string, string>
+		},
+		ringtones: {
+			title: 'Tonos de llamada',
+			intro:
+				'Canciones para las llamadas de los contactos que eligen este personaje como tono. Varias versiones de una canción pueden sonar en momentos distintos, como de día y de noche. Un personaje puede tener solo tonos de llamada.',
+			add: 'Añadir un tono de llamada',
+			hint: 'Archivos de audio de 5 segundos a 6 minutos, que se guardan en su propio formato.',
+			play: 'Reproducir',
+			stopPlaying: 'Parar',
+			label: 'Etiqueta',
+			edit: 'Editar',
+			addVersion: 'Añadir una versión',
+			remove: 'Quitar',
+			versionLabel: '{label} (versión {n})',
+			untitled: 'Tono {n}',
+			tooShort: '{name} dura {s} s. Los tonos de llamada necesitan al menos 5 segundos.',
+			tooLong: '{name} dura más de 6 minutos, lo máximo para un tono de llamada.',
+			unsupported:
+				'{name} no está en un formato que acepten los packs. Usa Ogg, Opus, MP3, M4A, AAC, FLAC o WAV.',
+			decodeFailed: 'No se ha podido abrir {name}: este navegador no puede reproducirlo.',
+			noPreview: 'Este navegador no puede reproducir este archivo; se queda en el pack tal cual.'
+		},
+		ringtoneEditor: {
+			title: 'Editar tono de llamada',
+			source: '{name}, {s} s',
+			label: 'Etiqueta',
+			loop: 'Repetición',
+			loopWhole: 'Repetir toda la canción',
+			loopOnce: 'Sonar una vez y luego silencio',
+			loopSection: 'Sonar una intro una vez y luego repetir una parte',
+			loopStart: 'El bucle empieza',
+			loopEnd: 'El bucle acaba',
+			playLoop: 'Reproducir el bucle',
+			fadeIn: 'Entrada gradual',
+			fadeInValue: '{s} s',
+			weight: 'Frecuencia en «aleatorio en cada llamada»',
+			weightHint:
+				'Comparada con las otras versiones, cuando un contacto elige una versión al azar en cada llamada (1 es lo normal).',
+			save: 'Guardar',
+			cancel: 'Cancelar'
+		},
+		more: {
+			title: 'Más datos (opcional)',
+			homepage: 'Página web',
+			homepageHint: 'Una página sobre el pack, que empiece por https://.',
+			homepageInvalid: 'Escribe una dirección completa que empiece por https://.',
+			tags: 'Etiquetas',
+			tagsHint: 'Palabras separadas por comas, por ejemplo: animales, 8-bit.',
+			tagsResult: 'Se guardan como: {tags}'
 		},
 		clipEditor: {
 			title: 'Editar clip',
@@ -784,7 +979,7 @@ export const es: Messages = {
 				TOO_MANY_CHARACTERS: 'Un pack puede tener hasta 500 personajes.',
 				CHARACTER_NAME_MISSING: 'Ponle nombre al personaje {n}.',
 				SPRITE_MISSING: 'Elige una imagen para {name}.',
-				NO_CLIPS: 'Añade al menos un clip a {name}.',
+				NO_CLIPS: 'Añade un clip o un tono de llamada a {name}.',
 				TOO_MANY_CLIPS: '{name} tiene más de 200 clips.',
 				UNSUPPORTED_FILE: '{name} tiene un archivo que el formato de pack no acepta.'
 			}
@@ -827,7 +1022,13 @@ export const es: Messages = {
 			versionHint: 'Súbela en cada actualización que compartas, por ejemplo 1.0.1.',
 			license: 'Licencia (opcional)',
 			licenseHint: 'Cada pack conserva su propia licencia.',
-			description: 'Descripción (opcional)'
+			description: 'Descripción (opcional)',
+			homepage: 'Página web (opcional)',
+			homepageHint: 'Una página sobre el paquete, que empiece por https://.',
+			homepageInvalid: 'Escribe una dirección completa que empiece por https://.',
+			tags: 'Etiquetas (opcional)',
+			tagsHint: 'Palabras separadas por comas, por ejemplo: animales, 8-bit.',
+			tagsResult: 'Se guardan como: {tags}'
 		},
 		build: {
 			title: 'Comprobar y descargar',

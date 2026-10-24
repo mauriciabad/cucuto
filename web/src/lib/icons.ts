@@ -48,6 +48,7 @@ import playArrow from '@material-symbols/svg-500/rounded/play_arrow-fill.svg?raw
 import playCircle from '@material-symbols/svg-500/rounded/play_circle.svg?raw';
 import powerSettings from '@material-symbols/svg-500/rounded/power_settings_new.svg?raw';
 import publicIcon from '@material-symbols/svg-500/rounded/public.svg?raw';
+import schedule from '@material-symbols/svg-500/rounded/schedule.svg?raw';
 import restart from '@material-symbols/svg-500/rounded/restart_alt.svg?raw';
 import shield from '@material-symbols/svg-500/rounded/shield.svg?raw';
 import stop from '@material-symbols/svg-500/rounded/stop-fill.svg?raw';
@@ -55,6 +56,11 @@ import terminal from '@material-symbols/svg-500/rounded/terminal.svg?raw';
 import translate from '@material-symbols/svg-500/rounded/translate.svg?raw';
 import visibilityOff from '@material-symbols/svg-500/rounded/visibility_off.svg?raw';
 import warning from '@material-symbols/svg-500/rounded/warning-fill.svg?raw';
+import casino from '@material-symbols/svg-500/rounded/casino.svg?raw';
+import contacts from '@material-symbols/svg-500/rounded/contacts.svg?raw';
+import ringVolume from '@material-symbols/svg-500/rounded/ring_volume.svg?raw';
+import tune from '@material-symbols/svg-500/rounded/tune.svg?raw';
+import wbTwilight from '@material-symbols/svg-500/rounded/wb_twilight.svg?raw';
 
 const sources = {
 	add,
@@ -106,12 +112,18 @@ const sources = {
 	'power-settings': powerSettings,
 	public: publicIcon,
 	restart,
+	schedule,
 	shield,
 	stop,
 	terminal,
 	translate,
 	'visibility-off': visibilityOff,
-	warning
+	warning,
+	casino,
+	contacts,
+	'ring-volume': ringVolume,
+	tune,
+	'wb-twilight': wbTwilight
 };
 
 export type IconName = keyof typeof sources;

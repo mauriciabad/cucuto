@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.data.chats.Chat
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.db.RingtoneRuleEntry
 import app.mauri.cucuto.core.data.db.RingtoneRules
@@ -206,6 +207,26 @@ class RingtoneRulesViewModelTest {
             assertFalse(other.state.value.editable)
             assertTrue(other.state.value.otherCharacter)
             assertFalse(other.save())
+        }
+
+    @Test
+    fun androidDefaultAndLeaveAsIsRingNoCharacterEvenWhenTheVoiceHasRingtones() =
+        runTest(dispatcher) {
+            // The voice (frog) has ringtones, but the stored choice rings no character (ADR 0073): the screen
+            // must not offer to edit frog's rules, or saving would silently replace the choice.
+            for (choice in listOf(RingtoneChoice.ANDROID_DEFAULT, RingtoneChoice.UNCHANGED)) {
+                source.row.value = PhoneRingtoneEntity(1, updatedAt = 1, followsVoice = false, choice = choice)
+                val vm = viewModel()
+                collect(vm)
+                val state = vm.state.value
+                assertNull(choice.name, state.saved)
+                assertFalse(choice.name, state.editable)
+                assertTrue(choice.name, state.otherCharacter)
+                vm.setMode(RingtoneMode.RANDOM)
+                assertFalse(choice.name, vm.save())
+                assertFalse(choice.name, vm.reset())
+            }
+            assertTrue(source.saved.isEmpty())
         }
 
     @Test

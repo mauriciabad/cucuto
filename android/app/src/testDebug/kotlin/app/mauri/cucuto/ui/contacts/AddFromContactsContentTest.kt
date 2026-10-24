@@ -40,6 +40,20 @@ class AddFromContactsContentTest {
     }
 
     @Test
+    fun onceAndroidStopsAskingTheExplainerPointsToSettings() {
+        var continued = 0
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) {
+                AddFromContactsContent(AddFromContactsState(blocked = true), {}, { continued++ }, {}, {}, {}, {})
+            }
+        }
+        compose.onNodeWithText("The contacts permission is off").assertIsDisplayed()
+        compose.onNodeWithText("Continue").assertDoesNotExist()
+        compose.onNodeWithText("Open settings").performClick()
+        assertEquals(1, continued)
+    }
+
+    @Test
     fun rowsTogglePeopleAndThoseAlreadyInCucutoAreLocked() {
         val toggled = mutableListOf<EntryId>()
         var saves = 0

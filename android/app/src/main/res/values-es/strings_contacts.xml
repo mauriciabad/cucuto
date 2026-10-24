@@ -45,6 +45,8 @@
     <string name="contacts_denied_body">Sin el permiso de contactos, Cucuto no puede ver las entradas de WhatsApp. La gente que te escribe sigue apareciendo en Inicio. Puedes permitirlo en los ajustes de Android cuando quieras.</string>
     <string name="contacts_open_settings">Abrir ajustes</string>
     <string name="contacts_try_again">Volver a intentarlo</string>
+    <string name="contacts_blocked_title">El permiso de contactos está desactivado</string>
+    <string name="contacts_blocked_body">Android ya no volverá a preguntar. Permítelo en los ajustes de Android, en Permisos y luego Contactos. Cuando vuelvas, se abrirá la lista.</string>
 
     <!-- Home -->
     <string name="home_waiting_header">Esperando su primer mensaje</string>

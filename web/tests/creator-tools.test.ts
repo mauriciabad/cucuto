@@ -385,3 +385,79 @@ describe('haptic pattern text (shared with the app)', () => {
 		expect(loudnessRows(new Float32Array(rate), rate)).toBeNull();
 	});
 });
+
+describe('condition and ringtone forms', () => {
+	test('a pack condition reads into the form and back', () => {
+		const when = {
+			firstOfDay: true,
+			time: { from: '05:00', to: '12:00' },
+			season: ['winter', 'autumn']
+		};
+		const form = authoring.conditionForm(when, 25);
+		expect(form.time).toBe('HOURS');
+		expect(form.seasons).toEqual(['autumn', 'winter']);
+		expect(form.moment).toBe('FIRST_OF_DAY');
+		expect(form.oneIn).toBe(25);
+		expect(authoring.writeCondition(form, true)).toEqual({
+			when: {
+				time: { from: '05:00', to: '12:00' },
+				season: ['autumn', 'winter'],
+				firstOfDay: true
+			},
+			oneIn: 25,
+			problems: []
+		});
+		// Ringtones have no moments and no rarity.
+		expect(authoring.writeCondition(form, false).when).toEqual({
+			time: { from: '05:00', to: '12:00' },
+			season: ['autumn', 'winter']
+		});
+		expect(authoring.writeCondition(authoring.conditionForm(null, null), true).when).toBeNull();
+	});
+
+	test('form problems point at what to fix', () => {
+		const form = {
+			...authoring.conditionForm(null, null),
+			time: 'HOURS' as const,
+			from: '08:00',
+			to: '08:00',
+			dates: [{ from: '12-25' }, { from: '02-30' }]
+		};
+		expect(authoring.writeCondition(form, true).problems).toEqual([
+			{ kind: 'TIME_RANGE_EMPTY', index: null },
+			{ kind: 'DATE_INVALID', index: 1 }
+		]);
+	});
+
+	test('ringtone entries round-trip and check the loop', () => {
+		const entry = {
+			file: 'song.ogg',
+			label: 'Night',
+			when: { time: 'night' },
+			loop: { startMs: 4000, endMs: 12000 },
+			fadeInMs: 500
+		};
+		const form = authoring.ringtoneForm(entry);
+		expect(form.loop).toBe('SECTION');
+		expect(authoring.writeRingtone(form, 'characters/a/ringtones/night.ogg', 14_000)).toEqual({
+			entry: { ...entry, file: 'characters/a/ringtones/night.ogg' },
+			problems: []
+		});
+		expect(authoring.writeRingtone(form, 'x.ogg', 10_000).problems).toEqual([
+			{ kind: 'LOOP_INVALID', index: null }
+		]);
+		expect(authoring.writeRingtone({ ...form, loop: 'ONCE' }, 'x.ogg', null).entry.loop).toBe(
+			false
+		);
+		expect(authoring.targets.ringtoneMinMs).toBe(5_000);
+	});
+
+	test('tags and homepages', () => {
+		expect(authoring.parseTags('Animals, 8-bit games, animals')).toEqual([
+			'animals',
+			'8-bit-games'
+		]);
+		expect(authoring.isHomepage('https://example.com')).toBe(true);
+		expect(authoring.isHomepage('http://example.com')).toBe(false);
+	});
+});

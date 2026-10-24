@@ -97,17 +97,57 @@ export const en = {
 			{
 				icon: 'library-music',
 				title: 'Import a sound pack',
-				text: 'Open a .soundpack.zip file or download one from a pack repository. A pack is a cast of characters, each with a picture, a few short clips and its own vibration.'
+				text: 'Open a .soundpack.zip file, download one from a pack repository or make your own. A pack is a cast of characters: creatures with short clips and their own vibration, or songs to ring with.'
 			},
 			{
 				icon: 'person-pin',
 				title: 'Give a contact a character',
-				text: 'Pick a chat, tap a character to hear it, tap again to assign. It takes a few seconds per contact.'
+				text: 'Pick a chat, tap a character to hear it, tap again to assign. Then, if you like, choose what rings when they call: a song from a pack, the phone’s default ringtone, or theirs as it is.'
 			},
 			{
 				icon: 'notifications-active',
 				title: 'Hear who it is',
 				text: 'When they message you, WhatsApp’s notification plays their character’s voice and vibration. Phone in your pocket, you already know who wrote.'
+			}
+		]),
+		extrasTitle: 'More than a new tone',
+		extrasLead:
+			'Small touches that make each contact sound like themselves. All of it is decided on your phone, with no battery cost.',
+		extras: iconItems([
+			{
+				icon: 'ring-volume',
+				title: 'Phone ringtones too',
+				text: 'Give a contact a song from a pack as their ringtone, switch them to the phone’s default, or leave theirs as it is. Cucuto sets it on the contact, like the Contacts app does, and can always give the old one back.'
+			},
+			{
+				icon: 'tune',
+				title: 'Ringtone rules in plain words',
+				text: 'A song can ring live by day and as a radio cut at night. Cucuto shows the pack’s rules as sentences you can read, and you can write your own for one contact.'
+			},
+			{
+				icon: 'wb-twilight',
+				title: 'Clips with good timing',
+				text: 'Packs can greet the first message of the day, answer a burst of messages, hide a rare easter egg, or play something else at night or on holidays. No sensors and no tracking.'
+			},
+			{
+				icon: 'casino',
+				title: 'The right character, fast',
+				text: 'Big packs fold into sections, search finds a character by name, and Surprise me picks one at random for you to hear before you keep it.'
+			},
+			{
+				icon: 'contacts',
+				title: 'Chats before they write',
+				text: 'Add people from your contacts and give them a voice right away. Their first message links the chat, and their voice plays from the next one.'
+			},
+			{
+				icon: 'play-circle',
+				title: 'Try it without root',
+				text: 'The sample chat plays a character’s message sound, vibration and ringtone in the app, so you can hear what Cucuto does before you set up the module.'
+			},
+			{
+				icon: 'edit',
+				title: 'Make your own packs',
+				text: 'Record or pick sounds and pictures in the app, or on this site’s Create page. Nothing is uploaded.'
 			}
 		]),
 		featuresTitle: 'Built to stay out of the way',
@@ -229,17 +269,27 @@ export const en = {
 			{
 				q: 'What about calls?',
 				aHtml:
-					'Per-contact ringtones from the same packs are planned. Cucuto starts with WhatsApp message notifications.'
+					'Phone calls, yes. Give a contact a ringtone from a pack, switch them to the phone’s default ringtone, or leave theirs as it is. A song with several versions follows the pack’s rules (day and night, seasons, holidays) or rules you set for that contact. Cucuto sets the ringtone on the contact in Android’s contacts (you link the chat to its contact once), and turning phone ringtones off gives every contact its old ringtone back. WhatsApp calls keep WhatsApp’s own ringtone for now.'
+			},
+			{
+				q: 'Can someone get a voice before they write to me?',
+				aHtml:
+					'Yes, if they are in your phone’s contacts: tap <strong>Add a chat from contacts</strong> on Home. Cucuto reads only the WhatsApp entries your contacts already hold and saves only the people you pick. Their first message plays WhatsApp’s tone and links the chat; their voice plays from the next one. Groups appear after their first message.'
+			},
+			{
+				q: 'Can I try it without root?',
+				aHtml:
+					'Partly. Without the module Cucuto can’t change WhatsApp’s sounds, but once you have a pack, Home offers <strong>Try a sample chat</strong>: it plays a character’s message sound, vibration and ringtone in the app, so you can hear and feel what a chat would do.'
 			},
 			{
 				q: 'Can I make my own packs?',
 				aHtml:
-					'Yes. The pack format is open and documented, and anyone can host a pack repository on a static website. See the <a href="{authors}">guide for pack authors</a>. Make one in your browser on the <a href="{create}">Create page</a>; a pack creator in the app is planned.'
+					'Yes. Make one in the app (<strong>Packs › Create a pack</strong>) or in your browser on the <a href="{create}">Create page</a>. The pack format is open and documented, packs can carry ringtones and clips for special moments, and anyone can host a pack repository on a static website. See the <a href="{authors}">guide for pack authors</a>.'
 			},
 			{
-				q: 'Why isn’t it on Google Play?',
+				q: 'Is it on Google Play?',
 				aHtml:
-					'Cucuto needs root and LSPosed, so it is published as an APK on <a href="{releases}" rel="external">GitHub</a> instead.'
+					'Not yet. A Google Play listing is being prepared. Until it is there, get the APK from <a href="{releases}" rel="external">GitHub</a>, or let Obtainium keep it updated (see the <a href="{install}">install guide</a>). Every copy is signed with the same certificate, so a later install from Play and an install from GitHub update each other. Either way, Cucuto needs root and LSPosed to change WhatsApp’s sounds.'
 			},
 			{
 				q: 'Is it free? Does it collect data?',
@@ -261,6 +311,10 @@ export const en = {
 		characters: 'Characters',
 		play: 'Play {name}’s sample',
 		stop: 'Stop {name}’s sample',
+		hapticCustom: 'Vibration: own pattern, {seconds} seconds',
+		hapticAuto: 'Follows the voice',
+		hapticAutoSpoken: 'Vibration follows the voice',
+		hapticNone: 'No vibration',
 		contains: 'Contains {names}.',
 		download: 'Download',
 		downloadHidden: '{name} .soundpack.zip',
@@ -322,20 +376,22 @@ export const en = {
 			{
 				title: 'Check the status card',
 				textHtml:
-					'Open Cucuto. On first launch a setup guide walks you through these steps and ends with a test notification; you can reopen it from the status screen. The status card at the top checks that the module is active, the LSPosed scope is right, WhatsApp is installed and at least one pack is imported. Each failing check tells you how to fix it.'
+					'Open Cucuto. On first launch a setup guide walks you through these steps and ends with a test notification; you can reopen it from Settings. The status card at the top checks that the module is active, the LSPosed scope is right, WhatsApp is installed and at least one pack is imported. Each failing check tells you how to fix it.'
 			},
 			{
 				title: 'Import a pack and assign characters',
 				textHtml:
-					'Import a <code>.soundpack.zip</code> file or pick one from the <a href="{packs}">free packs</a>, then choose a chat and tap a character. Keep WhatsApp’s own notification tone and vibration turned on: Cucuto replaces them per contact.'
+					'Import a <code>.soundpack.zip</code> file or pick one from the <a href="{packs}">free packs</a>, then choose a chat, tap a character and, if you like, a ringtone. Someone who hasn’t written yet? Add them with <strong>Add a chat from contacts</strong>. Keep WhatsApp’s own notification tone and vibration turned on: Cucuto replaces them per contact.'
 			}
 		],
 		testTitle: 'Test it',
 		testHtml:
-			'In Cucuto, open <strong>Diagnostics</strong> and tap <strong>Post test notification</strong>. With the module active you hear a short two-tone chirp and feel a click instead of the default sound, and the decision shows up in the list below within a few seconds.',
+			'In Cucuto, open <strong>Diagnostics</strong> and tap <strong>Post test notification</strong>. With the module active you hear a short two-tone chirp and feel a click instead of the default sound, and the decision shows up in the list below within a few seconds. Before the module is set up, <strong>Try a sample chat</strong> on Home plays a character’s sound, vibration and ringtone in the app.',
 		updatesTitle: 'Updates',
 		updatesHtml:
 			'Cucuto never checks for updates and never goes online to look for them. New versions appear on the <a href="{releases}" rel="external">releases page</a>, and Cucuto keeps working when you skip one. To get them on your phone without checking by hand, use <a href="{obtainium}" rel="external">Obtainium</a>, a free app that installs apps straight from their GitHub releases. After every update, reboot: the module loads the new version at boot.',
+		certificateHtml:
+			'Every Cucuto APK is signed with the same certificate, whose SHA-256 starts with <code>{cert}</code> (the full value is in the Obtainium settings below and on every release). Once Cucuto is listed on Google Play, Play will install it with that same certificate, so a copy from Play and a copy from GitHub or Obtainium update each other, without uninstalling.',
 		obtainiumButton: 'Get it with Obtainium',
 		obtainiumHint:
 			'Opens Obtainium with Cucuto’s settings filled in. It works on a phone with Obtainium installed.',
@@ -390,7 +446,7 @@ export const en = {
 		toc: 'On this page',
 		whatTitle: 'What’s in a pack',
 		whatHtml:
-			'A pack is a plain zip file named <code>&lt;name&gt;.soundpack.zip</code>, with a <code>pack.json</code> manifest at its root and one folder per character. Each character has a picture, a pool of short notification clips and optionally a vibration pattern and ringtones. One file can also hold a <strong>bundle</strong> of several packs.',
+			'A pack is a plain zip file named <code>&lt;name&gt;.soundpack.zip</code>, with a <code>pack.json</code> manifest at its root and one folder per character. Each character has a picture and short notification clips, call ringtones or both, plus an optional vibration pattern. One file can also hold a <strong>bundle</strong> of several packs.',
 		mediaTitle: 'Media',
 		media: iconItems([
 			{
@@ -421,7 +477,7 @@ export const en = {
 			{
 				title: 'With the pack creator',
 				textHtml:
-					'Pick pictures, record or import clips, trim them and download the pack on the <a href="{create}">Create page</a>, right in your browser, no tools needed. In the app: planned.'
+					'Pick pictures, record or import clips, trim them and download the pack on the <a href="{create}">Create page</a>, right in your browser, no tools needed. On the phone, the app’s <strong>Packs › Create a pack</strong> does the same, and <strong>Duplicate and edit</strong> starts from a pack you already have.'
 			},
 			{
 				title: 'By hand',
@@ -438,6 +494,26 @@ export const en = {
 			'Then build, validate and, if you like, bundle several packs into one file. Optional flags normalize loudness, trim silence and convert to Opus and JPEG XL (they need <code>ffmpeg</code> and <code>cjxl</code>):',
 		packerMoreHtml:
 			'All commands and flags are in the <a href="{packerReadme}" rel="external">packer README</a>.',
+		momentsTitle: 'Clips and ringtones for the right moment',
+		momentsIntroHtml:
+			'Any clip or ringtone can have a <code>when</code> condition: <code>day</code> or <code>night</code> (sunrise and sunset where the listener lives), an hour range, seasons, weekdays, and dates such as <code>12-25</code>. Clips also have three special moments, which play instead of the usual random pick:',
+		moments: [
+			'<code>firstOfDay: true</code>: the chat’s first message of the day (days start at 04:00). A good-morning clip.',
+			'<code>burst: 3</code>: the third message in a row, each within a minute of the last. For an impatient friend; give other clips <code>6</code> or <code>10</code> to escalate.',
+			'<code>oneIn: 25</code>: a rare clip that plays on about one message in 25, never twice in a row. An easter egg.'
+		],
+		momentsYamlHtml:
+			'In <code>pack.yaml</code> (the same keys go in <code>pack.json</code>). Keys combine, so a clip can be a rare Halloween scream or a greeting only before noon:',
+		momentsNoteHtml:
+			'Everything is decided on the phone from the clock and a few counters per chat, so it costs no battery. Write conditions with <code>packer</code> or by hand; the pack creator keeps them when you open and edit a pack. The rules are in the <a href="{packFormat}#special-clips">pack format</a>.',
+		showTitle: 'How the app shows your pack',
+		show: [
+			'<strong>Two pickers.</strong> Characters with clips appear when someone picks a message sound; characters with ringtones appear, as record covers, when they pick a ringtone. A pack of songs only is a ringtone pack: it never shows up among message sounds, and that is fine. Most packs are one kind or the other.',
+			'<strong>Ringtone rules in plain words.</strong> A character with several ringtones has a <strong>Ringtone rules</strong> screen that reads your conditions back as sentences: “Live by day, Radio at night”, “Rings on 25 December”, “Rings the rest of the time”. Give every ringtone a <code>label</code>; without one, people see the file name.',
+			'<strong>Order matters.</strong> When several ringtones match, the one with the most conditions wins, then the first in the list; when none matches, the first one rings. Put the everyday version first. The screen says so when a version can never ring because an earlier one has the same condition.',
+			'<strong>People can change them.</strong> Per contact, they can keep your rules, ring a random version per call, stick to one version, or edit their own copy of your rules. Tag versions <code>day</code> and <code>night</code>, or with season names, to also offer the “Day and night” and “By season” choices.',
+			'<strong>Special clips are labeled</strong> in the contact’s clip list (“First message of the day”, “Message 3 in a row”, “Rare: about 1 in 25 messages”), so people know what to wait for.'
+		],
 		checkTitle: 'Check a pack in your browser',
 		checkHtml:
 			'No Java at hand? Choose a pack file here. This page runs the same rules as the app and <code>packer</code> (the same code, compiled for the web) and reports the same codes. The file stays on your device: nothing is uploaded.',
@@ -521,7 +597,7 @@ export const en = {
 		permissions: [
 			'<strong>Internet</strong>: for the pack repositories above.',
 			'<strong>Notifications</strong>: only for the test notification in Diagnostics.',
-			'<strong>Contacts</strong>: only if you turn on phone ringtones, to link a chat to one of your contacts and set that contact’s ringtone, the same setting the Contacts app changes. And when you tap “Add a chat from contacts”: Cucuto reads the WhatsApp entries your contacts already hold (each a name and a WhatsApp number) and saves only the people you pick. When one of them first messages you, it checks that name against those entries again, so it never links the wrong person with the same name. Nothing else about your contacts is read.',
+			'<strong>Contacts</strong>: only if you turn on phone ringtones, to link a chat to one of your contacts and set that contact’s ringtone (or clear it, when you choose “Android default”), the same setting the Contacts app changes. And when you tap “Add a chat from contacts”: Cucuto reads the WhatsApp entries your contacts already hold (each a name and a WhatsApp number) and saves only the people you pick. When one of them first messages you, it checks that name against those entries again, so it never links the wrong person with the same name. Nothing else about your contacts is read.',
 			'<strong>Phone</strong>: only for “Random per call” ringtones, to notice that a call ended. The number is never read.',
 			'<strong>Approximate location</strong>: one reading, only when you tap “Use my location once” on the “Day and night” screen. Never precise location, never in the background.',
 			'<strong>Microphone</strong>: only while you record a clip in the pack creator.'
@@ -602,7 +678,7 @@ export const en = {
 			update:
 				'Saves as an update: the same pack ID, version {version}. The app replaces the installed pack and keeps every contact’s voice.',
 			copy: 'Save as a new pack instead, with its own ID and version 1.0.0, to install it next to the original',
-			kept: 'Kept from the original as they are, though this page does not edit them yet. Ringtones: {ringtones}. Animated pictures: {animations}.',
+			kept: 'Animated pictures are kept from the original as they are, though this page does not edit them yet: {animations}.',
 			undecodable:
 				'Clips this browser cannot play: {n}. They stay in the pack as they are, without preview or editing.'
 		},
@@ -641,14 +717,15 @@ export const en = {
 		characters: {
 			title: 'Characters',
 			intro:
-				'Each character is a picture and one or more clips. The app picks one of a character’s clips at random for every message.',
+				'Each character is a picture with clips for messages, ringtones for calls, or both. The app picks one of a character’s clips at random for every message.',
 			add: 'Add a character',
 			empty: 'No characters yet.',
 			heading: 'Character {n}',
 			name: 'Name',
 			remove: 'Remove character',
 			color: 'Color',
-			colorHint: 'Suggested from the picture. The app themes this character with it.'
+			colorHint: 'Suggested from the picture. The app themes this character with it.',
+			description: 'Description (optional)'
 		},
 		picture: {
 			choose: 'Choose a picture',
@@ -687,6 +764,123 @@ export const en = {
 			decodeFailed: '{name} could not be opened: this browser cannot play it.',
 			tooLong: '{name} is longer than 6 minutes, the longest audio the creator opens.',
 			recordingLabel: 'Recording {n}'
+		},
+		conditions: {
+			clipTitle: 'When it plays',
+			ringtoneTitle: 'When it rings',
+			intro: 'Leave everything as it is for a clip that can play on any message.',
+			ringtoneIntro:
+				'The app rings the most specific version whose condition holds, and the first version when none does.',
+			moment: 'Which message',
+			momentAny: 'Any message, in the rotation',
+			momentFirst: 'The chat’s first message of the day (days start at 4:00)',
+			momentBurst: 'A message in a row, each within a minute of the one before',
+			burst: 'Message number',
+			rare: 'Rare clip: left out of the rotation, it plays now and then',
+			oneIn: 'About one message in',
+			time: 'Time of day',
+			timeAny: 'Any time',
+			timeDay: 'By day',
+			timeNight: 'At night',
+			timeHours: 'Between hours',
+			dayHint:
+				'Day runs from sunrise to sunset for the place set in the app (7:00 to 19:00 until one is set).',
+			from: 'From',
+			to: 'To',
+			hoursHint: 'Includes “from”, excludes “to”, and may cross midnight (22:00 to 06:00).',
+			seasons: 'Seasons',
+			seasonsHint: 'None chosen: all year. Flipped south of the equator.',
+			weekdays: 'Days of the week',
+			weekdaysHint: 'None chosen: every day.',
+			dates: 'Dates',
+			datesHint:
+				'Days of the year, every year, as month-day (12-25). Add an end day for a range; ranges may cross the new year.',
+			dateFrom: 'Day',
+			dateTo: 'Until (optional)',
+			date: 'Date {n}',
+			addDate: 'Add a date',
+			removeDate: 'Remove date {n}',
+			save: 'Save',
+			cancel: 'Cancel',
+			problems: {
+				TIME_INVALID: 'Write the hours as HH:MM, for example 22:00.',
+				TIME_RANGE_EMPTY: 'The hours start and end at the same time. Pick another end.',
+				DATE_INVALID:
+					'Date {n} is not a day of the year. Write it as month-day, for example 12-25.',
+				TOO_MANY_DATES: 'A condition can have up to 50 dates.',
+				BURST_OUT_OF_RANGE: 'The message number goes from 2 to 50.',
+				ONE_IN_OUT_OF_RANGE: 'A rare clip plays on about one message in 2 to 10,000.',
+				RINGTONE_DURATION_OUT_OF_RANGE: 'Ringtones last from 5 seconds to 6 minutes.',
+				LOOP_INVALID:
+					'The loop must last at least 1 second and end before the song does. Move its start or end.',
+				FADE_IN_OUT_OF_RANGE: 'The fade-in lasts from 0 to 10 seconds.',
+				WEIGHT_OUT_OF_RANGE: 'How often goes from 0.1 to 100.'
+			} as Record<string, string>
+		},
+		summary: {
+			day: 'By day',
+			night: 'At night',
+			hours: '{from} to {to}',
+			firstOfDay: 'First message of the day',
+			burst: 'Message {n} in a row',
+			rare: 'Rare: about 1 in {n}',
+			dateRange: '{from} to {to}',
+			always: 'Always',
+			seasons: {
+				spring: 'Spring',
+				summer: 'Summer',
+				autumn: 'Autumn',
+				winter: 'Winter'
+			} as Record<string, string>
+		},
+		ringtones: {
+			title: 'Ringtones',
+			intro:
+				'Songs for calls, for contacts who pick this character as their ringtone. Several versions of a song can ring at different times, such as day and night. A character can have only ringtones.',
+			add: 'Add a ringtone',
+			hint: 'Audio files of 5 seconds to 6 minutes, kept in their own format.',
+			play: 'Play',
+			stopPlaying: 'Stop',
+			label: 'Label',
+			edit: 'Edit',
+			addVersion: 'Add a version',
+			remove: 'Remove',
+			versionLabel: '{label} (version {n})',
+			untitled: 'Ringtone {n}',
+			tooShort: '{name} lasts {s} s. Ringtones need at least 5 seconds.',
+			tooLong: '{name} is longer than 6 minutes, the longest ringtone.',
+			unsupported:
+				'{name} is not a format packs accept. Use Ogg, Opus, MP3, M4A, AAC, FLAC or WAV.',
+			decodeFailed: '{name} could not be opened: this browser cannot play it.',
+			noPreview: 'This browser cannot play this file; it stays in the pack as it is.'
+		},
+		ringtoneEditor: {
+			title: 'Edit ringtone',
+			source: '{name}, {s} s',
+			label: 'Label',
+			loop: 'Looping',
+			loopWhole: 'Loop the whole song',
+			loopOnce: 'Play once, then silence',
+			loopSection: 'Play an intro once, then loop a section',
+			loopStart: 'Loop starts',
+			loopEnd: 'Loop ends',
+			playLoop: 'Play the loop',
+			fadeIn: 'Fade in',
+			fadeInValue: '{s} s',
+			weight: 'How often for “random per call”',
+			weightHint:
+				'Compared with the other versions, when a contact picks a random version for every call (1 is normal).',
+			save: 'Save',
+			cancel: 'Cancel'
+		},
+		more: {
+			title: 'More details (optional)',
+			homepage: 'Homepage',
+			homepageHint: 'A web page about the pack, starting with https://.',
+			homepageInvalid: 'Write a full address that starts with https://.',
+			tags: 'Tags',
+			tagsHint: 'Words separated by commas, for example: animals, 8-bit.',
+			tagsResult: 'Saved as: {tags}'
 		},
 		clipEditor: {
 			title: 'Edit clip',
@@ -796,7 +990,7 @@ export const en = {
 				TOO_MANY_CHARACTERS: 'A pack can have up to 500 characters.',
 				CHARACTER_NAME_MISSING: 'Name character {n}.',
 				SPRITE_MISSING: 'Choose a picture for {name}.',
-				NO_CLIPS: 'Add at least one clip to {name}.',
+				NO_CLIPS: 'Add a clip or a ringtone to {name}.',
 				TOO_MANY_CLIPS: '{name} has more than 200 clips.',
 				UNSUPPORTED_FILE: '{name} has a file the pack format does not accept.'
 			} as Record<string, string>
@@ -839,7 +1033,13 @@ export const en = {
 			versionHint: 'Raise it for every update you share, for example 1.0.1.',
 			license: 'License (optional)',
 			licenseHint: 'Each pack keeps its own license.',
-			description: 'Description (optional)'
+			description: 'Description (optional)',
+			homepage: 'Homepage (optional)',
+			homepageHint: 'A web page about the bundle, starting with https://.',
+			homepageInvalid: 'Write a full address that starts with https://.',
+			tags: 'Tags (optional)',
+			tagsHint: 'Words separated by commas, for example: animals, 8-bit.',
+			tagsResult: 'Saved as: {tags}'
 		},
 		build: {
 			title: 'Check and download',

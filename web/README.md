@@ -21,7 +21,7 @@ SCREENSHOTS=1 bun run playwright test screenshots   # full-page screenshots in t
 
 - **Bun (#115).** `bunfig.toml` sets `run.bun = true`, so `bun run` executes every script and every CLI it starts
   (Vite, `svelte-kit`, svelte-check, Prettier, ESLint, Playwright) on the Bun runtime instead of the `node` in their
-  shebangs; the build-time scripts in `scripts/` are TypeScript run by Bun directly. Everything works on Bun 1.4.3,
+  shebangs; the build-time scripts in `scripts/` are TypeScript run by Bun directly. Everything works on Bun 1.4.4,
   with no Node fallback. Dependencies are locked in the text `bun.lock`; Dependabot updates them (`bun` ecosystem).
 - **Pages.** Home, Packs, Create (the pack creator, below), Install guide, For pack authors (plus `/authors/pack-format/`, which renders
   `docs/pack-format.md` at build time with marked: GitHub-style heading anchors, relative links rewritten to the
