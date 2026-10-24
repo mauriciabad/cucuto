@@ -35,7 +35,7 @@ const iconItems = (items: IconItem[]) => items;
 export const en = {
 	meta: {
 		siteDescription:
-			'Cucuto plays a different character’s sound and vibration for each WhatsApp contact, so you know who wrote before you look. For rooted Android 17 with LSPosed.',
+			'Cucuto plays a different character’s sound and vibration for each WhatsApp and Signal contact, so you know who wrote before you look. For rooted Android 17 with LSPosed.',
 		homeTitle: 'Cucuto: give each contact a voice',
 		ogImageAlt:
 			'The Cucuto logo: a tangerine cuckoo clock house with its round door open and a bird singing.'
@@ -74,7 +74,7 @@ export const en = {
 	home: {
 		eyebrow: 'An LSPosed module for Android 17',
 		pitch: 'Give each contact a voice.',
-		lead: 'Cucuto plays a different character’s sound and vibration for each WhatsApp contact, like a cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss.',
+		lead: 'Cucuto plays a different character’s sound and vibration for each WhatsApp and Signal contact, like a cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss.',
 		howToInstall: 'How to install',
 		finePrintHtml:
 			'Free and <a href="{repo}" rel="external">open source</a> · Needs root · No tracking',
@@ -230,8 +230,8 @@ export const en = {
 			},
 			{
 				icon: 'notifications-active',
-				title: 'WhatsApp or WhatsApp Business',
-				text: 'Leave WhatsApp’s own tone and vibration on: Cucuto swaps them per contact.'
+				title: 'WhatsApp or Signal',
+				text: 'WhatsApp, WhatsApp Business, Signal or Molly. Leave the app’s own tone and vibration on: Cucuto swaps them per contact.'
 			}
 		]),
 		faqTitle: 'Questions',
@@ -250,6 +250,11 @@ export const en = {
 				q: 'Does it modify WhatsApp?',
 				aHtml:
 					'No. The module only runs inside Android’s system process (the System Framework scope) and never touches the WhatsApp app, so it gets along with other modules that do hook WhatsApp.'
+			},
+			{
+				q: 'Does it work with Signal?',
+				aHtml:
+					'Yes, with Signal and Molly, from the same module in Android’s system process: nothing is added to Signal. Signal’s notification names the person’s Android contact, so a voice you give someone plays on WhatsApp and Signal alike once their chat is linked to their contact (chats added from contacts, or linked for phone ringtones, already are). Someone not in your contacts gets a voice of their own on Signal. If Signal’s notifications hide names, Signal’s own tone plays. Signal calls keep Signal’s ringtone.'
 			},
 			{
 				q: 'What happens if something goes wrong?',
@@ -346,8 +351,8 @@ export const en = {
 			},
 			{
 				icon: 'notifications-active',
-				title: 'WhatsApp',
-				text: 'WhatsApp or WhatsApp Business, with notifications on and its own tone and vibration left on.'
+				title: 'WhatsApp or Signal',
+				text: 'WhatsApp, WhatsApp Business, Signal or Molly, with notifications on and the app’s own tone and vibration left on.'
 			}
 		]),
 		stepsTitle: 'Steps',
@@ -570,14 +575,14 @@ export const en = {
 		stored: [
 			'<strong>Your packs</strong>: the pack files you import or download.',
 			'<strong>Your assignments</strong>: which character speaks for which chat, and your settings.',
-			'<strong>Recent chats</strong>: when a WhatsApp notification arrives, the module notes the chat’s name, the sender’s name and WhatsApp’s internal ID for that chat, so new people appear in the app, ready for a voice. It keeps the 1,000 most recent chats.',
+			'<strong>Recent chats</strong>: when a WhatsApp or Signal notification arrives, the module notes the chat’s name, the sender’s name and the app’s internal ID for that chat (on Signal, for a saved contact, which of your contacts it is), so new people appear in the app, ready for a voice. It keeps the 1,000 most recent chats.',
 			'<strong>The decision log</strong>: what Cucuto did for each recent notification (which voice played, or why WhatsApp’s tone did). It keeps the newest 500 entries, so you can check why a sound played.'
 		],
 		storedNoteHtml:
 			'The module never reads message text, and it never writes names or chat IDs to system logs. Cucuto never opens WhatsApp’s databases, chats or media: it learns about a chat only from its notifications, or from a contact you link or add yourself. Uninstalling the app deletes all of it.',
 		moduleTitle: 'How the module works',
 		moduleHtml:
-			'The module runs inside Android’s system process, where notifications are handled, and only looks at notifications from WhatsApp and WhatsApp Business. It hands what it notes to the app over a private channel that refuses every other app. It never goes online and never touches the WhatsApp app.',
+			'The module runs inside Android’s system process, where notifications are handled, and only looks at notifications from WhatsApp, WhatsApp Business, Signal and Molly. It hands what it notes to the app over a private channel that refuses every other app. It never goes online and never touches the WhatsApp app.',
 		networkTitle: 'When the app goes online',
 		networkHtml:
 			'Only to reach the pack repositories in your list (this site’s is there by default): to show their packs, check for updates and download the packs you choose. Downloads may come from the repository’s own host, such as GitHub for this site’s packs. If a private repository needs a password or token, it is stored encrypted with the Android Keystore and only ever sent to that repository’s own server.',
@@ -592,7 +597,7 @@ export const en = {
 		permissions: [
 			'<strong>Internet</strong>: for the pack repositories above.',
 			'<strong>Notifications</strong>: only for the test notification in Diagnostics.',
-			'<strong>Contacts</strong>: only if you turn on phone ringtones, to link a chat to one of your contacts and set that contact’s ringtone (or clear it, when you choose “Android default”), the same setting the Contacts app changes. And when you tap “Add a chat from contacts”: Cucuto reads the WhatsApp entries your contacts already hold (each a name and a WhatsApp number) and saves only the people you pick. When one of them first messages you, it checks that name against those entries again, so it never links the wrong person with the same name. Nothing else about your contacts is read.',
+			'<strong>Contacts</strong>: only if you turn on phone ringtones, to link a chat to one of your contacts and set that contact’s ringtone (or clear it, when you choose “Android default”), the same setting the Contacts app changes. And when you tap “Add a chat from contacts”: Cucuto reads the WhatsApp and Signal entries your contacts already hold (each a name and a number) and saves only the people you pick. When one of them first messages you, it checks that name against those entries again, so it never links the wrong person with the same name. Nothing else about your contacts is read.',
 			'<strong>Phone</strong>: only for “Random per call” ringtones, to notice that a call ended. The number is never read.',
 			'<strong>Approximate location</strong>: one reading, only when you tap “Use my location once” on the “Day and night” screen. Never precise location, never in the background.',
 			'<strong>Microphone</strong>: only while you record a clip in the pack creator.'

@@ -1,12 +1,12 @@
-Cucuto plays a different character’s sound and vibration for each WhatsApp contact, like a cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss. Phone in your pocket, you already know who wrote.
+Cucuto plays a different character’s sound and vibration for each WhatsApp and Signal contact, like a cuckoo clock announcing who’s there. A cat for your sister, a trumpet for your boss. Phone in your pocket, you already know who wrote.
 
 <b>Read this first: Cucuto needs root and LSPosed.</b> It is a tool for phones that already have:
 • <b>Android 17.</b> It does not run on Android 16 or older.
 • <b>Root</b>, for example with Magisk, KernelSU or APatch. Cucuto does not root your phone for you.
 • <b>LSPosed</b> that loads modern modules (libxposed API 102). You enable Cucuto there with the System Framework scope and reboot.
-• <b>WhatsApp or WhatsApp Business</b>, with its own notification tone and vibration left on.
+• <b>WhatsApp, WhatsApp Business, Signal or Molly</b>, with the app’s own notification tone and vibration left on. One voice per person covers WhatsApp and Signal alike.
 
-Without root and LSPosed it can’t change WhatsApp’s sounds. Cucuto is an early version: expect rough edges, and keep your root manager’s safe mode in mind in case the phone ever fails to boot.
+Without root and LSPosed it can’t change notification sounds. Cucuto is an early version: expect rough edges, and keep your root manager’s safe mode in mind in case the phone ever fails to boot.
 
 <b>How it works</b>
 • <b>Import a sound pack.</b> Open a .soundpack.zip file, download one from a pack repository, or make your own in the app. A pack is a cast of characters: creatures with short clips and their own vibration, or songs to ring with.
@@ -29,10 +29,10 @@ Without root and LSPosed it can’t change WhatsApp’s sounds. Cucuto is an ear
 • Nothing runs in the background: no service, no persistent notification, no battery exemption.
 
 <b>What it touches</b>
-• The module runs inside Android’s system process, where notifications are handled, and only looks at notifications from WhatsApp and WhatsApp Business. It never hooks the WhatsApp app and never reads what your messages say.
+• The module runs inside Android’s system process, where notifications are handled, and only looks at notifications from WhatsApp, WhatsApp Business, Signal and Molly. It never hooks those apps and never reads what your messages say.
 • No accounts, no ads, no analytics, no crash reporting. The app goes online only when you browse or download packs from a pack repository. Location is asked once, approximate, and only if you want day and night clips. Contacts are read only for phone ringtones and when you add a chat from your contacts.
 • Cucuto never checks for updates by itself. Update it where you installed it from, then reboot: the module loads the new version at boot.
 
 The app ships empty: no third-party content comes with it, and you are responsible for the packs you import. Free CC0 demo packs, the install guide and the pack format are at https://cucuto.mauri.app
 
-Free software under the GPL-3.0-or-later license. Not affiliated with WhatsApp or Meta.
+Free software under the GPL-3.0-or-later license. Not affiliated with WhatsApp, Meta or Signal.

@@ -28,12 +28,12 @@ maintain. Once F-Droid merges theirs, changes go to fdroiddata through a merge r
   reads `versionCode` and `versionName` from `android/app/build.gradle.kts` at each new tag. The release PR sets them
   (`tools/release/release-notes.main.kts`, [docs/releasing.md](../docs/releasing.md)), and `release.yml` warns if a tag
   lacks them. The bot copies the last build entry for each new version, so the commands stay the same.
-- **Anti-feature `NonFreeDep`**, explained in the recipe: Cucuto only works with WhatsApp, which isn't free software.
-  This follows [F-Droid's definition](https://f-droid.org/docs/Anti-Features/) ("needs a non-libre app to work (e.g.
-  Spotify, Whatsapp)") and other WhatsApp companion apps in fdroiddata. `NonFreeNet` ("depends entirely on a
-  proprietary network service") doesn't fit: Cucuto never talks to WhatsApp's servers, it only changes how
-  notifications sound on the phone. `Tracking` and `Ads` don't apply (no trackers, no ads). Root and LSPosed aren't
-  anti-features.
+- **No anti-features.** `NonFreeDep` ("needs a non-libre app to work", [F-Droid's
+  definition](https://f-droid.org/docs/Anti-Features/)) was declared while Cucuto only worked with WhatsApp. Since
+  #374 ([ADR 0081](../docs/decisions/0081-signal-support.md)) it works fully with Signal or Molly, which are free
+  software, so WhatsApp is optional and the recipe drops it. `NonFreeNet` ("depends entirely on a proprietary network
+  service") doesn't fit either: Cucuto never talks to any messenger's servers, it only changes how notifications sound
+  on the phone. `Tracking` and `Ads` don't apply (no trackers, no ads). Root and LSPosed aren't anti-features.
 - Name, summary, description, icon, screenshots and changelogs come from `fastlane/metadata/android/`. F-Droid wants
   none of them in the recipe.
 
@@ -96,10 +96,10 @@ The steps are in #275. The merge request needs a GitLab account, so the owner op
 
 Draft text for the merge request's "Abstract" section:
 
-> Cucuto gives each contact a voice: when they message on WhatsApp, the phone plays a random clip from the character
+> Cucuto gives each contact a voice: when they message on WhatsApp or Signal (or Molly), the phone plays a random clip from the character
 > you assigned them and fires that character's vibration; when they call, their ringtone plays. Characters come from
 > sound packs that anyone can make (in the app or on the website) and import; the app ships empty. It is an LSPosed
-> module that runs only in the system framework (system_server) and swaps the sound and vibration of WhatsApp's
+> module that runs only in the system framework (system_server) and swaps the sound and vibration of those apps'
 > notifications. It reads no message content. It needs Android 17, root and LSPosed. Screenshots:
 > `fastlane/metadata/android/en-US/images/phoneScreenshots/`.
 >
@@ -107,5 +107,5 @@ Draft text for the merge request's "Abstract" section:
 > packs people share, and keeps everything in one backup. Nothing similar is in F-Droid as far as we know.
 >
 > The build is reproducible and checked on every release (`docs/reproducible-builds.md`). `Binaries` and
-> `AllowedAPKSigningKeys` are set so F-Droid ships the upstream signature. `NonFreeDep` is declared because the app
-> is only useful with WhatsApp. The code is written by AI agents (Claude) under the owner's direction.
+> `AllowedAPKSigningKeys` are set so F-Droid ships the upstream signature. No anti-feature is declared: the app works
+> fully with Signal or Molly, so WhatsApp is optional. The code is written by AI agents (Claude) under the owner's direction.

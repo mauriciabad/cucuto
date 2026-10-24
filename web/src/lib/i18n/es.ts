@@ -6,7 +6,7 @@ const iconItems = (items: IconItem[]) => items;
 export const es: Messages = {
 	meta: {
 		siteDescription:
-			'Cucuto reproduce el sonido y la vibración de un personaje distinto para cada contacto de WhatsApp, para que sepas quién te escribe antes de mirar. Para Android 17 con root y LSPosed.',
+			'Cucuto reproduce el sonido y la vibración de un personaje distinto para cada contacto de WhatsApp y Signal, para que sepas quién te escribe antes de mirar. Para Android 17 con root y LSPosed.',
 		homeTitle: 'Cucuto: dale voz a cada contacto',
 		ogImageAlt:
 			'El logo de Cucuto: una casita de reloj de cuco mandarina con la puerta redonda abierta y un pájaro cantando.'
@@ -50,7 +50,7 @@ export const es: Messages = {
 	home: {
 		eyebrow: 'Un módulo de LSPosed para Android 17',
 		pitch: 'Dale voz a cada contacto.',
-		lead: 'Cucuto reproduce el sonido y la vibración de un personaje distinto para cada contacto de WhatsApp, como un reloj de cuco que anuncia quién llama. Un gato para tu hermana, una trompeta para tu jefa.',
+		lead: 'Cucuto reproduce el sonido y la vibración de un personaje distinto para cada contacto de WhatsApp y Signal, como un reloj de cuco que anuncia quién llama. Un gato para tu hermana, una trompeta para tu jefa.',
 		howToInstall: 'Cómo instalarlo',
 		finePrintHtml:
 			'Gratis y de <a href="{repo}" rel="external">código abierto</a> · Necesita root · Sin rastreo',
@@ -206,8 +206,8 @@ export const es: Messages = {
 			},
 			{
 				icon: 'notifications-active',
-				title: 'WhatsApp o WhatsApp Business',
-				text: 'Deja activados el tono y la vibración de WhatsApp: Cucuto los cambia por contacto.'
+				title: 'WhatsApp o Signal',
+				text: 'WhatsApp, WhatsApp Business, Signal o Molly. Deja activados el tono y la vibración de la app: Cucuto los cambia por contacto.'
 			}
 		]),
 		faqTitle: 'Preguntas',
@@ -226,6 +226,11 @@ export const es: Messages = {
 				q: '¿Modifica WhatsApp?',
 				aHtml:
 					'No. El módulo solo funciona dentro del proceso del sistema de Android (el ámbito System Framework) y nunca toca la app de WhatsApp, así que convive con otros módulos que sí enganchan WhatsApp.'
+			},
+			{
+				q: '¿Funciona con Signal?',
+				aHtml:
+					'Sí, con Signal y Molly, desde el mismo módulo en el proceso del sistema de Android: a Signal no se le añade nada. La notificación de Signal indica el contacto de Android de la persona, así que la voz que le das a alguien suena igual en WhatsApp y en Signal en cuanto su chat está vinculado a su contacto (los chats añadidos desde contactos, o vinculados para los tonos de llamada, ya lo están). Quien no está en tus contactos tiene su propia voz en Signal. Si las notificaciones de Signal ocultan los nombres, suena el tono de Signal. Las llamadas de Signal mantienen el tono de Signal.'
 			},
 			{
 				q: '¿Qué pasa si algo falla?',
@@ -322,8 +327,8 @@ export const es: Messages = {
 			},
 			{
 				icon: 'notifications-active',
-				title: 'WhatsApp',
-				text: 'WhatsApp o WhatsApp Business, con las notificaciones activadas y su propio tono y vibración activados.'
+				title: 'WhatsApp o Signal',
+				text: 'WhatsApp, WhatsApp Business, Signal o Molly, con las notificaciones activadas y el tono y la vibración de la app activados.'
 			}
 		]),
 		stepsTitle: 'Pasos',
@@ -551,14 +556,14 @@ export const es: Messages = {
 		stored: [
 			'<strong>Tus packs</strong>: los archivos de packs que importas o descargas.',
 			'<strong>Tus asignaciones</strong>: qué personaje habla por cada chat, y tus ajustes.',
-			'<strong>Chats recientes</strong>: cuando llega una notificación de WhatsApp, el módulo anota el nombre del chat, el nombre de quien escribe y el identificador interno de WhatsApp para ese chat, para que la gente nueva aparezca en la app lista para recibir una voz. Guarda los 1000 chats más recientes.',
+			'<strong>Chats recientes</strong>: cuando llega una notificación de WhatsApp o Signal, el módulo anota el nombre del chat, el nombre de quien escribe y el identificador interno de la app para ese chat (en Signal, si es un contacto guardado, cuál de tus contactos es), para que la gente nueva aparezca en la app lista para recibir una voz. Guarda los 1000 chats más recientes.',
 			'<strong>El registro de decisiones</strong>: qué hizo Cucuto con cada notificación reciente (qué voz sonó, o por qué sonó el tono de WhatsApp). Guarda las 500 entradas más recientes, para que puedas ver por qué sonó algo.'
 		],
 		storedNoteHtml:
 			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Cucuto nunca abre las bases de datos, los chats ni los archivos multimedia de WhatsApp: solo conoce un chat por sus notificaciones o por un contacto que vinculas o añades tú. Al desinstalar la app se borra todo.',
 		moduleTitle: 'Cómo funciona el módulo',
 		moduleHtml:
-			'El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las notificaciones de WhatsApp y WhatsApp Business. Lo que anota se lo pasa a la app por un canal privado que rechaza a cualquier otra app. Nunca se conecta a internet y nunca toca la app de WhatsApp.',
+			'El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las notificaciones de WhatsApp, WhatsApp Business, Signal y Molly. Lo que anota se lo pasa a la app por un canal privado que rechaza a cualquier otra app. Nunca se conecta a internet y nunca toca la app de WhatsApp.',
 		networkTitle: 'Cuándo se conecta la app',
 		networkHtml:
 			'Solo para acceder a los repositorios de packs de tu lista (el de esta web viene por defecto): para mostrar sus packs, buscar actualizaciones y descargar los packs que elijas. Las descargas pueden venir del servidor del propio repositorio, como GitHub en el caso de los packs de esta web. Si un repositorio privado necesita contraseña o token, se guarda cifrado con el almacén de claves de Android y solo se envía al servidor de ese repositorio.',
@@ -573,7 +578,7 @@ export const es: Messages = {
 		permissions: [
 			'<strong>Internet</strong>: para los repositorios de packs de arriba.',
 			'<strong>Notificaciones</strong>: solo para la notificación de prueba de Diagnóstico.',
-			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono (o quitárselo, si eliges «Predeterminado de Android»), el mismo ajuste que cambia la app Contactos. Y cuando tocas «Añadir un chat desde contactos»: Cucuto lee las entradas de WhatsApp que ya tienen tus contactos (cada una, un nombre y un número de WhatsApp) y guarda solo a las personas que eliges. Cuando una de ellas te escribe por primera vez, vuelve a comparar ese nombre con esas entradas, para no vincular nunca a otra persona con el mismo nombre. No lee nada más de tus contactos.',
+			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono (o quitárselo, si eliges «Predeterminado de Android»), el mismo ajuste que cambia la app Contactos. Y cuando tocas «Añadir un chat desde contactos»: Cucuto lee las entradas de WhatsApp y Signal que ya tienen tus contactos (cada una, un nombre y un número) y guarda solo a las personas que eliges. Cuando una de ellas te escribe por primera vez, vuelve a comparar ese nombre con esas entradas, para no vincular nunca a otra persona con el mismo nombre. No lee nada más de tus contactos.',
 			'<strong>Teléfono</strong>: solo para los tonos «Al azar en cada llamada», para saber cuándo termina una llamada. Nunca se lee el número.',
 			'<strong>Ubicación aproximada</strong>: una sola lectura, solo cuando tocas «Usar mi ubicación una vez» en «Día y noche». Nunca la ubicación exacta, nunca en segundo plano.',
 			'<strong>Micrófono</strong>: solo mientras grabas un sonido en el creador de packs.'

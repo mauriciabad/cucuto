@@ -124,8 +124,9 @@ with what it does and what was checked in [`fdroid/README.md`](../fdroid/README.
   `android/app/build.gradle.kts`, which the release PR now sets ([releasing.md](releasing.md)).
 - **No inclusion blockers.** The release APK has no Google Play services, Firebase, GMS, Google sign-in, trackers or
   proprietary libraries. `:core:drive` isn't part of it. `fdroid scanner` and `fdroid lint` pass with the recipe.
-- **Anti-feature `NonFreeDep`:** Cucuto is only useful with WhatsApp. `NonFreeNet` doesn't fit, because Cucuto never
-  talks to WhatsApp's servers.
+- **No anti-features** (since #374, [ADR 0081](decisions/0081-signal-support.md)): Cucuto works fully with Signal or
+  Molly, which are free software, so `NonFreeDep` no longer applies. `NonFreeNet` doesn't fit, because Cucuto never
+  talks to any messenger's servers.
 - Still untested: a full `fdroid build` on F-Droid's Debian image. The merge request's CI runs it.
 
 **Owner steps** (GitLab account, fork, merge request): #275. Once F-Droid publishes Cucuto, add it to the website's

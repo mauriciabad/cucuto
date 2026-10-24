@@ -1,1 +1,1 @@
-Una voz por contacto: su sonido y su vibración en WhatsApp. Requiere root.
+Un sonido y una vibración por contacto en WhatsApp y Signal. Requiere root.

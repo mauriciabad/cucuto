@@ -5,8 +5,8 @@
 [![ci](https://github.com/mauriciabad/cucuto/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mauriciabad/cucuto/actions/workflows/ci.yml)
 
 **Give each contact a voice.** Cucuto (koo-KOO-toe, from Catalan *cucut*, cuckoo) is an open-source Android 17 app that
-plays a random clip from the character you assigned to a contact whenever they message you on WhatsApp, with that
-character's own vibration. Like a cuckoo clock, it announces who's there.
+plays a random clip from the character you assigned to a contact whenever they message you on WhatsApp or Signal (and
+Molly), with that character's own vibration. One voice per person covers both apps. Like a cuckoo clock, it announces who's there.
 
 - **Sound packs, not bundled content.** The app ships empty. Import `.soundpack.zip` files or download them from pack repositories.
 - **Ringtones too.** Pick a contact's message sound, then their phone ringtone: a song from a pack, Android's default,
@@ -15,14 +15,15 @@ character's own vibration. Like a cuckoo clock, it announces who's there.
   plain words, or rules you write for one contact.
 - **Clips with timing.** Packs can greet the first message of the day, answer a burst of messages, hide rare easter
   eggs and play night or holiday clips, all decided on the phone with no battery cost.
-- **Chats before they write.** Add people from your contacts; their voice plays from their second message.
+- **Chats before they write.** Add people from your contacts; on Signal their voice plays from the first message, on
+  WhatsApp from the second.
 - **Easy to pick.** Big packs fold into sections, with search and a "Surprise me" dice in both pickers.
 - **Make your own.** Build packs in the app or on the website, no tools needed, or with the `packer` CLI.
 - **Feels like a game.** Sound, motion and haptics on every interaction, built on Material 3 Expressive.
 
 > [!IMPORTANT]
 > Cucuto needs **Android 17, root and LSPosed (libxposed API 102)**. It runs as a tiny module inside `system_server` and
-> never touches the WhatsApp process. No content ships with the app; you are responsible for the packs you import.
+> never touches the WhatsApp or Signal process. No content ships with the app; you are responsible for the packs you import.
 
 <!-- Screenshot slot: app screenshots made from the demo packs go here (#41). -->
 
