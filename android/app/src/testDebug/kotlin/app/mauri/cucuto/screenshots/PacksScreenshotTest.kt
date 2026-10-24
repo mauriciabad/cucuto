@@ -11,7 +11,7 @@ class PacksScreenshotTest(
 ) : ScreenshotTest(variant) {
     @Test
     fun packs() =
-        screenshot("packs", web = "packs") {
+        screenshot("packs", web = "packs", store = 4) {
             InShell(TopLevelTab.Packs) {
                 PacksContent(
                     state = PacksUiState(packs = DemoContent.packs.map { it.libraryPack() }),

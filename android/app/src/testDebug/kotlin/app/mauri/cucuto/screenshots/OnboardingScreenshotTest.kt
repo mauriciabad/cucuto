@@ -18,13 +18,14 @@ class OnboardingScreenshotTest(
     fun welcome() = onboarding("onboarding-welcome", OnboardingStep.Welcome, web = "onboarding")
 
     @Test
-    fun enable() = onboarding("onboarding-enable", OnboardingStep.Enable)
+    fun enable() = onboarding("onboarding-enable", OnboardingStep.Enable, store = 6)
 
     private fun onboarding(
         name: String,
         step: OnboardingStep,
         web: String? = null,
-    ) = screenshot(name, web = web) {
+        store: Int? = null,
+    ) = screenshot(name, web = web, store = store) {
         OnboardingContent(
             step = step,
             report =

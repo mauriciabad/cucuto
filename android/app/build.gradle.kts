@@ -12,6 +12,11 @@ plugins {
 val webScreenshots: Directory = layout.projectDirectory.dir("../../web/src/lib/assets/images/screenshots")
 val exportWebScreenshots = gradle.startParameter.taskNames.any { it.substringAfterLast(':') == "exportWebScreenshots" }
 
+// Where `exportStoreScreenshots` writes the store listing's screenshots (fastlane layout, ADR 0046).
+val storeScreenshots: Directory = layout.projectDirectory.dir("../../fastlane/metadata/android")
+val exportStoreScreenshots =
+    gradle.startParameter.taskNames.any { it.substringAfterLast(':') == "exportStoreScreenshots" }
+
 android {
     namespace = "app.mauri.cucuto"
 
@@ -60,6 +65,10 @@ android {
                 it.outputs.dir(webScreenshots)
                 it.outputs.upToDateWhen { false }
             }
+            if (exportStoreScreenshots) {
+                it.systemProperty("cucuto.screenshots.store", storeScreenshots.asFile.absolutePath)
+                it.outputs.upToDateWhen { false }
+            }
         }
     }
 
@@ -78,6 +87,14 @@ android {
 tasks.register("exportWebScreenshots") {
     group = "verification"
     description = "Records the screenshot tests and writes the website's screenshots to web/src/lib/assets/images/."
+    dependsOn("recordRoborazziDebug")
+}
+
+// Store listing screenshots (ADR 0046): the same, for the tests with a `store` position, into fastlane's
+// metadata/android/<locale>/images/phoneScreenshots/, which F-Droid, IzzyOnDroid and Obtainium read.
+tasks.register("exportStoreScreenshots") {
+    group = "verification"
+    description = "Records the screenshot tests and writes the store listing's screenshots to fastlane/metadata/."
     dependsOn("recordRoborazziDebug")
 }
 

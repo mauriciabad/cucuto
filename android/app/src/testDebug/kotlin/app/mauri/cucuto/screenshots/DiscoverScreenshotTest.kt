@@ -29,7 +29,7 @@ class DiscoverScreenshotTest(
 ) : ScreenshotTest(variant) {
     @Test
     fun discover() =
-        screenshot("discover") {
+        screenshot("discover", store = 5) {
             val repository =
                 SavedRepository(
                     id = REPOSITORY_ID,

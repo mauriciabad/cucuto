@@ -62,6 +62,9 @@ import kotlin.math.roundToInt
  * - `./gradlew :app:verifyRoborazziDebug` (and CI) fails when a screen no longer matches its golden image.
  * - `./gradlew :app:exportWebScreenshots` also writes the website's images (the tests with a `web` name) to
  *   `web/src/lib/assets/images/screenshots/`, in English and, once the app is translated, in Spanish (`es/`).
+ * - `./gradlew :app:exportStoreScreenshots` also writes the store listing's images (the tests with a `store`
+ *   position) to `fastlane/metadata/android/<en-US|es-ES>/images/phoneScreenshots/`, light theme, full resolution
+ *   (ADR 0046). F-Droid, IzzyOnDroid and Obtainium show them in that order.
  *
  * Tab roots (Home, Packs, Settings) are captured inside the app shell with [InShell], so the navigation bar shows;
  * [ShellScreenshotTest] covers the first-run journey on Home (#153).
@@ -73,8 +76,8 @@ abstract class ScreenshotTest(
     private val variant: Variant,
 ) {
     /**
-     * Theme and language of one run. English has golden images; Spanish runs only for the website export (the
-     * `/es/` pages), and only once the app has Spanish strings: otherwise it is skipped.
+     * Theme and language of one run. English has golden images; Spanish runs only for the website and store exports
+     * (the `/es/` pages, the `es-ES` listing), and only once the app has Spanish strings: otherwise it is skipped.
      */
     enum class Variant(
         val dark: Boolean,
@@ -88,6 +91,9 @@ abstract class ScreenshotTest(
 
         val theme: String get() = if (dark) "dark" else "light"
         val isEnglish: Boolean get() = language == "en"
+
+        /** The store listing's locale folder (fastlane's names). */
+        val storeLocale: String get() = if (isEnglish) "en-US" else "es-ES"
     }
 
     @get:Rule
@@ -121,20 +127,25 @@ abstract class ScreenshotTest(
 
     /**
      * Renders [content] and captures the whole screen, dialogs and sheets included, as `<name>-light.png` or
-     * `<name>-dark.png`. [web] is the website's name for the image, written only by `exportWebScreenshots`.
+     * `<name>-dark.png`. [web] is the website's name for the image, written only by `exportWebScreenshots`. [store]
+     * is the image's position in the store listing (light theme only), written only by `exportStoreScreenshots`.
      * [settleMillis] of test-clock time pass before the capture: enough for entry animations and sheets to rest.
      */
     @OptIn(ExperimentalRoborazziApi::class)
     protected fun screenshot(
         name: String,
         web: String? = null,
+        store: Int? = null,
         settleMillis: Long = SETTLE_MILLIS,
         content: @Composable () -> Unit,
     ) {
         val exportDir = System.getProperty(WEB_EXPORT_PROPERTY).orEmpty()
+        val storeDir = System.getProperty(STORE_EXPORT_PROPERTY).orEmpty()
+        val webExport = web != null && exportDir.isNotEmpty()
+        val storeExport = store != null && storeDir.isNotEmpty() && !variant.dark
         val locale = Locale.forLanguageTag(variant.language)
         if (!variant.isEnglish) {
-            assumeTrue("$variant runs only for the website export", web != null && exportDir.isNotEmpty())
+            assumeTrue("$variant runs only for the website and store exports", webExport || storeExport)
             assumeTrue("The app has no ${variant.language} strings yet", isTranslated(locale))
             // Dates and numbers ("2 hours ago", "298 kB") follow the default locale.
             Locale.setDefault(locale)
@@ -149,9 +160,13 @@ abstract class ScreenshotTest(
         compose.waitForIdle()
 
         if (variant.isEnglish) captureScreenRoboImage("$name-${variant.theme}.png", goldenOptions)
-        if (web != null && exportDir.isNotEmpty()) {
+        if (webExport) {
             val folder = if (variant.isEnglish) File(exportDir) else File(exportDir, variant.language)
             captureScreenRoboImage(File(folder, "$web-${variant.theme}.png"), webOptions)
+        }
+        if (storeExport) {
+            val folder = File(storeDir, "${variant.storeLocale}/images/phoneScreenshots")
+            captureScreenRoboImage(File(folder, "$store-$name.png"), storeOptions)
         }
     }
 
@@ -188,6 +203,9 @@ abstract class ScreenshotTest(
         /** System property with the folder for the website's images; set by `exportWebScreenshots`. */
         const val WEB_EXPORT_PROPERTY = "cucuto.screenshots.web"
 
+        /** System property with fastlane's `metadata/android` folder; set by `exportStoreScreenshots`. */
+        const val STORE_EXPORT_PROPERTY = "cucuto.screenshots.store"
+
         /** Time zone of every screenshot; [DemoContent] fixes absolute times (backups) in it. */
         const val SCREENSHOT_TIME_ZONE = "Europe/Madrid"
 
@@ -216,6 +234,12 @@ abstract class ScreenshotTest(
                 taskType = RoborazziTaskType.Record,
                 recordOptions = RoborazziOptions.RecordOptions(resizeScale = WEB_SCALE),
             )
+        }
+
+        /** Store listing images: always written, at the full 822 × 1782 px. */
+        @OptIn(ExperimentalRoborazziApi::class)
+        private val storeOptions by lazy {
+            RoborazziOptions(taskType = RoborazziTaskType.Record)
         }
     }
 }

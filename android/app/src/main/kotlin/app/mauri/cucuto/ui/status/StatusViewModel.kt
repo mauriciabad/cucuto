@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.repository.InstalledPackRepository
 import app.mauri.cucuto.core.data.routing.FrameworkReport
+import app.mauri.cucuto.core.data.routing.PublishState
+import app.mauri.cucuto.core.data.routing.PublishedTableFile
+import app.mauri.cucuto.core.data.routing.RoutingPublisher
 import app.mauri.cucuto.core.data.routing.RoutingSink
 import app.mauri.cucuto.core.data.routing.SinkConnection
 import app.mauri.cucuto.core.data.routing.XposedFramework
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -74,6 +78,8 @@ class StatusViewModel
         private val onboarding: OnboardingSettings,
         private val notifier: SelfTestNotifier,
         private val appUpdate: AppUpdateDetector,
+        publisher: RoutingPublisher,
+        publishedTable: PublishedTableFile,
     ) : ViewModel() {
         private val refreshes = MutableStateFlow(0)
 
@@ -112,8 +118,28 @@ class StatusViewModel
         private val packCount: Flow<Int> =
             installedPacks.observeAll().map { packs -> packs.count { it.packId != TestVoice.PACK_ID } }
 
+        /**
+         * Whether the module pulled the app's latest table without the service (ADR 0048). A new publication is
+         * "not delivered" for the fraction of a second until the module fetches it, so a change to false (after the
+         * first value) is held back for [PULL_GRACE_MILLIS]: the card does not flash "reboot" on every voice change.
+         */
+        private val providerDelivered: Flow<Boolean> =
+            combine(publisher.state, publishedTable.served, events.status) { publish, served, status ->
+                StatusChecks.providerDelivered(
+                    latestGeneration = (publish as? PublishState.Published)?.generation,
+                    servedGeneration = served,
+                    moduleStatus = status,
+                    bootTimeMillis = AppUpdateDetector.bootTimeMillis(),
+                )
+            }.distinctUntilChanged()
+                .withIndex()
+                .transformLatest { (index, delivered) ->
+                    if (!delivered && index > 0) delay(PULL_GRACE_MILLIS)
+                    emit(delivered)
+                }
+
         val state: StateFlow<StatusUiState> =
-            combine(probes, events.status, packCount) { probe, status, packs ->
+            combine(probes, events.status, packCount, providerDelivered) { probe, status, packs, delivered ->
                 StatusUiState(
                     StatusChecks.evaluate(
                         StatusInputs(
@@ -124,6 +150,7 @@ class StatusViewModel
                             messengers = probe.messengers,
                             packCount = packs,
                             appUpdatedSinceBoot = probe.appUpdatedSinceBoot,
+                            providerDelivered = delivered,
                         ),
                     ),
                 )
@@ -176,5 +203,10 @@ class StatusViewModel
                         SelfTestMessage.Failed(e.message ?: e.javaClass.simpleName)
                     }
             }
+        }
+
+        private companion object {
+            /** The module pulls a new table within a fraction of a second of the nudge; this leaves room for it. */
+            const val PULL_GRACE_MILLIS = 5_000L
         }
     }

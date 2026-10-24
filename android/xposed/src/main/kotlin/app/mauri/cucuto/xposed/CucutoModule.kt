@@ -8,10 +8,12 @@ import android.os.SystemClock
 import android.util.Log
 import app.mauri.cucuto.core.routing.RoutingContract
 import app.mauri.cucuto.core.routing.RoutingFile
+import app.mauri.cucuto.xposed.events.AppProvider
 import app.mauri.cucuto.xposed.events.DecisionEvent
 import app.mauri.cucuto.xposed.events.EventReporter
 import app.mauri.cucuto.xposed.events.ModuleStatus
 import app.mauri.cucuto.xposed.events.ProviderEventSender
+import app.mauri.cucuto.xposed.events.ProviderTableReader
 import app.mauri.cucuto.xposed.events.systemContext
 import app.mauri.cucuto.xposed.hook.AlertHooks
 import app.mauri.cucuto.xposed.hook.CapabilitiesLoader
@@ -34,19 +36,27 @@ import java.io.FileNotFoundException
  *   ready (ADR 0044); until then custom haptics keep WhatsApp's vibration.
  * - [routing] follows the table the app publishes through Remote Preferences. It is attached from the background
  *   thread right after boot, never from the notification path, and retried until the framework serves it. The
- *   app's nudge broadcast makes it re-read the routing remote file, which also works after an app update (ADR 0024).
+ *   app's nudge broadcast makes it re-read the routing remote file, which also works after an app update (ADR 0024),
+ *   or pull the table from the app's verified provider when the app has no framework service (ADR 0048).
  * - [EventReporter] carries every decision to the app's decision log and "recent senders" feed, batched, from a
  *   background thread.
  */
 class CucutoModule : XposedModule() {
     private val moduleLog = ModuleLog(sink = { priority, message, error -> writeLog(priority, message, error) })
 
-    /** The routing table the app publishes through Remote Preferences and the routing remote file (ADR 0024). */
+    /** The app's event provider, verified by package and signing certificate before every use (ADR 0010). */
+    private val appProvider = AppProvider(moduleInfo = { moduleInfo() })
+
+    /**
+     * The routing table the app publishes through Remote Preferences and the routing remote file (ADR 0024), or,
+     * when the app has no framework service, serves from its provider (ADR 0048).
+     */
     internal val routing =
         RoutingTableHolder(
             preferences = { getRemotePreferences(RoutingContract.PREFERENCES_GROUP) },
             log = { message, error -> if (error == null) moduleLog.info(message) else moduleLog.warn(message, error) },
             remoteFile = { readRemoteFile(RoutingContract.REMOTE_FILE) },
+            providerTable = { ProviderTableReader(appProvider).read() },
             // Tell the app's Diagnostics screen which table the module holds now, not at the next alert.
             onReload = { reporter?.reportStatus() },
         )
@@ -55,10 +65,17 @@ class CucutoModule : XposedModule() {
 
     @Volatile private var reporter: EventReporter? = null
 
-    /** Re-reads the routing file on the background thread, once per burst of nudges. */
-    private val refresh = Coalescer(post = { task -> reporter?.post(block = task) }, task = { routing.refresh() })
+    /** The newest generation the app's nudges announced. */
+    private val nudged = NudgeTarget()
+
+    /** Catches up with the nudges on the background thread, once per burst: the remote file, then the provider. */
+    private val refresh =
+        Coalescer(post = { task -> reporter?.post(block = task) }, task = { routing.refresh(nudged.get()) })
 
     @Volatile private var nudgeReceiver: RoutingNudgeReceiver? = null
+
+    /** Whether the boot check of the remote file (and the pull when it is missing) is done. Background thread only. */
+    private var bootChecked = false
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         guarded("onModuleLoaded") {
@@ -68,7 +85,7 @@ class CucutoModule : XposedModule() {
 
     override fun onSystemServerStarting(param: SystemServerStartingParam) {
         guarded("onSystemServerStarting") {
-            val sender = ProviderEventSender(moduleInfo = { moduleInfo() })
+            val sender = ProviderEventSender(appProvider)
             val reporter =
                 EventReporter(
                     sender = sender,
@@ -98,7 +115,7 @@ class CucutoModule : XposedModule() {
                 post = { delayMillis, task -> reporter.post(delayMillis = delayMillis, block = task) },
             ).start()
             // Reads the module APK's signing certificate while the file still exists (an app update replaces it).
-            reporter.post(delayMillis = ATTACH_FIRST_DELAY_MILLIS) { sender.prepare() }
+            reporter.post(delayMillis = ATTACH_FIRST_DELAY_MILLIS) { appProvider.prepare() }
 
             attachRouting(attempt = 0)
         }
@@ -106,7 +123,9 @@ class CucutoModule : XposedModule() {
 
     /**
      * Attaches the routing table and registers the nudge receiver off the notification path, retrying while the
-     * framework and the activity manager are still starting.
+     * framework and the activity manager are still starting. Once attached, checks the remote file once: only when it
+     * does not exist does the module pull the table from the app (ADR 0048), retried while the app's provider cannot
+     * be reached yet (before the user unlocks the phone).
      */
     private fun attachRouting(attempt: Int) {
         val reporter = reporter ?: return
@@ -117,11 +136,29 @@ class CucutoModule : XposedModule() {
                 moduleLog.info("Routing table attached (generation ${routing.peek().generation})")
             }
             val listening = registerNudge(reporter)
+            if (!bootChecked) bootChecked = routing.checkAtBoot()
             when {
-                attached && listening -> Unit
-                attempt < ATTACH_MAX_ATTEMPTS -> attachRouting(attempt + 1)
-                !attached -> moduleLog.warn("Remote Preferences never became available; contacts keep WhatsApp's tone")
-                else -> moduleLog.warn("Could not listen for new routing tables; they load after the next reboot")
+                attached && listening && bootChecked -> {
+                    Unit
+                }
+
+                attempt < ATTACH_MAX_ATTEMPTS -> {
+                    attachRouting(attempt + 1)
+                }
+
+                !attached -> {
+                    moduleLog.warn("Remote Preferences never became available; contacts keep WhatsApp's tone")
+                }
+
+                !listening -> {
+                    moduleLog.warn("Could not listen for new routing tables; they load after the next reboot")
+                }
+
+                else -> {
+                    moduleLog.warn(
+                        "Could not reach Cucuto's provider after boot; the table loads on the next change",
+                    )
+                }
             }
         }
     }
@@ -138,7 +175,10 @@ class CucutoModule : XposedModule() {
             val receiver =
                 RoutingNudgeReceiver(
                     modulePackage = { moduleInfo()?.packageName },
-                    onNudge = refresh::request,
+                    onNudge = { generation ->
+                        nudged.offer(generation)
+                        refresh.request()
+                    },
                     onRefused = { sender ->
                         moduleLog.warnRateLimited(
                             "nudge",

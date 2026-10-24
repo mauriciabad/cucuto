@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.db.DecisionLogEntity
 import app.mauri.cucuto.core.data.repository.DecisionLogRepository
 import app.mauri.cucuto.core.data.routing.PublishState
+import app.mauri.cucuto.core.data.routing.PublishedTableFile
 import app.mauri.cucuto.core.data.routing.RoutingPublisher
 import app.mauri.cucuto.core.data.routing.RoutingSink
 import app.mauri.cucuto.core.data.routing.SinkConnection
@@ -12,6 +13,7 @@ import app.mauri.cucuto.core.data.settings.RoutingSettings
 import app.mauri.cucuto.provider.ModuleEventSink
 import app.mauri.cucuto.provider.ReceivedStatus
 import app.mauri.cucuto.ui.status.AppUpdateDetector
+import app.mauri.cucuto.ui.status.StatusChecks
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +34,19 @@ data class DiagnosticsState(
     val publish: PublishState = PublishState.Idle,
     val moduleStatus: ReceivedStatus? = null,
     val decisions: List<DecisionLogEntity> = emptyList(),
-)
+    /** The generation the module last pulled from the app's provider in this process (ADR 0048), or null. */
+    val servedGeneration: Long? = null,
+) {
+    /** The module holds the app's latest table although the app has no framework service (ADR 0048). */
+    val providerDelivered: Boolean
+        get() =
+            StatusChecks.providerDelivered(
+                latestGeneration = (publish as? PublishState.Published)?.generation,
+                servedGeneration = servedGeneration,
+                moduleStatus = moduleStatus,
+                bootTimeMillis = AppUpdateDetector.bootTimeMillis(),
+            )
+}
 
 /** Feedback for the last button the user pressed. */
 sealed interface DiagnosticsMessage {
@@ -70,6 +84,7 @@ class DiagnosticsViewModel
         private val notifier: SelfTestNotifier,
         private val testVoice: TestVoice,
         appUpdate: AppUpdateDetector,
+        publishedTable: PublishedTableFile,
     ) : ViewModel() {
         private val appUpdatedSinceBoot = appUpdate.updatedSinceBoot()
 
@@ -77,11 +92,11 @@ class DiagnosticsViewModel
             combine(
                 settings.enabled,
                 sink.connection,
-                publisher.state,
+                combine(publisher.state, publishedTable.served, ::Pair),
                 events.status,
                 decisionLog.observeRecent(RECENT_DECISIONS),
-            ) { enabled, connection, publish, status, decisions ->
-                DiagnosticsState(enabled, connection, appUpdatedSinceBoot, publish, status, decisions)
+            ) { enabled, connection, (publish, served), status, decisions ->
+                DiagnosticsState(enabled, connection, appUpdatedSinceBoot, publish, status, decisions, served)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DiagnosticsState())
 
         /** Whether the debug-only "test voice" action is offered. */

@@ -161,8 +161,8 @@ lists both decisions.
 
 Then tap **Give the latest sender a test voice** (debug builds only; it installs a generated three-chirp pack
 `app.mauri.cucuto.devtest` and assigns it to the newest WhatsApp conversation). The routing table line should move
-to a new generation with 1 key and 1 voice, and the module log should print `Routing table <generation>: 1 keys,
-1 voices` without a reboot.
+to a new generation with 1 key and 1 voice, and the module log should print
+`Routing table <generation> (via preferences): 1 keys, 1 voices` without a reboot.
 
 Ask that contact to send three or four more messages, a few seconds apart (WhatsApp throttles quick follow-ups onto
 its silent channel; that is expected and not a bug).
@@ -234,7 +234,8 @@ tables` within about 20 s.
 
 **A. No app update since boot.** Open Cucuto → **Diagnostics** and toggle **Cucuto voices** off, then on.
 
-- Each toggle logs exactly one `Routing table <gen>: N keys, M voices` line within 2 s, with a new, larger `<gen>`.
+- Each toggle logs exactly one `Routing table <gen> (via preferences): N keys, M voices` line within 2 s, with a new,
+  larger `<gen>`.
 - Within about 15 s, Diagnostics → "Table in the module" reads `Generation <gen>, N keys: the app's latest` (the same
   generation as the "Routing table" row).
 
@@ -242,9 +243,28 @@ tables` within about 20 s.
 same one), open **Diagnostics** and toggle the switch again.
 
 - Same expectations as A: one `Routing table <gen>` line within 2 s per toggle, and Diagnostics catches up within
-  about 15 s. Here the line comes from the nudge and the remote file; LSPosed no longer notifies preferences.
+  about 15 s. Here the line says `(via file)`: it comes from the nudge and the remote file; LSPosed no longer
+  notifies preferences. (`(via provider)` here means the app lost LSPosed's service: see part C.)
 - Optional, to see the transport: `adb shell su -c 'find /data/misc /data/adb -name routing.table -exec ls -l {} +'`
   shows the remote file with a fresh timestamp (LSPosed keeps it under `<base>/<user>/app.mauri.cucuto/`).
+
+**C. An update that lost LSPosed's service (#204, [ADR 0048](decisions/0048-routing-table-pull-without-the-service.md)).**
+Needs a boot on a module that has the provider pull (the release after it shipped, then a reboot). Without
+rebooting, update the app (same key: `adb install -r cucuto-<version>.apk`), wait for LSPosed's "module updated"
+notification (about a minute), then force-stop and open Cucuto (`adb shell am force-stop app.mauri.cucuto`, then
+launch it). If Diagnostics → "Xposed framework" reads "Not connected: Cucuto was updated since the last boot …", the
+service was lost (#201); if it says "Connected", this run cannot test part C: repeat later.
+
+- Toggle **Cucuto voices** off, then on. Each toggle logs exactly one `Routing table <gen> (via provider): N keys,
+  M voices` line within 2 s, with a new, larger `<gen>`.
+- Within about 15 s, "Table in the module" reads `Generation <gen>, N keys: the app's latest`; the "Routing table"
+  row says the generation is "for the module to fetch from Cucuto (no LSPosed service)"; the framework row says the
+  module fetches voice changes from Cucuto. The Setup card does **not** ask for a reboot.
+- A WhatsApp alert from an assigned contact plays its voice while the switch is on, and WhatsApp's tone while off.
+
+**Fail if** (part C): no `Routing table` line after a toggle; `Pulling the routing table refused: …` (record the
+reason: package or certificate mismatch); `The app has no routing table to pull yet`; or Setup still says "reboot"
+a minute after the last toggle.
 
 **Fail if:** no `Routing table` line after a toggle; `Ignored a routing nudge from …` (the sender's identity did not
 arrive: record what it says); `Registering the routing nudge receiver failed` or `Could not listen for new routing
