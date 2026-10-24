@@ -9,7 +9,9 @@ import app.mauri.cucuto.core.pack.PackSelection
 import app.mauri.cucuto.core.ringtone.ContactLinkRestore
 import app.mauri.cucuto.core.ringtone.UnmatchedContact
 import app.mauri.cucuto.home.AssignVoiceContent
+import app.mauri.cucuto.home.HomeContent
 import app.mauri.cucuto.home.previewHomeState
+import app.mauri.cucuto.home.previewHomeStateWithQuestion
 import app.mauri.cucuto.packs.AssignedContact
 import app.mauri.cucuto.packs.ImportReview
 import app.mauri.cucuto.packs.ImportUi
@@ -21,6 +23,10 @@ import app.mauri.cucuto.packs.ui.PackDetailContent
 import app.mauri.cucuto.packspec.Character
 import app.mauri.cucuto.packspec.Clip
 import app.mauri.cucuto.packspec.PackManifest
+import app.mauri.cucuto.ui.contacts.AddFromContactsContent
+import app.mauri.cucuto.ui.contacts.AddFromContactsState
+import app.mauri.cucuto.ui.contacts.ConfirmLinkContent
+import app.mauri.cucuto.ui.contacts.previewContactsState
 import app.mauri.cucuto.ui.creator.CreatorFinishContent
 import app.mauri.cucuto.ui.creator.FinishUi
 import app.mauri.cucuto.ui.discover.DiscoverActions
@@ -55,6 +61,26 @@ internal object A11yPushedScreens {
             "repositories" to { RepositoriesScreen() },
             "creator-finish" to { CreatorFinishScreen() },
             "assign-voice" to { AssignVoiceContent(state = previewHomeState(), onBack = {}, onPick = {}) },
+            "add-from-contacts" to { AddFromContactsContent(AddFromContactsState(), {}, {}, {}, {}, {}, {}) },
+            "add-from-contacts-list" to { AddFromContactsContent(previewContactsState(), {}, {}, {}, {}, {}, {}) },
+            "confirm-link" to {
+                ConfirmLinkContent(
+                    previewHomeStateWithQuestion().questions.first(),
+                    onBack = {},
+                    onPick = {},
+                    onNone = {},
+                )
+            },
+            "home-from-contacts" to {
+                HomeContent(
+                    state = previewHomeStateWithQuestion(),
+                    onQueryChange = {},
+                    onTogglePack = {},
+                    onDismissRecent = {},
+                    onOpenChat = {},
+                    onOpenPacks = {},
+                )
+            },
             "ringtone-picker" to {
                 RingtonePickerContent(
                     state = previewRingtonePickerState(),

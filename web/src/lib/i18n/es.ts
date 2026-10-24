@@ -484,7 +484,7 @@ export const es: Messages = {
 			'<strong>El registro de decisiones</strong>: qué hizo Cucuto con cada notificación reciente (qué voz sonó, o por qué sonó el tono de WhatsApp). Guarda las 500 entradas más recientes, para que puedas ver por qué sonó algo.'
 		],
 		storedNoteHtml:
-			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Cucuto nunca abre las bases de datos, los chats ni los archivos multimedia de WhatsApp: solo conoce un chat por sus notificaciones o por un contacto que vinculas tú. Al desinstalar la app se borra todo.',
+			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Cucuto nunca abre las bases de datos, los chats ni los archivos multimedia de WhatsApp: solo conoce un chat por sus notificaciones o por un contacto que vinculas o añades tú. Al desinstalar la app se borra todo.',
 		moduleTitle: 'Cómo funciona el módulo',
 		moduleHtml:
 			'El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las notificaciones de WhatsApp y WhatsApp Business. Lo que anota se lo pasa a la app por un canal privado que rechaza a cualquier otra app. Nunca se conecta a internet y nunca toca la app de WhatsApp.',
@@ -502,7 +502,7 @@ export const es: Messages = {
 		permissions: [
 			'<strong>Internet</strong>: para los repositorios de packs de arriba.',
 			'<strong>Notificaciones</strong>: solo para la notificación de prueba de Diagnóstico.',
-			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono, el mismo ajuste que cambia la app Contactos.',
+			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono, el mismo ajuste que cambia la app Contactos. Y cuando tocas «Añadir un chat desde contactos»: Cucuto lee las entradas de WhatsApp que ya tienen tus contactos (cada una, un nombre y un número de WhatsApp) y guarda solo a las personas que eliges. Cuando una de ellas te escribe por primera vez, vuelve a comparar ese nombre con esas entradas, para no vincular nunca a otra persona con el mismo nombre. No lee nada más de tus contactos.',
 			'<strong>Teléfono</strong>: solo para los tonos «Al azar en cada llamada», para saber cuándo termina una llamada. Nunca se lee el número.',
 			'<strong>Ubicación aproximada</strong>: una sola lectura, solo cuando tocas «Usar mi ubicación una vez» en «Día y noche». Nunca la ubicación exacta, nunca en segundo plano.',
 			'<strong>Micrófono</strong>: solo mientras grabas un sonido en el creador de packs.'

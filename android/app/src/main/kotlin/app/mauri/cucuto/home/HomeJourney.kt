@@ -68,7 +68,11 @@ fun homeJourney(
         }
 
         state.voiced.isEmpty() -> {
-            val next = state.recent.firstOrNull() ?: state.unassigned.firstOrNull()
+            // Someone who messaged comes before someone added from contacts who has not yet (ADR 0065).
+            val next =
+                state.recent.firstOrNull()
+                    ?: state.unassigned.firstOrNull { !it.chat.awaitingLink }
+                    ?: state.unassigned.firstOrNull()
             if (next == null) JourneyStep.WaitForMessages else JourneyStep.GiveFirstVoice(next)
         }
 

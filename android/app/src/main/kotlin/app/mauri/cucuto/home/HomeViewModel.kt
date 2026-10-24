@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.chats.ContactChats
 import app.mauri.cucuto.core.data.di.WallClock
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.ui.discover.DemoPacksRequests
@@ -26,6 +27,7 @@ class HomeViewModel
         characters: CharacterDirectory,
         private val clock: WallClock,
         private val demoPacks: DemoPacksRequests,
+        private val contactChats: ContactChats,
     ) : ViewModel() {
         private val query = MutableStateFlow("")
         private val packFilter = MutableStateFlow<String?>(null)
@@ -47,6 +49,14 @@ class HomeViewModel
         /** Hides [chat] from the recent senders strip until it messages again. */
         fun dismissRecent(chat: ChatKey) {
             viewModelScope.launch { chats.dismissRecent(chat) }
+        }
+
+        /** The answer to "Who is this?" (ADR 0065): [sighting] is the chat added from contacts [contactId]. */
+        fun confirmLink(
+            sighting: ChatKey,
+            contactId: Long,
+        ) {
+            viewModelScope.launch { contactChats.confirmLink(sighting, contactId) }
         }
 
         /**

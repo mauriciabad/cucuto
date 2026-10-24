@@ -15,6 +15,10 @@ import javax.inject.Singleton
  * only happens when the sender's `Person` key is a WhatsApp person JID (`…@lid` or `…@s.whatsapp.net`): that is
  * exactly the key their 1:1 chat has, so the voice also plays there, and a key of any other shape is not a chat.
  * Groups with the default policy add nobody, so busy groups do not flood the list with strangers.
+ *
+ * A 1:1 chat that belongs to no contact may be someone added from Android's contacts, waiting for this first message:
+ * [ContactChats.linkWaiting] links it when its name matches exactly and uniquely (ADR 0065). This message still played
+ * WhatsApp's tone; the voice plays from the next one.
  */
 @Singleton
 class AlertSightings
@@ -22,6 +26,7 @@ class AlertSightings
     constructor(
         private val seenSenders: SeenSenderRepository,
         private val contacts: ContactRepository,
+        private val linker: ContactChats,
     ) {
         suspend fun record(
             packageName: String,
@@ -41,7 +46,11 @@ class AlertSightings
                 senderKey = senderKey,
                 senderName = senderName,
             )
-            if (!isGroup || senderKey == null || senderKey == conversationKey || !isPersonJid(senderKey)) return
+            if (!isGroup) {
+                if (contacts.findByKey(packageName, conversationKey) == null) linker.linkWaiting()
+                return
+            }
+            if (senderKey == null || senderKey == conversationKey || !isPersonJid(senderKey)) return
             val group = contacts.findByKey(packageName, conversationKey) ?: return
             if (!group.isGroup || group.groupPolicy != GroupPolicy.PER_SENDER) return
             seenSenders.record(
