@@ -79,5 +79,5 @@ handed out to work that never merged or is still in a PR (0049 is in #225, 0059 
 | [0063](0063-independent-voice-and-ringtone.md) | Message voice and ringtone are independent choices; ringtone previews ring like the call | accepted |
 | [0064](0064-bundles-in-discover.md) | Bundles in Discover: one card with its packs inside | accepted |
 | [0065](0065-chats-before-they-message.md) | Chats before they message: Android contacts, not WhatsApp's database | accepted by the owner on #254 (2026-10-24); build #292 |
-| [0069](0069-haptic-previews-in-discover.md) | Haptic previews in Discover: the pack's haptic in the index, auto envelopes on the phone | accepted; owner comment on #284 to apply (#301) |
+| [0069](0069-haptic-previews-in-discover.md) | Haptic previews in Discover: the pack's haptic in the index, auto envelopes on the phone | accepted; amended for drawn previews (#301) |
 | [0071](0071-google-play-bundle-and-listing.md) | Google Play: app bundle, one signing certificate, listing and review notes | accepted; defaults open in #287 |

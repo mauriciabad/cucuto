@@ -357,7 +357,7 @@ In the app (Discover screen):
 
 1. **Repositories:** the default one plus user-added ones. Add by URL, QR code, or the deep link `cucuto://repo/add?url=…` from a website.
 2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges. A bundle is one card with its packs inside, each with its own badge, and a pack the repository also lists on its own shows only there, so nothing appears twice (owner report 2026-10-24, #247, [ADR 0064](decisions/0064-bundles-in-discover.md)).
-3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched. The index carries each character's haptic (`x-haptic`) and the phone computes auto envelopes from the sample (owner update 2026-10-24 (#272), [ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
+3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched. The index carries each character's haptic (`x-haptic`) and the phone computes auto envelopes from the sample (owner update 2026-10-24 (#272), [ADR 0069](decisions/0069-haptic-previews-in-discover.md)). Each preview also draws the vibration, in the app and on the website's Packs page, which can't vibrate (owner update 2026-10-24 (#301)).
 4. **Download:** animated progress, then size and SHA-256 checks, then the standard importer (bundles show their pack checklist).
 5. **Updates:** repositories are checked when the app opens, with ETag caching. No background jobs.
 
@@ -526,7 +526,7 @@ Development is near the end (owner, 2026-10-24). From now on, occasional single 
 | M2 Contacts and senders | Recent senders, group policy, WhatsApp Business | Add chats from Android contacts (#292); group sender device check (#157, owner) |
 | M3 UI and game feel | All screens and the four-tab shell, feedback engine, Spanish, accessibility pass | Picker folding and random picks (#289, #290); TalkBack and Scanner walkthrough on the phone (#226, owner) |
 | M4 Haptics | Everything: pack haptics, auto haptics, editor, per-contact override, AI-written patterns | — |
-| M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, credentials, verification | Draw haptic previews (#301); import speed (#279, #268); Drive folder source, v1.1 (#37, blocked on #188) |
+| M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, drawn haptic previews on the website and in the app (#301), credentials, verification | Import speed (#279, #268); Drive folder source, v1.1 (#37, blocked on #188) |
 | M6 Website | Every page, release-driven builds, the default repository, JPEG XL, screenshots, GitHub Pages and DNS | Explainer video rework (#271); TypeScript 7 (#162, blocked upstream) |
 | M7 Open-source release | Public repo and docs, CI with the media guard, signed releases, backup and restore UI, Google Play bundle and listing | Contact re-linking (PR #266) and a wiped-phone restore (#43, owner); review sample chat (#285); Play account, video and defaults (#276, #286, #287, owner); clean-install end to end (#46, owner); F-Droid after v1 (#275) |
 | M8 Pack creator (v1.1) | In-app creator, website Create page and its tools, golden packs through every validator | Creator vibrations, ringtones and animated sprites (#185, PR #225) |
@@ -578,7 +578,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M5 — Pack repositories and bundles
 
 - [x] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
-- [x] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
+- [x] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)). Owner update 2026-10-24 (#301): previews also draw the vibration, in Discover and on the website.
 - [x] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
 - [x] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
 - [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.

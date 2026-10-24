@@ -2,7 +2,7 @@
 // (docs/pack-format.md#haptics); shared/pack-spec checks it (HapticPatternText, the same rules as the importer) and
 // writes the "Copy for AI" prompt the app's haptic editor writes. Browsers cannot play rich haptics, so this file only
 // draws the timeline and edits events; the app previews them.
-import type { HapticEventJson } from '#lib/pack-spec/core.js';
+import type { HapticEventJson, HapticJson } from '#lib/pack-spec/core.js';
 
 /** Android recommends 50 ms or more after a preset (preset lengths depend on the device). */
 export const PRESET_SLOT_MS = 50;
@@ -116,4 +116,39 @@ export function loudnessRows(
 		}
 	}
 	return rows.slice(0, 40);
+}
+
+/** A preview drawing shows at least this much time, so a single tap doesn't stretch across it (the app's thumbnail). */
+export const PREVIEW_MIN_MS = 400;
+
+/**
+ * What a repository character's vibration looks like on the Packs page (#301, ADR 0069), from its `x-haptic`: a
+ * `custom` timeline drawn over its own length (at least PREVIEW_MIN_MS) in a `width` × `height` box, the `auto` and
+ * `none` modes by name, and null when the index doesn't say (or a custom pattern is empty).
+ */
+export type HapticPreview =
+	| { mode: 'custom'; durationMs: number; presets: string[]; envelopes: string[] }
+	| { mode: 'auto' }
+	| { mode: 'none' };
+
+export function hapticPreview(
+	haptic: HapticJson | undefined,
+	width: number,
+	height: number
+): HapticPreview | null {
+	switch (haptic?.mode) {
+		case 'auto':
+			return { mode: 'auto' };
+		case 'none':
+			return { mode: 'none' };
+		case 'custom': {
+			const events = haptic.events ?? [];
+			if (events.length === 0) return null;
+			const durationMs = endOf(events);
+			const paths = timelinePaths(events, Math.max(durationMs, PREVIEW_MIN_MS), width, height);
+			return { mode: 'custom', durationMs, ...paths };
+		}
+		default:
+			return null;
+	}
 }

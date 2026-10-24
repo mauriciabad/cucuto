@@ -3,6 +3,7 @@ package app.mauri.cucuto.ui.discover
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -97,6 +98,43 @@ class DiscoverContentTest {
         compose.onNodeWithText("Update").performClick()
         compose.onNodeWithText("Install").performScrollTo().performClick()
         assertEquals(listOf("app.example.cats", "app.example.dogs"), installed)
+    }
+
+    @Test
+    fun aCustomVibrationIsDrawnAndAMissingOneIsNot() {
+        val custom =
+            """{ "mode": "custom", "events": [ { "at": 0, "preset": "CLICK" }, { "at": 200, "preset": "TICK" } ] }"""
+        val load =
+            RepoLoad(
+                snapshot =
+                    snapshot(
+                        packEntry("app.example.cats", "Cats", character = "Tabby", haptic = custom),
+                        packEntry("app.example.bees", "Bees", character = "Bzz"),
+                    ),
+            )
+        show(state(load))
+
+        // The pattern lasts until 50 ms after its last tap.
+        compose.onNodeWithContentDescription("Vibration: own pattern, 0.3 seconds").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Bzz").performScrollTo().assertIsDisplayed()
+        // No x-haptic: nothing is drawn, as nothing vibrates.
+        compose.onAllNodesWithContentDescription("Vibration", substring = true).assertCountEquals(1)
+    }
+
+    @Test
+    fun autoAndNoneVibrationsAreNamed() {
+        val load =
+            RepoLoad(
+                snapshot =
+                    snapshot(
+                        packEntry("app.example.dogs", "Dogs", character = "Rex", haptic = """{ "mode": "auto" }"""),
+                        packEntry("app.example.owls", "Owls", character = "Hoot", haptic = """{ "mode": "none" }"""),
+                    ),
+            )
+        show(state(load))
+
+        compose.onNodeWithContentDescription("Vibration follows the voice").assertIsDisplayed()
+        compose.onNodeWithText("No vibration").performScrollTo().assertIsDisplayed()
     }
 
     @Test
