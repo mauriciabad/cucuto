@@ -88,7 +88,7 @@ The profile should follow a user who finished setup, so the emulator is prepared
      -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
    ```
 
-   It takes about 20 minutes on an Apple Silicon Mac. The plugin runs every journey until the profile is stable and
+   It takes about 30 minutes on an Apple Silicon Mac. The plugin runs every journey until the profile is stable and
    writes `app/src/main/generated/baselineProfiles/baseline-prof.txt` and `startup-prof.txt`. The test report also
    lists the `StartupBenchmarks` tests as failed: Macrobenchmark skips them with an assumption during generation, and
    the build still passes.
