@@ -71,3 +71,4 @@ scope":
   device.
 - Consequences above that said "WhatsApp call ringtones stay manual" and "No hook touches WhatsApp's audio" hold only
   for users without the optional scope. Phone calls are unchanged.
+- **Outcome of spike #215** ([ADR 0052](0052-whatsapp-call-ringtones.md)): with the opt-in scope, the URI WhatsApp passes to `RingtoneManager.getRingtone` is swapped. W-b stays rejected because it risks silent calls. A device run (#228) is still pending.

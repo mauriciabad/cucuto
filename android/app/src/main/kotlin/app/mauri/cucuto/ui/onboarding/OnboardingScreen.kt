@@ -57,7 +57,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -189,7 +191,11 @@ internal fun OnboardingContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(stringResource(R.string.onboarding_step, step.ordinal + 1, OnboardingStep.entries.size))
+                    // Announced when Next or Back changes the step, so TalkBack users know the page changed.
+                    Text(
+                        stringResource(R.string.onboarding_step, step.ordinal + 1, OnboardingStep.entries.size),
+                        Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                 },
                 actions = {
                     if (!last) TextButton(onClick = onFinish) { Text(stringResource(R.string.onboarding_skip)) }

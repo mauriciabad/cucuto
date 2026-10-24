@@ -30,7 +30,14 @@ class HomeContentTest {
     private val details = mutableListOf<ChatKey>()
     private val queries = mutableListOf<String>()
 
-    private fun show(state: HomeState) {
+    private var demoRequests = 0
+    private var demoImports = 0
+    private var restores = 0
+
+    private fun show(
+        state: HomeState,
+        journey: JourneyStep = JourneyStep.None,
+    ) {
         compose.setContent {
             CucutoTheme(dynamicColor = false) {
                 HomeContent(
@@ -40,8 +47,11 @@ class HomeContentTest {
                     onDismissRecent = {},
                     onOpenChat = { opened += it },
                     onOpenPacks = {},
-                    onBack = {},
                     onOpenDetail = { details += it },
+                    journey = journey,
+                    onGetDemoPacks = { demoRequests++ },
+                    onImportDemoPacks = { demoImports++ },
+                    onRestoreBackup = { restores++ },
                 )
             }
         }
@@ -83,10 +93,41 @@ class HomeContentTest {
     fun typingSearchesAndNoChatsShowsTheEmptyState() {
         show(HomeState(loading = false))
         compose.onNodeWithText("No chats yet").assertIsDisplayed()
-        compose.onNodeWithText("No sound packs yet").assertIsDisplayed()
         compose.onNode(hasSetTextAction()).performTextInput("ada")
         compose.waitForIdle()
         assertEquals("ada", queries.last())
+    }
+
+    @Test
+    fun firstRunOffersTheDemoPacksInsteadOfAnEmptyList() {
+        show(HomeState(loading = false), JourneyStep.ImportPacks)
+        compose.onNodeWithText("Give your chats a voice").assertIsDisplayed()
+        compose.onNodeWithText("No chats yet").assertDoesNotExist()
+        compose.onNodeWithText("Get the demo packs").performClick()
+        assertEquals(1, demoRequests)
+        // Offline fallback: a demo packs file already in Downloads.
+        compose.onNodeWithText("Pick a file from Downloads").performClick()
+        assertEquals(1, demoImports)
+        // A new phone: the restore flow starts right here, not only in Settings.
+        compose.onNodeWithText("Restore a backup").performClick()
+        assertEquals(1, restores)
+    }
+
+    @Test
+    fun afterTheImportOneTapGivesTheNewestSenderAVoice() {
+        val state = previewHomeState()
+        show(state, JourneyStep.GiveFirstVoice(state.recent.first()))
+        compose.onNodeWithText("Give Ada a voice").assertIsDisplayed()
+        compose.onNodeWithText("Choose a voice").performClick()
+        assertEquals(listOf(state.recent.first().key), opened)
+    }
+
+    @Test
+    fun theFirstVoiceIsCelebratedWithItsCharacter() {
+        val state = previewHomeState()
+        show(state, JourneyStep.FirstVoice(state.voiced.single()))
+        compose.onNodeWithText("Bea has a voice!").assertIsDisplayed()
+        compose.onNodeWithText("Next time Bea writes, you hear Bleep the frog.").assertIsDisplayed()
     }
 
     private fun ComposeContentTestRule.onAllNodesWithTextFirst(text: String) = onAllNodes(hasText(text)).onFirst()

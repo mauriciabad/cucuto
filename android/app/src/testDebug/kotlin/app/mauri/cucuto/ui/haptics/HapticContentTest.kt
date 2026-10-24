@@ -1,5 +1,8 @@
 package app.mauri.cucuto.ui.haptics
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -100,6 +103,54 @@ class HapticContentTest {
         compose.onNodeWithText("Delete").performScrollTo().performClick()
         compose.onNodeWithText("Start recording").performScrollTo().performClick()
         assertEquals(listOf("save", "delete 0", "record"), calls)
+    }
+
+    @Test
+    fun theAiTipOffersCopyPasteAndARefusalSaysWhyInPlainWords() {
+        var state by mutableStateOf(
+            HapticEditorState(loading = false, paste = PasteOutcome.Rejected(PatternProblem.Overlap(2, 200, 300))),
+        )
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) {
+                HapticEditorContent(
+                    state = state,
+                    actions =
+                        HapticEditorActions(
+                            onCopyForAi = { calls += "copy" },
+                            onPastePattern = { calls += "paste" },
+                            onDismissPaste = {
+                                calls += "dismiss"
+                                state = state.copy(paste = null)
+                            },
+                        ),
+                )
+            }
+        }
+
+        compose
+            .onNodeWithText("Event 2 starts at 200 ms, but the swell before it lasts until 300 ms.")
+            .assertIsDisplayed()
+        compose.onNodeWithText("OK").performClick()
+        compose.onNodeWithText("Copy for AI").performScrollTo().performClick()
+        compose.onNodeWithText("Paste pattern").performScrollTo().performClick()
+        // A scratch pad has no chat to set to Auto.
+        compose.onNodeWithText("Use Auto instead").assertDoesNotExist()
+        assertEquals(listOf("dismiss", "copy", "paste"), calls)
+    }
+
+    @Test
+    fun aPastedPatternIsConfirmedOnce() {
+        var state by mutableStateOf(HapticEditorState(loading = false, paste = PasteOutcome.Loaded(adjusted = false)))
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) {
+                HapticEditorContent(
+                    state = state,
+                    actions = HapticEditorActions(onDismissPaste = { state = state.copy(paste = null) }),
+                )
+            }
+        }
+        compose.onNodeWithText("Pattern pasted. Play it, then save it.").assertIsDisplayed()
+        assertEquals(null, state.paste)
     }
 
     @Test

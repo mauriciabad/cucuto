@@ -14,6 +14,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.home.HomeContent
 import app.mauri.cucuto.home.HomeState
+import app.mauri.cucuto.home.JourneyStep
 import app.mauri.cucuto.home.previewHomeState
 import app.mauri.cucuto.picker.PickerContent
 import app.mauri.cucuto.picker.previewPickerState
@@ -64,7 +65,24 @@ class SpanishScreensTest {
     fun homeEmpty() {
         show { HomeUnderTest(HomeState(loading = false)) }
         compose.onNodeWithText("Aún no hay chats").assertIsDisplayed()
-        compose.onNodeWithText("Aún no hay packs de sonidos").assertIsDisplayed()
+        assertNoClippedText()
+    }
+
+    @Test
+    fun homeFirstRunOffersTheDemoPacks() {
+        show { HomeUnderTest(HomeState(loading = false), JourneyStep.ImportPacks) }
+        compose.onNodeWithText("Dale voz a tus chats").assertIsDisplayed()
+        compose.onNodeWithText("Consigue los packs de demostración").assertExists()
+        compose.onNodeWithText("Elegir un archivo de Descargas").assertExists()
+        assertNoClippedText()
+    }
+
+    @Test
+    fun homeInvitesTheFirstSender() {
+        val state = previewHomeState()
+        show { HomeUnderTest(state, JourneyStep.GiveFirstVoice(state.recent.first())) }
+        compose.onNodeWithText("Dale una voz a Ada").assertIsDisplayed()
+        compose.onNodeWithText("Elegir una voz").assertExists()
         assertNoClippedText()
     }
 
@@ -114,7 +132,10 @@ class SpanishScreensTest {
     }
 
     @Composable
-    private fun HomeUnderTest(state: HomeState) {
+    private fun HomeUnderTest(
+        state: HomeState,
+        journey: JourneyStep = JourneyStep.None,
+    ) {
         HomeContent(
             state = state,
             onQueryChange = {},
@@ -122,7 +143,7 @@ class SpanishScreensTest {
             onDismissRecent = {},
             onOpenChat = {},
             onOpenPacks = {},
-            onBack = {},
+            journey = journey,
         )
     }
 

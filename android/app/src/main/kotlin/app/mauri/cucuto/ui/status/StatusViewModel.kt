@@ -2,38 +2,22 @@ package app.mauri.cucuto.ui.status
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.mauri.cucuto.core.data.repository.InstalledPackRepository
-import app.mauri.cucuto.core.data.routing.FrameworkReport
-import app.mauri.cucuto.core.data.routing.PublishState
-import app.mauri.cucuto.core.data.routing.PublishedTableFile
-import app.mauri.cucuto.core.data.routing.RoutingPublisher
-import app.mauri.cucuto.core.data.routing.RoutingSink
-import app.mauri.cucuto.core.data.routing.SinkConnection
-import app.mauri.cucuto.core.data.routing.XposedFramework
 import app.mauri.cucuto.core.data.settings.OnboardingSettings
 import app.mauri.cucuto.diagnostics.SelfTestNotifier
-import app.mauri.cucuto.diagnostics.TestVoice
-import app.mauri.cucuto.provider.ModuleEventSink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.transformLatest
-import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -60,101 +44,28 @@ sealed interface SelfTestMessage {
 }
 
 /**
- * Gathers the inputs of the four status checks (#24): the framework link and what LSPosed says about the module
- * (scope, running processes), the module's own reports from `system_server`, the installed messengers and packs.
- * Framework and package answers are re-read on [refresh] (the screens call it on resume, since scope and installed
- * apps change outside Cucuto); everything else is observed.
+ * The status card and the onboarding flow (#24): the live [StatusReports] report, re-probed on [refresh] (the
+ * screens call it on resume, since scope and installed apps change outside Cucuto), the celebration when it turns
+ * green, and the self-test notification.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class StatusViewModel
     @Inject
     constructor(
-        sink: RoutingSink,
-        events: ModuleEventSink,
-        installedPacks: InstalledPackRepository,
-        private val framework: XposedFramework,
-        private val messengers: MessengerDetector,
+        reports: StatusReports,
         private val onboarding: OnboardingSettings,
         private val notifier: SelfTestNotifier,
-        private val appUpdate: AppUpdateDetector,
-        publisher: RoutingPublisher,
-        publishedTable: PublishedTableFile,
     ) : ViewModel() {
         private val refreshes = MutableStateFlow(0)
 
-        private data class Probe(
-            val connection: SinkConnection,
-            val framework: FrameworkReport?,
-            val messengers: Map<String, Boolean>,
-            val appUpdatedSinceBoot: Boolean,
-        )
-
-        /**
-         * The framework link, except that "no service" right after the process started is held back until LSPosed
-         * had time to hand the service over: otherwise the card would flash a failure (and celebrate when it turns
-         * green a moment later) on every launch. The card shows "Checking" meanwhile.
-         */
-        private val connection: Flow<SinkConnection> =
-            sink.connection.transformLatest { connection ->
-                if (connection == SinkConnection.Disconnected) {
-                    val wait = AppUpdateDetector.serviceGraceLeftMillis()
-                    if (wait > 0) delay(wait)
-                }
-                emit(connection)
-            }
-
-        private val probes: Flow<Probe> =
-            combine(connection, refreshes) { connection, _ -> connection }
-                .mapLatest { connection ->
-                    Probe(
-                        connection = connection,
-                        framework = if (connection is SinkConnection.Connected) framework.report() else null,
-                        messengers = messengers.installed(),
-                        appUpdatedSinceBoot = appUpdate.updatedSinceBoot(),
-                    )
-                }
-
-        private val packCount: Flow<Int> =
-            installedPacks.observeAll().map { packs -> packs.count { it.packId != TestVoice.PACK_ID } }
-
-        /**
-         * Whether the module pulled the app's latest table without the service (ADR 0048). A new publication is
-         * "not delivered" for the fraction of a second until the module fetches it, so a change to false (after the
-         * first value) is held back for [PULL_GRACE_MILLIS]: the card does not flash "reboot" on every voice change.
-         */
-        private val providerDelivered: Flow<Boolean> =
-            combine(publisher.state, publishedTable.served, events.status) { publish, served, status ->
-                StatusChecks.providerDelivered(
-                    latestGeneration = (publish as? PublishState.Published)?.generation,
-                    servedGeneration = served,
-                    moduleStatus = status,
-                    bootTimeMillis = AppUpdateDetector.bootTimeMillis(),
-                )
-            }.distinctUntilChanged()
-                .withIndex()
-                .transformLatest { (index, delivered) ->
-                    if (!delivered && index > 0) delay(PULL_GRACE_MILLIS)
-                    emit(delivered)
-                }
-
         val state: StateFlow<StatusUiState> =
-            combine(probes, events.status, packCount, providerDelivered) { probe, status, packs, delivered ->
-                StatusUiState(
-                    StatusChecks.evaluate(
-                        StatusInputs(
-                            connection = probe.connection,
-                            framework = probe.framework,
-                            moduleStatus = status,
-                            bootTimeMillis = AppUpdateDetector.bootTimeMillis(),
-                            messengers = probe.messengers,
-                            packCount = packs,
-                            appUpdatedSinceBoot = probe.appUpdatedSinceBoot,
-                            providerDelivered = delivered,
-                        ),
-                    ),
-                )
-            }.stateIn(viewModelScope, SharingStarted.Eagerly, StatusUiState())
+            reports
+                .reports(refreshes)
+                .map(::StatusUiState)
+                .stateIn(viewModelScope, SharingStarted.Eagerly, StatusUiState())
+
+        /** Whether the card has ever been green (it then leaves Home for Settings → Setup); null while loading. */
+        val everGreen: StateFlow<Boolean?> = onboarding.celebrated.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
         private val celebrationChannel = Channel<Unit>(Channel.CONFLATED)
 
@@ -200,10 +111,5 @@ class StatusViewModel
                         SelfTestMessage.Failed(e.message ?: e.javaClass.simpleName)
                     }
             }
-        }
-
-        private companion object {
-            /** The module pulls a new table within a fraction of a second of the nudge; this leaves room for it. */
-            const val PULL_GRACE_MILLIS = 5_000L
         }
     }

@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +43,8 @@ fun RemovePackDialog(
         modifier = modifier,
         title = { Text(stringResource(R.string.packs_remove_title, pack.name)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Scrolls when large fonts make the choices taller than the dialog.
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     pluralStringResource(
                         R.plurals.packs_remove_body,

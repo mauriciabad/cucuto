@@ -25,9 +25,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -46,6 +43,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -58,25 +57,26 @@ import app.mauri.cucuto.core.data.settings.AutoBackupState
 import app.mauri.cucuto.core.data.settings.AutoBackupTargetKind
 import app.mauri.cucuto.core.data.settings.UiSoundLevel
 import app.mauri.cucuto.navigation.CucutoDestination
+import app.mauri.cucuto.ui.components.ChoiceButtonGroup
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSettingsSection
-import app.mauri.cucuto.ui.settings.restore.RestoreActions
-import app.mauri.cucuto.ui.settings.restore.RestoreFlow
-import app.mauri.cucuto.ui.settings.restore.RestoreViewModel
+import app.mauri.cucuto.ui.settings.restore.RestoreHost
+import app.mauri.cucuto.ui.status.SetupAttentionBanner
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import app.mauri.cucuto.ui.theme.rememberReducedMotion
 
 /**
  * Settings (#28, ADR 0028): the global switch, sound and feel, backup and restore, setup, diagnostics, about and
- * (debug builds) developer tools. Restore runs as a full-screen flow on top ([RestoreFlow]).
+ * (debug builds) developer tools. Restore runs as a full-screen flow on top ([RestoreHost]). When
+ * [setupNeedsAttention] (the shell's badge on this tab, #180), a banner on top leads to Settings → Setup.
  */
 @Composable
 fun SettingsScreen(
     onNavigate: (CucutoDestination) -> Unit,
     modifier: Modifier = Modifier,
+    setupNeedsAttention: Boolean = false,
     viewModel: SettingsViewModel = hiltViewModel(),
-    restoreViewModel: RestoreViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
@@ -97,10 +97,6 @@ fun SettingsScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFileNames.MIME_TYPE)) { uri ->
             viewModel.chooseFile(uri?.toString())
         }
-    val pickBackup =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let { restoreViewModel.open(it.toString()) }
-        }
 
     LaunchedEffect(message) {
         val shown = message ?: return@LaunchedEffect
@@ -108,29 +104,32 @@ fun SettingsScreen(
         viewModel.messageShown()
     }
 
-    SettingsContent(
-        state = state,
-        systemRemovesAnimations = rememberReducedMotion(),
-        snackbar = snackbar,
-        phoneRingtones = { PhoneRingtoneSettingsSection() },
-        actions =
-            SettingsActions(
-                onEnabled = viewModel::setEnabled,
-                onSoundLevel = viewModel::setSoundLevel,
-                onHaptics = viewModel::setHaptics,
-                onRemoveAnimations = viewModel::setRemoveAnimations,
-                onExport = { exportDialog = true },
-                onRestore = { launchSafely { pickBackup.launch(ZIP_TYPES) } },
-                onChooseFolder = { launchSafely { chooseFolder.launch(null) } },
-                onChooseFile = { launchSafely { chooseFile.launch(viewModel.suggestedAutoFileName()) } },
-                onTurnOffAutoBackup = viewModel::turnOffAutoBackup,
-                onAutoIncludePacks = viewModel::setAutoIncludePacks,
-                onBackUpNow = viewModel::backUpNow,
-                onLicenses = { licenses = true },
-                onNavigate = onNavigate,
-            ),
-        modifier = modifier,
-    )
+    RestoreHost(onNavigate = onNavigate, onKeepForBackups = viewModel::chooseFile) { pickBackup ->
+        SettingsContent(
+            state = state,
+            systemRemovesAnimations = rememberReducedMotion(),
+            snackbar = snackbar,
+            phoneRingtones = { PhoneRingtoneSettingsSection() },
+            setupNeedsAttention = setupNeedsAttention,
+            actions =
+                SettingsActions(
+                    onEnabled = viewModel::setEnabled,
+                    onSoundLevel = viewModel::setSoundLevel,
+                    onHaptics = viewModel::setHaptics,
+                    onRemoveAnimations = viewModel::setRemoveAnimations,
+                    onExport = { exportDialog = true },
+                    onRestore = pickBackup,
+                    onChooseFolder = { launchSafely { chooseFolder.launch(null) } },
+                    onChooseFile = { launchSafely { chooseFile.launch(viewModel.suggestedAutoFileName()) } },
+                    onTurnOffAutoBackup = viewModel::turnOffAutoBackup,
+                    onAutoIncludePacks = viewModel::setAutoIncludePacks,
+                    onBackUpNow = viewModel::backUpNow,
+                    onLicenses = { licenses = true },
+                    onNavigate = onNavigate,
+                ),
+            modifier = modifier,
+        )
+    }
 
     if (exportDialog) {
         ExportDialog(
@@ -142,38 +141,6 @@ fun SettingsScreen(
         )
     }
     if (licenses) LicensesDialog(onDismiss = { licenses = false })
-
-    val restoreStep by restoreViewModel.step.collectAsStateWithLifecycle()
-    RestoreFlow(
-        step = restoreStep,
-        actions =
-            RestoreActions(
-                onClose = restoreViewModel::close,
-                onPassphrase = restoreViewModel::submitPassphrase,
-                onPickAnother = {
-                    restoreViewModel.close()
-                    launchSafely { pickBackup.launch(ZIP_TYPES) }
-                },
-                onRetryPack = restoreViewModel::restorePack,
-                onContinue = restoreViewModel::continueToContacts,
-                onToggleConflict = restoreViewModel::toggleConflict,
-                onSelectAll = restoreViewModel::selectAllConflicts,
-                onApplyConflicts = restoreViewModel::applyConflicts,
-                onOpenSetup = {
-                    restoreViewModel.close()
-                    onNavigate(CucutoDestination.Onboarding)
-                },
-                onOpenDiagnostics = {
-                    restoreViewModel.close()
-                    onNavigate(CucutoDestination.Diagnostics)
-                },
-                onKeepForBackups = { uri ->
-                    viewModel.chooseFile(uri)
-                    restoreViewModel.keepForBackups()
-                },
-            ),
-        onPackFilePick = restoreViewModel::importPackFile,
-    )
 }
 
 /** Backups and packs are plain zips; some providers report them as octet streams. */
@@ -214,13 +181,14 @@ internal fun SettingsContent(
     modifier: Modifier = Modifier,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
     phoneRingtones: (@Composable () -> Unit)? = null,
+    setupNeedsAttention: Boolean = false,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = { Text(stringResource(R.string.settings_title), Modifier.semantics { heading() }) },
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -237,6 +205,12 @@ internal fun SettingsContent(
                 ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // The Settings tab's badge (#180) leads here: say what needs the user first, not six sections down.
+            if (setupNeedsAttention) {
+                item(key = "attention") {
+                    SetupAttentionBanner(onOpen = { actions.onNavigate(CucutoDestination.Setup) })
+                }
+            }
             item(key = "voices") { VoicesSection(state.enabled, actions.onEnabled) }
             if (phoneRingtones != null) item(key = "ringtones") { phoneRingtones() }
             item(key = "feel") { FeelSection(state, systemRemovesAnimations, actions) }
@@ -285,19 +259,17 @@ private fun FeelSection(
             supportingContent = { Text(stringResource(R.string.settings_ui_sounds_body)) },
             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         )
-        val levels = UiSoundLevel.entries
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp)) {
-            levels.forEachIndexed { index, level ->
-                SegmentedButton(
-                    selected = state.soundLevel == level,
-                    onClick = {
-                        actions.onSoundLevel(level)
-                        feedback.fire(Feedback.SegmentTick)
-                    },
-                    shape = SegmentedButtonDefaults.itemShape(index, levels.size),
-                ) { Text(stringResource(level.label())) }
-            }
-        }
+        // Wraps instead of cutting "Normal" short with large fonts.
+        ChoiceButtonGroup(
+            options = UiSoundLevel.entries,
+            selected = state.soundLevel,
+            onSelect = { level ->
+                actions.onSoundLevel(level)
+                feedback.fire(Feedback.SegmentTick)
+            },
+            label = { stringResource(it.label()) },
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+        )
         SettingsSwitchRow(
             title = stringResource(R.string.settings_ui_haptics),
             supporting = stringResource(R.string.settings_ui_haptics_body),
@@ -468,7 +440,7 @@ private fun SetupSection(onNavigate: (CucutoDestination) -> Unit) {
         SettingsLinkRow(
             title = stringResource(R.string.settings_setup_status),
             supporting = stringResource(R.string.settings_setup_status_body),
-            onClick = { onNavigate(CucutoDestination.Status) },
+            onClick = { onNavigate(CucutoDestination.Setup) },
         )
         SettingsLinkRow(
             title = stringResource(R.string.settings_setup_guide),
@@ -534,9 +506,9 @@ internal fun openLink(
 private fun DeveloperSection(onNavigate: (CucutoDestination) -> Unit) {
     SettingsSection(R.string.settings_section_developer) {
         SettingsLinkRow(
-            title = stringResource(R.string.settings_gallery),
-            supporting = stringResource(R.string.settings_gallery_body),
-            onClick = { onNavigate(CucutoDestination.Gallery) },
+            title = stringResource(R.string.settings_developer),
+            supporting = stringResource(R.string.settings_developer_body),
+            onClick = { onNavigate(CucutoDestination.Developer) },
         )
         SettingsInfoRow(
             title = stringResource(R.string.settings_build),

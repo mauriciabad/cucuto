@@ -48,7 +48,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -91,7 +93,7 @@ fun DayNightScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MediumFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.daynight_title)) },
+                title = { Text(stringResource(R.string.daynight_title), Modifier.semantics { heading() }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -199,6 +201,7 @@ private fun NowCard(
             Text(
                 stringResource(if (state.isDay) R.string.daynight_now_day else R.string.daynight_now_night),
                 style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics { heading() },
             )
             Text(
                 when (val sun = state.today) {
@@ -311,6 +314,8 @@ private fun CoordinatesForm(onSave: (String, String) -> CoordinateError?) {
             ),
             style = MaterialTheme.typography.bodySmall,
             color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            // "Saved" and errors are announced: the button's tap alone says nothing.
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
         OutlinedButton(
             onClick = {
@@ -358,6 +363,7 @@ private fun LocationSection(
                 stringResource(message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
     }

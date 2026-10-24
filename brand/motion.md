@@ -108,7 +108,9 @@ When the user turns on **Remove animations** (Settings › Accessibility; `ANIMA
 browser reports `prefers-reduced-motion: reduce`:
 
 - Keep **state changes**: the door is shown open, the assigned avatar appears, colors change. Compose animations
-  jump to their end values automatically when the duration scale is 0.
+  jump to their end values automatically when the duration scale is 0. Cucuto's own "Remove animations" setting
+  (Settings › Sound and feel) does the same inside the app by swapping the motion scheme for one that snaps
+  (ADR 0041).
 - Drop **decorative motion**: no particles, no squash and stretch, no looping demo, no sound arcs, no parallax.
 - Replace the door-open sequence by a single cross-fade (default effects) to the open state.
 - Sound and haptics still play (they carry meaning), unless the user turned them off.

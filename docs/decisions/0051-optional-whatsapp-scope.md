@@ -70,3 +70,4 @@ The owner answered on #145 (2026-10-24, verbatim in the [owner log](../owner-log
   ringtones through Android contacts, and the guided per-chat ringtone for WhatsApp calls.
 - The `system_server` rules (never throw, degrade to WhatsApp's default tone) are unchanged and now also apply to the
   WhatsApp process.
+- **Outcome of spike #215** ([ADR 0052](0052-whatsapp-call-ringtones.md), [report](../whatsapp-ringtone-spike.md)): the hook is one framework method, `RingtoneManager.getRingtone(Context, Uri)`, and the caller is read from WhatsApp's own call notification (name only). `scope.list` lists `system` and `com.whatsapp`, which LSPosed recommends but never ticks automatically, so point 7 resolves to listing WhatsApp and requesting it at runtime after the explainer. A device run (#228) is still pending.

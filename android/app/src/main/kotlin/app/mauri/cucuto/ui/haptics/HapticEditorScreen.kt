@@ -1,5 +1,7 @@
 package app.mauri.cucuto.ui.haptics
 
+import android.content.ClipData
+import android.os.SystemClock
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -31,7 +33,6 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,7 +50,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,6 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -65,16 +66,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -87,9 +95,12 @@ import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
+import app.mauri.cucuto.ui.components.ChoiceButtonGroup
+import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.theme.CucutoTheme
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
@@ -112,6 +123,10 @@ fun HapticEditorScreen(
     val feedback = LocalFeedback.current
     val done by rememberUpdatedState(onDone)
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val clipLabel = stringResource(R.string.haptic_ai_clip_label)
 
     LaunchedEffect(state.saved) {
         if (state.saved) {
@@ -169,6 +184,27 @@ fun HapticEditorScreen(
                 onStopRecording = { viewModel.stopRecording() },
                 onPreview = viewModel::preview,
                 onDismissError = viewModel::dismissError,
+                onCopyForAi = {
+                    scope.launch {
+                        // Android shows its own "copied" confirmation (API 33+), so the editor adds none.
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, viewModel.aiText())))
+                    }
+                },
+                onPastePattern = {
+                    scope.launch {
+                        val text =
+                            clipboard
+                                .getClipEntry()
+                                ?.clipData
+                                ?.takeIf { it.itemCount > 0 }
+                                ?.getItemAt(0)
+                                ?.coerceToText(context)
+                                ?.toString()
+                        viewModel.paste(text)
+                    }
+                },
+                onUseAuto = viewModel::useAuto,
+                onDismissPaste = viewModel::dismissPaste,
             ),
         modifier = modifier,
     )
@@ -218,6 +254,10 @@ data class HapticEditorActions(
     val onStopRecording: () -> Unit = {},
     val onPreview: (withClip: Boolean) -> Unit = {},
     val onDismissError: () -> Unit = {},
+    val onCopyForAi: () -> Unit = {},
+    val onPastePattern: () -> Unit = {},
+    val onUseAuto: () -> Unit = {},
+    val onDismissPaste: () -> Unit = {},
 )
 
 /** Stateless haptic editor, for previews and UI tests. */
@@ -229,6 +269,7 @@ fun HapticEditorContent(
     modifier: Modifier = Modifier,
 ) {
     val snackbar = remember { SnackbarHostState() }
+    val largeFont = isLargeFont()
     val failedMessage = stringResource(R.string.haptic_editor_failed)
     LaunchedEffect(state.failed) {
         if (state.failed) {
@@ -236,21 +277,37 @@ fun HapticEditorContent(
             actions.onDismissError()
         }
     }
+    val pastedMessage = stringResource(R.string.haptic_ai_pasted)
+    val adjustedMessage = stringResource(R.string.haptic_ai_pasted_adjusted)
+    val snackbarScope = rememberCoroutineScope()
+    LaunchedEffect(state.paste) {
+        val loaded = state.paste as? PasteOutcome.Loaded ?: return@LaunchedEffect
+        // Shown outside this effect: dismissing the outcome changes its key and would cancel the snackbar.
+        snackbarScope.launch { snackbar.showSnackbar(if (loaded.adjusted) adjustedMessage else pastedMessage) }
+        actions.onDismissPaste()
+    }
+    PasteProblemDialog(state.paste, actions.onDismissPaste)
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.haptic_editor_title)) },
+                title = {
+                    Text(
+                        stringResource(R.string.haptic_editor_title),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = actions.onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.navigate_back))
                     }
                 },
                 actions = {
-                    TextButton(onClick = actions.onUndo, enabled = state.draft.canUndo && state.recording == null) {
-                        Text(stringResource(R.string.haptic_editor_undo))
-                    }
+                    // With large fonts Undo moves above the timeline, so the title keeps some room.
+                    if (!largeFont) UndoButton(state, actions)
                     if (state.target != null) {
                         Button(
                             onClick = actions.onSave,
@@ -284,6 +341,7 @@ fun HapticEditorContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            if (largeFont) UndoButton(state, actions)
             TimelineCard(state, actions)
             if (state.recording == null) {
                 ToolRow(state.tool, actions.onTool)
@@ -291,8 +349,19 @@ fun HapticEditorContent(
             }
             RhythmSection(state.recording, actions)
             PreviewRow(state, actions)
+            if (state.recording == null) AiSection(state, actions)
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun UndoButton(
+    state: HapticEditorState,
+    actions: HapticEditorActions,
+) {
+    TextButton(onClick = actions.onUndo, enabled = state.draft.canUndo && state.recording == null) {
+        Text(stringResource(R.string.haptic_editor_undo))
     }
 }
 
@@ -319,6 +388,7 @@ private fun TimelineCard(
         playhead.animateTo(state.playbackMs.toFloat(), tween(state.playbackMs, easing = LinearEasing))
         playing = false
     }
+    val addLabel = stringResource(R.string.haptic_editor_add_action, stringResource(state.tool.label))
     val summary =
         if (events.isEmpty()) {
             stringResource(R.string.haptic_editor_timeline_empty)
@@ -348,7 +418,20 @@ private fun TimelineCard(
                     Modifier
                         .fillMaxWidth()
                         .height(TIMELINE_HEIGHT)
-                        .semantics { contentDescription = summary },
+                        .semantics {
+                            contentDescription = summary
+                            // Drawing on the timeline needs touch; screen readers add events with this action and
+                            // edit them in the panel below (move, strength, delete).
+                            if (state.recording == null) {
+                                customActions =
+                                    listOf(
+                                        CustomAccessibilityAction(addLabel) {
+                                            actions.onTapTimeline(nextEventMs(duration, events.isEmpty()), 0)
+                                            true
+                                        },
+                                    )
+                            }
+                        },
             )
             if (events.isEmpty() && state.recording == null) {
                 Text(
@@ -374,22 +457,12 @@ private fun ToolRow(
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.semantics { heading() },
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            val tools = HapticTool.entries
-            tools.forEachIndexed { index, entry ->
-                ToggleButton(
-                    checked = entry == tool,
-                    onCheckedChange = { onTool(entry) },
-                    shapes = connectedShapes(index, tools.size),
-                    modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
-                ) {
-                    Text(stringResource(entry.label), maxLines = 1)
-                }
-            }
-        }
+        ChoiceButtonGroup(
+            options = HapticTool.entries,
+            selected = tool,
+            onSelect = onTool,
+            label = { stringResource(it.label) },
+        )
     }
 }
 
@@ -470,21 +543,13 @@ private fun PresetControls(
     event: HapticEvent.Preset,
     actions: HapticEditorActions,
 ) {
-    val presets = HapticPreset.entries
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            presets.forEachIndexed { i, preset ->
-                ToggleButton(
-                    checked = event.preset == preset,
-                    onCheckedChange = { actions.onPreset(index, preset) },
-                    shapes = connectedShapes(i, presets.size),
-                    modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
-                ) { Text(stringResource(preset.label), maxLines = 1) }
-            }
-        }
+        ChoiceButtonGroup(
+            options = HapticPreset.entries,
+            selected = event.preset,
+            onSelect = { actions.onPreset(index, it) },
+            label = { stringResource(it.label) },
+        )
         LabeledSlider(
             label = stringResource(R.string.haptic_editor_strength),
             milli = event.milliScale,
@@ -536,7 +601,8 @@ private fun LabeledSlider(
 ) {
     val percent = stringResource(R.string.haptic_editor_percent, (milli / 10f).roundToInt())
     Column {
-        Row {
+        // The slider below says the label and the percentage; the row is for eyes only (no double announcement).
+        Row(Modifier.clearAndSetSemantics {}) {
             Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             Text(percent, style = MaterialTheme.typography.labelLarge)
         }
@@ -582,8 +648,13 @@ private fun RhythmPad(
     val haptics = LocalHapticFeedback.current
     val press by rememberUpdatedState(actions.onPress)
     val release by rememberUpdatedState(actions.onRelease)
-    val scale by animateFloatAsState(if (recording.pressed) PRESSED_SCALE else 1f, label = "pad scale")
+    val scale by animateFloatAsState(
+        targetValue = if (recording.pressed) PRESSED_SCALE else 1f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "pad scale",
+    )
     val padLabel = stringResource(R.string.haptic_editor_rhythm_pad)
+    val tapLabel = stringResource(R.string.haptic_editor_rhythm_tap_action)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LinearWavyProgressIndicator(
             progress = { recording.elapsedMs / HapticTimeline.MAX_MS.toFloat() },
@@ -615,6 +686,13 @@ private fun RhythmPad(
                     ).semantics {
                         contentDescription = padLabel
                         role = Role.Button
+                        // Screen readers double-tap instead of touching: each double tap is one short beat.
+                        onClick(label = tapLabel) {
+                            val now = SystemClock.uptimeMillis()
+                            if (press(now)) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            release(now + ACCESSIBLE_TAP_MS)
+                            true
+                        }
                     }.pointerInput(Unit) {
                         awaitEachGesture {
                             val down = awaitFirstDown()
@@ -670,15 +748,149 @@ private fun PreviewRow(
     }
 }
 
+/** "Ask an AI" (#217): the honest tip, Copy for AI, Paste pattern and a way back to Auto. */
 @Composable
-private fun connectedShapes(
-    index: Int,
-    count: Int,
-) = when (index) {
-    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-    count - 1 -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+private fun AiSection(
+    state: HapticEditorState,
+    actions: HapticEditorActions,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.haptic_ai_title),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            stringResource(R.string.haptic_ai_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilledTonalButton(onClick = actions.onCopyForAi) { Text(stringResource(R.string.haptic_ai_copy)) }
+            OutlinedButton(onClick = actions.onPastePattern) { Text(stringResource(R.string.haptic_ai_paste)) }
+            if (state.canUseAuto) {
+                TextButton(onClick = actions.onUseAuto) { Text(stringResource(R.string.haptic_ai_use_auto)) }
+            }
+        }
+    }
 }
+
+/** Why a pasted pattern was refused, in plain words, with a hint to hand the message back to the AI. */
+@Composable
+private fun PasteProblemDialog(
+    paste: PasteOutcome?,
+    onDismiss: () -> Unit,
+) {
+    val problem =
+        when (paste) {
+            is PasteOutcome.Rejected -> describe(paste.problem)
+            PasteOutcome.EmptyClipboard -> stringResource(R.string.haptic_ai_problem_empty_clipboard)
+            else -> return
+        }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.haptic_ai_problem_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(problem)
+                if (paste is PasteOutcome.Rejected) Text(stringResource(R.string.haptic_ai_problem_hint))
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.haptic_ai_problem_ok)) } },
+    )
+}
+
+@Composable
+private fun describe(spot: PatternSpot): String =
+    when {
+        spot.event == null -> stringResource(R.string.haptic_ai_spot_pattern)
+        spot.point == null -> stringResource(R.string.haptic_ai_spot_event, spot.event)
+        else -> stringResource(R.string.haptic_ai_spot_point, spot.event, spot.point)
+    }
+
+@Composable
+private fun describe(problem: PatternProblem): String =
+    when (problem) {
+        PatternProblem.NotJson -> {
+            stringResource(R.string.haptic_ai_problem_not_json)
+        }
+
+        is PatternProblem.NotCustom -> {
+            stringResource(R.string.haptic_ai_problem_not_custom, problem.mode)
+        }
+
+        PatternProblem.NoEvents -> {
+            stringResource(R.string.haptic_ai_problem_no_events)
+        }
+
+        PatternProblem.TooManyEvents -> {
+            stringResource(R.string.haptic_ai_problem_too_many_events, HapticTimeline.MAX_EVENTS)
+        }
+
+        is PatternProblem.NotAnEvent -> {
+            stringResource(R.string.haptic_ai_problem_not_an_event, problem.event)
+        }
+
+        is PatternProblem.MissingField -> {
+            stringResource(R.string.haptic_ai_problem_missing_field, describe(problem.spot), problem.field)
+        }
+
+        is PatternProblem.UnknownField -> {
+            stringResource(R.string.haptic_ai_problem_unknown_field, describe(problem.spot), problem.field)
+        }
+
+        is PatternProblem.NotWholeNumber -> {
+            stringResource(
+                R.string.haptic_ai_problem_not_whole,
+                describe(problem.spot),
+                problem.field,
+                problem.value,
+            )
+        }
+
+        is PatternProblem.OutOfRange -> {
+            stringResource(
+                R.string.haptic_ai_problem_out_of_range,
+                describe(problem.spot),
+                problem.field,
+                problem.min,
+                problem.max,
+                problem.value,
+            )
+        }
+
+        is PatternProblem.UnknownPreset -> {
+            stringResource(R.string.haptic_ai_problem_unknown_preset, problem.event, problem.name)
+        }
+
+        is PatternProblem.PointCount -> {
+            stringResource(
+                R.string.haptic_ai_problem_point_count,
+                problem.event,
+                HapticTimeline.MAX_POINTS,
+                problem.count,
+            )
+        }
+
+        is PatternProblem.NotClosed -> {
+            stringResource(R.string.haptic_ai_problem_not_closed, problem.event)
+        }
+
+        is PatternProblem.Unsorted -> {
+            stringResource(R.string.haptic_ai_problem_unsorted, problem.event)
+        }
+
+        is PatternProblem.Overlap -> {
+            stringResource(R.string.haptic_ai_problem_overlap, problem.event, problem.atMs, problem.busyUntilMs)
+        }
+
+        is PatternProblem.TooLong -> {
+            stringResource(R.string.haptic_ai_problem_too_long, problem.ms, HapticTimeline.MAX_MS)
+        }
+    }
 
 private val HapticTool.label: Int
     get() =
@@ -710,6 +922,14 @@ private fun describe(event: HapticEvent): String =
         }
     }
 
+/** Where the screen-reader "add" action puts a new event: at the start, or a beat after the pattern ends. */
+internal fun nextEventMs(
+    durationMs: Int,
+    empty: Boolean,
+): Int = if (empty) 0 else minOf(durationMs + ACCESSIBLE_GAP_MS, HapticTimeline.MAX_MS - ACCESSIBLE_GAP_MS)
+
+private const val ACCESSIBLE_GAP_MS = 150
+
 /** Milliseconds as seconds with one decimal, for labels ("1.2"). */
 private fun seconds(ms: Int): String = "%.1f".format(ms / 1000f)
 
@@ -717,6 +937,9 @@ private val TIMELINE_HEIGHT = 200.dp
 private val PAD_HEIGHT = 160.dp
 private const val PRESSED_SCALE = 0.96f
 private const val NUDGE_MS = 10
+
+/** How long a screen reader's double tap holds the rhythm pad: a short beat. */
+private const val ACCESSIBLE_TAP_MS = 60L
 
 @Preview(showBackground = true, heightDp = 1100)
 @Composable

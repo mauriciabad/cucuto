@@ -14,7 +14,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.unit.Density
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -50,7 +52,7 @@ import kotlin.math.roundToInt
  * ```kotlin
  * class PacksScreenshotTest(variant: Variant) : ScreenshotTest(variant) {
  *     @Test
- *     fun packs() = screenshot("packs") { PacksContent(state = …, onBack = {}, …) }
+ *     fun packs() = screenshot("packs") { PacksContent(state = …, onDiscover = {}, …) }
  * }
  * ```
  *
@@ -65,9 +67,11 @@ import kotlin.math.roundToInt
  * - `./gradlew :app:exportStoreScreenshots` also writes the store listing's images (the tests with a `store`
  *   position) to `fastlane/metadata/android/<en-US|es-ES>/images/phoneScreenshots/`, light theme, full resolution
  *   (ADR 0046). F-Droid, IzzyOnDroid and Obtainium show them in that order.
+ * - `fontScale = 2f` (Android's largest font size, #29) records `<name>-font200-light.png` in English and
+ *   `<name>-font200-es-light.png` in Spanish (the longer strings), light theme only: [LargeFontScreenshotTest].
  *
- * Screens still to cover, one subclass each, as soon as they are on `main`:
- * - TODO(#153): the app shell (navigation bar with Home, Packs, Discover and Settings) around Home.
+ * Tab roots (Home, Packs, Settings) are captured inside the app shell with [InShell], so the navigation bar shows;
+ * [ShellScreenshotTest] covers the first-run journey on Home (#153).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -130,6 +134,7 @@ abstract class ScreenshotTest(
      * `<name>-dark.png`. [web] is the website's name for the image, written only by `exportWebScreenshots`. [store]
      * is the image's position in the store listing (light theme only), written only by `exportStoreScreenshots`.
      * [settleMillis] of test-clock time pass before the capture: enough for entry animations and sheets to rest.
+     * A [fontScale] above 1 records a large-font golden instead, in the light theme, in English and in Spanish.
      */
     @OptIn(ExperimentalRoborazziApi::class)
     protected fun screenshot(
@@ -137,6 +142,7 @@ abstract class ScreenshotTest(
         web: String? = null,
         store: Int? = null,
         settleMillis: Long = SETTLE_MILLIS,
+        fontScale: Float = 1f,
         content: @Composable () -> Unit,
     ) {
         val exportDir = System.getProperty(WEB_EXPORT_PROPERTY).orEmpty()
@@ -144,8 +150,12 @@ abstract class ScreenshotTest(
         val webExport = web != null && exportDir.isNotEmpty()
         val storeExport = store != null && storeDir.isNotEmpty() && !variant.dark
         val locale = Locale.forLanguageTag(variant.language)
+        val largeFont = fontScale != 1f
+        if (largeFont) assumeTrue("Large-font goldens are light only", !variant.dark)
         if (!variant.isEnglish) {
-            assumeTrue("$variant runs only for the website and store exports", webExport || storeExport)
+            if (!largeFont) {
+                assumeTrue("$variant runs only for the website and store exports", webExport || storeExport)
+            }
             assumeTrue("The app has no ${variant.language} strings yet", isTranslated(locale))
             // Dates and numbers ("2 hours ago", "298 kB") follow the default locale.
             Locale.setDefault(locale)
@@ -153,12 +163,17 @@ abstract class ScreenshotTest(
 
         compose.mainClock.autoAdvance = false
         compose.runOnUiThread { WindowCompat.setDecorFitsSystemWindows(compose.activity.window, false) }
-        compose.setContent { DeviceFrame(variant.dark, locale) { content() } }
+        compose.setContent { DeviceFrame(variant.dark, locale, fontScale) { content() } }
         compose.mainClock.advanceTimeByFrame()
         applySystemBarInsets()
         compose.mainClock.advanceTimeBy(settleMillis)
         compose.waitForIdle()
 
+        if (largeFont) {
+            val language = if (variant.isEnglish) "" else "-${variant.language}"
+            captureScreenRoboImage("$name-font${(fontScale * PERCENT).roundToInt()}$language-light.png", goldenOptions)
+            return
+        }
         if (variant.isEnglish) captureScreenRoboImage("$name-${variant.theme}.png", goldenOptions)
         if (webExport) {
             val folder = if (variant.isEnglish) File(exportDir) else File(exportDir, variant.language)
@@ -212,6 +227,7 @@ abstract class ScreenshotTest(
         private const val SETTLE_MILLIS = 3_000L
         private const val GOLDEN_SCALE = 0.5
         private const val WEB_SCALE = 0.6
+        private const val PERCENT = 100
 
         /** Every test runs in each variant; the test name ends in `[Light]`, `[Dark]`, `[LightEs]` or `[DarkEs]`. */
         @JvmStatic
@@ -255,6 +271,7 @@ private fun Context.localized(locale: Locale): Context {
 private fun DeviceFrame(
     dark: Boolean,
     locale: Locale,
+    fontScale: Float,
     content: @Composable () -> Unit,
 ) {
     // Code that asks the configuration (isSystemInDarkTheme, stringResource) sees the same theme and language.
@@ -265,9 +282,16 @@ private fun DeviceFrame(
                 (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
                 if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
             setLocale(locale)
+            this.fontScale = fontScale
         }
     val localized = ContextThemeWrapper(context, context.theme).apply { applyOverrideConfiguration(configuration) }
-    CompositionLocalProvider(LocalConfiguration provides configuration, LocalContext provides localized) {
+    // Text sizes in sp follow LocalDensity's font scale, which comes from the window, not this configuration.
+    val density = Density(LocalDensity.current.density, fontScale)
+    CompositionLocalProvider(
+        LocalConfiguration provides configuration,
+        LocalContext provides localized,
+        LocalDensity provides density,
+    ) {
         CucutoTheme(darkTheme = dark, dynamicColor = false) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
                 content()

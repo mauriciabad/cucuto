@@ -6,7 +6,6 @@ import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
-import app.mauri.cucuto.core.routing.Voice
 import app.mauri.cucuto.xposed.events.Outcome
 
 /** The packages Cucuto acts on, and the app's own self-test notification. */
@@ -84,25 +83,6 @@ class AlertRouter(
     private val bags: ShuffleBags = ShuffleBags(),
     private val now: () -> Long = System::currentTimeMillis,
 ) {
-    /**
-     * Indices of [voice]'s clips that may play at [nowMs] ([RoutingTable.isPlayable]), or null to use them all:
-     * when every clip is playable, or when none is (a pack whose conditions leave a gap still plays something).
-     */
-    private fun playablePool(
-        table: RoutingTable,
-        voice: Voice,
-        nowMs: Long,
-    ): IntArray? {
-        val clips = voice.clips
-        var count = 0
-        for (clip in clips) if (table.isPlayable(clip, nowMs)) count++
-        if (count == 0 || count == clips.size) return null
-        val pool = IntArray(count)
-        var j = 0
-        clips.forEachIndexed { i, clip -> if (table.isPlayable(clip, nowMs)) pool[j++] = i }
-        return pool
-    }
-
     /** Returns null for packages Cucuto never touches; otherwise a [Decision], possibly "leave it alone". */
     fun decide(
         snapshot: NotificationSnapshot,
@@ -143,18 +123,9 @@ class AlertRouter(
                 )
             }
             // Day and night clips (ADR 0037): only the clips whose condition holds now join the draw.
-            val pool = if (voice.isConditional) playablePool(table, voice, now()) else null
-            val size = pool?.size ?: voice.clips.size
-            val uris = ArrayList<String>(size)
-            val weights = IntArray(size)
-            for (i in 0 until size) {
-                val clip = voice.clips[pool?.get(i) ?: i]
-                uris += clip.uri
-                weights[i] = clip.milliWeight
-            }
             val speaker = match.speaker
-            val drawn = bags.next("$pkg\n${speaker.key}", uris, weights, speaker.seed)
-            val clip = voice.clips[pool?.get(drawn) ?: drawn]
+            val nowMs = if (voice.isConditional) now() else 0L
+            val clip = voice.clips[bags.next(pkg, speaker.key, voice, table, nowMs, speaker.seed)]
             // Resolved against the clip drawn for the sound, so an auto envelope matches what plays.
             val haptic = voice.haptic.forClip(clip.haptic)
             return Decision(

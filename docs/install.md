@@ -32,7 +32,7 @@ module reads who sent each WhatsApp notification. That stays in Cucuto's private
    its scope or updating Cucuto.
 4. **Check the status card.** Open Cucuto. On first launch a setup guide walks you through these steps: what Cucuto
    does, requirements and risks, enabling the module, rebooting and a test notification. You can skip it and reopen it
-   later from Status › **Setup guide**. The status card then checks that the module is active, the LSPosed scope is
+   later from Settings › Setup › **Setup guide**. The status card on Home then checks that the module is active, the LSPosed scope is
    right, WhatsApp is installed and at least one pack is imported. Each failing check tells you how to fix it.
 5. **Import a pack and assign characters.** Import a `.soundpack.zip` file or pick one from the
    [free packs](https://cucuto.mauri.app/packs/), then choose a chat and tap a character. Keep WhatsApp's own tone and

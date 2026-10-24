@@ -6,6 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -19,10 +21,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Create
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -31,14 +31,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -62,6 +63,10 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -69,15 +74,19 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.pack.ImportSource
+import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.packs.ImportUi
 import app.mauri.cucuto.packs.LibraryPack
 import app.mauri.cucuto.packs.PacksMessage
 import app.mauri.cucuto.packs.PacksUiState
 import app.mauri.cucuto.packs.PacksViewModel
+import app.mauri.cucuto.ui.components.CucutoTopBar
 import app.mauri.cucuto.ui.components.ParticleBurst
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.motion.animateItemUnlessReduced
 import coil3.compose.AsyncImage
 
 /** Free demo packs on the website, until Discover (#36) lists repositories in the app. */
@@ -87,19 +96,18 @@ const val PACKS_WEBSITE_URL = "https://cucuto.mauri.app/packs/"
  * MIME types for the system file picker. Packs are zips (ADR 0007); `application/octet-stream` covers providers that
  * do not know the type (old `.soundpack` files, some cloud drives). The importer checks the contents either way.
  */
-private val PickerTypes = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
+internal val PackPickerTypes = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
 
 /**
  * The Packs screen (#27): installed packs with their characters (tap one to hear it), import from a file (system
  * picker, "Open with" and the share sheet), the import review, plain-words errors and removal with a confirmation.
- * Discover (#36) is one tap away in the top bar and at the end of the list.
+ * It is a top-level tab (ADR 0027): no back arrow. Discover (#36) is linked at the end of the list, and after an
+ * install the snackbar offers to go give the new characters to chats on Home.
  */
 @Composable
 fun PacksScreen(
-    onBack: () -> Unit,
-    onDiscover: () -> Unit,
+    onNavigate: (CucutoDestination) -> Unit,
     modifier: Modifier = Modifier,
-    onCreate: (sourcePackId: String?) -> Unit = {},
     viewModel: PacksViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -108,17 +116,17 @@ fun PacksScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) viewModel.importFrom(ImportSource.of(resolver, uri))
         }
-    val openPicker = { picker.launch(PickerTypes) }
+    val openPicker = { picker.launch(PackPickerTypes) }
 
     PacksContent(
         state = state,
-        onBack = onBack,
-        onDiscover = onDiscover,
+        onDiscover = { onNavigate(CucutoDestination.Discover) },
+        onAssignVoices = { onNavigate(CucutoDestination.Home) },
         onImport = openPicker,
         onRemove = viewModel::requestRemove,
         onConsumeMessage = viewModel::messageShown,
         modifier = modifier,
-        onCreate = onCreate,
+        onCreate = { source -> onNavigate(CucutoDestination.Creator(source)) },
     )
 
     val import = state.import
@@ -149,8 +157,8 @@ fun PacksScreen(
 @Composable
 internal fun PacksContent(
     state: PacksUiState,
-    onBack: () -> Unit,
     onDiscover: () -> Unit,
+    onAssignVoices: () -> Unit,
     onImport: () -> Unit,
     onRemove: (LibraryPack) -> Unit,
     onConsumeMessage: () -> Unit,
@@ -170,6 +178,7 @@ internal fun PacksContent(
     val packs = state.packs
     val expandedFab by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
     val currentOnConsumeMessage by rememberUpdatedState(onConsumeMessage)
+    val currentOnAssignVoices by rememberUpdatedState(onAssignVoices)
 
     LaunchedEffect(state.message) {
         val message = state.message ?: return@LaunchedEffect
@@ -191,29 +200,24 @@ internal fun PacksContent(
                 }
             }
         currentOnConsumeMessage()
-        snackbar.showSnackbar(text)
+        // After an install, the next step of the journey is on Home: giving the new characters to chats.
+        val action =
+            resources.getString(R.string.packs_assign_voices).takeIf {
+                message is PacksMessage.Installed && message.names.isNotEmpty()
+            }
+        val result = snackbar.showSnackbar(text, actionLabel = action, duration = SnackbarDuration.Long)
+        if (result == SnackbarResult.ActionPerformed) currentOnAssignVoices()
     }
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.screen_packs)) },
-                subtitle = packs?.takeIf { it.isNotEmpty() }?.let { { Text(summaryText(it)) } },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(R.string.navigate_back),
-                        )
-                    }
-                },
+            CucutoTopBar(
+                title = stringResource(R.string.tab_packs),
+                subtitle = packs?.takeIf { it.isNotEmpty() }?.let { summaryText(it) },
                 actions = {
                     IconButton(onClick = { onCreate(null) }) {
                         Icon(Icons.Rounded.Create, contentDescription = stringResource(R.string.packs_create))
-                    }
-                    IconButton(onClick = onDiscover) {
-                        Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.packs_discover))
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -221,9 +225,11 @@ internal fun PacksContent(
         },
         floatingActionButton = {
             if (!packs.isNullOrEmpty()) {
+                val importLabel = stringResource(R.string.packs_import)
                 ExtendedFloatingActionButton(
-                    text = { Text(stringResource(R.string.packs_import)) },
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                    text = { Text(importLabel) },
+                    // Material hides the text from TalkBack: the icon carries the label, expanded or not.
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = importLabel) },
                     onClick = onImport,
                     expanded = expandedFab,
                 )
@@ -248,7 +254,8 @@ internal fun PacksContent(
                     packs == null -> {
                         item(key = "loading") {
                             Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                                LoadingIndicator(Modifier.size(56.dp))
+                                val loading = stringResource(R.string.a11y_loading)
+                                LoadingIndicator(Modifier.size(56.dp).semantics { contentDescription = loading })
                             }
                         }
                     }
@@ -265,7 +272,7 @@ internal fun PacksContent(
                                 pack = pack,
                                 player = player,
                                 onOpen = { detailId = pack.id },
-                                modifier = Modifier.animateItem(),
+                                modifier = animateItemUnlessReduced(),
                             )
                         }
                         item(key = "more") { FindMorePacks(onDiscover = onDiscover, onWebsite = openWebsite) }
@@ -322,14 +329,14 @@ private fun PackCard(
                     Text(
                         pack.name,
                         style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
+                        maxLines = adaptiveMaxLines(2),
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = packSubtitle(pack),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        maxLines = adaptiveMaxLines(2),
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -378,6 +385,8 @@ fun PackCover(
                 Text(
                     text = pack.name.take(1).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
+                    // Decorative: the pack's name is right next to it.
+                    modifier = Modifier.clearAndSetSemantics {},
                 )
             }
         }
@@ -410,6 +419,7 @@ private fun EmptyPacks(
             stringResource(R.string.packs_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
         )
         Text(
             stringResource(R.string.packs_empty_body),
@@ -431,6 +441,7 @@ private fun EmptyPacks(
 }
 
 /** The slot for Discover (#36) and the website until repositories are browsable in the app. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FindMorePacks(
     onDiscover: () -> Unit,
@@ -443,13 +454,21 @@ private fun FindMorePacks(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.packs_more_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.packs_more_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
             Text(
                 stringResource(R.string.packs_more_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Wraps with large fonts and longer translations instead of pushing the second button off the card.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 OutlinedButton(onClick = onDiscover, shapes = ButtonDefaults.shapes()) {
                     Text(stringResource(R.string.packs_discover))
                 }

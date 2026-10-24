@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Button
@@ -41,7 +42,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -76,7 +80,7 @@ fun DiagnosticsScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MediumFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.screen_diagnostics)) },
+                title = { Text(stringResource(R.string.screen_diagnostics), Modifier.semantics { heading() }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -114,11 +118,15 @@ fun DiagnosticsScreen(
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.diag_switch)) },
                     supportingContent = { Text(stringResource(R.string.diag_switch_body)) },
-                    trailingContent = {
-                        Switch(checked = state.enabled, onCheckedChange = viewModel::setEnabled)
-                    },
+                    trailingContent = { Switch(checked = state.enabled, onCheckedChange = null) },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    modifier = Modifier.clip(MaterialTheme.shapes.large),
+                    // The whole row toggles, so TalkBack reads the label with the switch.
+                    modifier =
+                        Modifier.clip(MaterialTheme.shapes.large).toggleable(
+                            value = state.enabled,
+                            role = Role.Switch,
+                            onValueChange = viewModel::setEnabled,
+                        ),
                 )
             }
             item {
@@ -138,6 +146,7 @@ fun DiagnosticsScreen(
                         text = messageText(message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     )
                 }
             }
@@ -201,7 +210,7 @@ private fun InfoCard(rows: List<Pair<String, String>>) {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             rows.forEach { (label, value) ->
-                Column {
+                Column(Modifier.semantics(mergeDescendants = true) {}) {
                     Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     Text(value, style = MaterialTheme.typography.bodyMedium)
                 }
@@ -222,6 +231,7 @@ private fun DecisionRow(entry: DecisionLogEntity) {
             )
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.semantics(mergeDescendants = true) {},
     ) {
         Text(entry.outcome.name)
     }

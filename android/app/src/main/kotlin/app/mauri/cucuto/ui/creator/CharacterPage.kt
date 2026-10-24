@@ -39,9 +39,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,10 +52,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -69,6 +68,7 @@ import app.mauri.cucuto.core.creator.DraftCharacter
 import app.mauri.cucuto.core.creator.DraftClip
 import app.mauri.cucuto.core.creator.HapticMode
 import app.mauri.cucuto.packs.parseSeedColor
+import app.mauri.cucuto.ui.components.ChoiceButtonGroup
 import java.io.File
 
 /** Weights offered for a clip, with how they read. */
@@ -232,7 +232,10 @@ internal fun CharacterPage(
                             onRemove = { onRemoveClip(clip.key) },
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         FilledTonalButton(onClick = onRecord, shapes = ButtonDefaults.shapes()) {
                             Icon(
                                 painterResource(R.drawable.ic_creator_mic),
@@ -266,16 +269,16 @@ internal fun CharacterPage(
                             add(HapticMode.NONE)
                             if (canEditHaptic || character.haptic == HapticMode.CUSTOM) add(HapticMode.CUSTOM)
                         }
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        modes.forEachIndexed { i, mode ->
-                            SegmentedButton(
-                                selected = character.haptic == mode,
-                                onClick = { onHaptic(mode) },
-                                shape = SegmentedButtonDefaults.itemShape(i, modes.size),
-                            ) { Text(stringResource(hapticLabel(mode))) }
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ChoiceButtonGroup(
+                        options = modes,
+                        selected = character.haptic,
+                        onSelect = onHaptic,
+                        label = { stringResource(hapticLabel(it)) },
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         if (character.clips.isNotEmpty()) {
                             OutlinedButton(
                                 onClick = { onPlayClip(character.clips.random().key) },
@@ -391,7 +394,7 @@ private fun Swatch(
         color = color ?: MaterialTheme.colorScheme.surfaceContainerHighest,
         modifier =
             modifier
-                .size(44.dp)
+                .size(48.dp)
                 .clip(CircleShape)
                 .border(
                     if (selected) 3.dp else 1.dp,
@@ -421,7 +424,13 @@ private fun Swatch(
                 }
 
                 color == null -> {
-                    Text(stringResource(R.string.creator_color_auto_short), style = MaterialTheme.typography.labelSmall)
+                    // A fixed size inside the fixed circle: the swatch's content description says it in full.
+                    Text(
+                        stringResource(R.string.creator_color_auto_short),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = with(LocalDensity.current) { SWATCH_LABEL.toSp() },
+                        modifier = Modifier.clearAndSetSemantics {},
+                    )
                 }
             }
         }
@@ -527,3 +536,5 @@ private fun hapticHint(mode: HapticMode): Int =
     }
 
 private const val OPAQUE = 0xFF000000.toInt()
+
+private val SWATCH_LABEL = 11.dp

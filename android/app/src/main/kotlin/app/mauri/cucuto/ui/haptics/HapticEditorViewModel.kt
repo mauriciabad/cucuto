@@ -12,12 +12,15 @@ import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
+import app.mauri.cucuto.packspec.FileFormat
+import app.mauri.cucuto.packspec.media.AudioProbe
 import app.mauri.cucuto.voice.VoicePreview
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +31,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -43,6 +47,20 @@ data class RhythmRecording(
     val pressed: Boolean = false,
 )
 
+/** What "Paste pattern" did, shown once by the screen. */
+sealed interface PasteOutcome {
+    /** The pattern replaced the timeline; [adjusted] when the editor's spacing moved or dropped some events. */
+    data class Loaded(
+        val adjusted: Boolean,
+    ) : PasteOutcome
+
+    data class Rejected(
+        val problem: PatternProblem,
+    ) : PasteOutcome
+
+    data object EmptyClipboard : PasteOutcome
+}
+
 /**
  * What the haptic editor shows.
  *
@@ -51,6 +69,7 @@ data class RhythmRecording(
  * @property recording Non-null while "tap the rhythm" records.
  * @property playback Increments on every preview; the timeline sweeps a playhead over [playbackMs].
  * @property saved Set once the pattern is stored (a chat) or handed back (a creator character): the screen closes.
+ * @property paste The last "Paste pattern" outcome, until the screen has shown it.
  */
 @Immutable
 data class HapticEditorState(
@@ -65,6 +84,7 @@ data class HapticEditorState(
     val playbackMs: Int = 0,
     val saved: Boolean = false,
     val failed: Boolean = false,
+    val paste: PasteOutcome? = null,
 ) {
     val canSave: Boolean get() = target != null && draft.haptic != null && recording == null && !saved
 
@@ -74,6 +94,12 @@ data class HapticEditorState(
     /** Who "Play with" plays: the chat's character, or the creator's character when it has a clip. */
     val previewName: String?
         get() = character?.name ?: (target as? HapticTarget.CreatorCharacter)?.takeIf { it.clip != null }?.name
+
+    /**
+     * "Use Auto instead" stores a chat's auto vibration, which needs a voice like saving does. Chats only: a creator
+     * character picks Auto in the creator itself.
+     */
+    val canUseAuto: Boolean get() = target is HapticTarget.Chat && character != null && recording == null && !saved
 
     val canPreviewWithClip: Boolean get() = previewName != null && draft.haptic != null
 
@@ -347,6 +373,87 @@ class HapticEditorViewModel
             }
         }
 
+        /** Stores "Auto" (follows each clip's loudness) as the chat's vibration and closes, like [save]. */
+        fun useAuto() {
+            val key = (target as? HapticTarget.Chat)?.chat ?: return
+            if (!mutableState.value.canUseAuto) return
+            viewModelScope.launch {
+                val stored =
+                    try {
+                        overrides.set(key, HapticOverride.Auto)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        false
+                    }
+                mutableState.update { if (stored) it.copy(saved = true, dirty = false) else it.copy(failed = true) }
+            }
+        }
+
+        // Copy for AI and paste pattern (#217).
+
+        /**
+         * The "Copy for AI" text: the character's clips (length and analysed loudness), the current pattern, the
+         * format and a prompt. Reads clip headers, so it runs off the main thread.
+         */
+        suspend fun aiText(): String {
+            val current = mutableState.value
+            val character = current.character
+            val creator = target as? HapticTarget.CreatorCharacter
+            val clips =
+                when {
+                    character != null -> {
+                        withContext(Dispatchers.IO) {
+                            character.clips.mapIndexed { i, file ->
+                                AiClip(
+                                    path = character.clipPaths.getOrNull(i) ?: file.name,
+                                    durationMs = if (i < HapticAiText.MAX_CLIPS) durationOf(file) else null,
+                                    loudness = character.clipAutoHaptics.getOrNull(i),
+                                )
+                            }
+                        }
+                    }
+
+                    // A creator character: its preview clip, by file name only (the draft path is private).
+                    creator?.clip != null -> {
+                        val file = File(creator.clip)
+                        withContext(Dispatchers.IO) { listOf(AiClip(file.name, durationOf(file), loudness = null)) }
+                    }
+
+                    else -> {
+                        emptyList()
+                    }
+                }
+            return HapticAiText.export(character?.name ?: creator?.name, clips, current.draft.events)
+        }
+
+        /**
+         * A pattern pasted from the clipboard ([text], null when it held no text): when it follows the pack format,
+         * it replaces the timeline (Undo brings the old one back) for the user to preview and save.
+         */
+        fun paste(text: String?) {
+            if (mutableState.value.recording != null || mutableState.value.saved) return
+            if (text.isNullOrBlank()) {
+                mutableState.update { it.copy(paste = PasteOutcome.EmptyClipboard) }
+                return
+            }
+            when (val parsed = HapticAiText.parse(text)) {
+                is PatternParse.Invalid -> {
+                    mutableState.update { it.copy(paste = PasteOutcome.Rejected(parsed.problem)) }
+                }
+
+                is PatternParse.Valid -> {
+                    preview.stop()
+                    edit { it.replaceAll(parsed.events) }
+                    mutableState.update {
+                        it.copy(paste = PasteOutcome.Loaded(adjusted = it.draft.events != parsed.events), dirty = true)
+                    }
+                }
+            }
+        }
+
+        fun dismissPaste() = mutableState.update { it.copy(paste = null) }
+
         fun dismissError() = mutableState.update { it.copy(failed = false) }
 
         override fun onCleared() {
@@ -360,5 +467,21 @@ class HapticEditorViewModel
 
         private companion object {
             const val TICK_MS = 50L
+
+            /** Clips are a few seconds long; anything bigger is not read just to describe it. */
+            const val MAX_PROBE_BYTES = 8L * 1024 * 1024
+
+            /** [file]'s length from its container headers, or null when it cannot be read. */
+            fun durationOf(file: File): Long? =
+                try {
+                    val format = FileFormat.of(file.name)
+                    if (format == null || file.length() !in 1..MAX_PROBE_BYTES) {
+                        null
+                    } else {
+                        AudioProbe.durationMs(format, file.readBytes())
+                    }
+                } catch (_: Exception) {
+                    null
+                }
         }
     }

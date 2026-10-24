@@ -1,0 +1,98 @@
+package app.mauri.cucuto.navigation
+
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import app.mauri.cucuto.BuildConfig
+import app.mauri.cucuto.contact.ContactDetailScreen
+import app.mauri.cucuto.daynight.DayNightScreen
+import app.mauri.cucuto.diagnostics.DiagnosticsScreen
+import app.mauri.cucuto.home.HomeScreen
+import app.mauri.cucuto.packs.ui.PacksScreen
+import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.creator.CreatorScreen
+import app.mauri.cucuto.ui.developer.DeveloperScreen
+import app.mauri.cucuto.ui.discover.DiscoverScreen
+import app.mauri.cucuto.ui.gallery.GalleryScreen
+import app.mauri.cucuto.ui.haptics.HapticEditorScreen
+import app.mauri.cucuto.ui.haptics.HapticTarget
+import app.mauri.cucuto.ui.onboarding.OnboardingScreen
+import app.mauri.cucuto.ui.settings.SettingsScreen
+import app.mauri.cucuto.ui.status.SetupScreen
+
+/**
+ * Every screen of the app, by destination. Feature screens are self-contained composables in their own package;
+ * each one gets one `entry` here, as small as possible (contract of #153: other agents add only their own entry).
+ * Screens navigate with `onNavigate` (tab roots switch tabs, anything else is pushed) and close with `onBack`.
+ * [setupNeedsAttention] is read while Settings composes, so its banner follows the shell's badge (#180).
+ */
+fun cucutoEntries(
+    navigator: AppNavigator,
+    setupNeedsAttention: () -> Boolean = { false },
+): (NavKey) -> NavEntry<NavKey> {
+    val navigate: (CucutoDestination) -> Unit = navigator::navigate
+    val goBack: () -> Unit = { navigator.goBack() }
+    return entryProvider {
+        // Tab roots: no back arrow; system back goes to Home (or leaves the app from Home).
+        entry<CucutoDestination.Home>(metadata = TabRootMetadata) { HomeScreen(onNavigate = navigate) }
+        entry<CucutoDestination.Packs>(metadata = TabRootMetadata) { PacksScreen(onNavigate = navigate) }
+        entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen() }
+        entry<CucutoDestination.Settings>(metadata = TabRootMetadata) {
+            SettingsScreen(onNavigate = navigate, setupNeedsAttention = setupNeedsAttention())
+        }
+
+        // ChatKey.toString() hides the JID (ADR 0017), so the default content key would be the same for every chat.
+        entry<CucutoDestination.Picker>(
+            clazzContentKey = { "picker/${it.chat?.packageName}/${it.chat?.conversationKey}" },
+        ) { key ->
+            PickerScreen(
+                chat = key.chat,
+                onBack = goBack,
+                // Only this picker, and only if the user has not left it already.
+                onDone = { navigator.remove(key) },
+                onOpenPacks = { navigate(CucutoDestination.Packs) },
+            )
+        }
+        entry<CucutoDestination.Setup> { SetupScreen(onNavigate = navigate, onBack = goBack) }
+        // The setup guide reopened from Setup: finishing or skipping just closes it.
+        entry<CucutoDestination.Onboarding> { OnboardingScreen(onFinish = goBack, resume = false) }
+        entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
+        entry<CucutoDestination.DayNight> { DayNightScreen(onBack = goBack) }
+        entry<CucutoDestination.Creator> { key ->
+            CreatorScreen(
+                sourcePackId = key.sourcePackId,
+                onBack = goBack,
+                onEditHaptic = { target -> navigate(CucutoDestination.HapticEditor(target)) },
+            )
+        }
+        entry<CucutoDestination.HapticEditor>(
+            clazzContentKey = { "haptics/${it.target.contentKey()}" },
+        ) { key ->
+            HapticEditorScreen(target = key.target, onBack = goBack, onDone = { navigator.remove(key) })
+        }
+        entry<CucutoDestination.ContactDetail>(
+            clazzContentKey = { "contact/${it.chat.packageName}/${it.chat.conversationKey}" },
+        ) { key ->
+            ContactDetailScreen(
+                chat = key.chat,
+                onBack = goBack,
+                onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
+                onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
+            )
+        }
+
+        // Debug builds only: R8 drops these screens from release builds.
+        if (BuildConfig.DEBUG) {
+            entry<CucutoDestination.Developer> { DeveloperScreen(onNavigate = navigate, onBack = goBack) }
+            entry<CucutoDestination.Gallery> { GalleryScreen(onBack = goBack) }
+        }
+    }
+}
+
+/** One saved state per edited thing: a chat, or a creator character. */
+private fun HapticTarget?.contentKey(): String =
+    when (this) {
+        null -> "scratch"
+        is HapticTarget.Chat -> "chat/${chat.packageName}/${chat.conversationKey}"
+        is HapticTarget.CreatorCharacter -> "creator/$characterKey"
+    }
