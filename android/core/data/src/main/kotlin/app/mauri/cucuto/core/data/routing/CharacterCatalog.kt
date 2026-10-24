@@ -58,12 +58,14 @@ data class CatalogCharacter(
  *   (ADR 0037).
  * @property moment Whether it is a rare clip (`oneIn`) or plays on a moment of the conversation (`when.firstOfDay`,
  *   `when.burst`), outside the shuffle bag (ADR 0059).
+ * @property label The clip's `label` from `pack.json` ("Shown in the clip list"), or null when it has none.
  */
 data class CatalogClip(
     val file: String,
     val milliWeight: Int,
     val autoHaptic: Haptic.Custom? = null,
     val condition: ClipWhen? = null,
+    val label: String? = null,
     val moment: Moment = Moment.NONE,
 )
 
@@ -150,7 +152,8 @@ class PackManifestCatalog
                                 (weight * 1000).roundToInt().coerceAtLeast(1),
                                 autoHaptic,
                                 parseWhen(clip["when"]),
-                                parseMoment(clip),
+                                label = clip.string("label")?.trim()?.takeIf { it.isNotEmpty() },
+                                moment = parseMoment(clip),
                             )
                         }
                     result[id] =

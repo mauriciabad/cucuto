@@ -91,6 +91,8 @@ how every change can be undone.
      a contact's detail screen. The dialog says what is read, what is changed, that contacts never leave the phone,
      and that the code is open source at github.com/mauriciabad/cucuto (the owner, #145).
    - `READ_PHONE_STATE` is asked only when the user picks "Random per call".
+   - "Add a chat from contacts" asks for `READ_CONTACTS` alone, after its own explainer screen
+     ([ADR 0065](0065-chats-before-they-message.md)). A chat added that way is already linked to its Android contact.
    - Denial leaves everything as it was and offers Android's app settings.
 8. **UI** (the full picker is #53; it landed in [ADR 0057](0057-ringtone-picker-and-ringtone-backups.md), which moved
    the rule chips from the card into it):

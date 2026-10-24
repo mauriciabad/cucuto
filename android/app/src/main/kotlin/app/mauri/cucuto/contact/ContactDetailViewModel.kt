@@ -66,7 +66,8 @@ class ContactDetailViewModel
                 local,
                 ->
                 val found = characterOf(chat, packs)
-                val decisions = decisionsForChat(log, chatKey, chat)
+                val decisions =
+                    decisionsForChat(log, chatKey, chat) { clipDisplayName(found?.first, it) }
                 local.copy(
                     loading = false,
                     chat = chat,
@@ -153,7 +154,12 @@ class ContactDetailViewModel
                 is InAppSimulation.Played -> {
                     local.update {
                         it.copy(
-                            simulation = SimulationStatus.PlayedInApp(result.clipName, result.haptic),
+                            simulation =
+                                SimulationStatus.PlayedInApp(
+                                    result.clipUri?.let { uri -> clipDisplayName(state.value.character, uri) }
+                                        ?: result.clipName,
+                                    result.haptic,
+                                ),
                             speaking = true,
                         )
                     }

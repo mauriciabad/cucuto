@@ -81,8 +81,8 @@ gh variable set RELEASE_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprin
 
 4. The workflow checks the tag and the secrets, builds `:app:assembleRelease` with the key, verifies the signature
    (one signer, not a debug key, the pinned certificate) and the version with `apksigner` and `aapt2`, then publishes
-   the release `Cucuto 0.2.0` with `cucuto-0.2.0.apk` and `cucuto-0.2.0.apk.sha256` (plus `cucuto-0.2.0.aab` and
-   its checksum for Google Play once the upload key exists, see [Google Play bundle](#google-play-bundle)). The notes start with the AI
+   the release `Cucuto 0.2.0` with `cucuto-0.2.0.apk` and `cucuto-0.2.0.apk.sha256`, plus `cucuto-0.2.0.aab` and
+   its checksum for Google Play (see [Google Play bundle](#google-play-bundle)). The notes start with the AI
    banner, list the checksum and the certificate fingerprint, and end with the changes since the previous tag,
    grouped into New, Fixes and Docs, from the same script (`--notes`). If the tag has no store changelog for its
    versionCode (step 2 skipped), the run warns and puts the generated files in its summary as a patch to commit.
@@ -142,43 +142,25 @@ but one of the other three missing, the build stops with a message naming them.
 
 ## Google Play bundle
 
-Google Play takes an app bundle, not an APK ([google-play.md](google-play.md), ADR 0071). Once the owner has set up
-Play App Signing with the release key and created a separate **upload key** ([google-play.md →
-Signing](google-play.md#signing), #276), every release also gets `cucuto-<version>.aab` and its `.sha256`: the same
-build and version as the APK, signed with the upload key. Play re-signs what it serves with the release key, so Play
-installs and GitHub installs share one certificate.
+Google Play takes an app bundle, not an APK ([google-play.md](google-play.md), ADR 0071). Every release also gets
+`cucuto-<version>.aab` and its `.sha256`: the same Gradle run, R8 output and version as the APK, signed with the same
+release key. Nothing to set up in the repository: no extra keystore or secret (owner updates 2026-10-24, #287).
 
-Once, owner only (agents never touch these):
+For Play, the release key is both the **app signing key** and the **upload key** (#287, second answer). The owner
+gives Play a copy of it once with PEPK, before the first upload ([google-play.md → Signing](google-play.md#signing)).
+Play App Signing re-signs what it serves with that same key, so **Play installs and GitHub, Obtainium or F-Droid
+installs update each other** ([Sign your app](https://developer.android.com/studio/publish/app-signing): "If you do
+not generate a new upload key, you continue to use your app signing key as your upload key to sign each release").
 
-```sh
-base64 -i ~/cucuto-release-key/cucuto-upload.jks | gh secret set PLAY_UPLOAD_KEYSTORE_BASE64 --repo mauriciabad/cucuto
-gh secret set PLAY_UPLOAD_KEYSTORE_PASSWORD --repo mauriciabad/cucuto   # prompts for the value
-gh secret set PLAY_UPLOAD_KEY_PASSWORD --repo mauriciabad/cucuto        # the same password (PKCS12)
-gh secret set PLAY_UPLOAD_KEY_ALIAS --repo mauriciabad/cucuto --body upload
-keytool -list -v -keystore ~/cucuto-release-key/cucuto-upload.jks -alias upload | grep SHA256:
-gh variable set PLAY_UPLOAD_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprint, lowercase, no colons>
-```
+What the workflow checks before attaching the bundle: exactly one signer, not a debug key, the same certificate as
+the APK (so the upload key never changes by accident), the version (bundletool), Play's 16 KB setting and the
+LSPosed metadata.
 
-What the workflow does with them:
+If the release key ever leaked or got lost, Play and the GitHub APKs would both need a new key ([If the signing key
+changes](#if-the-signing-key-changes)): with one key in both roles, an upload key reset alone doesn't help.
 
-- no `PLAY_UPLOAD_*` secret: the release ships the APK only, with a notice;
-- some but not all four: the run fails before building;
-- all four: after the APK, `:app:bundleRelease` signs the bundle with the upload key. The run checks one signer, not
-  a debug key, not the release key (a warning; see #287), the `PLAY_UPLOAD_CERT_SHA256` pin, the version
-  (bundletool), Play's 16 KB setting and the LSPosed metadata. Then it attaches the bundle to the release.
-
-Back up `cucuto-upload.jks` and its password like the release key. If it's ever lost or leaked, Google can reset it:
-Play Console → Play app signing → Request upload key reset with a new certificate, then replace the four secrets and
-the pin.
-
-A bundle on your machine works like the APK, with the upload key in the same variables:
-
-```sh
-export CUCUTO_RELEASE_KEYSTORE=~/cucuto-release-key/cucuto-upload.jks CUCUTO_RELEASE_KEY_ALIAS=upload
-read -rs CUCUTO_RELEASE_KEYSTORE_PASSWORD && export CUCUTO_RELEASE_KEYSTORE_PASSWORD
-export CUCUTO_RELEASE_KEY_PASSWORD=$CUCUTO_RELEASE_KEYSTORE_PASSWORD
-cd android && ./gradlew :app:bundleRelease -Pcucuto.version=0.1.0 --no-configuration-cache
-```
+A bundle on your machine: the same variables as [A signed build on your machine](#a-signed-build-on-your-machine),
+then `./gradlew :app:bundleRelease -Pcucuto.version=0.1.0 --no-configuration-cache`.
 
 ## Upload to Google Play
 
@@ -216,7 +198,9 @@ bad upload never reaches anyone.
 
 ## If the signing key changes
 
-This happens when moving from a debug build to the first release, or if the release key is ever lost.
+This happens when moving from a debug build to the first release, or if the release key is ever lost. Switching
+between Google Play and the APK from GitHub, Obtainium or F-Droid is not a key change: Play signs with the release key
+too (ADR 0071).
 
 **Android.** An APK signed by a different certificate is not an update: installing it fails with
 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. The old app has to be uninstalled first, which deletes its data: assignments,

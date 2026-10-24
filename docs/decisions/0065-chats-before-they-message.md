@@ -1,8 +1,9 @@
 # 0065. Chats before they message: Android contacts, not WhatsApp's database
 
-- Status: proposed. The default below waits for the owner on #254, who can override it. Nothing is built yet.
+- Status: accepted (owner update 2026-10-24, #254: "contacts"). Built in #292; the design details below were filled
+  in there.
 - Date: 2026-10-24
-- Issue: #19 (optional root import of WhatsApp chats and groups, M2)
+- Issues: #19 (optional root import of WhatsApp chats and groups, M2), #254 (the owner's answer), #292 (the build)
 
 ## Context
 
@@ -49,49 +50,162 @@ The facts that decide the design:
 | Breaks with a WhatsApp update | No, public Android API | Possibly; fails softly | Possibly; fails softly |
 | What users may fear | Same as phone ringtones today | "It reads WhatsApp's files" | "It opens my messages file" |
 
-## Decision (default; owner can override on #254)
+## Decision (owner update 2026-10-24, #254: "contacts")
 
 1. **Cucuto reads none of WhatsApp's files.** No root import from `wa.db`, `msgstore.db` or anything else under
    WhatsApp's private storage. libsu is not added for this. Root and LSPosed stay what they are for: the module in
    `system_server` (and, if enabled, the opt-in WhatsApp scope of ADR 0051).
 2. **"Add a chat from contacts" replaces the root import** (option A). When it is built:
-   - **Entry.** Home's "Assign a voice" screen offers "Add from contacts". Nothing runs until the user taps it, and
-     nothing runs in the background.
+   - **Entry.** "Add a chat from contacts" on Home and in the "Who gets a voice?" chat picker (details below).
+     Nothing runs until the user taps it, and nothing runs in the background.
    - **Explainer screen first** (owner, #166; ADR 0055), in English and Spanish. It covers:
      - what is read: the WhatsApp entries that Android's contacts already hold, each a name and a WhatsApp phone ID;
      - what is never read: messages, chats, groups, WhatsApp's files, and other details of your contacts;
      - that only the people you pick are saved;
      - a link to the code.
-     Then the contacts permission flow that phone ringtones already use. If the permission is already granted, there
-     is no prompt.
+     Then Android's prompt for `READ_CONTACTS` alone (reading is all this needs). If the permission is already
+     granted, there is no prompt.
    - **What is read.** One `ContactsContract.Data` query: `MIMETYPE` is WhatsApp's profile type (and WhatsApp
      Business's, `com.whatsapp.w4b`, when present), with the projection `DATA1` (the phone JID), `LOOKUP_KEY` and
      `DISPLAY_NAME`. The list stays in memory while the screen is open.
    - **What is saved.** Only the people the user picks, through the existing tables: a contact named after the Android
      contact, linked to it (`androidLookupKey`), with a `PHONE_JID` key for the messenger and its E.164 number. Then
-     the picker opens to choose the voice.
+     its contact detail opens, with the Messages and Phone calls rows (ADR 0063).
    - **Linking the `@lid`.** When a new `@lid` chat first notifies, the app compares its display name (WhatsApp shows
-     the phone's contact name) with the picked contacts that have no `@lid` yet. One exact match (ignoring case and
-     surrounding spaces) gets the `@lid` key added, and the routing table republishes. Anything else (no match, or
-     several) shows the chat on Home as "Is this {name}?" for a one-tap confirmation. The first message from that
-     person plays WhatsApp's tone; the voice plays from the next one.
+     the phone's contact name) with the picked contacts that have no `@lid` yet. Only an exact, unique match gets the
+     `@lid` key added, and the routing table republishes. Anything else asks the user on Home ("Which {name} is
+     this?"). The first message from that person plays WhatsApp's tone; the voice plays from the next one. The exact
+     rules, and what counts as unique, are in "Design details" below.
    - **The module does not change.** It still routes on shortcut IDs only. A name-based route in `system_server` was
      rejected: more code in the most sensitive process, and a namesake would get someone else's voice.
    - **Groups** still appear when they first notify, as today (recent senders).
    - **Fail softly.** No WhatsApp entries (WhatsApp does not sync contacts, the permission is denied, or WhatsApp
      changes its MIME type): the screen says so and points to recent senders. No crash, no retry loop.
-3. **If the owner chooses B or C on #254**, a new ADR supersedes this one. It must keep: opt-in and off by default;
+3. **If the owner ever asks for B or C**, a new ADR supersedes this one. It must keep: opt-in and off by default;
    an explainer screen first; a one-shot import the user triggers; read-only access with no copy kept; nothing read
    beyond JID, display name or subject, and last activity; never messages or media; soft failure on any schema
    surprise; tests on a fake schema only; the privacy page updated in the same PR.
 
+## Design details (#292)
+
+Filled in when it was built. These are defaults the owner may override on #309.
+
+### Entry points
+
+"Add a chat from contacts" appears where someone looks for a person who is not there yet:
+
+- **Home, with packs and no chats:** the journey card "Your characters are ready" offers it below "Try a sample
+  chat" (ADR 0075) and "Hear the characters", and the plain empty state (shown once the journey is over) has it too.
+- **"Who gets a voice?"**, the chat picker behind Home's "Assign a voice" button: a row at the top of the list, and
+  a button in its empty state.
+
+The character and ringtone pickers stay as they are: they open for a chat that already exists.
+
+### The flow: one screen, three steps
+
+`AddFromContacts` is one pushed destination with three steps:
+
+1. **The explainer**, shown every time. Saying once more what is read costs one tap, and the screen is reached only
+   on purpose. It has "Continue" and a link to the code.
+2. **Android's prompt** for `READ_CONTACTS` only, and only when it is missing. Phone ringtones still ask for both
+   contacts permissions when they are turned on (ADR 0039). A refusal shows a step that says nothing was read and
+   offers Android's app settings.
+3. **The list**: every Android contact with a WhatsApp entry, sorted by name, with a search field (case and accents
+   ignored) and a check box per person. One row per Android contact and app: a contact with WhatsApp and WhatsApp
+   Business entries has two rows, the second marked "WhatsApp Business". Each row shows the WhatsApp number, so two
+   people with the same name can be told apart. People already in Cucuto (same WhatsApp number, or the same Android
+   contact already linked for that app) are shown checked and disabled, as "Already in your chats". The button at
+   the bottom says how many will be added.
+
+**What is read.** One `ContactsContract.Data` query. The selection is `MIMETYPE IN (?, ?)` with WhatsApp's profile type
+(`vnd.android.cursor.item/vnd.com.whatsapp.profile`) and WhatsApp Business's
+(`vnd.android.cursor.item/vnd.com.whatsapp.w4b.profile`). The projection is `MIMETYPE`, `DATA1` (the phone JID),
+`LOOKUP_KEY` and `DISPLAY_NAME`. The MIME type says which app the entry belongs to. `Data` has no `ACCOUNT_TYPE` column
+on the owner's phone (checked with a column error, no rows printed), and `DATA1` held a phone JID in all 1,144 rows
+(a count). The Business type follows WhatsApp's naming; it is not on the owner's phone, so it is untested there (#228
+covers Business on the device). Rows whose `DATA1` is not a phone JID are skipped.
+
+**After saving.** One person: their contact detail opens (Messages and Phone calls rows, ADR 0063). Several: back to
+where the flow started, where they show up.
+
+### Chats waiting for their first message
+
+**No schema change.** A chat added from contacts is a contact whose only messenger keys are phone JIDs
+(`…@s.whatsapp.net`). Phone JIDs never reach the module (ADR 0009), so any such 1:1 contact is waiting for its `@lid`.
+`Chat.awaitingLink` says so. The same rule covers chats restored from a backup. Their keys, numbers and Android link are
+already in the backup format, so a restore brings them back still waiting, and the `@lid` is linked on the new phone.
+
+**On Home** they get their own section, "Waiting for a first message", above "Chats", with one line of explanation:
+the first message plays WhatsApp's tone, the voice plays from the next one, and phone ringtones work right away. A
+newly added chat would otherwise sort last, after every chat that has messaged. A tap opens the contact detail, which
+repeats the explanation in a card. They are also in "Who gets a voice?" while they have no voice, marked "Not linked
+yet".
+
+**The phone ringtone works at once.** The contact is linked to its Android contact when it is saved, so choosing a
+ringtone on the Phone calls row writes `CUSTOM_RINGTONE` as for any linked contact (ADR 0039, #213), once phone
+ringtones are on.
+
+### Linking rules and name collisions
+
+A **name** is compared after Unicode NFC normalization, trimming and lowercasing (`Locale.ROOT`). Nothing else is
+folded: accents and inner spaces count. A **sighting** is a recent sender of WhatsApp or WhatsApp Business that is not
+a group and whose key belongs to no contact. A **waiting chat** is as above. Both sides are compared within one
+messenger package only.
+
+A sighting is linked to a waiting chat automatically only when all of these hold:
+
+1. their names are equal;
+2. no other waiting chat of that app has that name;
+3. no other sighting of that app has that name;
+4. **no namesake in Android's contacts:** every WhatsApp entry of that app with that name belongs to the waiting
+   chat's own Android contact, or to someone whose chat is already linked (a sender with no chat cannot be them). This
+   catches a second "Ana" in the phone's contacts that the user did not add: she would show up with the same name, and
+   rule 2 alone would give her the first Ana's voice.
+
+Rule 4 reads the same WhatsApp entries as the list (lookup key and name, in memory only). It runs only when rules 1 to
+3 already hold, so only after a sighting matches a waiting chat. Without the contacts permission, or for a waiting chat
+with no Android link, it cannot hold, so Cucuto asks.
+
+Anything else with at least one waiting chat of the same name becomes a **question on Home**: a section "Who is this?"
+above the recent senders. Each row opens a confirm screen (ADR 0055):
+
+- The screen says that more than one person has that name, so Cucuto will not guess. It suggests checking the number
+  in WhatsApp.
+- It lists the candidates with their numbers, and any voice they already have.
+- A tap links the sighting to that person.
+- "None of them" hides the sighting, as "Hide" does in the strip, until it messages again.
+
+A sighting with no waiting chat of the same name is a plain recent sender, as before. The pending chat stays waiting.
+
+**When linking runs:**
+
+- after each alert from a 1:1 chat that belongs to no contact (in the app process, as the sighting is stored);
+- right after saving from contacts, so someone who already messaged is linked at once (from the list in memory);
+- after each confirmation, because one answer can make another match unique.
+
+**Saving someone who already has a chat.** Someone may already have a chat in Cucuto, made from a recent sender, with no
+Android link. When an added person's name meets rules 1 to 4 against such a chat, the Android link and the phone JIDs
+go to that chat instead of a new one, so Home never shows the same person twice.
+
+**Not covered:** a chat linked by name is not marked afterwards, and there is no "unlink" yet. A wrong link would need
+an unsaved number whose WhatsApp label is exactly a saved contact's name. If that turns out to happen, an "unlink"
+action on the contact detail is the follow-up.
+
 ## Consequences
 
-- The brief's contact identity paragraph, the libsu row and the M2 checklist now describe this default. The website
-  privacy page says Cucuto never opens WhatsApp's databases or files. Its permissions list now matches the manifests
-  (contacts, phone state, location and microphone, each asked only when its feature is used).
-- #19 stays open until the owner answers #254. The implementation of option A then needs a Home entry point, the
-  explainer screen, a `ContactsContract.Data` reader in `:core:ringtone`'s `AndroidContacts` (or a sibling), the
-  `@lid` linking in `ChatDirectory`, and Robolectric tests on a fake contacts provider.
+- The brief's contact identity paragraph, the libsu row and the M2 checklist describe this decision (owner update
+  2026-10-24, #254). The website privacy page says Cucuto never opens WhatsApp's databases or files. Its permissions
+  list matches the manifests (contacts, phone state, location and microphone, each asked only when its feature is
+  used).
+- Built in #292:
+  - the entry points and the `AddFromContacts` screen;
+  - a `ContactsContract.Data` reader next to `AndroidContacts` (`ResolverWhatsAppContacts` in `:core:ringtone`,
+    behind `WhatsAppContactsSource` in `:core:data`);
+  - the rules (`ChatLinkRules`) and `ChatLinker` in `:core:data`, called from `AlertSightings`;
+  - the questions on Home with their confirm screen.
+
+  The tests cover the query against a made-up contacts provider (Robolectric), the linking rules with every collision
+  case, the view models, and a backup round trip of a waiting chat. The root import of #19 is not built; the PR only refers to that issue.
+- The website privacy page lists the second use of the contacts permission and what it reads.
 - People not saved in the phone's contacts, and groups, can only get a voice after their first notification. The
   recent-senders strip already makes that one tap.

@@ -30,6 +30,21 @@ class ProviderRefusalTest {
         assertEquals("the event provider's app is signed by another key", refusal(held = listOf(other)))
     }
 
+    /**
+     * Google Play signs its installs with a Google-generated key, not the release key (ADR 0071, #287). The check
+     * pins no certificate of its own, so a Play install passes as long as the module and the app come from the same
+     * install; a module still loaded from a GitHub APK after switching to Play (until the reboot) is refused.
+     */
+    @Test
+    fun `a Play install signed by Google's key may receive events`() {
+        val play = byteArrayOf(7, 7, 7)
+        assertNull(refusal(signers = listOf(play), held = listOf(play)))
+        assertEquals(
+            "the event provider's app is signed by another key",
+            refusal(signers = listOf(cert), held = listOf(play)),
+        )
+    }
+
     @Test
     fun `every module signer must be held`() {
         assertEquals(

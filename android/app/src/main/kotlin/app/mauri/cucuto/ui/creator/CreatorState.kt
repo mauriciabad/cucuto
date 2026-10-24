@@ -184,9 +184,10 @@ sealed interface CreatorMessage {
 
     data object ClipSaved : CreatorMessage
 
+    /** A copy is ready; it kept [keptRingtones] ringtone variants and [keptAnimations] animated sprites as they are. */
     data class Duplicated(
-        val droppedRingtones: Int,
-        val droppedAnimations: Int,
+        val keptRingtones: Int,
+        val keptAnimations: Int,
     ) : CreatorMessage
 
     data object DuplicateFailed : CreatorMessage

@@ -2,7 +2,9 @@
 
 - Status: accepted (the owner may override the defaults below, #129); the picker's character list is amended by
   [ADR 0063](0063-independent-voice-and-ringtone.md), its pack sections, search and random pick by
-  [ADR 0072](0072-picker-folding-and-surprise-me.md); Home rows show the ringtone and assigning from Home offers the
+  [ADR 0072](0072-picker-folding-and-surprise-me.md); Home gains "Add a chat from contacts", a section of
+  chats waiting for their first message and the "Who is this?" questions in
+  [ADR 0065](0065-chats-before-they-message.md); Home rows show the ringtone and assigning from Home offers the
   ringtone as a second step since [ADR 0073](0073-sound-flow-message-then-ringtone.md) (owner update 2026-10-24, #298)
 - Date: 2026-10-24
 - Issues: #25 (Home and character picker), #18 (recent senders feed with one-tap assignment)

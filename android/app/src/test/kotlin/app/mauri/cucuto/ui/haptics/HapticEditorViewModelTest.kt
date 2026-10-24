@@ -16,6 +16,7 @@ import app.mauri.cucuto.testing.TestData.frog
 import app.mauri.cucuto.testing.TestData.owl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -27,6 +28,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
+import app.mauri.cucuto.packspec.HapticEvent as PackHapticEvent
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HapticEditorViewModelTest {
@@ -37,6 +40,7 @@ class HapticEditorViewModelTest {
         FakeCharacterDirectory(listOf(VoicePack(CRITTERS, "Chiptune critters", listOf(frog, owlWithPattern))))
     private val overrides = FakeChatHapticOverrides(mapOf(ADA to frog.voice, BEA to owl.voice))
     private val preview = FakeVoicePreview()
+    private val results = HapticEditorResults()
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -44,7 +48,10 @@ class HapticEditorViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(chat: ChatKey? = ADA) = HapticEditorViewModel(chat, overrides, characters, preview)
+    private fun viewModel(chat: ChatKey? = ADA) = viewModel(chat?.let(HapticTarget::Chat))
+
+    private fun viewModel(target: HapticTarget?) =
+        HapticEditorViewModel(target, overrides, characters, preview, results)
 
     @Test
     fun startsFromTheStoredPatternElseThePacksElseEmpty() =
@@ -281,5 +288,53 @@ class HapticEditorViewModelTest {
             assertFalse(vm.state.value.canPreviewWithClip)
             vm.save()
             assertFalse(vm.state.value.saved)
+        }
+
+    @Test
+    fun aCreatorCharacterStartsFromItsPatternAndHandsTheResultBack() =
+        runTest(dispatcher) {
+            val target =
+                HapticTarget.CreatorCharacter(
+                    characterKey = "k1",
+                    name = "Kettle",
+                    pattern = listOf(PackHapticEvent(at = 40, preset = "TICK", scale = 0.6)),
+                    clip = "/data/creator/media/clip-1.ogg",
+                )
+            val vm = viewModel(target)
+            val start = vm.state.value
+            assertFalse("nothing to load", start.loading)
+            assertFalse(start.needsVoice)
+            assertEquals(listOf(HapticEvent.Preset(40, HapticPreset.TICK, 600)), start.draft.events)
+            assertEquals("Kettle", start.previewName)
+            assertFalse("Auto is picked in the creator", start.canUseAuto)
+
+            vm.preview(withClip = true)
+            assertEquals(File("/data/creator/media/clip-1.ogg"), preview.clipPlays.single().first)
+            assertEquals(start.draft.haptic, preview.clipPlays.single().second)
+
+            vm.add(HapticTool.Click, 300)
+            vm.save()
+            val saved = vm.state.value
+            assertTrue(saved.saved)
+            assertFalse(saved.dirty)
+            assertEquals(CreatorHapticResult("k1", saved.draft.haptic!!), results.creatorResults.first())
+            // Nothing is stored for any chat.
+            assertFalse(overrides.overrideOf(ADA) is HapticOverride.Custom)
+            assertFalse(overrides.overrideOf(BEA) is HapticOverride.Custom)
+        }
+
+    @Test
+    fun aNewCreatorPatternStartsEmptyAndHasNoClipWithoutClips() =
+        runTest(dispatcher) {
+            val vm = viewModel(HapticTarget.CreatorCharacter(characterKey = "k2", name = "Toaster"))
+            assertTrue(
+                vm.state.value.draft.events
+                    .isEmpty(),
+            )
+            assertFalse(vm.state.value.canSave)
+            assertNull(vm.state.value.previewName)
+            vm.add(HapticTool.Click, 0)
+            assertTrue(vm.state.value.canSave)
+            assertFalse(vm.state.value.canPreviewWithClip)
         }
 }
