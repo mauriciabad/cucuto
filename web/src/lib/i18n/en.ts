@@ -503,7 +503,7 @@ export const en = {
 			'<strong>The decision log</strong>: what Cucuto did for each recent notification (which voice played, or why WhatsApp’s tone did). It keeps the newest 500 entries, so you can check why a sound played.'
 		],
 		storedNoteHtml:
-			'The module never reads message text, and it never writes names or chat IDs to system logs. Uninstalling the app deletes all of it.',
+			'The module never reads message text, and it never writes names or chat IDs to system logs. Cucuto never opens WhatsApp’s databases, chats or media: it learns about a chat only from its notifications, or from a contact you link yourself. Uninstalling the app deletes all of it.',
 		moduleTitle: 'How the module works',
 		moduleHtml:
 			'The module runs inside Android’s system process, where notifications are handled, and only looks at notifications from WhatsApp and WhatsApp Business. It hands what it notes to the app over a private channel that refuses every other app. It never goes online and never touches the WhatsApp app.',
@@ -516,10 +516,14 @@ export const en = {
 		permissionsTitle: 'Permissions',
 		permissions: [
 			'<strong>Internet</strong>: for the pack repositories above.',
-			'<strong>Notifications</strong>: only for the test notification in Diagnostics.'
+			'<strong>Notifications</strong>: only for the test notification in Diagnostics.',
+			'<strong>Contacts</strong>: only if you turn on phone ringtones, to link a chat to one of your contacts and set that contact’s ringtone, the same setting the Contacts app changes.',
+			'<strong>Phone</strong>: only for “Random per call” ringtones, to notice that a call ended. The number is never read.',
+			'<strong>Approximate location</strong>: one reading, only when you tap “Use my location once” on the “Day and night” screen. Never precise location, never in the background.',
+			'<strong>Microphone</strong>: only while you record a clip in the pack creator.'
 		],
 		permissionsNoteHtml:
-			'No access to your contacts, files, location, camera or microphone. If a future feature needs more (for example the microphone for the planned pack creator), the app will ask first and this page will say why.',
+			'Contacts, phone, location and microphone are asked for only when you use the feature that needs them, and everything else keeps working if you say no. No access to your camera, your files (you pick each file you open or save) or WhatsApp’s data. If a future feature needs more, the app will ask first and this page will say why.',
 		checkTitle: 'Check for yourself',
 		checkHtml:
 			'The website and the app are open source: read the code on <a href="{repo}" rel="external">GitHub</a>. Questions about privacy? <a href="{issues}" rel="external">Open an issue</a>.'

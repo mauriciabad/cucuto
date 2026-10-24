@@ -484,7 +484,7 @@ export const es: Messages = {
 			'<strong>El registro de decisiones</strong>: qué hizo Cucuto con cada notificación reciente (qué voz sonó, o por qué sonó el tono de WhatsApp). Guarda las 500 entradas más recientes, para que puedas ver por qué sonó algo.'
 		],
 		storedNoteHtml:
-			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Al desinstalar la app se borra todo.',
+			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Cucuto nunca abre las bases de datos, los chats ni los archivos multimedia de WhatsApp: solo conoce un chat por sus notificaciones o por un contacto que vinculas tú. Al desinstalar la app se borra todo.',
 		moduleTitle: 'Cómo funciona el módulo',
 		moduleHtml:
 			'El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las notificaciones de WhatsApp y WhatsApp Business. Lo que anota se lo pasa a la app por un canal privado que rechaza a cualquier otra app. Nunca se conecta a internet y nunca toca la app de WhatsApp.',
@@ -497,10 +497,14 @@ export const es: Messages = {
 		permissionsTitle: 'Permisos',
 		permissions: [
 			'<strong>Internet</strong>: para los repositorios de packs de arriba.',
-			'<strong>Notificaciones</strong>: solo para la notificación de prueba de Diagnóstico.'
+			'<strong>Notificaciones</strong>: solo para la notificación de prueba de Diagnóstico.',
+			'<strong>Contactos</strong>: solo si activas los tonos de llamada, para vincular un chat con uno de tus contactos y ponerle su tono, el mismo ajuste que cambia la app Contactos.',
+			'<strong>Teléfono</strong>: solo para los tonos «Al azar en cada llamada», para saber cuándo termina una llamada. Nunca se lee el número.',
+			'<strong>Ubicación aproximada</strong>: una sola lectura, solo cuando tocas «Usar mi ubicación una vez» en «Día y noche». Nunca la ubicación exacta, nunca en segundo plano.',
+			'<strong>Micrófono</strong>: solo mientras grabas un sonido en el creador de packs.'
 		],
 		permissionsNoteHtml:
-			'Sin acceso a tus contactos, archivos, ubicación, cámara ni micrófono. Si una función futura necesita más (por ejemplo el micrófono para el creador de packs previsto), la app lo pedirá antes y esta página explicará por qué.',
+			'Contactos, teléfono, ubicación y micrófono se piden solo cuando usas la función que los necesita, y todo lo demás sigue funcionando si dices que no. Sin acceso a tu cámara, a tus archivos (eliges tú cada archivo que abres o guardas) ni a los datos de WhatsApp. Si una función futura necesita más, la app lo pedirá antes y esta página explicará por qué.',
 		checkTitle: 'Compruébalo tú',
 		checkHtml:
 			'La web y la app son de código abierto: lee el código en <a href="{repo}" rel="external">GitHub</a>. ¿Dudas sobre privacidad? <a href="{issues}" rel="external">Abre una incidencia</a>.'
