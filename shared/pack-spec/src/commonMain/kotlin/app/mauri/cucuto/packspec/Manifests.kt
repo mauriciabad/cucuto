@@ -51,7 +51,14 @@ data class Character(
 )
 
 @Serializable
-data class Clip(val file: String, val label: String? = null, val weight: Double? = null, val `when`: When? = null)
+data class Clip(
+    val file: String,
+    val label: String? = null,
+    val weight: Double? = null,
+    val `when`: When? = null,
+    /** A rare clip (easter egg): about one message in [oneIn], outside the shuffle bag (docs/pack-format.md). */
+    val oneIn: Int? = null,
+)
 
 @Serializable
 data class Ringtone(
@@ -79,7 +86,17 @@ data class Ringtone(
 data class LoopRange(val startMs: Long?, val endMs: Long?)
 
 @Serializable
-data class When(val time: JsonElement? = null, val season: JsonElement? = null, val weekday: JsonElement? = null) {
+data class When(
+    val time: JsonElement? = null,
+    val season: JsonElement? = null,
+    val weekday: JsonElement? = null,
+    /** Calendar days every year: `"MM-DD"`, `{ "from", "to" }` (inclusive, may wrap the new year) or a list. */
+    val date: JsonElement? = null,
+    /** Clips only: the chat's first message of the day. */
+    val firstOfDay: Boolean? = null,
+    /** Clips only: the burst-th message in a row from the chat, each within a minute of the previous one. */
+    val burst: Int? = null,
+) {
     /** "day", "night", or "HH:MM-HH:MM" for a range. */
     val timeRange: Pair<String, String>?
         get() = (time as? JsonObject)?.let {
@@ -91,11 +108,59 @@ data class When(val time: JsonElement? = null, val season: JsonElement? = null, 
     val seasons: List<String> get() = stringOrList(season)
     val weekdays: List<String> get() = stringOrList(weekday)
 
+    /**
+     * The `date` key as spans, in order; a span whose day is impossible (`02-30`) is null, which validators report as
+     * `WHEN_INVALID`. Empty when the key is absent.
+     */
+    val dateSpans: List<DateSpan?>
+        get() = when (val d = date) {
+            null -> emptyList()
+            is JsonArray -> d.map { DateSpan.of(it) }
+            else -> listOf(DateSpan.of(d))
+        }
+
     private fun stringOrList(e: JsonElement?): List<String> = when (e) {
         null -> emptyList()
         is JsonPrimitive -> listOfNotNull(e.contentOrNull)
         is JsonArray -> e.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
         else -> emptyList()
+    }
+}
+
+/**
+ * One span of a `when.date`: from [from] to [to], both inclusive, as `month * 100 + day` (`1225` for 25 December).
+ * A span whose [to] is earlier than [from] wraps the new year (`12-24` to `01-06`). `02-29` exists only in leap years.
+ */
+data class DateSpan(val from: Int, val to: Int) {
+    /** Whether the day [month] (1 to 12), [day] is inside the span. */
+    fun contains(month: Int, day: Int): Boolean {
+        val d = month * 100 + day
+        return if (from <= to) d in from..to else d >= from || d <= to
+    }
+
+    companion object {
+        /** Days in each month, February counted as 29 (it matches in leap years only). */
+        private val MONTH_DAYS = intArrayOf(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+        /** `MM-DD` as `month * 100 + day`, or null when it is not a possible calendar day. */
+        fun parseMonthDay(text: String): Int? {
+            if (text.length != 5 || text[2] != '-') return null
+            val month = text.substring(0, 2).toIntOrNull() ?: return null
+            val day = text.substring(3, 5).toIntOrNull() ?: return null
+            if (month !in 1..12 || day < 1 || day > MONTH_DAYS[month - 1]) return null
+            return month * 100 + day
+        }
+
+        /** A span from its JSON: a `"MM-DD"` string or a `{ "from", "to" }` object; null when not understood. */
+        fun of(element: JsonElement): DateSpan? = when (element) {
+            is JsonPrimitive -> element.takeIf { it.isString }?.content?.let(::parseMonthDay)?.let { DateSpan(it, it) }
+            is JsonObject -> {
+                val from = (element["from"] as? JsonPrimitive)?.contentOrNull?.let(::parseMonthDay)
+                val to = (element["to"] as? JsonPrimitive)?.contentOrNull?.let(::parseMonthDay)
+                if (from != null && to != null) DateSpan(from, to) else null
+            }
+            else -> null
+        }
     }
 }
 

@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.data.repository.InstalledPackRepository
 import app.mauri.cucuto.core.data.routing.CatalogCharacter
 import app.mauri.cucuto.core.data.routing.PackManifestCatalog
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.Moment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -34,6 +35,8 @@ data class VoicePack(
  *   a clip without one. Empty when unknown.
  * @property clipLabels Each clip's `label` from `pack.json`, aligned with [clips]; null for a clip without one. Empty
  *   when unknown.
+ * @property clipMoments Each clip's [Moment] (rare, first of the day, burst; ADR 0059), aligned with [clips]. Empty
+ *   when unknown.
  * @property ringtoneCount How many call ringtones the character has (0: messages only).
  */
 data class VoiceCharacter(
@@ -48,6 +51,7 @@ data class VoiceCharacter(
     val clipPaths: List<String> = emptyList(),
     val clipAutoHaptics: List<Haptic.Custom?> = emptyList(),
     val clipLabels: List<String?> = emptyList(),
+    val clipMoments: List<Moment> = emptyList(),
     val ringtoneCount: Int = 0,
 ) {
     val voice: ChatVoice get() = ChatVoice(packId, id)
@@ -95,7 +99,7 @@ class InstalledCharacterDirectory
                         characters.map { (id, character) ->
                             val clips =
                                 character.clips.mapNotNull { clip ->
-                                    root.resolveInside(clip.file)?.let { it to clip }
+                                    root.resolveInside(clip.file)?.let { file -> file to clip }
                                 }
                             VoiceCharacter(
                                 packId = pack.packId,
@@ -109,6 +113,7 @@ class InstalledCharacterDirectory
                                 clipPaths = clips.map { it.second.file },
                                 clipAutoHaptics = clips.map { it.second.autoHaptic },
                                 clipLabels = clips.map { it.second.label },
+                                clipMoments = clips.map { it.second.moment },
                                 ringtoneCount = character.ringtoneCount,
                             )
                         },

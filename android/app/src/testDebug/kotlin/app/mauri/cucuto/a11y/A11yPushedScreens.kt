@@ -6,7 +6,8 @@ import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.pack.InstallAction
 import app.mauri.cucuto.core.pack.PackCandidate
 import app.mauri.cucuto.core.pack.PackSelection
-import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
+import app.mauri.cucuto.core.ringtone.ContactLinkRestore
+import app.mauri.cucuto.core.ringtone.UnmatchedContact
 import app.mauri.cucuto.home.AssignVoiceContent
 import app.mauri.cucuto.home.previewHomeState
 import app.mauri.cucuto.packs.AssignedContact
@@ -118,13 +119,15 @@ internal object A11yPushedScreens {
                             repositoriesAdded = 1,
                             credentialsRestored = 0,
                             packsMissing = 1,
-                            phoneRingtones =
-                                PhoneRingtoneRestore(
-                                    restored = 3,
-                                    linked = 2,
-                                    missing = listOf("Grandpa"),
-                                    waitingForPermission = true,
-                                    enabled = false,
+                            contactLinks =
+                                ContactLinkRestore(
+                                    restored = 4,
+                                    linked = 3,
+                                    unmatched = listOf(UnmatchedContact(7, "Grandpa", ringtone = true)),
+                                    ringtones = 3,
+                                    ringtonesLinked = 2,
+                                    waitingForPermission = false,
+                                    ringtonesEnabled = false,
                                 ),
                         ),
                     reusableSource = "content://backup",

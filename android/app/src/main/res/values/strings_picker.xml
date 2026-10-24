@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Character and ringtone pickers: folding pack sections, search and "Surprise me" (ADR 0072, #289, #290) -->
+    <string name="picker_search_hint">Search characters</string>
+    <string name="picker_search_clear">Clear search</string>
+    <string name="picker_search_empty">No character matches “%1$s”</string>
+    <string name="picker_pack_fold">Fold</string>
+    <string name="picker_pack_unfold">Unfold</string>
+    <string name="picker_pack_folded">Folded</string>
+    <string name="picker_pack_unfolded">Unfolded</string>
+    <plurals name="picker_pack_count">
+        <item quantity="one">%d character</item>
+        <item quantity="other">%d characters</item>
+    </plurals>
+    <string name="picker_surprise_all">Surprise me with a character from any pack</string>
+    <string name="picker_surprise_pack">Surprise me with a character from %1$s</string>
+    <string name="picker_reroll">Re-roll</string>
+    <string name="picker_use">Use %1$s</string>
+</resources>

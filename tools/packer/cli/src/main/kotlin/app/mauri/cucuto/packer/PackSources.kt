@@ -86,7 +86,7 @@ object PackSources {
     /** Keys whose YAML scalars become JSON numbers or booleans; every other scalar stays a string. */
     private val TYPED_KEYS = setOf(
         "formatVersion", "weight", "fadeInMs", "startMs", "endMs", "at", "scale", "intensity", "sharpness", "ms",
-        "initialSharpness", "loop", "lengthMs", "fromMs", "toMs",
+        "initialSharpness", "loop", "lengthMs", "fromMs", "toMs", "oneIn", "firstOfDay", "burst",
     )
 
     fun fromYaml(yamlFile: Path): AssembledInput {

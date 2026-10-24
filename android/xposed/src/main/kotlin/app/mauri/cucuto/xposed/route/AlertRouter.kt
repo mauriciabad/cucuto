@@ -73,15 +73,23 @@ data class Decision(
 }
 
 /**
+ * The wall clock in epoch milliseconds. A `fun interface` rather than `() -> Long`, whose generic `invoke` boxes
+ * every reading into a new `Long` on the notification path.
+ */
+fun interface WallClock {
+    fun nowMs(): Long
+}
+
+/**
  * Picks the clip and haptic for a notification from the in-memory routing table. Pure apart from the shuffle bags
  * and the clock: no IO, no reflection, no Android types, so it is cheap on the notification path and unit-tested on
  * the JVM.
  *
- * @param now Wall clock in epoch milliseconds, read only for voices with conditional clips.
+ * @param now Wall clock in epoch milliseconds, read only for voices with conditional or special clips.
  */
 class AlertRouter(
     private val bags: ShuffleBags = ShuffleBags(),
-    private val now: () -> Long = System::currentTimeMillis,
+    private val now: WallClock = WallClock(System::currentTimeMillis),
 ) {
     /** Returns null for packages Cucuto never touches; otherwise a [Decision], possibly "leave it alone". */
     fun decide(
@@ -122,9 +130,10 @@ class AlertRouter(
                     detail = "voice has no clips",
                 )
             }
-            // Day and night clips (ADR 0037): only the clips whose condition holds now join the draw.
+            // Day and night clips (ADR 0037): only the clips whose condition holds now join the draw. Rare, first of
+            // the day and burst clips (ADR 0059) follow the speaker's rhythm, which needs the time too.
             val speaker = match.speaker
-            val nowMs = if (voice.isConditional) now() else 0L
+            val nowMs = if (voice.isConditional || voice.hasMoments) now.nowMs() else 0L
             val clip = voice.clips[bags.next(pkg, speaker.key, voice, table, nowMs, speaker.seed)]
             // Resolved against the clip drawn for the sound, so an auto envelope matches what plays.
             val haptic = voice.haptic.forClip(clip.haptic)

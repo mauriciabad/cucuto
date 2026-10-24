@@ -5,6 +5,7 @@ import app.mauri.cucuto.core.data.db.InstalledPackEntity
 import app.mauri.cucuto.core.haptics.auto.AutoHapticFile
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticGrid
+import app.mauri.cucuto.core.routing.Moment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,9 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -51,7 +54,10 @@ data class CatalogCharacter(
  * @property file Path from `pack.json` (also the last part of the clip URI).
  * @property milliWeight The pack's `weight` in thousandths.
  * @property autoHaptic The clip's analysed envelope for `auto` haptics, when the app has one.
- * @property condition The clip's `when` (day or night only, and so on), or null when it always plays (ADR 0037).
+ * @property condition The clip's time `when` (day or night only, dates, and so on), or null when it always plays
+ *   (ADR 0037).
+ * @property moment Whether it is a rare clip (`oneIn`) or plays on a moment of the conversation (`when.firstOfDay`,
+ *   `when.burst`), outside the shuffle bag (ADR 0059).
  * @property label The clip's `label` from `pack.json` ("Shown in the clip list"), or null when it has none.
  */
 data class CatalogClip(
@@ -60,6 +66,7 @@ data class CatalogClip(
     val autoHaptic: Haptic.Custom? = null,
     val condition: ClipWhen? = null,
     val label: String? = null,
+    val moment: Moment = Moment.NONE,
 )
 
 /** Looks up installed characters for the routing table. */
@@ -145,7 +152,8 @@ class PackManifestCatalog
                                 (weight * 1000).roundToInt().coerceAtLeast(1),
                                 autoHaptic,
                                 parseWhen(clip["when"]),
-                                clip.string("label")?.trim()?.takeIf { it.isNotEmpty() },
+                                label = clip.string("label")?.trim()?.takeIf { it.isNotEmpty() },
+                                moment = parseMoment(clip),
                             )
                         }
                     result[id] =
@@ -168,7 +176,10 @@ class PackManifestCatalog
             private fun JsonObject.string(key: String): String? =
                 (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-            /** A clip's `when` object; null when absent or not understood (the clip then always plays). */
+            /**
+             * The time part of a clip's `when` object; null when absent, without time keys (only moments) or not
+             * understood (the clip then always plays).
+             */
             fun parseWhen(element: JsonElement?): ClipWhen? {
                 val condition = element as? JsonObject ?: return null
                 val time = condition["time"]
@@ -179,7 +190,32 @@ class PackManifestCatalog
                     to = range?.string("to"),
                     seasons = stringOrList(condition["season"]),
                     weekdays = stringOrList(condition["weekday"]),
+                    dates = dateSpans(condition["date"]) ?: return null,
                 )
+            }
+
+            /** A clip's `oneIn`, `when.firstOfDay` and `when.burst`; [Moment.NONE] when absent or out of range. */
+            fun parseMoment(clip: JsonObject): Moment {
+                val condition = clip["when"] as? JsonObject
+                val firstOfDay = (condition?.get("firstOfDay") as? JsonPrimitive)?.booleanOrNull == true
+                val burst = (condition?.get("burst") as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull ?: 0
+                val oneIn = (clip["oneIn"] as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull ?: 0
+                return runCatching { Moment(firstOfDay, burst, oneIn) }.getOrDefault(Moment.NONE)
+            }
+
+            /** `"MM-DD"`, `{ "from", "to" }` or a list of them as from/to pairs; null when not understood. */
+            private fun dateSpans(element: JsonElement?): List<Pair<String, String>>? {
+                fun span(e: JsonElement): Pair<String, String>? =
+                    when (e) {
+                        is JsonPrimitive -> e.takeIf { it.isString }?.content?.let { it to it }
+                        is JsonObject -> (e.string("from") ?: return null) to (e.string("to") ?: return null)
+                        else -> null
+                    }
+                return when (element) {
+                    null -> emptyList()
+                    is JsonArray -> element.map { span(it) ?: return null }
+                    else -> listOf(span(element) ?: return null)
+                }
             }
 
             private fun stringOrList(element: JsonElement?): List<String> =

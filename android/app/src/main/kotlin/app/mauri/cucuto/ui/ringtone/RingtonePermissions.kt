@@ -39,6 +39,23 @@ fun rememberContactsPermissionFlow(onGrant: () -> Unit): () -> Unit =
         title = R.string.ringtone_contacts_title,
         body = R.string.ringtone_contacts_body,
         explainDenial = true,
+        deniedBody = R.string.ringtone_denied_body,
+        onResult = { granted -> if (granted) onGrant() },
+    )
+
+/**
+ * Asks for `READ_CONTACTS` alone, explained first like [rememberContactsPermissionFlow]: the restore summary's "Find
+ * contacts", which only matches the backup's linked contacts on this phone (ADR 0028's amendment for #43). [onGrant]
+ * runs once it is granted.
+ */
+@Composable
+fun rememberReadContactsPermissionFlow(onGrant: () -> Unit): () -> Unit =
+    rememberExplainedPermission(
+        permissions = arrayOf(Manifest.permission.READ_CONTACTS),
+        title = R.string.restore_contacts_permission_title,
+        body = R.string.restore_contacts_permission_body,
+        explainDenial = true,
+        deniedBody = R.string.restore_contacts_denied_body,
         onResult = { granted -> if (granted) onGrant() },
     )
 
@@ -50,6 +67,7 @@ fun rememberPhonePermissionFlow(onResult: (Boolean) -> Unit): () -> Unit =
         title = R.string.ringtone_phone_title,
         body = R.string.ringtone_phone_body,
         explainDenial = false,
+        deniedBody = R.string.ringtone_denied_body,
         onResult = onResult,
     )
 
@@ -59,6 +77,7 @@ private fun rememberExplainedPermission(
     @StringRes title: Int,
     @StringRes body: Int,
     explainDenial: Boolean,
+    @StringRes deniedBody: Int,
     onResult: (Boolean) -> Unit,
 ): () -> Unit {
     val context = LocalContext.current
@@ -94,7 +113,7 @@ private fun rememberExplainedPermission(
         AlertDialog(
             onDismissRequest = { denied = false },
             title = { Text(stringResource(R.string.ringtone_denied_title)) },
-            text = { Text(stringResource(R.string.ringtone_denied_body)) },
+            text = { Text(stringResource(deniedBody)) },
             confirmButton = {
                 TextButton(
                     onClick = {

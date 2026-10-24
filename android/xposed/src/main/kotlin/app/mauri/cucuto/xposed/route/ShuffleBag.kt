@@ -1,5 +1,6 @@
 package app.mauri.cucuto.xposed.route
 
+import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.core.routing.Voice
 import java.util.Random
@@ -107,9 +108,14 @@ class ShuffleBag(
  * limit. When the speaker's clip list changes (the app republished the table), the bag is rebuilt but remembers the
  * last clip by URI, so a republish cannot cause an immediate repeat.
  *
+ * Each speaker also keeps its **rhythm** while its voice has special clips ([Voice.hasMoments], ADR 0059): when its
+ * last message alerted, on which local day, and how many came in a row. Special clips never join the bag; they play
+ * instead of a draw when their moment comes (see [next]).
+ *
  * The notification path ([next] with a [Voice]) allocates nothing in steady state: speakers are looked up with a
  * reusable probe key, the playable clips are listed in a scratch array, and an entry built for the same [Voice]
- * object and the same playable clips is reused as is (#207). URI lists are only built when that check fails.
+ * object and the same playable clips is reused as is (#207). URI lists are only built when that check fails. A
+ * speaker's entry, with its random source and rhythm, lives until it is evicted, and only its bag is rebuilt.
  */
 class ShuffleBags(
     private val capacity: Int = DEFAULT_CAPACITY,
@@ -127,15 +133,29 @@ class ShuffleBags(
     }
 
     private class Entry(
-        val clipUris: List<String>,
-        val weights: IntArray,
-        val bag: ShuffleBag,
+        val random: Random,
     ) {
+        var clipUris: List<String> = emptyList()
+        var weights: IntArray = IntArray(0)
+        var bag: ShuffleBag? = null
+
         /** The voice [indices] point into, when drawn through [next] with a [Voice]. */
         var voice: Voice? = null
 
         /** Clip index in [voice] of each of the bag's clips. */
         var indices: IntArray = IntArray(0)
+
+        /** When the speaker's last message alerted (epoch ms), or [NEVER]. Tracked while the voice has moments. */
+        var lastAlertMs: Long = NEVER
+
+        /** The local day of [lastAlertMs] ([RoutingTable.dayOf]), or [NEVER]. */
+        var lastDay: Long = NEVER
+
+        /** Messages in a row, each within [Moment.BURST_GAP_MS] of the one before; 1 for a message after a pause. */
+        var run: Int = 0
+
+        /** The rare clip played last (index in [voice]), so it never plays twice in a row; -1 when none. */
+        var lastRare: Int = -1
     }
 
     private val entries =
@@ -162,14 +182,22 @@ class ShuffleBags(
         clipUris: List<String>,
         milliWeights: IntArray,
         seed: Int,
-    ): Int = synchronized(entries) { entry("", speaker, clipUris, milliWeights, seed).bag.next() }
+    ): Int = synchronized(entries) { bag(entry("", speaker, seed), clipUris, milliWeights).next() }
 
     /**
-     * Draws the next clip of [voice] for the speaker [key] of [packageName], among the clips [table] lets play at
-     * [nowMs] ([RoutingTable.isPlayable]); all of them when every clip may play, or none may (a pack whose conditions
-     * leave a gap still plays something). Returns an index into the voice's clips.
+     * Picks the next clip of [voice] for the speaker [key] of [packageName] at [nowMs]. Returns an index into the
+     * voice's clips.
      *
-     * @param seed The route's stable seed, mixed into the bag's random source.
+     * 1. **Moment clips** ([Moment.isMoment]): when this message is the speaker's first of the local day, or the nth
+     *    of a burst, the moment clips that match (and whose time condition and [Moment.oneIn] roll allow it) play
+     *    instead of the bag, one of them by weight.
+     * 2. **Rare clips** (only [Moment.oneIn]): otherwise each rare clip that may play now rolls its chance, in table
+     *    order; the first hit plays. A rare clip never plays twice in a row.
+     * 3. **The bag**: otherwise a draw among the ordinary clips that [table] lets play at [nowMs]
+     *    ([RoutingTable.isPlayable]); all ordinary clips when every one may play or none may (a pack whose conditions
+     *    leave a gap still plays something), and every clip when the voice has no ordinary clip left.
+     *
+     * @param seed The route's stable seed, mixed into the speaker's random source.
      */
     fun next(
         packageName: String,
@@ -180,50 +208,121 @@ class ShuffleBags(
         seed: Int,
     ): Int =
         synchronized(entries) {
-            val count = playable(voice, table, nowMs)
             probe.packageName = packageName
             probe.key = key
-            val existing = entries[probe]
-            if (existing != null && existing.voice === voice && sameIndices(existing.indices, count)) {
-                return existing.indices[existing.bag.next()]
+            var existing = entries[probe]
+            if (voice.hasMoments) {
+                val entry = existing ?: entry(packageName, key, seed)
+                existing = entry
+                val special = special(entry, voice, table, nowMs)
+                if (special >= 0) return special
+            }
+            val count = playable(voice, table, nowMs)
+            if (existing != null) {
+                val bag = existing.bag
+                if (bag != null && existing.voice === voice && sameIndices(existing.indices, count)) {
+                    return existing.indices[bag.next()]
+                }
             }
             // A new speaker, a republished table or another set of playable clips.
             val indices = scratch.copyOf(count)
             val uris = indices.map { voice.clips[it].uri }
             val weights = IntArray(count) { voice.clips[indices[it]].milliWeight }
-            val entry = entry(packageName, key, uris, weights, seed)
+            val entry = existing ?: entry(packageName, key, seed)
+            val bag = bag(entry, uris, weights)
             entry.voice = voice
             entry.indices = indices
-            indices[entry.bag.next()]
+            indices[bag.next()]
         }
 
-    /** The entry for a speaker with these clips: the current one when they did not change, else a new one. */
+    /**
+     * Updates [entry]'s rhythm with a message at [nowMs] and returns the special clip it plays, or -1 for a draw from
+     * the bag. Uses [scratch]; allocates nothing.
+     */
+    private fun special(
+        entry: Entry,
+        voice: Voice,
+        table: RoutingTable,
+        nowMs: Long,
+    ): Int {
+        val day = table.dayOf(nowMs)
+        val firstOfDay = entry.lastDay != day
+        val gap = nowMs - entry.lastAlertMs
+        val run = if (entry.lastAlertMs != NEVER && gap >= 0 && gap <= Moment.BURST_GAP_MS) entry.run + 1 else 1
+        entry.lastAlertMs = nowMs
+        entry.lastDay = day
+        entry.run = run
+
+        val clips = voice.clips
+        if (scratch.size < clips.size) scratch = IntArray(clips.size)
+        // 1. Moment clips that match this message.
+        var count = 0
+        var total = 0
+        for (i in clips.indices) {
+            val clip = clips[i]
+            val moment = clip.moment
+            if (!moment.isMoment) continue
+            if (moment.firstOfDay && !firstOfDay) continue
+            if (moment.burst != 0 && moment.burst != run) continue
+            if (!table.isPlayable(clip, nowMs)) continue
+            if (moment.oneIn != 0 && entry.random.nextInt(moment.oneIn) != 0) continue
+            scratch[count++] = i
+            total += clip.milliWeight.coerceAtLeast(1)
+        }
+        if (count > 0) {
+            var target = entry.random.nextInt(total)
+            for (k in 0 until count) {
+                target -= clips[scratch[k]].milliWeight.coerceAtLeast(1)
+                if (target < 0) return scratch[k]
+            }
+            return scratch[count - 1]
+        }
+        // 2. Rare clips.
+        for (i in clips.indices) {
+            val clip = clips[i]
+            val moment = clip.moment
+            if (moment.isMoment || moment.oneIn == 0 || i == entry.lastRare) continue
+            if (!table.isPlayable(clip, nowMs)) continue
+            if (entry.random.nextInt(moment.oneIn) == 0) {
+                entry.lastRare = i
+                return i
+            }
+        }
+        entry.lastRare = -1
+        return -1
+    }
+
+    /** The speaker's entry, created (with its random source) when it has none. */
     private fun entry(
         packageName: String,
         key: String,
-        clipUris: List<String>,
-        milliWeights: IntArray,
         seed: Int,
     ): Entry {
         probe.packageName = packageName
         probe.key = key
-        val existing = entries[probe]
-        if (existing != null && existing.clipUris == clipUris && existing.weights.contentEquals(milliWeights)) {
-            return existing
-        }
-        val lastUri =
-            existing?.let { e ->
-                e.bag.last
-                    .takeIf { it >= 0 }
-                    ?.let { e.clipUris[it] }
-            }
-        val lastIndex = if (lastUri == null) ShuffleBag.NONE else clipUris.indexOf(lastUri)
-        return Entry(clipUris, milliWeights, ShuffleBag(milliWeights, randomFor(seed), lastIndex)).also {
-            entries[Speaker(packageName, key)] = it
-        }
+        return entries[probe] ?: Entry(randomFor(seed)).also { entries[Speaker(packageName, key)] = it }
     }
 
-    /** Lists in [scratch] the indices of [voice]'s clips that may play at [nowMs]; returns how many. */
+    /** [entry]'s bag for these clips: the current one when they did not change, else a new one. */
+    private fun bag(
+        entry: Entry,
+        clipUris: List<String>,
+        milliWeights: IntArray,
+    ): ShuffleBag {
+        val existing = entry.bag
+        if (existing != null && entry.clipUris == clipUris && entry.weights.contentEquals(milliWeights)) {
+            return existing
+        }
+        val lastUri = existing?.last?.takeIf { it >= 0 }?.let { entry.clipUris[it] }
+        val lastIndex = if (lastUri == null) ShuffleBag.NONE else clipUris.indexOf(lastUri)
+        val bag = ShuffleBag(milliWeights, entry.random, lastIndex)
+        entry.clipUris = clipUris
+        entry.weights = milliWeights
+        entry.bag = bag
+        return bag
+    }
+
+    /** Lists in [scratch] the indices of [voice]'s ordinary clips that may play at [nowMs]; returns how many. */
     private fun playable(
         voice: Voice,
         table: RoutingTable,
@@ -231,13 +330,22 @@ class ShuffleBags(
     ): Int {
         val clips = voice.clips
         if (scratch.size < clips.size) scratch = IntArray(clips.size)
+        val moments = voice.hasMoments
         var count = 0
-        if (voice.isConditional) {
-            for (i in clips.indices) if (table.isPlayable(clips[i], nowMs)) scratch[count++] = i
+        var ordinary = clips.size
+        if (moments) {
+            ordinary = 0
+            for (i in clips.indices) if (!clips[i].moment.isSpecial) ordinary++
         }
-        if (count == 0 || count == clips.size) {
-            for (i in clips.indices) scratch[i] = i
-            count = clips.size
+        if (voice.isConditional) {
+            for (i in clips.indices) {
+                val clip = clips[i]
+                if ((!moments || !clip.moment.isSpecial) && table.isPlayable(clip, nowMs)) scratch[count++] = i
+            }
+        }
+        if (count == 0 || count == ordinary) {
+            count = 0
+            for (i in clips.indices) if (ordinary == 0 || !moments || !clips[i].moment.isSpecial) scratch[count++] = i
         }
         return count
     }
@@ -255,5 +363,8 @@ class ShuffleBags(
 
     companion object {
         const val DEFAULT_CAPACITY: Int = 512
+
+        /** No message yet. */
+        private const val NEVER: Long = Long.MIN_VALUE
     }
 }

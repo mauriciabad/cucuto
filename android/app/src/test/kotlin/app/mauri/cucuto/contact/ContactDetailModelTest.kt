@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.data.db.DecisionOutcome
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
+import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.diagnostics.SpacingGate
 import app.mauri.cucuto.testing.TestData.ADA
 import app.mauri.cucuto.testing.TestData.BEA
@@ -58,6 +59,15 @@ class ContactDetailModelTest {
         // Unknown pack paths (previews) show no toggles rather than wrong ones.
         assertEquals(emptyList<ClipRow>(), clipRows(frog.copy(clipPaths = emptyList()), emptyList()))
         assertEquals(emptyList<ClipRow>(), clipRows(null, emptyList()))
+    }
+
+    @Test
+    fun clipRowsCarryEachClipsMoment() {
+        val rare = Moment(oneIn = 25)
+        val rows = clipRows(frog.copy(clipMoments = listOf(Moment.NONE, rare)), disabled = emptyList())
+        assertEquals(listOf(Moment.NONE, rare), rows.map { it.moment })
+        // Unknown moments (previews) are ordinary clips.
+        assertTrue(clipRows(frog, emptyList()).all { it.moment == Moment.NONE })
     }
 
     @Test
