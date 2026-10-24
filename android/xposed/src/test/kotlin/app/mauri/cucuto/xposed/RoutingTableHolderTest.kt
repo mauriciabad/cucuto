@@ -6,9 +6,11 @@ import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingCodec
 import app.mauri.cucuto.core.routing.RoutingContract
+import app.mauri.cucuto.core.routing.RoutingFile
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.core.routing.Voice
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,6 +20,9 @@ class RoutingTableHolderTest {
     private val prefs = FakePreferences()
     private var now = 1L
     private var failAttach = false
+    private var file: ByteArray? = null
+    private var failFile = false
+    private val reloads = mutableListOf<Long>()
     private val holder =
         RoutingTableHolder(
             preferences = {
@@ -25,6 +30,11 @@ class RoutingTableHolderTest {
                 prefs
             },
             log = { message, _ -> logs += message },
+            remoteFile = {
+                if (failFile) error("binder died")
+                file
+            },
+            onReload = { reloads += it.generation },
             nanoTime = { now },
             retryIntervalNanos = 100,
         )
@@ -86,6 +96,76 @@ class RoutingTableHolderTest {
         assertSame(RoutingTable.EMPTY, holder.current()) // still inside the retry interval
         now += 200
         assertEquals(9L, holder.current().generation)
+    }
+
+    @Test
+    fun theFirstReadWhenAttachingIsNotAReload() {
+        prefs.put(RoutingCodec.encode(table(5)))
+        assertTrue(holder.ensureAttached())
+        assertEquals(5L, holder.peek().generation)
+        assertTrue(reloads.isEmpty())
+
+        prefs.put(RoutingCodec.encode(table(6)))
+        assertEquals(listOf(6L), reloads)
+    }
+
+    @Test
+    fun theRemoteFileTakesOverWhenPreferenceChangesStop() {
+        prefs.put(RoutingCodec.encode(table(5)))
+        holder.ensureAttached()
+
+        // After an app update LSPosed stores new preferences but no longer notifies this process, and its cached
+        // preferences object keeps the old values. Only the remote file has the new table.
+        file = RoutingFile.frame(RoutingCodec.encode(table(6)))
+        assertEquals(5L, holder.peek().generation)
+
+        assertTrue(holder.refresh())
+        assertEquals(6L, holder.peek().generation)
+        assertEquals(listOf(6L), reloads)
+        assertTrue(logs.contains("Routing table 6: 1 keys, 1 voices"))
+    }
+
+    @Test
+    fun aGenerationDeliveredByBothSourcesLoadsOnce() {
+        holder.ensureAttached()
+        prefs.put(RoutingCodec.encode(table(7)))
+        file = RoutingFile.frame(RoutingCodec.encode(table(7)))
+
+        assertFalse(holder.refresh())
+        assertEquals(listOf(7L), reloads)
+        assertEquals(1, logs.count { it.startsWith("Routing table 7") })
+    }
+
+    @Test
+    fun aBadOrMissingFileKeepsTheTable() {
+        prefs.put(RoutingCodec.encode(table(5)))
+        holder.ensureAttached()
+
+        assertFalse(holder.refresh()) // never written
+        val framed = RoutingFile.frame(RoutingCodec.encode(table(6)))
+        file = framed.copyOf(framed.size - 4) // read while the app was writing it
+        assertFalse(holder.refresh())
+        assertTrue(logs.any { it.startsWith("Ignoring an incomplete routing file") })
+        failFile = true
+        assertFalse(holder.refresh())
+        assertTrue(logs.any { it.startsWith("Reading the routing file failed") })
+
+        assertEquals(5L, holder.peek().generation)
+        assertTrue(reloads.isEmpty())
+    }
+
+    @Test
+    fun aThrowingReloadListenerIsContained() {
+        val failing =
+            RoutingTableHolder(
+                preferences = { prefs },
+                log = { message, _ -> logs += message },
+                remoteFile = { RoutingFile.frame(RoutingCodec.encode(table(8))) },
+                onReload = { error("listener bug") },
+            )
+        assertTrue(failing.refresh())
+        assertEquals(8L, failing.peek().generation)
+        assertTrue(logs.contains("Routing table listener failed"))
     }
 
     /** Just enough of a read-only SharedPreferences, notifying like Remote Preferences do. */

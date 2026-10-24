@@ -123,6 +123,30 @@ class ConversationKeysTest {
     }
 
     @Test
+    fun theRawGroupRuleMatchesTheSnapshotRule() {
+        // RecordReader decides with the raw values before it opens the newest message (only groups need a sender).
+        val cases =
+            listOf(
+                Triple("group_chat_defaults_6", lid, false),
+                Triple("individual_chat_defaults_5", group, true),
+                Triple(null, group, false),
+                Triple(null, lid, true),
+                Triple(null, lid, false),
+                Triple("silent_notifications_7", null, false),
+            )
+        for ((channel, key, flag) in cases) {
+            val expected =
+                ConversationKeys.isGroup(
+                    snapshot(shortcutId = key, channelId = channel, isGroupConversation = flag),
+                    key,
+                )
+            assertEquals("$channel $key $flag", expected, ConversationKeys.isGroup(channel, key, flag))
+        }
+        assertTrue(ConversationKeys.isGroup("group_chat_defaults_6", lid, false))
+        assertFalse(ConversationKeys.isGroup("individual_chat_defaults_5", group, true))
+    }
+
+    @Test
     fun displayNamePrefersTheShortcutLabel() {
         assertEquals(
             "Label",

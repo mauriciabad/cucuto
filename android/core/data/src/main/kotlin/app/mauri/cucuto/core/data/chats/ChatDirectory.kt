@@ -1,5 +1,6 @@
 package app.mauri.cucuto.core.data.chats
 
+import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
@@ -33,6 +34,16 @@ interface ChatDirectory {
 
     /** Removes [chat]'s voice; it keeps WhatsApp's tone again. No-op for a chat without a contact. */
     suspend fun unassign(chat: ChatKey)
+
+    /**
+     * Sets how the group [chat] picks its voice (#20): one voice for the whole group (the default), or each
+     * sender's own voice, with the group's voice (if any) for senders without one. A group that was only seen
+     * becomes a contact first, so a per-sender group needs no voice of its own. Returns the contact ID.
+     */
+    suspend fun setGroupPolicy(
+        chat: ChatKey,
+        policy: GroupPolicy,
+    ): Long
 
     /**
      * Forgets [chat]'s sightings, which hides it from the recent senders strip until its next notification. Contacts
@@ -78,6 +89,22 @@ class RoomChatDirectory
         override suspend fun unassign(chat: ChatKey) {
             val contact = contacts.findByKey(chat.packageName, chat.conversationKey) ?: return
             assignments.unassign(contact.id)
+        }
+
+        override suspend fun setGroupPolicy(
+            chat: ChatKey,
+            policy: GroupPolicy,
+        ): Long {
+            val seen = seenSenders.get(chat.packageName, chat.conversationKey)
+            val contactId =
+                contacts.findOrCreate(
+                    packageName = chat.packageName,
+                    key = chat.conversationKey,
+                    displayName = seen?.displayName,
+                    isGroup = seen?.isGroup == true || chat.isGroupKey,
+                )
+            contacts.setGroupPolicy(contactId, policy)
+            return contactId
         }
 
         override suspend fun dismissRecent(chat: ChatKey) = seenSenders.dismiss(chat.packageName, chat.conversationKey)

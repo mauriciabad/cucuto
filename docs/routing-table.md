@@ -20,6 +20,13 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
   published as soon as the service connects.
 - The module attaches lazily on the first lookup (not during boot), decodes on the change callback, and swaps one
   volatile reference. The notification path only does hash map lookups.
+- LSPosed stops notifying a module that has been running since before an app update (until the next reboot), so
+  after each write the app also mirrors the table to the remote file `routing.table` (`XposedService.openRemoteFile`,
+  framed by `RoutingFile`: a `cucuto-routing-file 1 <bytes> <crc32>` line, then the encoded table in UTF-8) and sends
+  the broadcast `app.mauri.cucuto.action.ROUTING_TABLE_PUBLISHED` to package `android` with its identity shared. The
+  module accepts it only from its own package and re-reads the file (`XposedInterface.openRemoteFile`) on its
+  background thread. A generation already loaded is skipped, so either path loads each table once
+  ([ADR 0024](decisions/0024-routing-updates-after-app-update.md)).
 - Encoded tables larger than 256 Ki characters are not written, because Remote Preferences travel through Binder.
   The publisher first retries without clip envelopes (`PublishState.Published.clipHapticsLeftOut`: sounds still
   change, `auto` keeps WhatsApp's vibration) and only then gives up (`PublishState.TooLarge`). A heavy user (500
@@ -55,7 +62,10 @@ Lookup (`RoutingTable.resolve(package, conversationKey, senderKey)`):
 3. If that route is a per-sender group and the sender's key has a voice, play the sender's voice.
 4. Otherwise play the conversation's voice, or change nothing if it has none.
 
-A group with the default policy (one voice per group) never uses its members' voices.
+A group with the default policy (one voice per group) never uses its members' voices. The sender key is the
+`Person` key of the alerting record's newest MessagingStyle message, read only for groups; every lookup stays within
+one package, so WhatsApp and WhatsApp Business never share a route
+([ADR 0031](decisions/0031-group-policy-and-whatsapp-business.md)).
 
 ## Encoding
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Group policy (#20) and WhatsApp Business (#21). Kept apart from strings.xml so parallel UI work merges cleanly. -->
+<resources>
+    <string name="chat_group_policy_title">Who speaks in this group</string>
+    <string name="chat_group_policy_group">The group</string>
+    <string name="chat_group_policy_per_sender">Each sender</string>
+    <string name="chat_group_policy_group_body">Every message plays the group\'s voice, whoever sent it.</string>
+    <string name="chat_group_policy_per_sender_body">Members with a voice of their own speak with it. Everyone else uses the group\'s voice, or WhatsApp\'s tone if the group has none. Members you have not given a voice yet show up in your recent senders.</string>
+    <string name="chat_kind_business">Business · %1$s</string>
+    <string name="chat_kind_business_group">Business group · %1$s</string>
+</resources>
