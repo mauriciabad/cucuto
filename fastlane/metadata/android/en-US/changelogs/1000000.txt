@@ -1,0 +1,5 @@
+Cucuto 1.0
+• Signal and Molly: a contact's voice now plays for their Signal messages too, not only WhatsApp.
+• Fixed: "Android default" and "Leave as is" now restore the contact's own ringtone, and a ringtone you pick always applies.
+• Contacts you add from your address book keep their link for phone calls.
+More: https://github.com/mauriciabad/cucuto/releases/tag/v1.0.0
