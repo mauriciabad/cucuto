@@ -392,7 +392,7 @@ In the website (PWA):
 - Drafts are saved in the browser (IndexedDB) after every change, and an existing `.soundpack.zip` opens as a draft with the same pass-through rules as the app's duplicate-and-edit (ADR 0058).
 - Haptic patterns are edited visually, with the app's "Copy for AI" and "Paste pattern" (shared Kotlin, ADR 0058). Browsers can't play rich haptics (at best simple on/off vibration on Android Chrome), so the page says to preview haptics in the app.
 
-Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. One Kotlin implementation (`shared/pack-spec`) validates everywhere: in `packer`, in the app, and on the website compiled to JavaScript (owner, #60: option 1; Kotlin/JS rather than Wasm per ADR 0022, #116). It runs against the same fixtures in CI, so a pack made anywhere imports everywhere. Whether more of the PWA creator can be shared Kotlin (Kotlin/Wasm) is spike #117.
+Shared rules: the JSON Schemas in `spec/` and a set of golden test packs (valid and invalid) are the contract. One Kotlin implementation (`shared/pack-spec`) validates everywhere: in `packer`, in the app, and on the website compiled to JavaScript (owner, #60: option 1; Kotlin/JS rather than Wasm per ADR 0022, #116). It runs against the same fixtures in CI, so a pack made anywhere imports everywhere. Spike #117 settled how much more of the PWA creator is shared Kotlin: its logic (IDs, layout, `pack.json`, clip DSP), compiled to JS, while the UI stays Svelte ([ADR 0038](decisions/0038-web-pack-creator.md)).
 
 ## Haptics
 
@@ -516,27 +516,46 @@ Contact identity: the stable key is `package + conversation key`. Prefer the not
 
 Ten milestones, each ending in something the owner can install and try. M0 is a go/no-go gate: if a check fails, report back with findings before building further. Ringtones are part of v1 (owner, #59): M9 lands before the M7 release; only the pack creator (M8) follows in v1.1.
 
+### Status (2026-10-24)
+
+Development is near the end (owner, 2026-10-24). From now on, occasional single agents do small features ([maintaining.md](maintaining.md)). Signed test releases (v0.1.x) ship from `main`, and the website is live. `owner-action` marks what only the owner can do.
+
+| Milestone | Done | Left |
+| --- | --- | --- |
+| M0 Device spike | Gate passed (GO, [M0 report](m0-report.md)): hook points, swaps, DND, silent, bursts, WaEnhancer X | Muted-chat parity check (#12, owner) |
+| M1 Core engine | Everything: importer, routing table, production hook, clip mirror, timing and battery | — |
+| M2 Contacts and senders | Recent senders, group policy, WhatsApp Business | Add chats from Android contacts (#292); group sender device check (#157, owner) |
+| M3 UI and game feel | All screens and the four-tab shell, feedback engine, Spanish, accessibility pass | Picker folding and random picks (#289, #290); TalkBack and Scanner walkthrough on the phone (#226, owner) |
+| M4 Haptics | Everything: pack haptics, auto haptics, editor, per-contact override, AI-written patterns | — |
+| M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, credentials, verification | Draw haptic previews (#301); import speed (#279, #268); Drive folder source, v1.1 (#37, blocked on #188) |
+| M6 Website | Every page, release-driven builds, the default repository, JPEG XL, screenshots, GitHub Pages and DNS | Explainer video rework (#271); TypeScript 7 (#162, blocked upstream) |
+| M7 Open-source release | Public repo and docs, CI with the media guard, signed releases, backup and restore UI, Google Play bundle and listing | Contact re-linking (PR #266) and a wiped-phone restore (#43, owner); review sample chat (#285); Play account, video and defaults (#276, #286, #287, owner); clean-install end to end (#46, owner); F-Droid after v1 (#275) |
+| M8 Pack creator (v1.1) | In-app creator, website Create page and its tools, golden packs through every validator | Creator vibrations, ringtones and animated sprites (#185, PR #225) |
+| M9 Ringtones | Ring files and auto-cut clips, phone ringtones with variants, ringtone picker, independent voice and ringtone, day and night | Sound flow rethink (#298); pack rules per contact (#288); supervised device runs (#143, #228, owner); automatic WhatsApp call ringtones (#273, blocked on #228); the owner's K.K. check |
+
+No milestone: special clips (#120, PR #258), finding Drive backups on a fresh install (#163, needs #188).
+
 ### M0 — Device spike (gate)
 
 A throwaway module plus a debug screen, run on the owner's phone.
 
-- [ ] Record device model, ROM build, root manager, LSPosed/Vector version and supported libxposed API level.
-- [ ] Module loads in `system_server` and logs every WhatsApp notification that reaches the alerting stage.
-- [ ] Locate the real hook point on this Android 17 build: in recent AOSP the alerting logic lives in `NotificationAttentionHelper` (sound, vibration, LED); confirm method names and signatures from the device's framework.
-- [ ] Dump for one 1:1 message and one group message: channel ID, sound URI, vibration, shortcut ID, MessagingStyle conversation title, sender `Person`, group key, group alert behavior, and whether the child or the summary is the record that alerts.
-- [ ] Swap the sound to a test clip served by our provider and hear it. Identify which process opens the URI.
-- [ ] Swap the vibration to a `VibrationEffect.Builder` effect and feel it. Confirm the Builder API exists on this build.
+- [x] Record device model, ROM build, root manager, LSPosed/Vector version and supported libxposed API level.
+- [x] Module loads in `system_server` and logs every WhatsApp notification that reaches the alerting stage.
+- [x] Locate the real hook point on this Android 17 build: in recent AOSP the alerting logic lives in `NotificationAttentionHelper` (sound, vibration, LED); confirm method names and signatures from the device's framework.
+- [x] Dump for one 1:1 message and one group message: channel ID, sound URI, vibration, shortcut ID, MessagingStyle conversation title, sender `Person`, group key, group alert behavior, and whether the child or the summary is the record that alerts.
+- [x] Swap the sound to a test clip served by our provider and hear it. Identify which process opens the URI.
+- [x] Swap the vibration to a `VibrationEffect.Builder` effect and feel it. Confirm the Builder API exists on this build.
 - [ ] Confirm muted chats, Do Not Disturb, silent mode and quick bursts behave exactly as with WhatsApp's own tone.
-- [ ] Confirm WaEnhancer X keeps working with our module enabled.
+- [x] Confirm WaEnhancer X keeps working with our module enabled.
 
 ### M1 — Core engine
 
-- [ ] Pack and bundle importer with validation, safe unzip, decoding of every supported image and audio format, and install, tested with the demo packs and a malformed pack set (zip slip, oversize, bad schema).
-- [ ] Room database for contacts and assignments; routing table published to the module.
-- [ ] Module hook swaps sound and vibration using the routing table. Random clip per message with a shuffle bag, so the same clip never plays twice in a row.
-- [ ] Unassigned contacts keep WhatsApp's default tone. A global switch turns everything off.
-- [ ] Hook adds no noticeable delay: under 5 ms of work on the notification path, all lookups from memory.
-- [ ] The clip starts at the same instant WhatsApp's own tone would, also when Cucuto's process is not running, and battery life is preserved: no wake-ups, wake locks or services of our own (owner, #88; measured in #121).
+- [x] Pack and bundle importer with validation, safe unzip, decoding of every supported image and audio format, and install, tested with the demo packs and a malformed pack set (zip slip, oversize, bad schema).
+- [x] Room database for contacts and assignments; routing table published to the module.
+- [x] Module hook swaps sound and vibration using the routing table. Random clip per message with a shuffle bag, so the same clip never plays twice in a row.
+- [x] Unassigned contacts keep WhatsApp's default tone. A global switch turns everything off.
+- [x] Hook adds no noticeable delay: under 5 ms of work on the notification path, all lookups from memory.
+- [x] The clip starts at the same instant WhatsApp's own tone would, also when Cucuto's process is not running, and battery life is preserved: no wake-ups, wake locks or services of our own (owner, #88; measured in #121).
 
 ### M2 — Contacts and senders
 
@@ -547,38 +566,38 @@ A throwaway module plus a debug screen, run on the owner's phone.
 
 ### M3 — UI and game feel
 
-- [ ] All screens from the UX section, built with Material 3 Expressive.
-- [ ] Feedback engine with synchronized sound, haptic and motion; full juice checklist done.
+- [x] All screens from the UX section, built with Material 3 Expressive.
+- [x] Feedback engine with synchronized sound, haptic and motion; full juice checklist done.
 - [ ] Accessibility pass: TalkBack walkthrough, large fonts, "remove animations" setting.
 
 ### M4 — Haptics
 
-- [ ] Pack haptic schema implemented, including auto mode ("haptics follow the voice").
-- [ ] Haptic editor with live preview and tap-the-rhythm recording.
-- [ ] Per-contact haptic override.
+- [x] Pack haptic schema implemented, including auto mode ("haptics follow the voice").
+- [x] Haptic editor with live preview and tap-the-rhythm recording.
+- [x] Per-contact haptic override.
 
 ### M5 — Pack repositories and bundles
 
-- [ ] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
-- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
-- [ ] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
-- [ ] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
+- [x] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
+- [x] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
+- [x] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
+- [x] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
 - [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.
 
 ### M6 — Website
 
-- [ ] SvelteKit static site with Home, Packs, Install guide, For pack authors and Privacy pages.
-- [ ] APK download wired to the latest GitHub Release; rebuild on every release.
-- [ ] Demo packs built in CI, published as release assets, indexed at `/repo/index.json` and set as the app's default repository.
-- [ ] JPEG XL images with generated fallbacks; scripted screenshots from the demo packs; slot ready for the explainer video from the video subagent.
-- [ ] Deployed to GitHub Pages (#55), with the exact DNS record for `cucuto.mauri.app` handed to the owner.
+- [x] SvelteKit static site with Home, Packs, Install guide, For pack authors and Privacy pages.
+- [x] APK download wired to the latest GitHub Release; rebuild on every release.
+- [x] Demo packs built in CI, published as release assets, indexed at `/repo/index.json` and set as the app's default repository.
+- [x] JPEG XL images with generated fallbacks; scripted screenshots from the demo packs; slot ready for the explainer video from the video subagent.
+- [x] Deployed to GitHub Pages (#55), with the exact DNS record for `cucuto.mauri.app` handed to the owner.
 
 ### M7 — Open-source release
 
-- [ ] Public monorepo with README, LICENSE (GPL-3.0-or-later), pack format docs, schemas, `packer`, CONTRIBUTING.
+- [x] Public monorepo with README, LICENSE (GPL-3.0-or-later), pack format docs, schemas, `packer`, CONTRIBUTING.
 - [ ] Backup and restore: manual export, automatic backups to a chosen folder, optional encryption, and a tested restore on a wiped phone.
-- [ ] CI green, including the media allowlist guard.
-- [ ] Signed release APK on GitHub Releases, linked from the website.
+- [x] CI green, including the media allowlist guard.
+- [x] Signed release APK on GitHub Releases, linked from the website.
 - [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274, ready: [ADR 0071](decisions/0071-google-play-bundle-and-listing.md), [google-play.md](google-play.md)); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
 - [ ] After v1: F-Droid, reproducible and signed with Cucuto's key (#275).
 - [ ] The owner imports the private packs from Google Drive on a clean install and everything works end to end.
@@ -586,10 +605,10 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M8 — Pack creator (v1.1; can move earlier)
 
 - [ ] In-app creator: pack details, characters, sprite crop, import or record clips, waveform trim, normalize, haptics, validate, export or install.
-- [ ] Duplicate-and-edit for installed packs.
+- [x] Duplicate-and-edit for installed packs.
 - [x] Website Create page as an installable, offline-capable PWA with the same flow, all processing in the browser (#48, [ADR 0038](decisions/0038-web-pack-creator.md); covers, bundles, custom haptics, drafts and editing existing packs in #191, [ADR 0058](decisions/0058-create-page-tools.md)).
 - [x] "Host your own repository" helper that outputs a folder with `repository.json` and previews (#191, ADR 0058).
-- [ ] Golden test packs run through `shared/pack-spec` on the JVM (packer), on Android and in the browser build used by the website, all green in CI (#116).
+- [x] Golden test packs run through `shared/pack-spec` on the JVM (packer), on Android and in the browser build used by the website, all green in CI (#116).
 
 ### M9 — Ringtones (v1, before the M7 release)
 
