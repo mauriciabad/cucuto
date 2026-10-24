@@ -30,7 +30,10 @@ fun cucutoEntries(navigator: AppNavigator): (NavKey) -> NavEntry<NavKey> {
         entry<CucutoDestination.Discover>(metadata = TabRootMetadata) { DiscoverScreen(onNavigate = navigate) }
         entry<CucutoDestination.Settings>(metadata = TabRootMetadata) { SettingsScreen(onNavigate = navigate) }
 
-        entry<CucutoDestination.Picker> { key ->
+        // ChatKey.toString() hides the JID (ADR 0017), so the default content key would be the same for every chat.
+        entry<CucutoDestination.Picker>(
+            clazzContentKey = { "picker/${it.chat?.packageName}/${it.chat?.conversationKey}" },
+        ) { key ->
             PickerScreen(
                 chat = key.chat,
                 onBack = goBack,
