@@ -195,6 +195,41 @@ playSound`, and no key or name in the module log (only `@g.us`, `@lid` and `<sha
 - **Ringer silent / vibrate**: silent plays nothing; vibrate plays the click-tick only.
 - **WaEnhancer X** still works; WhatsApp does not crash (`adb logcat -b crash -d`).
 
+## 4b. Live table updates, with and without an app update since boot (#154)
+
+The module must follow every publication within seconds, also after the app was reinstalled since the last boot
+([ADR 0024](decisions/0024-routing-updates-after-app-update.md)). Run part A first, then part B. Module code
+changes need a reboot (`system_server` keeps the module it loaded at boot); app-only changes do not.
+
+Watch the module log in a second terminal:
+
+```
+adb shell su -c "tail -f /data/adb/lspd/log/modules_*.log" | grep --line-buffered -F 'app.mauri.cucuto,cucuto,'
+```
+
+**After the boot** (once per boot), expect `Routing table attached (generation …)` and `Listening for new routing
+tables` within about 20 s.
+
+**A. No app update since boot.** Open Cucuto → **Diagnostics** and toggle **Cucuto voices** off, then on.
+
+- Each toggle logs exactly one `Routing table <gen>: N keys, M voices` line within 2 s, with a new, larger `<gen>`.
+- Within about 15 s, Diagnostics → "Table in the module" reads `Generation <gen>, N keys: the app's latest` (the same
+  generation as the "Routing table" row).
+
+**B. After an app update.** Without rebooting, reinstall the app (`adb install -r app-debug.apk`, a newer build or the
+same one), open **Diagnostics** and toggle the switch again.
+
+- Same expectations as A: one `Routing table <gen>` line within 2 s per toggle, and Diagnostics catches up within
+  about 15 s. Here the line comes from the nudge and the remote file; LSPosed no longer notifies preferences.
+- Optional, to see the transport: `adb shell su -c 'find /data/misc /data/adb -name routing.table -exec ls -l {} +'`
+  shows the remote file with a fresh timestamp (LSPosed keeps it under `<base>/<user>/app.mauri.cucuto/`).
+
+**Fail if:** no `Routing table` line after a toggle; `Ignored a routing nudge from …` (the sender's identity did not
+arrive: record what it says); `Registering the routing nudge receiver failed` or `Could not listen for new routing
+tables`; `Ignoring an incomplete routing file` on every toggle (an occasional one during rapid toggling is fine:
+the next nudge reads the complete file); or "Table in the module" still says "Not yet the app's latest" a minute
+after the last toggle. Also check `adb logcat -b crash -d` for anything from `system_server`.
+
 ## 5. Report and clean up
 
 Record in issue #15 (redacted): hook lines, self-test result, the 1:1/group key domains, whether per-message clips

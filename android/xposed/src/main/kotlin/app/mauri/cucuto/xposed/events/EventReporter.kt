@@ -32,7 +32,9 @@ internal class EventReporter(
     private val queue: EventQueue = EventQueue(),
 ) {
     private val thread = HandlerThread("cucuto-events", Process.THREAD_PRIORITY_BACKGROUND)
-    private val handler: Handler by lazy { Handler(thread.looper) }
+
+    /** The background thread's handler, also used to receive the app's nudge broadcast. */
+    val handler: Handler by lazy { Handler(thread.looper) }
     private val deliver = Runnable { deliver() }
 
     /** Whether the last attempt failed (or none succeeded yet), so the next success is worth one log line. */
@@ -80,6 +82,18 @@ internal class EventReporter(
         }
     }
 
+    /**
+     * Sends the module's status to the app even with no event queued (same schedule and rate limit as events), so
+     * the Diagnostics screen learns about a new routing table. Cheap and never throws.
+     */
+    fun reportStatus() {
+        try {
+            if (queue.requestStatus()) schedule()
+        } catch (t: Throwable) {
+            onError("Scheduling a status report failed", t)
+        }
+    }
+
     private fun onQueued(event: DecisionEvent) {
         try {
             onQueuedListener(event)
@@ -96,8 +110,9 @@ internal class EventReporter(
 
     private fun deliver() {
         try {
+            if (!queue.hasWork) return
+            // Empty when only a status report was requested.
             val batch = queue.take(SystemClock.uptimeMillis())
-            if (batch.isEmpty()) return
             val ok =
                 try {
                     sender.send(batch, status())
@@ -108,7 +123,7 @@ internal class EventReporter(
             queue.completed(batch, ok)
             if (ok && lastFailed) onDelivered(batch.size)
             lastFailed = !ok
-            if (!queue.isEmpty) schedule()
+            if (queue.hasWork) schedule()
         } catch (t: Throwable) {
             onError("Decision event delivery crashed", t)
         }
@@ -227,19 +242,17 @@ internal class ProviderEventSender(
         val certs = signing.apkContentsSigners.orEmpty().map { it.toByteArray() }
         return certs.takeIf { it.isNotEmpty() }?.also { moduleSigners = it }
     }
-
-    private companion object {
-        /** `ActivityThread.currentActivityThread().getSystemContext()`: the system context inside system_server. */
-        fun systemContext(): Context? =
-            try {
-                val activityThread = Class.forName("android.app.ActivityThread")
-                val current = activityThread.getMethod("currentActivityThread").invoke(null)
-                activityThread.getMethod("getSystemContext").invoke(current) as? Context
-            } catch (_: Throwable) {
-                null
-            }
-    }
 }
+
+/** `ActivityThread.currentActivityThread().getSystemContext()`: the system context inside system_server. */
+internal fun systemContext(): Context? =
+    try {
+        val activityThread = Class.forName("android.app.ActivityThread")
+        val current = activityThread.getMethod("currentActivityThread").invoke(null)
+        activityThread.getMethod("getSystemContext").invoke(current) as? Context
+    } catch (_: Throwable) {
+        null
+    }
 
 /** Writes a flat map of primitives and strings into a Bundle. Unknown value types are skipped. */
 internal fun Map<String, Any?>.toBundle(): Bundle =
