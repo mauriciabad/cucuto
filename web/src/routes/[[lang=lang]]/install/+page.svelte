@@ -15,7 +15,7 @@
 		OBTAINIUM_URL,
 		RELEASE_CERT_COLONS
 	} from '#lib/obtainium.js';
-	import { RELEASES_URL, REPO_URL } from '#lib/site.js';
+	import { RELEASE_CERT_SHA256, RELEASES_URL, REPO_URL } from '#lib/site.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -74,6 +74,9 @@
 
 	<h2 class="headline-small" id="updates">{t.updatesTitle}</h2>
 	<p><Html text={t.updatesHtml} values={{ obtainium: OBTAINIUM_URL }} /></p>
+	<p id="certificate">
+		<Html text={t.certificateHtml} values={{ cert: `${RELEASE_CERT_SHA256.slice(0, 8)}…` }} />
+	</p>
 	<div class="obtainium">
 		<a class="button tonal" href={OBTAINIUM_LINK}>
 			<Icon name="download" />

@@ -57,6 +57,11 @@ import terminal from '@material-symbols/svg-500/rounded/terminal.svg?raw';
 import translate from '@material-symbols/svg-500/rounded/translate.svg?raw';
 import visibilityOff from '@material-symbols/svg-500/rounded/visibility_off.svg?raw';
 import warning from '@material-symbols/svg-500/rounded/warning-fill.svg?raw';
+import casino from '@material-symbols/svg-500/rounded/casino.svg?raw';
+import contacts from '@material-symbols/svg-500/rounded/contacts.svg?raw';
+import ringVolume from '@material-symbols/svg-500/rounded/ring_volume.svg?raw';
+import tune from '@material-symbols/svg-500/rounded/tune.svg?raw';
+import wbTwilight from '@material-symbols/svg-500/rounded/wb_twilight.svg?raw';
 
 const sources = {
 	add,
@@ -115,7 +120,12 @@ const sources = {
 	terminal,
 	translate,
 	'visibility-off': visibilityOff,
-	warning
+	warning,
+	casino,
+	contacts,
+	'ring-volume': ringVolume,
+	tune,
+	'wb-twilight': wbTwilight
 };
 
 export type IconName = keyof typeof sources;
