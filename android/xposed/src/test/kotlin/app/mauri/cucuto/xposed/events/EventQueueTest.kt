@@ -107,6 +107,39 @@ class EventQueueTest {
     }
 
     @Test
+    fun statusRequestsMakeOneDeliveryOnTheSameSchedule() {
+        assertFalse(queue.hasWork)
+        assertTrue(queue.requestStatus())
+        assertFalse(queue.requestStatus()) // already scheduled
+        assertTrue(queue.hasWork)
+        assertEquals(1_002_000, queue.nextDeliveryAt(1_000_000))
+
+        assertTrue(queue.take(1_002_000).isEmpty()) // a status-only attempt
+        assertFalse(queue.hasWork)
+        queue.completed(emptyList(), delivered = true)
+        // It counted as an attempt: the rate limit still holds.
+        assertTrue(queue.requestStatus())
+        assertEquals(1_012_000, queue.nextDeliveryAt(1_003_000))
+    }
+
+    @Test
+    fun aStatusRequestRidesAlongWithQueuedEvents() {
+        queue.offer(event(1))
+        assertFalse(queue.requestStatus()) // the events' delivery carries the status
+        assertEquals(listOf(1L), queue.take(0).map { it.timeMillis })
+        assertFalse(queue.hasWork)
+    }
+
+    @Test
+    fun aFailedStatusOnlyDeliveryIsRetriedWithBackoff() {
+        queue.requestStatus()
+        val batch = queue.take(0)
+        queue.completed(batch, delivered = false)
+        assertTrue(queue.hasWork)
+        assertEquals(40_000, queue.nextDeliveryAt(0))
+    }
+
+    @Test
     fun eventsSurviveTheWireFormat() {
         val original = event(4)
         val map = original.toMap()
