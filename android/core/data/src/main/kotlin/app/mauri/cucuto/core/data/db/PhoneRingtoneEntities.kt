@@ -19,6 +19,9 @@ import androidx.room3.PrimaryKey
  * @property followsVoice The user never picked a ringtone: it rings with the voice's character whenever that has
  *   ringtones, and the chat directory updates [packId] when the voice changes ([app.mauri.cucuto.core.data.chats.PhoneRingtoneFollow]). False once the
  *   user picks a character other than the voice's. Defaults to "no character of its own", the meaning before ADR 0063.
+ * @property choice What rings (ADR 0073): a pack character (the fields above), the phone's default ringtone, or
+ *   whatever the Android contact has ([RingtoneChoice.UNCHANGED], which the sync treats like no row). The last two
+ *   store no character and never follow the voice.
  */
 @Entity(
     tableName = "phone_ringtones",
@@ -39,7 +42,23 @@ data class PhoneRingtoneEntity(
     val variant: String? = null,
     val updatedAt: Long,
     @ColumnInfo(defaultValue = "1") val followsVoice: Boolean = packId == null,
+    @ColumnInfo(defaultValue = "CHARACTER") val choice: RingtoneChoice = RingtoneChoice.CHARACTER,
 )
+
+/** What a contact's phone ringtone is (ADR 0073, owner #298). */
+enum class RingtoneChoice {
+    /** A pack character ([PhoneRingtoneEntity.packId], or the voice's while it follows). */
+    CHARACTER,
+
+    /**
+     * The phone's default ringtone: Cucuto clears a ringtone of the Android contact's own (recording it for undo
+     * first), and writes nothing when there is none.
+     */
+    ANDROID_DEFAULT,
+
+    /** Leave as is: Cucuto never touches the Android contact's ringtone, and gives back its own if it changed it. */
+    UNCHANGED,
+}
 
 /** How a phone ringtone picks its variant (docs/pack-format.md, "Variant resolution"; backup `rule.mode`). */
 enum class RingtoneMode {
@@ -67,8 +86,9 @@ enum class RingtoneMode {
  * @property lookupKey `ContactsContract.Contacts.LOOKUP_KEY` of the Android contact.
  * @property contactId The Cucuto contact that rang through it when it was written (informational).
  * @property originalRingtone The contact's `CUSTOM_RINGTONE` before Cucuto (null: the default ringtone).
- * @property writtenUri What Cucuto last wrote, or null before the first write. A different value on the contact means
- *   someone else changed it, and Cucuto stops writing ([userChanged]).
+ * @property writtenUri What Cucuto last wrote, or null before the first write. [DEFAULT_RINGTONE] means Cucuto
+ *   cleared the contact's ringtone (ADR 0073). A different value on the contact means someone else changed it, and
+ *   Cucuto stops writing ([userChanged]).
  * @property variant The ringtone file (path from `pack.json`) behind [writtenUri].
  * @property userChanged The user (or another app) changed the ringtone after Cucuto; Cucuto leaves it alone until the
  *   user takes it over again, and never restores over it.
@@ -82,4 +102,9 @@ data class ContactRingtoneWriteEntity(
     val variant: String? = null,
     val userChanged: Boolean = false,
     val writtenAt: Long,
-)
+) {
+    companion object {
+        /** [writtenUri] after Cucuto cleared the contact's ringtone for "Android default" (ADR 0073). */
+        const val DEFAULT_RINGTONE: String = "cucuto:default"
+    }
+}

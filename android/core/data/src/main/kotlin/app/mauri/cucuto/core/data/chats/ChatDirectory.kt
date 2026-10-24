@@ -1,6 +1,7 @@
 package app.mauri.cucuto.core.data.chats
 
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.SeenSenderDao
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
@@ -16,7 +17,7 @@ import javax.inject.Singleton
  * assigned chat plays its character.
  */
 interface ChatDirectory {
-    /** Every chat, most recently seen first ([mergeChats]). */
+    /** Every chat, most recently seen first ([mergeChats]), with its stored phone ringtone choice. */
     fun observeChats(): Flow<List<Chat>>
 
     /**
@@ -73,14 +74,21 @@ class RoomChatDirectory
         private val assignments: AssignmentRepository,
         private val seenSenders: SeenSenderRepository,
         private val ringtoneFollow: PhoneRingtoneFollow,
+        private val ringtones: PhoneRingtoneDao,
     ) : ChatDirectory {
         override fun observeChats(): Flow<List<Chat>> =
             combine(
                 contacts.observeContacts(),
                 assignments.observeAll(),
                 seenSenders.observeRecent(SeenSenderDao.CAPACITY),
-                ::mergeChats,
-            )
+                ringtones.observeAll(),
+            ) { contacts, assignments, seen, rows ->
+                val byContact = rows.associateBy { it.contactId }
+                mergeChats(contacts, assignments, seen).map { chat ->
+                    val row = chat.contactId?.let(byContact::get)
+                    if (row == null) chat else chat.copy(ringtone = ChatRingtone.of(row))
+                }
+            }
 
         override suspend fun assign(
             chat: ChatKey,

@@ -5,6 +5,8 @@ import app.mauri.cucuto.core.data.db.ContactKeyEntity
 import app.mauri.cucuto.core.data.db.ContactKeyKind
 import app.mauri.cucuto.core.data.db.ContactWithKeys
 import app.mauri.cucuto.core.data.db.GroupPolicy
+import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.SeenSenderEntity
 import kotlinx.serialization.Serializable
 
@@ -55,6 +57,8 @@ data class ChatVoice(
  * @property keys Every messenger key of the chat ([key] included).
  * @property groupPolicy Groups only: one voice for the whole group, or each sender's own voice (#20). A group that is
  *   not a contact yet has the default, [GroupPolicy.GROUP].
+ * @property ringtone The stored phone ringtone choice, or null when none is stored (ADR 0073); [ringingVoice] says
+ *   which character rings.
  */
 data class Chat(
     val key: ChatKey,
@@ -66,9 +70,65 @@ data class Chat(
     val messageCount: Int,
     val keys: List<ChatKey> = listOf(key),
     val groupPolicy: GroupPolicy = GroupPolicy.GROUP,
+    val ringtone: ChatRingtone? = null,
 ) {
     /** Whether the chat lives in WhatsApp Business rather than WhatsApp; its keys and voices are its own (#21). */
     val isBusiness: Boolean get() = key.packageName == ChatKey.WHATSAPP_BUSINESS
+
+    /**
+     * The character that would ring for calls: the ringtone's own, else the message voice while the ringtone follows
+     * it (nothing stored yet, ADR 0063). Null for "Android default" and "Leave as is" (ADR 0073). Whether that
+     * character has ringtones is the caller's to check.
+     */
+    val ringingVoice: ChatVoice?
+        get() =
+            when (val r = ringtone) {
+                null -> voice
+                is ChatRingtone.Character -> r.own ?: voice
+                ChatRingtone.AndroidDefault, ChatRingtone.Unchanged -> null
+            }
+}
+
+/** A chat's stored phone ringtone (ADR 0063, ADR 0073). */
+sealed interface ChatRingtone {
+    /**
+     * A pack character: [own] is the one stored (picked, or kept while the voice has no ringtones), null for the
+     * message voice's. [followsVoice] is false once the user picked it.
+     */
+    data class Character(
+        val own: ChatVoice?,
+        val followsVoice: Boolean,
+    ) : ChatRingtone
+
+    /** The phone's default ringtone. */
+    data object AndroidDefault : ChatRingtone
+
+    /** Leave as is: Cucuto doesn't touch the contact's ringtone. */
+    data object Unchanged : ChatRingtone
+
+    companion object {
+        /** The choice stored in [row]. */
+        fun of(row: PhoneRingtoneEntity): ChatRingtone =
+            when (row.choice) {
+                RingtoneChoice.ANDROID_DEFAULT -> {
+                    AndroidDefault
+                }
+
+                RingtoneChoice.UNCHANGED -> {
+                    Unchanged
+                }
+
+                RingtoneChoice.CHARACTER -> {
+                    val own =
+                        if (row.packId != null && row.characterId != null) {
+                            ChatVoice(row.packId, row.characterId)
+                        } else {
+                            null
+                        }
+                    Character(own, row.followsVoice || own == null)
+                }
+            }
+    }
 }
 
 /**

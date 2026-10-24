@@ -8,6 +8,7 @@ import app.mauri.cucuto.core.data.db.ContactKeyKind
 import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneDao
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.di.ApplicationScope
 import app.mauri.cucuto.core.data.di.WallClock
@@ -307,8 +308,10 @@ class PhoneRingtones
                 combine(dao.observeWrites(), state, ::Pair),
             ) { on, contact, ringtone, assignment, (writes, sync) ->
                 val lookupKey = contact?.contact?.androidLookupKey
-                val packId = ringtone?.packId ?: assignment?.packId
-                val characterId = ringtone?.characterId ?: assignment?.characterId
+                // "Android default" and "Leave as is" ring no character (ADR 0073).
+                val isCharacter = ringtone == null || ringtone.choice == RingtoneChoice.CHARACTER
+                val packId = (ringtone?.packId ?: assignment?.packId)?.takeIf { isCharacter }
+                val characterId = (ringtone?.characterId ?: assignment?.characterId)?.takeIf { isCharacter }
                 ContactPhoneRingtone(
                     enabled = on,
                     contactId = contactId,
@@ -413,6 +416,26 @@ class PhoneRingtones
                     variant = if (mode == RingtoneMode.FIXED) variant else null,
                     updatedAt = clock.now(),
                     followsVoice = followsVoice || !own,
+                ),
+            )
+        }
+
+        /**
+         * The ringtone picker's other choices (ADR 0073): [RingtoneChoice.ANDROID_DEFAULT] (the phone's default
+         * ringtone) or [RingtoneChoice.UNCHANGED] (leave the Android contact's ringtone as it is). Neither stores a
+         * character nor follows the voice. [RingtoneChoice.CHARACTER] goes through [choose].
+         */
+        suspend fun chooseOther(
+            contactId: Long,
+            choice: RingtoneChoice,
+        ) {
+            require(choice != RingtoneChoice.CHARACTER) { "A character goes through choose()" }
+            dao.upsert(
+                PhoneRingtoneEntity(
+                    contactId = contactId,
+                    updatedAt = clock.now(),
+                    followsVoice = false,
+                    choice = choice,
                 ),
             )
         }

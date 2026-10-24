@@ -11,6 +11,7 @@ import app.mauri.cucuto.core.data.db.PackRepositoryEntity
 import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.packspec.SemVer
 import kotlinx.serialization.json.JsonElement
@@ -66,7 +67,16 @@ internal object BackupSnapshot {
                 },
             groupPolicy = if (c.isGroup) groupPolicy(c.groupPolicy) else null,
             message = assignment?.let(::message),
-            ringtone = ringtone?.let { ringtone(it, assignment, ringtoneWrite) },
+            ringtone =
+                ringtone
+                    ?.takeIf { it.choice == RingtoneChoice.CHARACTER }
+                    ?.let { ringtone(it, assignment, ringtoneWrite) },
+            ringtoneChoice =
+                when (ringtone?.choice) {
+                    RingtoneChoice.ANDROID_DEFAULT -> BackupRingtoneChoice.ANDROID_DEFAULT
+                    RingtoneChoice.UNCHANGED -> BackupRingtoneChoice.UNCHANGED
+                    RingtoneChoice.CHARACTER, null -> null
+                },
         )
     }
 

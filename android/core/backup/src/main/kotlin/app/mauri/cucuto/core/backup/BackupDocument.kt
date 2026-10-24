@@ -142,7 +142,21 @@ data class BackupContact(
     val groupPolicy: BackupGroupPolicy? = null,
     val message: BackupMessageAssignment? = null,
     val ringtone: BackupRingtoneAssignment? = null,
+    /** A phone ringtone that is not a pack character, in place of [ringtone] (ADR 0073). */
+    val ringtoneChoice: BackupRingtoneChoice? = null,
 )
+
+/** `contacts[].ringtoneChoice` (ADR 0073). */
+@Serializable
+enum class BackupRingtoneChoice {
+    /** The phone's default ringtone: Cucuto clears a ringtone of the contact's own. */
+    @SerialName("android-default")
+    ANDROID_DEFAULT,
+
+    /** Leave as is: Cucuto never touches the contact's ringtone. */
+    @SerialName("unchanged")
+    UNCHANGED,
+}
 
 @Serializable
 data class BackupContactKey(
