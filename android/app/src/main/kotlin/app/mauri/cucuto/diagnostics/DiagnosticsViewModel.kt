@@ -11,6 +11,7 @@ import app.mauri.cucuto.core.data.routing.SinkConnection
 import app.mauri.cucuto.core.data.settings.RoutingSettings
 import app.mauri.cucuto.provider.ModuleEventSink
 import app.mauri.cucuto.provider.ReceivedStatus
+import app.mauri.cucuto.ui.status.AppUpdateDetector
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,8 @@ import javax.inject.Inject
 data class DiagnosticsState(
     val enabled: Boolean = true,
     val connection: SinkConnection = SinkConnection.Disconnected,
+    /** Cucuto was updated after this boot: without a framework service, a reboot is the fix (ADR 0043). */
+    val appUpdatedSinceBoot: Boolean = false,
     val publish: PublishState = PublishState.Idle,
     val moduleStatus: ReceivedStatus? = null,
     val decisions: List<DecisionLogEntity> = emptyList(),
@@ -66,7 +69,10 @@ class DiagnosticsViewModel
         private val settings: RoutingSettings,
         private val notifier: SelfTestNotifier,
         private val testVoice: TestVoice,
+        appUpdate: AppUpdateDetector,
     ) : ViewModel() {
+        private val appUpdatedSinceBoot = appUpdate.updatedSinceBoot()
+
         val state: StateFlow<DiagnosticsState> =
             combine(
                 settings.enabled,
@@ -75,7 +81,7 @@ class DiagnosticsViewModel
                 events.status,
                 decisionLog.observeRecent(RECENT_DECISIONS),
             ) { enabled, connection, publish, status, decisions ->
-                DiagnosticsState(enabled, connection, publish, status, decisions)
+                DiagnosticsState(enabled, connection, appUpdatedSinceBoot, publish, status, decisions)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DiagnosticsState())
 
         /** Whether the debug-only "test voice" action is offered. */
