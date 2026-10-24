@@ -12,7 +12,7 @@ import androidx.test.uiautomator.Until
 
 /**
  * The main journeys (start, Home, contact detail, the ringtone picker and its rules, the character picker with
- * folding and search, add from contacts, Packs, the sample chat) as steps on the installed app, shared by the
+ * folding and search, add from contacts and Packs) as steps on the installed app, shared by the
  * Baseline Profile generator and any future Macrobenchmark. Each step does what it can and moves on: on a phone still
  * in onboarding, or without chats, the profile simply covers less.
  *
@@ -101,34 +101,6 @@ internal fun MacrobenchmarkScope.addFromContacts() {
 internal fun MacrobenchmarkScope.packs() {
     openTab("tab_packs")
     scrollMainList()
-}
-
-/**
- * The sample chat (ADR 0075), from Home's "Your characters are ready" card, which shows only while there are packs
- * and no chat. On a rooted session (`adb root` on the emulator) the chats are set aside in the app's database for
- * this step and put back afterwards, so the prepared emulator covers both Home states. Without root it only starts the
- * app: Home offers the sample chat only on a phone without chats.
- */
-internal fun MacrobenchmarkScope.sampleChat() {
-    if (shell("id -u").trim() != "0") {
-        start()
-        return
-    }
-    killProcess()
-    shell(RESTORE_CHATS + HIDE_CHATS)
-    try {
-        start()
-        openTab("tab_home")
-        if (!tapInMainList(By.text(appString("home_journey_sample")))) return
-        scrollMainList()
-        device.findObject(By.text(appString("sample_chat_play_message")))?.let(::click)
-        device.findObject(By.text(appString("sample_chat_play_call")))?.let(::click)
-        device.wait(Until.findObject(By.text(appString("sample_chat_stop_call"))), TIMEOUT_MS)?.let(::click)
-        back()
-    } finally {
-        killProcess()
-        shell(RESTORE_CHATS)
-    }
 }
 
 /** Opens the first chat on Home; true when it has a voice, so its contact detail is on screen. */
@@ -268,7 +240,7 @@ private fun MacrobenchmarkScope.appString(name: String): String {
 }
 
 /**
- * Runs [script] in a shell of the instrumentation's session (root after `adb root`) and returns its output. The script
+ * Runs [script] in a shell of the instrumentation's session and returns its output. The script
  * goes through stdin, so it can quote freely (a plain shell command is split at every space).
  */
 private fun shell(script: String): String {
@@ -276,21 +248,6 @@ private fun shell(script: String): String {
     ParcelFileDescriptor.AutoCloseOutputStream(input).use { it.write(script.toByteArray()) }
     return ParcelFileDescriptor.AutoCloseInputStream(output).use { it.readBytes().decodeToString() }
 }
-
-private const val DATABASE = "/data/data/$TARGET_PACKAGE/databases/cucuto.db"
-
-/** Sets every chat (seen senders and saved contacts) aside in side tables, so Home has no chat. */
-private const val HIDE_CHATS =
-    "sqlite3 $DATABASE \"" +
-        "CREATE TABLE bp_hidden_senders AS SELECT * FROM seen_senders; DELETE FROM seen_senders; " +
-        "CREATE TABLE bp_hidden_contacts AS SELECT * FROM contacts; DELETE FROM contacts;\"\n"
-
-/** Puts the chats set aside by [HIDE_CHATS] back, if any. Safe to run again, e.g. after an interrupted run. */
-private const val RESTORE_CHATS =
-    "if [ -n \"$(sqlite3 $DATABASE \"SELECT name FROM sqlite_master WHERE name = 'bp_hidden_senders'\")\" ]; then " +
-        "sqlite3 $DATABASE \"" +
-        "INSERT OR IGNORE INTO seen_senders SELECT * FROM bp_hidden_senders; DROP TABLE bp_hidden_senders; " +
-        "INSERT OR IGNORE INTO contacts SELECT * FROM bp_hidden_contacts; DROP TABLE bp_hidden_contacts;\"; fi\n"
 
 private const val GESTURE_MARGIN = 0.2f
 

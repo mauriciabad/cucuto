@@ -31,8 +31,4 @@ class BaselineProfileGenerator {
             addFromContacts()
             packs()
         }
-
-    /** The sample chat, which Home offers only before the first chat (the step sets the chats aside, see Journeys). */
-    @Test
-    fun sampleChatJourney() = rule.collect(packageName = TARGET_PACKAGE) { sampleChat() }
 }

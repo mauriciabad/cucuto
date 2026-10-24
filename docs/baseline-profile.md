@@ -18,9 +18,6 @@ Official guide: [Create Baseline Profiles](https://developer.android.com/topic/p
     its ringtone picker ("Phone calls") and the ringtone rules, the character picker (through that detail; a pack
     folded and unfolded, a search typed), "Add a chat from contacts" from "Assign a voice" (scrolled and searched) and
     Packs (scrolled).
-  - `sampleChatJourney`: the sample chat (ADR 0075), played. Home offers it only while there's no chat, so on a rooted
-    session (`adb root`) the step moves the chats into side tables of the app's database for its run and puts them
-    back afterwards (also at the start of the next run, if one was interrupted). Without root it only starts the app.
   The steps find tabs, buttons and rows by the app's own strings in the phone's language, chat rows and the pickers'
   pack headers by their resource IDs (`chat_row`, `pack_header`), and scroll a list a few times to find what's
   further down (the setup card fills Home's first screen on an emulator). A step that finds nothing moves on, so a
@@ -82,8 +79,6 @@ The profile should follow a user who finished setup, so the emulator is prepared
      --bind mimetype:s:vnd.android.cursor.item/vnd.com.whatsapp.profile --bind data1:s:20000000001@s.whatsapp.net
    adb -s emulator-5554 shell pm grant app.mauri.cucuto android.permission.READ_CONTACTS
    ```
-
-   Keep `adb root` on: the sample chat step needs it.
 5. **Generate**, with `ANDROID_SERIAL` so that only the emulator is used even if a phone is plugged in (AGP's
    connected tests honour it), and with the APKs left installed so the prepared data survives the run:
 
