@@ -45,6 +45,7 @@ import app.mauri.cucuto.packs.LibraryCharacter
 import app.mauri.cucuto.packs.ui.CharacterPicture
 import app.mauri.cucuto.ui.components.CookieAvatar
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
+import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.haptics.HapticPatternThumbnail
 import app.mauri.cucuto.ui.haptics.HapticTimeline
 import app.mauri.cucuto.ui.theme.CharacterTheme
@@ -92,7 +93,8 @@ internal fun RemoteCharacterBadge(
     // CharacterPicture draws local files; only the sprite matters here.
     val picture = LibraryCharacter(character.key, character.name, sprite, character.seedColor, emptyList(), 0)
     Column(
-        modifier = modifier.width(size + 16.dp),
+        // With large fonts the badge widens so "No vibration" keeps whole words (#226); the row scrolls sideways.
+        modifier = modifier.width(if (isLargeFont()) (size + 16.dp) * LARGE_FONT_WIDTH else size + 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -212,6 +214,7 @@ private fun VoiceWave(
 private val VOICE_WAVE = listOf(0.4f, 1f, 0.65f, 0.3f)
 private val HAPTIC_THUMBNAIL_HEIGHT = 20.dp
 private const val MS_PER_SECOND = 1000f
+private const val LARGE_FONT_WIDTH = 1.5f
 
 /** A cover ([url]) of repository [repositoryId], fetched when shown, or [name]'s initial on a cookie while missing. */
 @Composable

@@ -44,10 +44,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -154,6 +156,29 @@ fun SurpriseButton(
     IconButton(onClick = onClick, enabled = enabled, modifier = modifier) {
         Icon(DiceIcon, contentDescription = label)
     }
+}
+
+/**
+ * The top bar's dice: "Surprise me" from every pack. It also tells screen readers each pick (#226): [picked] (the
+ * character shown as the pick, null when none) is its state, in a polite live region, so every roll is announced,
+ * whichever dice or "Re-roll" made it. It stays on screen through rolls, unlike the packs' sticky headers and the bar.
+ */
+@Composable
+fun SurpriseAllButton(
+    picked: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val pickedLabel = picked?.let { stringResource(R.string.a11y_surprise_picked, it) }
+    SurpriseButton(
+        label = stringResource(R.string.picker_surprise_all),
+        onClick = onClick,
+        modifier =
+            modifier.semantics {
+                liveRegion = LiveRegionMode.Polite
+                if (pickedLabel != null) stateDescription = pickedLabel
+            },
+    )
 }
 
 /**
