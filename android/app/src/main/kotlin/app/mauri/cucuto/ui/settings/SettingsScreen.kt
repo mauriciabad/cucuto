@@ -226,6 +226,7 @@ internal fun SettingsContent(
             item(key = "voices") { VoicesSection(state.enabled, actions.onEnabled) }
             item(key = "daynight") { DayNightSection(actions.onNavigate) }
             item(key = "feel") { FeelSection(state, systemRemovesAnimations, actions) }
+            item(key = "language") { LanguageSection() }
             item(key = "backup") { BackupSection(state, actions) }
             item(key = "setup") { SetupSection(actions.onNavigate) }
             item(key = "diagnostics") { DiagnosticsSection(actions.onNavigate) }
