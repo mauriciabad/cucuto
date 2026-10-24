@@ -23,6 +23,7 @@ import app.mauri.cucuto.packspec.PackManifest
 import app.mauri.cucuto.packspec.RepositoryEntry
 import app.mauri.cucuto.screenshots.DemoContent
 import app.mauri.cucuto.screenshots.DemoPack
+import app.mauri.cucuto.ui.discover.BundleMember
 import app.mauri.cucuto.ui.discover.DEMO_BUNDLE_ID
 import app.mauri.cucuto.ui.discover.DemoPacksUi
 import app.mauri.cucuto.ui.discover.DiscoverUiState
@@ -73,6 +74,7 @@ internal object ExplainerCast {
 
     private const val BUNDLE_NAME = "Cucuto demo packs"
     private const val BUNDLE_SIZE = 710_000L
+    private const val BUNDLE_COVER = "demo-bundle-cover.svg"
 
     fun discover(
         demo: DemoPacksUi?,
@@ -90,7 +92,8 @@ internal object ExplainerCast {
                         error = null,
                         loaded = true,
                         cards = listOf(bundle),
-                        totalCards = 3,
+                        // The demo packs are rows of the bundle, not cards of their own (ADR 0064).
+                        totalCards = 1,
                     ),
                 ),
             repositories = listOf(repository),
@@ -130,23 +133,34 @@ internal object ExplainerCast {
                     entry = entry,
                     downloadUrl = url("cucuto-demo-packs.soundpack.zip"),
                     expected = ExpectedFile(BUNDLE_SIZE, "0".repeat(SHA256_HEX)),
-                    coverUrl = url("${DemoContent.critters.folder}/cover.svg"),
+                    coverUrl = url(BUNDLE_COVER),
                     supported = true,
                 ),
-            cover = url("${DemoContent.critters.folder}/cover.svg"),
-            characters =
-                packs.flatMap { pack ->
-                    pack.characters.map { c ->
-                        RemoteCharacter(
-                            key = "$REPOSITORY_ID/${pack.id}/${c.id}",
-                            name = c.name,
-                            sprite = url("${pack.folder}/${c.id}/sprite.svg"),
-                            sample = null,
-                            seedColor = c.seedColor.toInt(),
-                        )
-                    }
+            cover = url(BUNDLE_COVER),
+            characters = emptyList(),
+            // One row per pack inside the bundle (ADR 0064).
+            members =
+                packs.map { pack ->
+                    BundleMember(
+                        key = "$REPOSITORY_ID/$DEMO_BUNDLE_ID/${pack.id}",
+                        id = pack.id,
+                        name = pack.name,
+                        version = "1.0.0",
+                        cover = url("${pack.folder}/cover.svg"),
+                        characters =
+                            pack.characters.map { c ->
+                                RemoteCharacter(
+                                    key = "$REPOSITORY_ID/$DEMO_BUNDLE_ID/${pack.id}/${c.id}",
+                                    name = c.name,
+                                    sprite = url("${pack.folder}/${c.id}/sprite.svg"),
+                                    sample = null,
+                                    seedColor = c.seedColor.toInt(),
+                                )
+                            },
+                        state = state,
+                        card = null,
+                    )
                 },
-            bundlePacks = packs.map { it.name },
             state = state,
         )
     }
