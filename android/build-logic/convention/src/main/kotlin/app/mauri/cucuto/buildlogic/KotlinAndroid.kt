@@ -39,6 +39,18 @@ internal fun Project.configureKotlinAndroid(extension: CommonExtension) {
             abortOnError = true
             warningsAsErrors = false
             checkReleaseBuilds = true
+            // Every user-visible string ships in English and Spanish (#107, ADR 0036): a string or plural missing
+            // from values-es/ (or left over there), a missing Spanish plural quantity or a placeholder that differs
+            // between the two fails Lint.
+            error +=
+                setOf(
+                    "MissingTranslation",
+                    "ExtraTranslation",
+                    "MissingQuantity",
+                    "StringFormatCount",
+                    "StringFormatMatches",
+                    "StringFormatInvalid",
+                )
         }
 
         testOptions.apply {

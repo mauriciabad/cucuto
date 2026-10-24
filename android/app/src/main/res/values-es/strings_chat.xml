@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spanish for values/strings_chat.xml: group policy (#20) and WhatsApp Business (#21). -->
+<resources>
+    <string name="chat_group_policy_title">Quién habla en este grupo</string>
+    <string name="chat_group_policy_group">El grupo</string>
+    <string name="chat_group_policy_per_sender">Cada remitente</string>
+    <string name="chat_group_policy_group_body">Cada mensaje suena con la voz del grupo, lo envíe quien lo envíe.</string>
+    <string name="chat_group_policy_per_sender_body">Los miembros con voz propia hablan con ella. Los demás usan la voz del grupo, o el tono de WhatsApp si el grupo no tiene. Los miembros a los que aún no has dado voz aparecen en tus remitentes recientes.</string>
+    <string name="chat_kind_business">Business · %1$s</string>
+    <string name="chat_kind_business_group">Grupo de Business · %1$s</string>
+</resources>

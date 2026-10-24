@@ -23,6 +23,10 @@ notification sound and vibration per contact, using clips from user-imported sou
   possible; ask for the fewest permissions, only when a feature needs them; read no more of a notification than the
   feature uses. Backwards compatibility is not a goal: no compatibility code for older Android, LSPosed or
   libxposed versions, no legacy fallbacks. When two designs work, pick the less intrusive one.
+- **Every user-visible string needs English and Spanish** (owner, #70; ADR 0036). Add the Spanish twin in
+  `values-es/` (same file name, Spain Spanish with "tú", the shared terms at the top of `values-es/strings.xml`) in the
+  same PR. Lint `MissingTranslation` and `LocaleParityTest` fail the build otherwise. The website follows the same rule
+  (`web/src/lib/i18n/es.ts`).
 - **Latest stable versions.** Check current versions when adding a dependency (official release notes, Maven Central,
   npm). Record them in `android/gradle/libs.versions.toml` or `package.json`. Betas only where the brief allows
   (Compose Material 3 1.5.0 for Expressive).
