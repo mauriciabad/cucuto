@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Strings only screen readers hear (TalkBack labels, states and actions), from the accessibility pass (#29). -->
+<resources>
+    <string name="a11y_loading">Loading</string>
+    <string name="a11y_refreshing">Refreshing</string>
+    <string name="a11y_checking">Checking</string>
+    <string name="a11y_playing">Playing</string>
+    <!-- A button's visible text, then what it does: "Simulate message. Play what this chat's next message will do" -->
+    <string name="a11y_label_and_hint">%1$s. %2$s</string>
+    <!-- The rhythm pad's TalkBack action: each double tap records one short beat. -->
+    <string name="haptic_editor_rhythm_tap_action">record a beat</string>
+    <!-- TalkBack action on the haptic timeline. %1$s: the tool, e.g. "Click". -->
+    <string name="haptic_editor_add_action">Add %1$s after the last event</string>
+</resources>

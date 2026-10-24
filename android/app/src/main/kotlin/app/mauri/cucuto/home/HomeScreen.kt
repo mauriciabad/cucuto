@@ -86,6 +86,7 @@ import app.mauri.cucuto.packs.ui.PackPickerTypes
 import app.mauri.cucuto.ui.chat.chatSupportingText
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.VoiceAvatar
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.motion.SharedElement
@@ -186,13 +187,15 @@ fun HomeContent(
         topBar = { HomeSearchBar(query, onQueryChange = { query = it }) },
         floatingActionButton = {
             if (state.totalChats > 0 && state.hasPacks) {
+                val fabLabel = stringResource(R.string.home_fab)
                 ExtendedFloatingActionButton(
                     onClick = {
                         feedback.fire(Feedback.Tap)
                         sheetOpen = true
                     },
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.home_fab)) },
+                    // Material hides the text from TalkBack: the icon carries the label, expanded or not.
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = fabLabel) },
+                    text = { Text(fabLabel) },
                     expanded = fabExpanded,
                 )
             }
@@ -425,7 +428,7 @@ private fun RecentSender(
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
+                maxLines = adaptiveMaxLines(1),
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )
@@ -440,7 +443,7 @@ private fun RecentSender(
                             ).toString(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = adaptiveMaxLines(1),
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -482,11 +485,11 @@ private fun ChatListItem(
             }
         }
     ListItem(
-        headlineContent = { Text(row.chat.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        headlineContent = { Text(row.chat.name(), maxLines = adaptiveMaxLines(1), overflow = TextOverflow.Ellipsis) },
         supportingContent = {
             Text(
                 text = chatSupportingText(row.chat, supporting),
-                maxLines = 1,
+                maxLines = adaptiveMaxLines(1),
                 overflow = TextOverflow.Ellipsis,
             )
         },
@@ -512,7 +515,11 @@ private fun EmptyChats() {
             contentDescription = stringResource(R.string.home_empty_door),
             modifier = Modifier.size(160.dp),
         )
-        Text(stringResource(R.string.home_empty_title), style = MaterialTheme.typography.titleLarge)
+        Text(
+            stringResource(R.string.home_empty_title),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.semantics { heading() },
+        )
         Text(
             text = stringResource(R.string.home_empty_body),
             style = MaterialTheme.typography.bodyLarge,

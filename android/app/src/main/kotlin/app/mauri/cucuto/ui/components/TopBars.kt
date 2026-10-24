@@ -43,10 +43,11 @@ fun CucutoTopBar(
     subtitle: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
+    // The title is the screen's heading: TalkBack users jump to it with the headings navigation.
     val subtitleSlot: (@Composable () -> Unit)? = subtitle?.let { { Text(it) } }
     if (onBack == null) {
         LargeFlexibleTopAppBar(
-            title = { Text(title) },
+            title = { Text(title, Modifier.semantics { heading() }) },
             subtitle = subtitleSlot,
             actions = actions,
             scrollBehavior = scrollBehavior,
@@ -54,7 +55,7 @@ fun CucutoTopBar(
         )
     } else {
         MediumFlexibleTopAppBar(
-            title = { Text(title) },
+            title = { Text(title, Modifier.semantics { heading() }) },
             subtitle = subtitleSlot,
             navigationIcon = { BackButton(onBack) },
             actions = actions,

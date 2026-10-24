@@ -3,6 +3,8 @@ package app.mauri.cucuto.ui.discover
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,9 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -54,13 +54,14 @@ import app.mauri.cucuto.core.repo.LinkError
 import app.mauri.cucuto.core.repo.RepoError
 import app.mauri.cucuto.core.repo.RepositoryLink
 import app.mauri.cucuto.packs.plainWords
+import app.mauri.cucuto.ui.components.ChoiceButtonGroup
 
 /**
  * Adds a repository (or a direct pack link), or signs in to a saved one. The host is always shown, and anything but
  * the project website gets a short warning before the user confirms (brief: "Adding a repository from an unknown
  * source shows a short warning"). Nothing is fetched until the user presses the button.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun RepositoryFormSheet(
     form: RepositoryForm,
@@ -92,6 +93,7 @@ internal fun RepositoryFormSheet(
                         else -> stringResource(R.string.discover_form_add_title)
                     },
                 style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics { heading() },
             )
             if (!signingIn) {
                 Text(
@@ -120,12 +122,16 @@ internal fun RepositoryFormSheet(
             SignInFields(form, onChange)
             (form.error as? FormError.Fetch)?.let { ErrorText(fetchMessage(it.error)) }
             if (form.error == FormError.InvalidCredentials) ErrorText(R.string.discover_form_invalid_credentials)
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                if (form.checking) LoadingIndicator(Modifier.size(40.dp))
+                if (form.checking) {
+                    val checking = stringResource(R.string.a11y_checking)
+                    LoadingIndicator(Modifier.size(40.dp).semantics { contentDescription = checking })
+                }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.import_cancel)) }
                 Button(
                     onClick = onSubmit,
@@ -201,18 +207,14 @@ private fun SignInFields(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.discover_form_sign_in), style = MaterialTheme.typography.titleSmall)
         val kinds = AuthKind.entries
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            kinds.forEachIndexed { index, kind ->
-                SegmentedButton(
-                    selected = form.auth == kind,
-                    onClick = { onChange { it.copy(auth = kind) } },
-                    shape = SegmentedButtonDefaults.itemShape(index, kinds.size),
-                    enabled = !form.checking,
-                ) {
-                    Text(stringResource(authLabel(kind)))
-                }
-            }
-        }
+        // Wraps instead of cutting "Username and password" short with large fonts.
+        ChoiceButtonGroup(
+            options = kinds,
+            selected = form.auth,
+            onSelect = { kind -> onChange { it.copy(auth = kind) } },
+            label = { stringResource(authLabel(it)) },
+            enabled = !form.checking,
+        )
         when (form.auth) {
             AuthKind.NONE -> {
                 Unit
@@ -291,7 +293,7 @@ internal fun RepositoriesSheet(
             Text(
                 stringResource(R.string.discover_repositories),
                 style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = 24.dp).semantics { heading() },
             )
             repositories.forEachIndexed { index, repository ->
                 if (index > 0) HorizontalDivider(Modifier.padding(horizontal = 24.dp))
@@ -325,7 +327,7 @@ private fun RepositoryRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
             Text(name, style = MaterialTheme.typography.titleMedium)
             Text(
                 if (repository.isDefault) stringResource(R.string.discover_repository_default, host) else host,

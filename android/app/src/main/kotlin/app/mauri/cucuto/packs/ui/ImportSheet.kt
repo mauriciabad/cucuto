@@ -7,6 +7,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,6 +56,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -187,6 +190,7 @@ private fun ProgressBar(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReviewContent(
     state: ImportUi.Review,
@@ -202,6 +206,7 @@ private fun ReviewContent(
             Text(
                 text = review.bundle?.name ?: review.packs.single().name,
                 style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics { heading() },
             )
             val subtitle =
                 if (review.isBundle) {
@@ -257,9 +262,10 @@ private fun ReviewContent(
                 ProgressBar(state.progress)
             }
         } else {
-            Row(
+            FlowRow(
                 Modifier.padding(horizontal = 24.dp).fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 TextButton(onClick = onCancel) { Text(stringResource(R.string.import_cancel)) }
                 Button(onClick = onInstall, enabled = state.canInstall, shapes = ButtonDefaults.shapes()) {
@@ -362,6 +368,7 @@ private fun RevealedCharacters(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProblemContent(
     problem: ImportProblem,
@@ -387,7 +394,11 @@ private fun ProblemContent(
             stringResource(problem.title),
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive },
+            modifier =
+                Modifier.fillMaxWidth().semantics {
+                    heading()
+                    liveRegion = LiveRegionMode.Assertive
+                },
         )
         Text(stringResource(problem.summary), style = MaterialTheme.typography.bodyLarge)
         problem.items.forEach { ProblemRow(it, Icons.Rounded.Warning) }
@@ -413,7 +424,11 @@ private fun ProblemContent(
                 }
             }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+        FlowRow(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             if (onPickAnother != null) {
                 TextButton(onClick = onPickAnother) { Text(stringResource(R.string.import_pick_another)) }
             }
@@ -428,7 +443,11 @@ private fun ProblemRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    // One stop for TalkBack: the problem and the file it is about.
+    Row(
+        modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error)
         Column(Modifier.weight(1f)) {
             Text(stringResource(item.message), style = MaterialTheme.typography.bodyMedium)

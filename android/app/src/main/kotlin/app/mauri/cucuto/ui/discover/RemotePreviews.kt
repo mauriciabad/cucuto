@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +38,7 @@ import app.mauri.cucuto.packs.LibraryCharacter
 import app.mauri.cucuto.packs.ui.CharacterPicture
 import app.mauri.cucuto.packs.ui.ClipPlayer
 import app.mauri.cucuto.ui.components.CookieAvatar
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
@@ -100,8 +102,10 @@ internal fun RemoteCharacterBadge(
             text = character.name,
             style = MaterialTheme.typography.labelMedium,
             textAlign = TextAlign.Center,
-            maxLines = 2,
+            maxLines = adaptiveMaxLines(2),
             overflow = TextOverflow.Ellipsis,
+            // The avatar above already says the name to TalkBack.
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }
@@ -131,7 +135,12 @@ internal fun RemoteCover(
             color = MaterialTheme.colorScheme.secondaryContainer,
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = card.name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge)
+                Text(
+                    text = card.name.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleLarge,
+                    // Decorative: the card's title says the name.
+                    modifier = Modifier.clearAndSetSemantics {},
+                )
             }
         }
     }

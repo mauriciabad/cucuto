@@ -306,7 +306,8 @@ fun CheckRow(
             modifier = Modifier.padding(16.dp).animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Title, explanation and outcome are one stop for TalkBack ("WhatsApp, found, passed").
+            Row(Modifier.semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Surface(
                     shape = MaterialShapes.Cookie9Sided.toShape(),
                     color = MaterialTheme.colorScheme.secondaryContainer,
@@ -327,7 +328,8 @@ fun CheckRow(
                 }
                 OutcomeIcon(
                     model.outcome,
-                    Modifier.semantics { contentDescription = outcomeLabel },
+                    // While checking, the explanation already says "Checking…".
+                    if (model.outcome != null) Modifier.semantics { contentDescription = outcomeLabel } else Modifier,
                 )
             }
             if (model.actions.isNotEmpty()) {

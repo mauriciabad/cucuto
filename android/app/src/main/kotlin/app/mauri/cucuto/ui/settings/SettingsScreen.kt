@@ -25,9 +25,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -46,6 +43,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -58,6 +57,7 @@ import app.mauri.cucuto.core.data.settings.AutoBackupState
 import app.mauri.cucuto.core.data.settings.AutoBackupTargetKind
 import app.mauri.cucuto.core.data.settings.UiSoundLevel
 import app.mauri.cucuto.navigation.CucutoDestination
+import app.mauri.cucuto.ui.components.ChoiceButtonGroup
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSettingsSection
@@ -220,7 +220,7 @@ internal fun SettingsContent(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = { Text(stringResource(R.string.settings_title), Modifier.semantics { heading() }) },
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -285,19 +285,17 @@ private fun FeelSection(
             supportingContent = { Text(stringResource(R.string.settings_ui_sounds_body)) },
             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         )
-        val levels = UiSoundLevel.entries
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp)) {
-            levels.forEachIndexed { index, level ->
-                SegmentedButton(
-                    selected = state.soundLevel == level,
-                    onClick = {
-                        actions.onSoundLevel(level)
-                        feedback.fire(Feedback.SegmentTick)
-                    },
-                    shape = SegmentedButtonDefaults.itemShape(index, levels.size),
-                ) { Text(stringResource(level.label())) }
-            }
-        }
+        // Wraps instead of cutting "Normal" short with large fonts.
+        ChoiceButtonGroup(
+            options = UiSoundLevel.entries,
+            selected = state.soundLevel,
+            onSelect = { level ->
+                actions.onSoundLevel(level)
+                feedback.fire(Feedback.SegmentTick)
+            },
+            label = { stringResource(it.label()) },
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+        )
         SettingsSwitchRow(
             title = stringResource(R.string.settings_ui_haptics),
             supporting = stringResource(R.string.settings_ui_haptics_body),

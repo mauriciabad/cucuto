@@ -4,6 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -69,6 +71,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -88,9 +91,11 @@ import app.mauri.cucuto.packs.ui.installedText
 import app.mauri.cucuto.packs.ui.rememberClipPlayer
 import app.mauri.cucuto.packs.ui.sizeText
 import app.mauri.cucuto.ui.components.ParticleBurst
+import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.motion.animateItemUnlessReduced
 import okhttp3.HttpUrl
 import java.io.File
 
@@ -257,7 +262,7 @@ internal fun DiscoverContent(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.tab_discover)) },
+                title = { Text(stringResource(R.string.tab_discover), Modifier.semantics { heading() }) },
                 subtitle = { Text(stringResource(R.string.discover_subtitle)) },
                 navigationIcon = {
                     if (onBack != null) {
@@ -377,7 +382,7 @@ private fun LazyListScope.discoverItems(
                                 previews = previews,
                                 player = player,
                                 onInstall = { actions.onInstall(card) },
-                                modifier = Modifier.animateItem(),
+                                modifier = animateItemUnlessReduced(),
                             )
                         }
                     }
@@ -446,7 +451,7 @@ private fun SectionHeader(
                 section.title,
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.semantics { heading() },
-                maxLines = 2,
+                maxLines = adaptiveMaxLines(2),
                 overflow = TextOverflow.Ellipsis,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -465,11 +470,15 @@ private fun SectionHeader(
                 )
             }
         }
-        if (section.loading && section.loaded) LoadingIndicator(Modifier.size(32.dp))
+        if (section.loading && section.loaded) {
+            val refreshing = stringResource(R.string.a11y_refreshing)
+            LoadingIndicator(Modifier.size(32.dp).semantics { contentDescription = refreshing })
+        }
     }
 }
 
 /** Why a repository could not be fetched, in plain words, with what to do about it. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SectionProblem(
     section: RepositorySection,
@@ -500,7 +509,11 @@ private fun SectionProblem(
                     Text(stringResource(plainWords(error)), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 if (section.needsSignIn) {
                     TextButton(onClick = { actions.onSignIn(section.repository) }) {
                         Text(stringResource(R.string.discover_sign_in))
@@ -520,6 +533,7 @@ private fun SectionProblem(
 }
 
 /** One repository entry: cover, name, author, characters to tap and hear, and what installing does. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RemotePackCard(
     card: PackCard,
@@ -541,18 +555,19 @@ private fun RemotePackCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 RemoteCover(card, previews, Modifier.size(56.dp))
-                Column(Modifier.weight(1f)) {
+                // Name and "by author · version · size" are one stop for TalkBack.
+                Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
                     Text(
                         card.name,
                         style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
+                        maxLines = adaptiveMaxLines(2),
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = cardSubtitle(card),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        maxLines = adaptiveMaxLines(2),
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -562,7 +577,7 @@ private fun RemotePackCard(
                     it,
                     modifier = Modifier.padding(horizontal = 16.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 3,
+                    maxLines = adaptiveMaxLines(3),
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -589,10 +604,12 @@ private fun RemotePackCard(
                     }
                 }
             }
-            Row(
+            // The button wraps below the badge with large fonts and longer translations.
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                itemVerticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 StateBadge(card)
                 Spacer(Modifier.weight(1f))
@@ -678,7 +695,8 @@ private fun InstallButton(
 @Composable
 private fun CenteredLoading(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-        LoadingIndicator(Modifier.size(56.dp))
+        val loading = stringResource(R.string.a11y_loading)
+        LoadingIndicator(Modifier.size(56.dp).semantics { contentDescription = loading })
     }
 }
 
@@ -706,6 +724,7 @@ private fun NoMatches(
             stringResource(R.string.discover_no_matches),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
         )
         OutlinedButton(onClick = onClear, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.discover_clear_filters))
@@ -737,6 +756,7 @@ private fun NoRepositories(
             stringResource(R.string.discover_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
         )
         Text(
             stringResource(R.string.discover_empty_body),
@@ -761,7 +781,11 @@ private fun AddRepositoryCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.discover_add_card_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.discover_add_card_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
             Text(
                 stringResource(R.string.discover_add_card_body),
                 style = MaterialTheme.typography.bodyMedium,
