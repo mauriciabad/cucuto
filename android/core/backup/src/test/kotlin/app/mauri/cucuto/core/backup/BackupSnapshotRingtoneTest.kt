@@ -8,7 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** How a phone ringtone row becomes a backup entry (ADR 0057). */
+/** How a phone ringtone row becomes a backup entry (ADR 0057, ADR 0063). */
 class BackupSnapshotRingtoneTest {
     private val voice =
         AssignmentEntity(contactId = 1, packId = "app.mauri.demo.critters", characterId = "frog", updatedAt = 1)
@@ -48,6 +48,30 @@ class BackupSnapshotRingtoneTest {
         assertNull(entry.followsVoice)
         assertEquals(BackupRingtoneRule(BackupRingtoneMode.FIXED, "kettle/ringtones/reel.ogg"), entry.rule)
         assertNull(entry.undo)
+    }
+
+    @Test
+    fun `a ringtone kept while the voice has no ringtones names the kept character and still follows`() {
+        val row =
+            PhoneRingtoneEntity(
+                contactId = 1,
+                packId = "com.example.songs",
+                characterId = "bubblegum",
+                updatedAt = 1,
+                followsVoice = true,
+            )
+        val entry = BackupSnapshot.ringtone(row, voice, null)!!
+        assertEquals("com.example.songs" to "bubblegum", entry.packId to entry.characterId)
+        assertEquals(true, entry.followsVoice)
+    }
+
+    @Test
+    fun `a ringtone without a message voice is backed up`() {
+        val row =
+            PhoneRingtoneEntity(contactId = 1, packId = "com.example.songs", characterId = "bubblegum", updatedAt = 1)
+        val entry = BackupSnapshot.ringtone(row, null, null)!!
+        assertEquals("bubblegum", entry.characterId)
+        assertNull(entry.followsVoice)
     }
 
     @Test

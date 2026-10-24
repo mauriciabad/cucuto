@@ -377,3 +377,10 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 > testing sounds and pictures is taking more than i would expect. but dont fix it asap
 
 (Filed as roadmap issue #279. The speedups from #269 and #277 ship in v0.1.7.)
+
+> in the kk pack the radio should be the default.
+>
+> i should be able to view the pack'rules and to edit if i want
+> and when picking a character there should be some kind of folding on the packs because there are soo many that it is hard to get to the one i want. and i would also like a button to pick (select) a random sound from a pack, and a random from every pack
+
+(The private K.K. pack was rebuilt with Radio as the default, version 1.2.0, outside the repo. The app items went into the roadmap as issues: #288 view and edit the pack's rules (M9), #289 fold packs in the pickers (M3), #290 random character from a pack or from every pack (M3).)

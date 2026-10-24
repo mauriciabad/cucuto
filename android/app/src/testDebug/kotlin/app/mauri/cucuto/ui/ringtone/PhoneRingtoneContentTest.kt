@@ -2,6 +2,7 @@ package app.mauri.cucuto.ui.ringtone
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -48,6 +49,20 @@ class PhoneRingtoneContentTest {
         compose.setContent { CucutoTheme(dynamicColor = false) { PhoneRingtoneContent(state, actions) } }
     }
 
+    /** The "Phone calls" row of contact detail (ADR 0063), above the card. */
+    private fun showRow(state: PhoneRingtoneUiState) {
+        compose.setContent {
+            CucutoTheme(dynamicColor = false) {
+                PhoneCallsRowContent(
+                    state,
+                    onChoose = { events += "choose" },
+                    onTogglePreview = { events += "preview" },
+                    onStopPreview = { events += "stop-preview" },
+                )
+            }
+        }
+    }
+
     @Test
     fun offExplainsAndTurnsOn() {
         show(base.copy(enabled = false))
@@ -78,28 +93,86 @@ class PhoneRingtoneContentTest {
             ),
         )
         compose.onNodeWithText("Android contact: Ada").assertIsDisplayed()
-        compose.onNodeWithText("One version: Radio").assertIsDisplayed()
         compose.onNodeWithText("Rings with Radio").assertIsDisplayed()
         compose.onNodeWithText("“K.K. Slider · Radio”", substring = true).assertIsDisplayed()
-        // The rules and versions live in the ringtone picker now (#53): the summary opens it.
-        compose.onNodeWithText("K.K. Slider").performClick()
         compose.onNodeWithText("Stop using for calls").performClick()
-        assertEquals(listOf("choose", "stop"), events)
+        assertEquals(listOf("stop"), events)
     }
 
     @Test
-    fun aMixedRingtoneSaysSoAndTheRuleIsShown() {
-        show(
+    fun theRowShowsWhatRingsAndItsRuleAndOpensThePicker() {
+        showRow(
             base.copy(
-                linked = true,
+                using = true,
+                modes = listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.FIXED),
+                mode = RingtoneMode.FIXED,
+                fixedVariant = "radio.ogg",
+            ),
+        )
+        compose.onNodeWithText("Phone calls").assertIsDisplayed()
+        compose.onNodeWithText("K.K. Slider · One version: Radio").assertIsDisplayed()
+        compose.onNodeWithText("Same as the messages").assertIsDisplayed()
+        compose.onNodeWithText("K.K. Slider · One version: Radio").performClick()
+        assertEquals(listOf("choose"), events)
+    }
+
+    @Test
+    fun aRingtoneTheUserPickedSaysSo() {
+        showRow(
+            base.copy(
                 using = true,
                 mixed = true,
                 modes = listOf(RingtoneMode.PACK, RingtoneMode.TIME),
                 mode = RingtoneMode.TIME,
             ),
         )
-        compose.onNodeWithText("Day and night").assertIsDisplayed()
-        compose.onNodeWithText("Different from the messages' character").assertIsDisplayed()
+        compose.onNodeWithText("K.K. Slider · Day and night").assertIsDisplayed()
+        compose.onNodeWithText("Chosen for calls").assertIsDisplayed()
+    }
+
+    @Test
+    fun aRingtoneKeptWhileTheMessagesHaveNoneSaysSo() {
+        showRow(base.copy(using = true, kept = true, voiceName = "Tweet the bird"))
+        compose.onNodeWithText("Kept: Tweet the bird has no ringtone").assertIsDisplayed()
+    }
+
+    @Test
+    fun theRowRingsTheRingtoneLikeTheCall() {
+        showRow(base.copy(using = true, previewSound = RingSound(java.io.File("live.ogg"))))
+        compose.onNodeWithContentDescription("Play K.K. Slider").performClick()
+        assertEquals(listOf("preview"), events)
+    }
+
+    @Test
+    fun aRingingPreviewOffersPauseAndStop() {
+        val sound = RingSound(java.io.File("live.ogg"))
+        // The progress ring redraws every frame while it rings: drive the clock by hand.
+        compose.mainClock.autoAdvance = false
+        showRow(
+            base.copy(
+                using = true,
+                previewSound = sound,
+                preview = PreviewPlaying(sound, cycleMs = 90_000),
+            ),
+        )
+        compose.onNodeWithContentDescription("Pause K.K. Slider").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Stop K.K. Slider").performClick()
+        assertEquals(listOf("stop-preview"), events)
+    }
+
+    @Test
+    fun aPausedPreviewOffersPlayAndStop() {
+        val sound = RingSound(java.io.File("live.ogg"))
+        showRow(
+            base.copy(
+                using = true,
+                previewSound = sound,
+                preview = PreviewPlaying(sound, cycleMs = 90_000, paused = true, playedMs = 30_000),
+            ),
+        )
+        compose.onNodeWithContentDescription("Play K.K. Slider").performClick()
+        compose.onNodeWithContentDescription("Stop K.K. Slider").assertIsDisplayed()
+        assertEquals(listOf("preview"), events)
     }
 
     @Test
@@ -111,18 +184,25 @@ class PhoneRingtoneContentTest {
     }
 
     @Test
-    fun aCharacterWithoutRingtonesSaysSoAndOffersAnotherOne() {
-        show(base.copy(variants = emptyList()))
-        compose.onNodeWithText("K.K. Slider has no ringtone.").assertIsDisplayed()
-        compose.onNodeWithText("Tap above to pick a ringtone from another character.").assertIsDisplayed()
-        compose.onNodeWithText("K.K. Slider has no ringtone.").performClick()
+    fun withNothingThatRingsTheRowOffersThePickerAndTheCardHidesItsSetUp() {
+        // A message character without ringtones (Tweet the bird): the ringtone comes from another character.
+        showRow(base.copy(characterName = "Tweet the bird", variants = emptyList()))
+        compose.onNodeWithText("No ringtone yet. Tap to choose one.").performClick()
         assertEquals(listOf("choose"), events)
     }
 
     @Test
-    fun aChatWithoutContactAsksForAVoiceFirst() {
-        show(base.copy(contactId = null, hasCharacter = false, characterName = null, variants = emptyList()))
-        compose.onNodeWithText("Give this chat a voice first: its character brings the ringtone.").assertIsDisplayed()
+    fun theCardHasNothingToSetUpWithoutARingtone() {
+        show(base.copy(variants = emptyList()))
+        compose.onNodeWithText("Phone ringtone").assertDoesNotExist()
+        compose.onNodeWithText("Turn on phone ringtones").assertDoesNotExist()
+    }
+
+    @Test
+    fun aChatWithoutContactCanStillChooseARingtone() {
+        showRow(base.copy(contactId = null, hasCharacter = false, characterName = null, variants = emptyList()))
+        compose.onNodeWithText("No ringtone yet. Tap to choose one.").performClick()
+        assertEquals(listOf("choose"), events)
     }
 
     @Test

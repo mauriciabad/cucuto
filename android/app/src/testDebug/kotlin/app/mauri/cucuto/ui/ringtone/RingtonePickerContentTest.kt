@@ -32,6 +32,8 @@ class RingtonePickerContentTest {
             onVariant = { events += "variant:$it" },
             onSave = { events += "save" },
             onOpenPacks = { events += "packs" },
+            onOpenDiscover = { events += "discover" },
+            onFilterPack = { events += "filter:$it" },
         )
 
     /** The preview state with playable files, so the play buttons are enabled. */
@@ -69,11 +71,28 @@ class RingtonePickerContentTest {
     }
 
     @Test
+    fun packChipsOfferThePacksWithRingtonesAndTheirCount() {
+        show(state())
+        compose.onNodeWithText("All · 2").assertIsDisplayed()
+        compose.onNodeWithText("Kitchen orchestra · 1").performClick()
+        assertEquals(listOf("filter:app.mauri.demo.kitchen"), events)
+    }
+
+    @Test
+    fun noRingtonesLinksToPacksAndDiscover() {
+        show(state().copy(packs = emptyList()))
+        compose.onNodeWithText("No ringtones yet").assertIsDisplayed()
+        compose.onNodeWithText("Open Packs").performClick()
+        compose.onNodeWithText("Open Discover").performClick()
+        assertEquals(listOf("packs", "discover"), events)
+    }
+
+    @Test
     fun aCoverIsPickedWithOneTapAndSaved() {
         val start = state()
         val kettle = start.packs[1].characters.single()
         show(start.copy(edited = RingtoneSelection(kettle.voice, followsVoice = false)))
-        compose.onNodeWithText("Messages stay with Bleep the frog").assertIsDisplayed()
+        compose.onNodeWithText("Chosen for calls. Messages stay with Bleep the frog").assertIsDisplayed()
         compose.onNodeWithText("Ring with Tootle the kettle").performClick()
         assertEquals(listOf("save"), events)
     }

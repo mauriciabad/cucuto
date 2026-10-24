@@ -167,8 +167,11 @@ Importer rules for bundles:
 | `ringtones` | see note | up to 50 ringtones | Call ringtones and their variants. |
 | `haptic` | no | haptic | Default `{ "mode": "auto" }`. |
 
-A character needs at least one clip or one ringtone. A character with only ringtones (a song) is valid; apps then
-cut a notification clip from it only if the user asks.
+A character needs at least one clip or one ringtone. A character with only clips (a creature) or only ringtones (a
+song) is valid, and most packs hold just one kind. Apps offer a character for messages only when it has clips, and
+for calls only when it has ringtones; a contact's message character and ringtone character are chosen separately, so
+a clip-only character's contacts take their ringtone from another pack ([ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
+Apps cut a notification clip from a song-only character only if the user asks.
 
 ### Clips
 
@@ -618,8 +621,10 @@ authority: readers detect the type from the contents.
   numbers in E.164, the linked Android contact lookup key, group policy, the message assignment (pack ID, character
   ID, disabled clip paths, haptic override) and the phone ringtone (pack ID, character ID, variant rule).
   Contact IDs are unique within a backup (`DUPLICATE_ID`).
-  - `ringtone.followsVoice: true` means the ringtone follows the message character. Its pack and character IDs still
-    name the voice's character at backup time, for readers that ignore the flag.
+  - The message character and the ringtone character are independent; a contact can have either one, or both.
+  - `ringtone.followsVoice: true` means the ringtone follows the message character whenever that character has
+    ringtones. Its pack and character IDs name the character that rang at backup time: the voice's, or the one it
+    kept while the voice had no ringtones ([ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
   - `ringtone.undo` is device-local: the Android contact's own ringtone before Cucuto (`originalRingtone`, absent for
     the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
     contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later

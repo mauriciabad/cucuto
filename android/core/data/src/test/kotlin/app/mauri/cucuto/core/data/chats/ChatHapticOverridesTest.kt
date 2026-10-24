@@ -37,7 +37,13 @@ class ChatHapticOverridesTest {
         db = inMemoryDatabase()
         val contacts = ContactRepository(db, db.contactDao(), clock)
         assignments = AssignmentRepository(db, db.assignmentDao(), clock)
-        directory = RoomChatDirectory(contacts, assignments, SeenSenderRepository(db.seenSenderDao()))
+        directory =
+            RoomChatDirectory(
+                contacts,
+                assignments,
+                SeenSenderRepository(db.seenSenderDao()),
+                PhoneRingtoneFollow(db.phoneRingtoneDao(), { false }, clock),
+            )
         overrides = RoomChatHapticOverrides(contacts, assignments)
     }
 

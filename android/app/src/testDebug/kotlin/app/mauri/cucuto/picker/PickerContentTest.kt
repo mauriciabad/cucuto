@@ -37,7 +37,9 @@ class PickerContentTest {
                     onTap = { character: VoiceCharacter -> taps += character.id },
                     onUnassign = {},
                     onBack = {},
-                    onOpenPacks = {},
+                    onOpenPacks = { taps += "packs" },
+                    onOpenDiscover = { taps += "discover" },
+                    onFilterPack = { taps += "filter:$it" },
                 )
             }
         }
@@ -67,10 +69,30 @@ class PickerContentTest {
     }
 
     @Test
+    fun packChipsShowEveryPackWithMessageCharactersAndTheirCount() {
+        show(previewPickerState())
+
+        compose.onNodeWithText("All · 4").assertIsDisplayed()
+        compose.onNodeWithText("Chiptune critters · 3").assertIsDisplayed()
+        compose.onNodeWithText("Kitchen orchestra · 1").performClick()
+
+        assertEquals(listOf("filter:app.mauri.demo.kitchen"), taps)
+    }
+
+    @Test
+    fun theEmptyPickerLinksToPacksAndDiscover() {
+        show(previewPickerState().copy(packs = emptyList()))
+        compose.onNodeWithText("Open Packs").performClick()
+        compose.onNodeWithText("Open Discover").performClick()
+        assertEquals(listOf("packs", "discover"), taps)
+    }
+
+    @Test
     fun withoutPacksThePickerPointsToPacks() {
         show(previewPickerState().copy(packs = emptyList()))
-        compose.onNodeWithText("No characters yet").assertIsDisplayed()
+        compose.onNodeWithText("No message voices yet").assertIsDisplayed()
         compose.onNodeWithText("Open Packs").assertIsDisplayed()
+        compose.onNodeWithText("Open Discover").assertIsDisplayed()
     }
 
     @Test

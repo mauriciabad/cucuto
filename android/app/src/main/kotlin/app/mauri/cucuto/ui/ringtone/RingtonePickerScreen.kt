@@ -76,9 +76,12 @@ import app.mauri.cucuto.core.ringtone.variants.RingtoneVariant
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.CuckooDoor
+import app.mauri.cucuto.ui.components.PackFilterChips
 import app.mauri.cucuto.ui.components.ParticleBurst
+import app.mauri.cucuto.ui.components.PickerEmptyState
 import app.mauri.cucuto.ui.components.PushedScreen
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
+import app.mauri.cucuto.ui.components.selectedChip
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
@@ -92,10 +95,14 @@ data class RingtonePickerActions(
     val onBack: () -> Unit = {},
     val onSelect: (RingtoneCharacterItem) -> Unit = {},
     val onTogglePreview: (RingtoneCharacterItem, String) -> Unit = { _, _ -> },
+    val onStopPreview: () -> Unit = {},
     val onMode: (RingtoneMode) -> Unit = {},
     val onVariant: (String) -> Unit = {},
     val onSave: () -> Unit = {},
     val onOpenPacks: () -> Unit = {},
+    val onOpenDiscover: () -> Unit = {},
+    /** A pack chip: only that pack's characters (null: all). */
+    val onFilterPack: (String?) -> Unit = {},
 )
 
 /**
@@ -110,6 +117,7 @@ fun RingtonePickerScreen(
     onDone: () -> Unit,
     onOpenPacks: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenDiscover: () -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<RingtonePickerViewModel, RingtonePickerViewModel.Factory>(
@@ -151,6 +159,10 @@ fun RingtonePickerScreen(
                     feedback.fire(Feedback.Tap)
                     viewModel.togglePreview(item, file)
                 },
+                onStopPreview = {
+                    feedback.fire(Feedback.Tap)
+                    viewModel.stopPreview()
+                },
                 onMode = { mode ->
                     feedback.fire(Feedback.SegmentTick)
                     viewModel.setMode(mode)
@@ -161,6 +173,11 @@ fun RingtonePickerScreen(
                 },
                 onSave = { if (viewModel.needsPhonePermission()) askPhone() else save() },
                 onOpenPacks = onOpenPacks,
+                onOpenDiscover = onOpenDiscover,
+                onFilterPack = { packId ->
+                    feedback.fire(Feedback.SegmentTick)
+                    viewModel.filterPack(packId)
+                },
             ),
         modifier = modifier,
     )
@@ -188,7 +205,7 @@ fun RingtonePickerContent(
             modifier = modifier,
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                if (!state.loading && state.packs.isNotEmpty() && state.contactId != null) {
+                if (!state.loading && state.packs.isNotEmpty() && !state.isGroup) {
                     SaveBar(state, actions.onSave)
                 }
             },
@@ -215,18 +232,30 @@ fun RingtonePickerContent(
                     ) {
                         when {
                             state.packs.isEmpty() -> {
-                                fullWidth("empty") { EmptyRingtones(actions.onOpenPacks) }
+                                fullWidth("empty") {
+                                    PickerEmptyState(
+                                        title = stringResource(R.string.ringtone_picker_empty_title),
+                                        body = stringResource(R.string.ringtone_picker_empty_body),
+                                        onOpenPacks = actions.onOpenPacks,
+                                        onOpenDiscover = actions.onOpenDiscover,
+                                    )
+                                }
                             }
 
                             else -> {
                                 fullWidth("header") { Header(state, beat, actions) }
-                                if (state.contactId == null) {
-                                    fullWidth(
-                                        "no-contact",
-                                    ) { Hint(stringResource(R.string.ringtone_picker_no_contact)) }
-                                }
                                 fullWidth("characters") { SectionTitle(R.string.ringtone_picker_characters) }
-                                state.packs.forEach { pack ->
+                                if (state.chips.isNotEmpty()) {
+                                    fullWidth("chips") {
+                                        PackFilterChips(
+                                            chips = state.chips,
+                                            selected = selectedChip(state.chips, state.packFilter),
+                                            onSelect = actions.onFilterPack,
+                                            modifier = Modifier.padding(vertical = 4.dp),
+                                        )
+                                    }
+                                }
+                                state.visiblePacks.forEach { pack ->
                                     fullWidth("pack/${pack.packId}") { PackHeader(pack.name) }
                                     items(
                                         pack.characters,
@@ -235,7 +264,7 @@ fun RingtonePickerContent(
                                         CoverCell(
                                             item = it,
                                             selected = state.selection?.voice == it.voice,
-                                            playing = state.playing?.voice == it.voice,
+                                            playing = state.playing?.voice == it.voice && state.preview?.paused != true,
                                             isVoice = state.voice == it.voice,
                                             onTap = { actions.onSelect(it) },
                                         )
@@ -282,7 +311,7 @@ private fun Header(
                     character = item.character,
                     size = HEADER_COVER,
                     pulledOut = true,
-                    spinning = state.playing?.voice == item.voice,
+                    spinning = state.playing?.voice == item.voice && state.preview?.paused != true,
                     sleeveColor = MaterialTheme.colorScheme.primaryContainer,
                 )
                 ParticleBurst(beat, Modifier.requiredSize(BURST_SIZE))
@@ -307,10 +336,11 @@ private fun Header(
             for (variant in item.variants) {
                 VariantRow(
                     variant = variant,
-                    playing = state.playing == PlayingVariant(item.voice, variant.file),
+                    preview = state.preview?.takeIf { it.key == PlayingVariant(item.voice, variant.file) },
                     fixed = selection.mode == RingtoneMode.FIXED && state.modes.isNotEmpty(),
                     chosen = selection.variant == variant.file,
                     onPlay = { actions.onTogglePreview(item, variant.file) },
+                    onStop = actions.onStopPreview,
                     onChoose = { actions.onVariant(variant.file) },
                 )
             }
@@ -375,10 +405,11 @@ private fun relation(
 @Composable
 private fun VariantRow(
     variant: RingtoneVariantItem,
-    playing: Boolean,
+    preview: PreviewPlaying<*>?,
     fixed: Boolean,
     chosen: Boolean,
     onPlay: () -> Unit,
+    onStop: () -> Unit,
     onChoose: () -> Unit,
 ) {
     val label = variant.label
@@ -399,16 +430,13 @@ private fun VariantRow(
                 .then(choose)
                 .padding(vertical = 4.dp),
     ) {
-        val playLabel =
-            stringResource(if (playing) R.string.ringtone_picker_stop else R.string.ringtone_picker_play, label)
-        FilledTonalIconToggleButton(
-            checked = playing,
-            onCheckedChange = { onPlay() },
+        RingtonePlayButton(
+            preview = preview,
+            name = label,
+            onToggle = onPlay,
+            onStop = onStop,
             enabled = variant.audio != null,
-            modifier = Modifier.semantics { contentDescription = playLabel },
-        ) {
-            Icon(if (playing) StopIcon else Icons.Rounded.PlayArrow, contentDescription = null)
-        }
+        )
         Column(Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.bodyLarge)
             if (tags.isNotEmpty()) {
@@ -534,39 +562,6 @@ private fun Hint(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 4.dp),
     )
-}
-
-@Composable
-private fun EmptyRingtones(onOpenPacks: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().padding(24.dp),
-    ) {
-        CuckooDoor(beat = null, modifier = Modifier.size(140.dp))
-        Text(
-            stringResource(R.string.ringtone_picker_empty_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.semantics { heading() },
-        )
-        Text(
-            stringResource(R.string.ringtone_picker_empty_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        FilledTonalButton(onClick = onOpenPacks) { Text(stringResource(R.string.home_open_packs)) }
-    }
-}
-
-/** Material "stop" (rounded), missing from `material-icons-core`; path data from Material Icons (Apache-2.0). */
-private val StopIcon: ImageVector by lazy {
-    ImageVector
-        .Builder("Stop", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
-        .addPath(
-            pathData = addPathNodes("M8 6h8c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2z"),
-            fill = SolidColor(Color.Black),
-        ).build()
 }
 
 /** How long the picker stays after saving: the burst (0.65 s) and the call play out before it closes. */

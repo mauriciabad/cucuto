@@ -10,6 +10,9 @@ import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.data.voices.VoicePack
+import app.mauri.cucuto.ui.components.PackChip
+import app.mauri.cucuto.ui.components.packChips
+import app.mauri.cucuto.ui.components.selectedChip
 import app.mauri.cucuto.voice.VoicePreview
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -34,6 +37,8 @@ import kotlinx.coroutines.launch
  * @property selected The character the first tap previewed; a second tap on it assigns.
  * @property speaking The character whose clip is playing (its sprite bounces).
  * @property assigned Set once an assignment is saved: the screen celebrates, then closes.
+ * @property packs Installed packs with the characters that can speak for messages (with clips, [voicePacks]).
+ * @property packFilter The pack chip chosen, or null for all packs.
  */
 @Immutable
 data class PickerState(
@@ -45,8 +50,16 @@ data class PickerState(
     val speaking: ChatVoice? = null,
     val assigned: ChatVoice? = null,
     val failed: Boolean = false,
+    val packFilter: String? = null,
 ) {
     val canAssign: Boolean get() = chatKey != null
+
+    /** One chip per pack with message characters, with their count; empty with fewer than two such packs. */
+    val chips: List<PackChip> get() = packChips(packs, { it.packId }, { it.name }, { it.characters.size })
+
+    /** The packs the grid shows: the chosen chip's, or all. */
+    val visiblePacks: List<VoicePack>
+        get() = selectedChip(chips, packFilter)?.let { id -> packs.filter { it.packId == id } } ?: packs
 
     /** The chat's voice: the one just assigned, else the stored one. */
     val currentVoice: ChatVoice? get() = assigned ?: chat?.voice
@@ -56,6 +69,20 @@ data class PickerState(
             packs.firstOrNull { it.packId == v.packId }?.characters?.firstOrNull { it.id == v.characterId }
         }
 }
+
+/**
+ * The packs the character picker offers (ADR 0063, #245): only characters with notification clips, so a ringtone-only
+ * character (a song) never shows up for messages; packs left with none are dropped.
+ */
+fun voicePacks(packs: List<VoicePack>): List<VoicePack> =
+    packs.mapNotNull { pack ->
+        val speaking = pack.characters.filter { it.forMessages }
+        when {
+            speaking.isEmpty() -> null
+            speaking.size == pack.characters.size -> pack
+            else -> pack.copy(characters = speaking)
+        }
+    }
 
 /** What a tap on a character does: the first tap previews it, a second tap on the same character assigns it. */
 enum class PickerTap { Preview, Assign }
@@ -82,9 +109,14 @@ class PickerViewModel
                 local.copy(
                     loading = false,
                     chat = chatKey?.let { key -> all.firstOrNull { key in it.keys } },
-                    packs = packs,
+                    packs = voicePacks(packs),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), interaction.value)
+
+        /** Shows only [packId]'s characters, or every pack for null. */
+        fun filterPack(packId: String?) {
+            interaction.update { it.copy(packFilter = packId) }
+        }
 
         /**
          * Handles a tap on [character]. Returns [PickerTap.Assign] when the screen should fire the assign feedback

@@ -27,16 +27,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.packs.LibraryCharacter
 import app.mauri.cucuto.ui.components.CookieAvatar
 import app.mauri.cucuto.ui.components.adaptiveMaxLines
+import app.mauri.cucuto.ui.ringtone.RingtonePlayback
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import coil3.compose.AsyncImage
 
 /**
- * A character's picture in a cookie avatar, in the character's own colors, with its name below. Tapping plays one of
- * its clips through [player]; the avatar morphs while the clip plays.
+ * A character's picture in a cookie avatar, in the character's own colors, with its name and what it offers below
+ * (messages, ringtone, or both: ADR 0063). Tapping plays one of its clips through [player]. A ringtone-only
+ * character rings its song through [ringtones] like a call, from the start until tapped again (#246, #242); the
+ * avatar morphs while it plays.
  */
 @Composable
 fun CharacterBadge(
@@ -45,8 +49,16 @@ fun CharacterBadge(
     player: ClipPlayer,
     modifier: Modifier = Modifier,
     size: Dp = 72.dp,
+    ringtones: RingtonePlayback<String>? = null,
 ) {
-    val canPlay = character.clips.isNotEmpty()
+    val song = character.ringtones.firstOrNull().takeIf { character.clips.isEmpty() && ringtones != null }
+    val ringing =
+        ringtones
+            ?.playing
+            ?.collectAsStateWithLifecycle()
+            ?.value
+            ?.key == playerKey
+    val canPlay = character.clips.isNotEmpty() || song != null
     Column(
         modifier = modifier.width(size + 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -58,9 +70,26 @@ fun CharacterBadge(
                     Modifier
                         .size(size)
                         .semantics { contentDescription = character.name },
-                speaking = player.playingKey == playerKey,
+                speaking = player.playingKey == playerKey || ringing,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                onClick = if (canPlay) ({ player.play(playerKey, character.clips) }) else null,
+                onClick =
+                    when {
+                        song != null && ringtones != null -> (
+                            {
+                                player.stop()
+                                if (ringing) ringtones.stop() else ringtones.play(playerKey, song)
+                            }
+                        )
+
+                        canPlay -> (
+                            {
+                                ringtones?.stop()
+                                player.play(playerKey, character.clips)
+                            }
+                        )
+
+                        else -> null
+                    },
                 onClickLabel = stringResource(R.string.packs_play_character, character.name),
             ) {
                 CharacterPicture(character, Modifier.fillMaxSize().padding(size / 9))
@@ -75,8 +104,28 @@ fun CharacterBadge(
             // The avatar above already says the name to TalkBack.
             modifier = Modifier.clearAndSetSemantics {},
         )
+        offersLabel(character)?.let { offers ->
+            Text(
+                text = offers,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = adaptiveMaxLines(2),
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
+
+/** What [character] offers: messages, a ringtone, or both (ADR 0063); null when unknown (no clips, no ringtones). */
+@Composable
+fun offersLabel(character: LibraryCharacter): String? =
+    when {
+        character.forMessages && character.forCalls -> stringResource(R.string.packs_offers_both)
+        character.forCalls -> stringResource(R.string.packs_offers_ringtone)
+        character.forMessages -> stringResource(R.string.packs_offers_messages)
+        else -> null
+    }
 
 /** The character's sprite (any format the importer accepts, JPEG XL and SVG included), or a face while missing. */
 @Composable

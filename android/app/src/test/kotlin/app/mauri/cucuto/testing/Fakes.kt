@@ -101,6 +101,14 @@ class FakeChatDirectory(
         voice: ChatVoice?,
     ) = chats.update { list -> list.map { if (it.key == chat) it.copy(voice = voice) else it } }
 
+    val ensured = mutableListOf<ChatKey>()
+
+    override suspend fun ensureContact(chat: ChatKey): Long {
+        ensured += chat
+        chats.update { list -> list.map { if (it.key == chat && it.contactId == null) it.copy(contactId = 1) else it } }
+        return 1
+    }
+
     override suspend fun setGroupPolicy(
         chat: ChatKey,
         policy: GroupPolicy,

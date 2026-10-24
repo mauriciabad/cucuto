@@ -35,7 +35,8 @@ class ChatDirectoryTest {
         contacts = ContactRepository(db, db.contactDao(), clock)
         assignments = AssignmentRepository(db, db.assignmentDao(), clock)
         seen = SeenSenderRepository(db.seenSenderDao())
-        directory = RoomChatDirectory(contacts, assignments, seen)
+        directory =
+            RoomChatDirectory(contacts, assignments, seen, PhoneRingtoneFollow(db.phoneRingtoneDao(), { false }, clock))
     }
 
     @After
