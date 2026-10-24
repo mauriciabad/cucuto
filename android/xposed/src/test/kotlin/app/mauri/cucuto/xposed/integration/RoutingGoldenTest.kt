@@ -2,6 +2,7 @@ package app.mauri.cucuto.xposed.integration
 
 import app.mauri.cucuto.core.routing.Clip
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.core.routing.RoutingCodec
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.xposed.events.Outcome
@@ -65,11 +66,13 @@ class RoutingGoldenTest {
 
             val bo = noon.decide(NotificationSnapshot(WHATSAPP, shortcutId = "222222222222222@lid"), table)!!
             assertTrue(name, bo.haptic is Haptic.Custom)
-            assertEquals(
-                name,
-                Haptic.Off,
-                noon.decide(NotificationSnapshot(WHATSAPP, shortcutId = "333333333333333@lid"), table)!!.haptic,
-            )
+            val cy = noon.decide(NotificationSnapshot(WHATSAPP, shortcutId = "333333333333333@lid"), table)!!
+            assertEquals(name, Haptic.Off, cy.haptic)
+            // Goldens with special clips (ADR 0059): the bird greets Cy's first message of the day.
+            if (table.voices.any { it.hasMoments }) {
+                assertTrue(name, cy.clipUri!!.endsWith("/dawn-chorus.ogg"))
+                assertNotNull(name, table.days)
+            }
 
             val family = "120363000000000001@g.us"
             val fromBo =
@@ -105,14 +108,21 @@ class RoutingGoldenTest {
         private const val WHATSAPP = "com.whatsapp"
         private const val BUSINESS = "com.whatsapp.w4b"
 
-        /** Oldest first. 2026-10-24: everything up to day and night clips (#200). */
-        val GOLDENS: List<String> = listOf("2026-10-24-day-night.table")
+        /**
+         * Oldest first. 2026-10-24: everything up to day and night clips (#200); then rare, first of the day and burst
+         * clips with local days (#120).
+         */
+        val GOLDENS: List<String> = listOf("2026-10-24-day-night.table", "2026-10-24-moments.table")
     }
 }
 
-/** [this] as a reader from before clip conditions sees it (ADR 0037). */
+/** [this] as a reader from before clip conditions (ADR 0037) and special clips (ADR 0059) sees it. */
 internal fun RoutingTable.withoutConditions(): RoutingTable =
     copy(
         conditions = emptyList(),
-        voices = voices.map { voice -> voice.copy(clips = voice.clips.map { it.copy(condition = Clip.ALWAYS) }) },
+        days = null,
+        voices =
+            voices.map { voice ->
+                voice.copy(clips = voice.clips.map { it.copy(condition = Clip.ALWAYS, moment = Moment.NONE) })
+            },
     )

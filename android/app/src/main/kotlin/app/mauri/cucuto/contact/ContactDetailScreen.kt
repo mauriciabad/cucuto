@@ -81,6 +81,7 @@ import app.mauri.cucuto.core.data.db.DecisionOutcome
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.home.ChatAvatarKey
 import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
@@ -518,10 +519,16 @@ private fun LazyListScope.clipSection(
         val lastOn = stringResource(R.string.contact_clip_last)
         val playing = state.playingClip == clip.path
         val playingLabel = stringResource(R.string.a11y_playing)
+        val momentLabel = momentLabel(clip.moment)
         ListItem(
             headlineContent = { Text(clip.name, maxLines = adaptiveMaxLines(1), overflow = TextOverflow.Ellipsis) },
-            // "Playing" in words, not only the button's color.
-            supportingContent = if (playing) ({ Text(playingLabel) }) else null,
+            // "Playing" in words, not only the button's color; otherwise why a special clip plays (ADR 0059).
+            supportingContent =
+                when {
+                    playing -> ({ Text(playingLabel) })
+                    momentLabel != null -> ({ Text(momentLabel) })
+                    else -> null
+                },
             leadingContent = {
                 val playLabel = stringResource(R.string.contact_clip_play, clip.name)
                 val playModifier = Modifier.semantics { if (playing) stateDescription = playingLabel }
@@ -552,6 +559,17 @@ private fun LazyListScope.clipSection(
                     ).semantics { if (!clip.canToggle) stateDescription = lastOn },
         )
     }
+}
+
+/** When a special clip plays ("First message of the day · Rare: about 1 in 25 messages"), or null for an ordinary one. */
+@Composable
+private fun momentLabel(moment: Moment): String? {
+    if (!moment.isSpecial) return null
+    val parts = mutableListOf<String>()
+    if (moment.firstOfDay) parts += stringResource(R.string.contact_clip_first_of_day)
+    if (moment.burst != 0) parts += stringResource(R.string.contact_clip_burst, moment.burst)
+    if (moment.oneIn != 0) parts += stringResource(R.string.contact_clip_rare, moment.oneIn)
+    return parts.joinToString(" · ")
 }
 
 /**

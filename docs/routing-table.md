@@ -70,6 +70,13 @@ the two. The code lives in `android/core/routing` (`RoutingTable`, `RoutingCodec
   `fromMs` (start of yesterday) to `untilMs` (400 days later), starts `activeAtFrom` and flips at each toggle. Day
   and night use sunrise and sunset at the place set on the Day and night screen (07:00 to 19:00 without one). Each
   distinct condition is stored once. Outside its span a condition is unknown and ignored.
+- **Clip moment** (ADR 0059): a special clip that never joins the shuffle bag: `f` the chat's first message of the
+  local day, `b<n>` the nth message of a burst (each within 60 s of the one before), `r<n>` a chance of one in n.
+  A clip with `f` or `b` is a moment clip, one with only `r` a rare clip. Its time condition must hold too.
+- **Local days** (ADR 0059): where days start for first-of-the-day clips, from the phone's time zone: the *shift*
+  (UTC offset minus the day start, 04:00) at the start of the span and at every daylight saving change in the next
+  400 days. The local day of an instant is `floor((instant + shift) / 1 day)`. Without them the module counts days
+  in UTC.
 - **Self-test clip**: the mirrored Diagnostics chirp (`…/clips/selftest/chirp.wav`), or absent, in which case the
   module plays the provider's `content://app.mauri.cucuto.clips/selftest/chirp.wav`.
 
@@ -79,10 +86,14 @@ Lookup (`RoutingTable.resolve(package, conversationKey, senderKey)`):
 2. Look up the conversation key (the notification's shortcut ID). Unknown: change nothing.
 3. If that route is a per-sender group and the sender's key has a voice, play the sender's voice.
 4. Otherwise play the conversation's voice, or change nothing if it has none.
-5. Draw from the voice's clips that may play now (`RoutingTable.isPlayable`): clips without a condition, and clips
-   whose condition is active or unknown. If none may play, draw from all of them. The clock is read only for voices
-   with conditional clips; each check is a per-day bucket lookup plus a scan of that day's few toggles, with no
-   allocation.
+5. If the voice has special clips, update the speaker's rhythm (last alert, its local day, messages in a row) and play
+   a moment clip that matches this message (one by weight if several), else the first rare clip that wins its chance
+   and did not play last time ([pack format](pack-format.md#special-clips)).
+6. Otherwise draw from the voice's ordinary clips that may play now (`RoutingTable.isPlayable`): clips without a
+   condition, and clips whose condition is active or unknown. If none may play, draw from all ordinary clips (all
+   clips when there are none). The clock is read only for voices with conditional or special clips; each check is a
+   per-day bucket lookup plus a scan of that day's few toggles, with no allocation. The rhythm lives next to the
+   speaker's shuffle bag (at most 512 speakers, forgotten when `system_server` restarts).
 
 A group with the default policy (one voice per group) never uses its members' voices. The sender key is the
 `Person` key of the alerting record's newest MessagingStyle message, read only for groups; every lookup stays within
@@ -101,7 +112,8 @@ S	<self-test clip URI>                                    optional, at most once
 P	<package>
 H	<clip haptic>
 W	<fromMs>	<untilMs>	<active at from 0|1>	<toggle deltas in seconds, comma-separated, or ->
-V	<packId>	<characterId>	<haptic>	<uriBase>	<clip count>	{<uriSuffix>	<milliWeight>	<clipHaptic or ->}	[h<ref>,<ref>…]	[w<ref>,<ref>…]
+D	<shift s>	<transition epoch s>:<shift s>,… or -               optional, at most once
+V	<packId>	<characterId>	<haptic>	<uriBase>	<clip count>	{<uriSuffix>	<milliWeight>	<clipHaptic or ->}	[h<ref>,<ref>…]	[w<ref>,<ref>…]	[m<clip>:<moment>,…]
 R	<package index>	<key>	<voice index or ->	<seed>	<flags>	<contactId>
 ```
 
@@ -117,10 +129,15 @@ R	<package index>	<key>	<voice index or ->	<seed>	<flags>	<contactId>
   header's ninth count says how many there are and is written only when there are some, so tables without
   conditional clips are byte-for-byte what they were. About 2 toggles a day over 400 days take about 5 KB per
   condition.
+- The optional `D` line (ADR 0059) holds the local days, before the `V` lines. The header does not count it. It is
+  written only when some clip plays on the first message of the day, and takes about 60 characters.
 - `V` lines list voices; routes refer to them by index. Each clip URI is `uriBase + uriSuffix`; the writer uses the
   longest common folder of the voice's clips as `uriBase`. When any clip has an envelope, a trailing field `h`
   lists one dictionary index (or `-`) per clip, and the writer leaves the inline clip haptic fields as `-`. When any
-  clip has a condition, a trailing field `w` lists one condition index (or `-`) per clip.
+  clip has a condition, a trailing field `w` lists one condition index (or `-`) per clip. When any clip is special, a
+  trailing field `m` lists only the special clips, as `<clip index>:<moment>` pairs in increasing index order; a
+  moment is `f`, `b<n>` and `r<n>` in that order (`m3:f,4:b3,5:r25`, or `6:fr4` for a first-of-the-day clip that
+  plays one day in four).
 - `R` lines list routes. Flags: bit 0 group, bit 1 per-sender group. Other bits are reserved and preserved.
 - Haptics: `k` keep, `o` off, `a` auto, or `c` followed by `;`-separated events:
   `p<at>,<C|T|L>,<scale>` for a preset (`CLICK`, `TICK`, `LOW_TICK`), or
@@ -162,6 +179,9 @@ after 120 more.
   vibration until the module is updated by a reboot).
 - Clip conditions are additive too: a reader from before them skips the `W` lines, the `w` field and the ninth
   header count, and plays every clip of the voice whatever the time until the module is updated by a reboot.
+- So are special clips: a reader from before them skips the `D` line and the `m` field, and draws rare and moment
+  clips like ordinary ones until the module is updated by a reboot. Tables without special clips are byte-for-byte
+  what they were.
 - The header counts must match the records, so a truncated table is rejected rather than half-applied.
 
 ## Performance

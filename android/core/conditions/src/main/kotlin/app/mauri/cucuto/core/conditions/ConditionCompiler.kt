@@ -1,8 +1,11 @@
 package app.mauri.cucuto.core.conditions
 
+import app.mauri.cucuto.core.routing.LocalDays
 import app.mauri.cucuto.core.routing.TimeCondition
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.MonthDay
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -34,8 +37,8 @@ public data class Place(
  * - Day is from sunrise to sunset at [place] ([SolarCalculator]); with no place, from [fixedDayStart] to
  *   [fixedDayEnd] local time (07:00 to 19:00). Polar day counts as day and polar night as night, as the sky says.
  * - Night is the rest. An hour range is local time and wraps midnight when it ends earlier than it starts.
- * - Seasons and weekdays go by the local date of the instant, so a 22:00 to 06:00 range limited to Saturday stops
- *   at Sunday's midnight. Seasons are mirrored when [place] is south of the equator.
+ * - Seasons, weekdays and dates go by the local date of the instant, so a 22:00 to 06:00 range limited to Saturday
+ *   stops at Sunday's midnight. Seasons are mirrored when [place] is south of the equator.
  *
  * Instants are whole seconds (the routing table's resolution). The default horizon covers more than a year, so the
  * module keeps switching correctly even if the app is not opened for months; the app recompiles on every
@@ -90,7 +93,7 @@ public class ConditionCompiler(
     public fun compile(condition: ClipWhen): TimeCondition {
         var set = Intervals().apply { add(fromMs, untilMs) }
         condition.time?.let { set = set.intersect(timeIntervals(it)) }
-        if (condition.seasons.isNotEmpty() || condition.weekdays.isNotEmpty()) {
+        if (condition.seasons.isNotEmpty() || condition.weekdays.isNotEmpty() || condition.dates.isNotEmpty()) {
             set = set.intersect(dateIntervals(condition))
         }
         return set.clip(fromMs, untilMs).toCondition(fromMs, untilMs)
@@ -131,10 +134,35 @@ public class ConditionCompiler(
         while (date.isBefore(endDate)) {
             val seasonOk = condition.seasons.isEmpty() || Season.of(date.monthValue, southern) in condition.seasons
             val weekdayOk = condition.weekdays.isEmpty() || date.dayOfWeek in condition.weekdays
-            if (seasonOk && weekdayOk) list.add(startOfDay(date), startOfDay(date.plusDays(1)))
+            val dateOk =
+                condition.dates.isEmpty() || MonthDay.from(date).let { day -> condition.dates.any { it.contains(day) } }
+            if (seasonOk && weekdayOk && dateOk) list.add(startOfDay(date), startOfDay(date.plusDays(1)))
             date = date.plusDays(1)
         }
         return list.normalized()
+    }
+
+    /**
+     * Where local days start over the span, for first-of-the-day clips (ADR 0059): the shift (UTC offset minus
+     * [dayStart]) at [fromMs], and every daylight saving change until [untilMs].
+     */
+    public fun localDays(dayStart: LocalTime = DEFAULT_DAY_BOUNDARY): LocalDays {
+        val startSeconds = dayStart.toSecondOfDay()
+        val rules = zone.rules
+        val first = Instant.ofEpochMilli(fromMs)
+        val transitions = ArrayList<Long>()
+        val shifts = ArrayList<Int>()
+        var next = rules.nextTransition(first)
+        while (next != null && next.toEpochSecond() * 1000 < untilMs && transitions.size < LocalDays.MAX_TRANSITIONS) {
+            transitions += next.toEpochSecond() * 1000
+            shifts += next.offsetAfter.totalSeconds - startSeconds
+            next = rules.nextTransition(next.instant)
+        }
+        return LocalDays(
+            rules.getOffset(first).totalSeconds - startSeconds,
+            transitions.toLongArray(),
+            shifts.toIntArray(),
+        )
     }
 
     private fun at(
@@ -154,6 +182,9 @@ public class ConditionCompiler(
         /** Fixed day hours when no place is set (the pack format's original default, #75). */
         public val DEFAULT_DAY_START: LocalTime = LocalTime.of(7, 0)
         public val DEFAULT_DAY_END: LocalTime = LocalTime.of(19, 0)
+
+        /** When a new day starts for first-of-the-day clips: late-night messages still belong to the evening before. */
+        public val DEFAULT_DAY_BOUNDARY: LocalTime = LocalTime.of(4, 0)
 
         private fun seconds(ms: Long): Long = Math.floorDiv(ms, 1000L) * 1000L
     }
