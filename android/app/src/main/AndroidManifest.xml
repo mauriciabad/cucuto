@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- The Feedback engine's rich haptics (VibrationEffect compositions with USAGE_TOUCH). -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!--
+        The pack creator's Record button (#47). Asked at runtime only when the person taps Record, never upfront
+        (brief: minimum intrusion). Audio stays in memory until they keep a clip; nothing records in the background.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!--
         Package visibility (Android 11+): the status card checks that WhatsApp or WhatsApp Business is installed.
@@ -91,5 +96,19 @@
             android:exported="true"
             android:grantUriPermissions="false"
             tools:ignore="ExportedContentProvider" />
+
+        <!--
+            Sharing a pack made in the creator (#47): one copied file in cache/creator/shared/, readable only by the app
+            the person picks in the share sheet (per-URI grant). Not exported.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.creator"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/creator_share_paths" />
+        </provider>
     </application>
 </manifest>

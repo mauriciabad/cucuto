@@ -27,6 +27,7 @@ import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.creator.CreatorScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.motion.SharedElementEntry
 import app.mauri.cucuto.ui.motion.SharedElementsHost
@@ -125,8 +126,13 @@ private fun entries(
     }
     entry<CucutoDestination.ContactDetail> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.Packs> {
-        PacksScreen(onBack = goBack, onDiscover = { navigate(CucutoDestination.Discover) })
+        PacksScreen(
+            onBack = goBack,
+            onDiscover = { navigate(CucutoDestination.Discover) },
+            onCreate = { source -> navigate(CucutoDestination.Creator(source)) },
+        )
     }
+    entry<CucutoDestination.Creator> { key -> CreatorScreen(sourcePackId = key.sourcePackId, onBack = goBack) }
     entry<CucutoDestination.Discover> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.HapticEditor> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }

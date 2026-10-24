@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Create
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -98,6 +99,7 @@ fun PacksScreen(
     onBack: () -> Unit,
     onDiscover: () -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (sourcePackId: String?) -> Unit = {},
     viewModel: PacksViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -116,6 +118,7 @@ fun PacksScreen(
         onRemove = viewModel::requestRemove,
         onConsumeMessage = viewModel::messageShown,
         modifier = modifier,
+        onCreate = onCreate,
     )
 
     val import = state.import
@@ -151,6 +154,7 @@ private fun PacksContent(
     onRemove: (LibraryPack) -> Unit,
     onConsumeMessage: () -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (sourcePackId: String?) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val listState = rememberLazyListState()
@@ -204,6 +208,9 @@ private fun PacksContent(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { onCreate(null) }) {
+                        Icon(Icons.Rounded.Create, contentDescription = stringResource(R.string.packs_create))
+                    }
                     IconButton(onClick = onDiscover) {
                         Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.packs_discover))
                     }
@@ -246,7 +253,9 @@ private fun PacksContent(
                     }
 
                     packs.isEmpty() -> {
-                        item(key = "empty") { EmptyPacks(onImport = onImport, onWebsite = openWebsite) }
+                        item(key = "empty") {
+                            EmptyPacks(onImport = onImport, onWebsite = openWebsite, onCreate = { onCreate(null) })
+                        }
                     }
 
                     else -> {
@@ -279,6 +288,10 @@ private fun PacksContent(
                 onRemove(detail)
             },
             onDismiss = { detailId = null },
+            onDuplicate = {
+                detailId = null
+                onCreate(detail.id)
+            },
         )
     }
 }
@@ -375,6 +388,7 @@ fun PackCover(
 private fun EmptyPacks(
     onImport: () -> Unit,
     onWebsite: () -> Unit,
+    onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -408,6 +422,9 @@ private fun EmptyPacks(
         }
         OutlinedButton(onClick = onWebsite, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.packs_get_free))
+        }
+        OutlinedButton(onClick = onCreate, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.packs_create))
         }
     }
 }
