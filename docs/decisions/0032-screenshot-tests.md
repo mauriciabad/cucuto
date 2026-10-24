@@ -26,14 +26,16 @@ stable), Robolectric 4.17 (already in the catalog).
   folder `android/app/src/testDebug/screenshots/`.
 - **One small test per screen** in `android/app/src/testDebug/kotlin/app/mauri/cucuto/screenshots/`, extending
   `ScreenshotTest`: it renders the screen's stateless content (`HomeContent`, `PickerContent`, `PacksContent`,
-  `ImportSheet`, `OnboardingContent`) with `DemoContent`. Two private content composables became `internal` for this.
-  Covered now: onboarding (welcome and enable), Home with recent senders, the picker, Packs and the import review.
-  Contact detail (#26), Settings (#28), Discover (#36) and the navigation shell (#153) are TODO entries in
-  `ScreenshotTest`; their agents add a test once the screen is on `main`.
+  `ImportSheet`, `OnboardingContent`, `ContactDetailContent`, `SettingsContent`, `DiscoverContent`) with
+  `DemoContent`. Two private content composables became `internal` for this. Covered now: onboarding (welcome and
+  enable), Home with recent senders, the picker, Packs, the import review, contact detail, Settings and Discover (its
+  covers and sprites come from `packs/` through a fake `PreviewLoader`). The navigation shell (#153) is a TODO entry
+  in `ScreenshotTest`, to add once it is on `main`.
 - **Content.** The two CC0 demo packs, read straight from `packs/` (real SVG sprites and covers, names and seed colors
   mirrored from `pack.yaml` and checked by `DemoPacksTest`), and invented chats ("Noa", "Climbers", "Book club"…).
   No real names, numbers or chat keys (the keys are obviously fake `1000000000000NN@lid`).
-- **Look.** Brand colors (dynamic color off), light and dark, a 411 × 891 dp phone at xhdpi, a drawn status bar
+- **Look.** Brand colors (dynamic color off), the Europe/Madrid time zone (absolute dates such as the last backup),
+  light and dark, a 411 × 891 dp phone at xhdpi, a drawn status bar
   (9:30, signal, Wi-Fi, battery) and gesture handle, and matching fake system bar insets so screens lay out edge to edge
   as on a device. No device frame in the image: the website draws its own plain phone frame in CSS, the same for every
   shot. Animations run on the test clock and settle for 3 s; sprites decode synchronously (Coil with an unconfined
@@ -63,6 +65,7 @@ stable), Robolectric 4.17 (already in the catalog).
 - A PR that changes how a covered screen looks must re-record: `./gradlew :app:recordRoborazziDebug`, then review the
   new PNGs in the diff like code. CI says which screen changed and uploads the diff.
 - Screens built on `main` after this need one test each (a dozen lines); the TODO list in `ScreenshotTest` tracks them.
+  Changes to a covered screen (for example the shell wrapping Home) need a re-record in the same PR.
 - Website screenshots are refreshed on demand (before a release, or when a screen changes a lot) with
   `exportWebScreenshots`; they are not regenerated on every build, so the site never depends on the Android toolchain.
 - The screenshot tests add about 15 s to the app's unit tests (one Robolectric start, then about 0.3 s per capture).

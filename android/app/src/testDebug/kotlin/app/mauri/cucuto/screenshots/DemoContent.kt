@@ -163,6 +163,7 @@ data class DemoPack(
                         seedColor = c.seedColor.toInt(),
                         clips = clips(c.id),
                         haptic = Haptic.Keep,
+                        clipPaths = clips(c.id).map { "${c.id}/clips/${it.name}" },
                     )
                 },
         )

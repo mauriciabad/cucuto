@@ -40,6 +40,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.roundToInt
 
 /**
@@ -64,9 +65,6 @@ import kotlin.math.roundToInt
  *
  * Screens still to cover, one subclass each, as soon as they are on `main`:
  * - TODO(#153): the app shell (navigation bar with Home, Packs, Discover and Settings) around Home.
- * - TODO(#26): contact detail.
- * - TODO(#28): Settings.
- * - TODO(#36): Discover.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -96,11 +94,16 @@ abstract class ScreenshotTest(
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val defaultLocale = Locale.getDefault()
+    private val defaultTimeZone = TimeZone.getDefault()
 
-    /** Decodes sprites and covers on the test thread, so they are on screen before the capture. */
+    /**
+     * Decodes sprites and covers on the test thread, so they are on screen before the capture, and pins the time
+     * zone, so absolute dates and times look the same on every machine.
+     */
     @OptIn(DelicateCoilApi::class)
     @Before
-    fun synchronousImages() {
+    fun deterministicEnvironment() {
+        TimeZone.setDefault(TimeZone.getTimeZone(SCREENSHOT_TIME_ZONE))
         SingletonImageLoader.setUnsafe(
             ImageLoader
                 .Builder(compose.activity)
@@ -111,7 +114,10 @@ abstract class ScreenshotTest(
     }
 
     @After
-    fun restoreLocale() = Locale.setDefault(defaultLocale)
+    fun restoreEnvironment() {
+        Locale.setDefault(defaultLocale)
+        TimeZone.setDefault(defaultTimeZone)
+    }
 
     /**
      * Renders [content] and captures the whole screen, dialogs and sheets included, as `<name>-light.png` or
@@ -181,6 +187,9 @@ abstract class ScreenshotTest(
 
         /** System property with the folder for the website's images; set by `exportWebScreenshots`. */
         const val WEB_EXPORT_PROPERTY = "cucuto.screenshots.web"
+
+        /** Time zone of every screenshot; [DemoContent] fixes absolute times (backups) in it. */
+        const val SCREENSHOT_TIME_ZONE = "Europe/Madrid"
 
         private const val SETTLE_MILLIS = 3_000L
         private const val GOLDEN_SCALE = 0.5
