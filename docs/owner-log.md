@@ -384,3 +384,11 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 > and when picking a character there should be some kind of folding on the packs because there are soo many that it is hard to get to the one i want. and i would also like a button to pick (select) a random sound from a pack, and a random from every pack
 
 (The private K.K. pack was rebuilt with Radio as the default, version 1.2.0, outside the repo. The app items went into the roadmap as issues: #288 view and edit the pack's rules (M9), #289 fold packs in the pickers (M3), #290 random character from a pack or from every pack (M3).)
+
+> how can i set characters or ringtones to people that hasnt messaged me yet?
+
+(Not possible yet; the lead explained the two options in #254.)
+
+> contacts
+
+(Owner answer on #254: ADR 0065's contacts-based option is accepted, and Cucuto never reads WhatsApp's files. Implementation is #292 in M2.)
