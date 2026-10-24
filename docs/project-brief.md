@@ -4,7 +4,7 @@ Oct 23, 2026 · @Mauri
 
 ## Mission
 
-Build **Cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each contact a voice. The name comes from *cucut*, Catalan for cuckoo: like a cuckoo clock, it announces who's there. When a contact messages, the phone plays a random clip from the character assigned to them and fires that character's custom vibration; when they call, their ringtone plays. Write the name as "Cucuto" in prose (owner update 2026-10-23; originally lowercase); identifiers stay lowercase. Identifiers: GitHub repo `cucuto`, application ID `app.mauri.cucuto`, website `cucuto.mauri.app` (the owner points DNS there once the repo exists).
+Build **Cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each contact a voice. The name comes from *cucut*, Catalan for cuckoo: like a cuckoo clock, it announces who's there. When a contact messages on WhatsApp or Signal (owner update 2026-10-24 (#374): Signal and Molly too, one voice per person across both apps; [ADR 0081](decisions/0081-signal-support.md)), the phone plays a random clip from the character assigned to them and fires that character's custom vibration; when they call, their ringtone plays. Write the name as "Cucuto" in prose (owner update 2026-10-23; originally lowercase); identifiers stay lowercase. Identifiers: GitHub repo `cucuto`, application ID `app.mauri.cucuto`, website `cucuto.mauri.app` (the owner points DNS there once the repo exists).
 
 - **Content comes from sound packs, never from the code.** The app ships empty. Users import pack files, or browse and download them from pack repositories. Anyone can build and share packs of anything: animals, game SFX, a friend's voice, a game's songs.
 - **Notifications and ringtones.** The same packs can carry message sounds and call ringtones. A contact can get a K.K. Slider song with its album art as ringtone, Pikachu's cries for messages, or both from one character. The message character and the ringtone character are separate choices, and most packs offer only one of the two (owner update 2026-10-24 (#245), [ADR 0063](decisions/0063-independent-voice-and-ringtone.md)). Ringtones can have variants (day, night, seasons, sped-up, radio) of the same song, picked by rules.
@@ -543,7 +543,7 @@ Development is near the end (owner, 2026-10-24). From now on, occasional single 
 | --- | --- | --- |
 | M0 Device spike | Gate passed (GO, [M0 report](m0-report.md)): hook points, swaps, DND, silent, bursts, WaEnhancer X | Muted-chat parity check (#12, owner) |
 | M1 Core engine | Everything: importer, routing table, production hook, clip mirror, timing and battery | — |
-| M2 Contacts and senders | Recent senders, group policy, WhatsApp Business | Add chats from Android contacts (#292); group sender device check (#157, owner) |
+| M2 Contacts and senders | Recent senders, group policy, WhatsApp Business, Signal and Molly (#374) | Add chats from Android contacts (#292); group sender device check (#157, owner) |
 | M3 UI and game feel | All screens and the four-tab shell, feedback engine, Spanish, accessibility pass, picker folding and "Surprise me" | TalkBack and Scanner walkthrough on the phone (#226, owner) |
 | M4 Haptics | Everything: pack haptics, auto haptics, editor, per-contact override, AI-written patterns | — |
 | M5 Pack repositories | `packer index` and bundles, Discover with previews and haptic previews, drawn haptic previews on the website and in the app (#301), credentials, verification | Import speed (#279, #268); Drive folder source, v1.1 (#37, blocked on #188) |

@@ -10,7 +10,7 @@
     <string name="settings_section_voices">Messages</string>
     <string name="settings_voices_switch">Cucuto voices</string>
     <string name="settings_voices_on">On: each contact speaks with their character.</string>
-    <string name="settings_voices_off">Off: every chat uses WhatsApp\'s own tone and vibration.</string>
+    <string name="settings_voices_off">Off: every chat uses WhatsApp\'s or Signal\'s own tone and vibration.</string>
     <string name="settings_voices_tile_hint">You can also switch it from Quick Settings: edit the tiles and add Cucuto voices.</string>
 
     <!-- Sound and feel -->
@@ -168,8 +168,8 @@
         <item quantity="other">%1$d repository passwords restored.</item>
     </plurals>
     <plurals name="restore_done_packs_missing">
-        <item quantity="one">%1$d pack is still missing. Its contacts hear WhatsApp\'s tone until you import it from Packs.</item>
-        <item quantity="other">%1$d packs are still missing. Their contacts hear WhatsApp\'s tone until you import them from Packs.</item>
+        <item quantity="one">%1$d pack is still missing. Its contacts hear WhatsApp\'s or Signal\'s tone until you import it from Packs.</item>
+        <item quantity="other">%1$d packs are still missing. Their contacts hear WhatsApp\'s or Signal\'s tone until you import them from Packs.</item>
     </plurals>
     <plurals name="restore_done_ringtones_kept">
         <item quantity="one">%1$d phone ringtone set on this phone was kept.</item>
@@ -216,7 +216,7 @@
     <!-- Setup -->
     <string name="settings_section_setup">Setup</string>
     <string name="settings_setup_status">Status checks</string>
-    <string name="settings_setup_status_body">Module, scope, WhatsApp and packs, with a fix for each.</string>
+    <string name="settings_setup_status_body">Module, scope, messaging app and packs, with a fix for each.</string>
     <string name="settings_setup_guide">Setup guide</string>
     <string name="settings_setup_guide_body">The first-run steps again: requirements, LSPosed, reboot and the self-test.</string>
 

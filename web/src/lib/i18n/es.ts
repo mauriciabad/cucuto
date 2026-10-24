@@ -83,7 +83,7 @@ export const es: Messages = {
 			{
 				icon: 'notifications-active',
 				title: 'Oye quién es',
-				text: 'Cuando te escriba, la notificación de WhatsApp sonará y vibrará con su personaje. Con el móvil en el bolsillo, ya sabes quién es.'
+				text: 'Cuando te escriba por WhatsApp o Signal, la notificación sonará y vibrará con su personaje. Con el móvil en el bolsillo, ya sabes quién es.'
 			}
 		]),
 		extrasTitle: 'Más que un tono nuevo',
@@ -123,12 +123,12 @@ export const es: Messages = {
 		]),
 		featuresTitle: 'Hecho para no molestar',
 		featuresLead:
-			'Cucuto cambia una sola cosa, el sonido y la vibración de la propia notificación de WhatsApp, y deja todo lo demás en manos de Android.',
+			'Cucuto cambia una sola cosa, el sonido y la vibración de la propia notificación de WhatsApp o Signal, y deja todo lo demás en manos de Android.',
 		features: iconItems([
 			{
 				icon: 'notifications-active',
 				title: 'Un sonido, sin duplicados',
-				text: 'Ni una segunda notificación ni un icono fijo en la barra de estado. El aviso que recibes es el de WhatsApp, con otra voz.'
+				text: 'Ni una segunda notificación ni un icono fijo en la barra de estado. El aviso que recibes es el de la propia app, con otra voz.'
 			},
 			{
 				icon: 'do-not-disturb',
@@ -143,7 +143,7 @@ export const es: Messages = {
 			{
 				icon: 'shield',
 				title: 'Si algo falla, suena lo de siempre',
-				text: 'Si el módulo está desactivado o algo falla, suena el tono normal de WhatsApp. Nunca te pierdes un mensaje por culpa de Cucuto.'
+				text: 'Si el módulo está desactivado o algo falla, suena el tono normal de WhatsApp o Signal. Nunca te pierdes un mensaje por culpa de Cucuto.'
 			},
 			{
 				icon: 'groups',
@@ -197,12 +197,12 @@ export const es: Messages = {
 			{
 				icon: 'lock',
 				title: 'Acceso root',
-				text: 'El root permite que el módulo cambie la notificación de WhatsApp desde dentro del propio Android.'
+				text: 'El root permite que el módulo cambie las notificaciones de WhatsApp y Signal desde dentro del propio Android.'
 			},
 			{
 				icon: 'extension',
 				title: 'LSPosed con libxposed API 102',
-				text: 'El módulo funciona en el ámbito System Framework. Nunca engancha la app de WhatsApp.'
+				text: 'El módulo funciona en el ámbito System Framework. Nunca engancha WhatsApp ni Signal.'
 			},
 			{
 				icon: 'notifications-active',
@@ -220,12 +220,12 @@ export const es: Messages = {
 			{
 				q: '¿Por qué necesita root?',
 				aHtml:
-					'En Android 17 una app normal no puede reproducir sonidos en segundo plano de forma fiable, y copiar las notificaciones de WhatsApp supondría duplicados y desorden. Con root, Cucuto cambia el sonido y la vibración de la propia notificación de WhatsApp, así que silenciar, No molestar y el modo de sonido siguen funcionando como siempre.'
+					'En Android 17 una app normal no puede reproducir sonidos en segundo plano de forma fiable, y copiar las notificaciones de WhatsApp o Signal supondría duplicados y desorden. Con root, Cucuto cambia el sonido y la vibración de la propia notificación de la app, así que silenciar, No molestar y el modo de sonido siguen funcionando como siempre.'
 			},
 			{
-				q: '¿Modifica WhatsApp?',
+				q: '¿Modifica WhatsApp o Signal?',
 				aHtml:
-					'No. El módulo solo funciona dentro del proceso del sistema de Android (el ámbito System Framework) y nunca toca la app de WhatsApp, así que convive con otros módulos que sí enganchan WhatsApp.'
+					'No. El módulo solo funciona dentro del proceso del sistema de Android (el ámbito System Framework) y nunca toca las apps de WhatsApp ni de Signal, así que convive con otros módulos que sí enganchan WhatsApp.'
 			},
 			{
 				q: '¿Funciona con Signal?',
@@ -235,7 +235,7 @@ export const es: Messages = {
 			{
 				q: '¿Qué pasa si algo falla?',
 				aHtml:
-					'Oyes el tono normal de WhatsApp. Si el módulo está desactivado o algo falla, Android reproduce el sonido predeterminado en lugar de quedarse en silencio.'
+					'Oyes el tono normal de WhatsApp o Signal. Si el módulo está desactivado o algo falla, Android reproduce el sonido predeterminado en lugar de quedarse en silencio.'
 			},
 			{
 				q: '¿Funciona en los grupos?',
@@ -245,17 +245,17 @@ export const es: Messages = {
 			{
 				q: '¿Y las llamadas?',
 				aHtml:
-					'Las llamadas de teléfono, sí. Ponle a un contacto un tono de un pack, pásalo al tono predeterminado del móvil o deja el suyo como está. Una canción con varias versiones sigue las reglas del pack (día y noche, estaciones, fiestas) o las que tú pongas para ese contacto. Cucuto pone el tono en el contacto de Android (vinculas el chat con su contacto una vez), y si desactivas los tonos de llamada, cada contacto recupera su tono de antes. Las llamadas de WhatsApp siguen con el tono de WhatsApp por ahora.'
+					'Las llamadas de teléfono, sí. Ponle a un contacto un tono de un pack, pásalo al tono predeterminado del móvil o deja el suyo como está. Una canción con varias versiones sigue las reglas del pack (día y noche, estaciones, fiestas) o las que tú pongas para ese contacto. Cucuto pone el tono en el contacto de Android (vinculas el chat con su contacto una vez), y si desactivas los tonos de llamada, cada contacto recupera su tono de antes. Las llamadas de WhatsApp siguen con el tono de WhatsApp por ahora, y las de Signal, con el de Signal.'
 			},
 			{
 				q: '¿Puedo darle voz a alguien antes de que me escriba?',
 				aHtml:
-					'Sí, si está en los contactos del móvil: toca <strong>Añadir un chat desde contactos</strong> en Inicio. Cucuto solo lee las entradas de WhatsApp que ya tienen tus contactos y guarda solo a las personas que eliges. Su primer mensaje suena con el tono de WhatsApp y vincula el chat; su voz suena a partir del siguiente. Los grupos aparecen después de su primer mensaje.'
+					'Sí, si está en los contactos del móvil: toca <strong>Añadir un chat desde contactos</strong> en Inicio. Cucuto solo lee las entradas de WhatsApp y Signal que ya tienen tus contactos y guarda solo a las personas que eliges. En Signal su voz suena desde su primer mensaje. En WhatsApp su primer mensaje suena con el tono de WhatsApp y vincula el chat, y su voz suena a partir del siguiente. Los grupos aparecen después de su primer mensaje.'
 			},
 			{
 				q: '¿Puedo probarlo sin root?',
 				aHtml:
-					'No. Cucuto cambia los sonidos de WhatsApp con un módulo de LSPosed, y LSPosed necesita root. Sin él puedes importar packs y escuchar los personajes, pero WhatsApp sigue con sus propios sonidos.'
+					'No. Cucuto cambia los sonidos de WhatsApp y Signal con un módulo de LSPosed, y LSPosed necesita root. Sin él puedes importar packs y escuchar los personajes, pero WhatsApp y Signal siguen con sus propios sonidos.'
 			},
 			{
 				q: '¿Puedo crear mis propios packs?',
@@ -265,7 +265,7 @@ export const es: Messages = {
 			{
 				q: '¿Está en Google Play?',
 				aHtml:
-					'Todavía no. La ficha de Google Play está en preparación. Mientras tanto, descarga el APK de <a href="{releases}" rel="external">GitHub</a>, o deja que Obtainium lo mantenga al día (mira la <a href="{install}">guía de instalación</a>). Todas las copias están firmadas con el mismo certificado, así que una instalación desde Play y otra desde GitHub se actualizan entre sí. En cualquier caso, Cucuto necesita root y LSPosed para cambiar los sonidos de WhatsApp.'
+					'Todavía no. La ficha de Google Play está en preparación. Mientras tanto, descarga el APK de <a href="{releases}" rel="external">GitHub</a>, o deja que Obtainium lo mantenga al día (mira la <a href="{install}">guía de instalación</a>). Todas las copias están firmadas con el mismo certificado, así que una instalación desde Play y otra desde GitHub se actualizan entre sí. En cualquier caso, Cucuto necesita root y LSPosed para cambiar los sonidos de WhatsApp y Signal.'
 			},
 			{
 				q: '¿Es gratis? ¿Recoge datos?',
@@ -342,7 +342,7 @@ export const es: Messages = {
 			{
 				title: 'Activa el módulo en LSPosed',
 				textHtml:
-					'Abre el gestor de LSPosed, ve a <strong>Módulos</strong>, activa <strong>Cucuto</strong> y comprueba que su ámbito es solo <strong>System Framework</strong>. Cucuto pide exactamente ese ámbito, así que normalmente ya está marcado. No añadas WhatsApp al ámbito: Cucuto nunca engancha la app de WhatsApp.'
+					'Abre el gestor de LSPosed, ve a <strong>Módulos</strong>, activa <strong>Cucuto</strong> y comprueba que su ámbito es solo <strong>System Framework</strong>. Cucuto pide exactamente ese ámbito, así que normalmente ya está marcado. No añadas WhatsApp ni Signal al ámbito: Cucuto nunca los engancha.'
 			},
 			{
 				title: 'Reinicia',
@@ -352,12 +352,12 @@ export const es: Messages = {
 			{
 				title: 'Revisa la tarjeta de estado',
 				textHtml:
-					'Abre Cucuto. La primera vez, una guía de configuración te acompaña en estos pasos y termina con una notificación de prueba; puedes volver a abrirla desde Ajustes. La tarjeta de estado de arriba comprueba que el módulo está activo, que el ámbito de LSPosed es correcto, que WhatsApp está instalado y que hay al menos un pack importado. Cada comprobación que falla te dice cómo arreglarla.'
+					'Abre Cucuto. La primera vez, una guía de configuración te acompaña en estos pasos y termina con una notificación de prueba; puedes volver a abrirla desde Ajustes. La tarjeta de estado de arriba comprueba que el módulo está activo, que el ámbito de LSPosed es correcto, que WhatsApp o Signal está instalado y que hay al menos un pack importado. Cada comprobación que falla te dice cómo arreglarla.'
 			},
 			{
 				title: 'Importa un pack y asigna personajes',
 				textHtml:
-					'Importa un archivo <code>.soundpack.zip</code> o elige uno de los <a href="{packs}">packs gratuitos</a>, luego escoge un chat, toca un personaje y, si quieres, un tono de llamada. ¿Alguien que aún no te ha escrito? Añádelo con <strong>Añadir un chat desde contactos</strong>. Deja activados el tono y la vibración de las notificaciones de WhatsApp: Cucuto los sustituye por contacto.'
+					'Importa un archivo <code>.soundpack.zip</code> o elige uno de los <a href="{packs}">packs gratuitos</a>, luego escoge un chat, toca un personaje y, si quieres, un tono de llamada. ¿Alguien que aún no te ha escrito? Añádelo con <strong>Añadir un chat desde contactos</strong>. Deja activados el tono y la vibración de las notificaciones de WhatsApp o Signal: Cucuto los sustituye por contacto.'
 			}
 		],
 		testTitle: 'Pruébalo',
@@ -390,14 +390,14 @@ export const es: Messages = {
 					'Comprueba en LSPosed que Cucuto está activado con el ámbito System Framework y reinicia. Los registros de LSPosed muestran si el módulo se ha cargado.'
 			},
 			{
-				q: 'Un contacto suena con el tono normal de WhatsApp.',
+				q: 'Un contacto suena con el tono normal de WhatsApp o Signal.',
 				aHtml:
-					'Es el comportamiento seguro: el contacto aún no tiene personaje, el interruptor de voces está apagado o el módulo no está activo. El registro de decisiones de <strong>Diagnóstico</strong> muestra qué pasó con cada notificación reciente.'
+					'Es el comportamiento seguro: el contacto aún no tiene personaje, el interruptor de voces está apagado o el módulo no está activo. El registro de decisiones de <strong>Diagnóstico</strong> muestra qué pasó con cada notificación reciente. En Signal, comprueba también que sus notificaciones muestran al menos el nombre: si lo ocultan, suena el tono de Signal.'
 			},
 			{
 				q: 'No suena nada.',
 				aHtml:
-					'Cucuto solo sustituye un sonido que iba a sonar. Comprueba que el chat no está silenciado, que No molestar está desactivado y que el tono de notificación de WhatsApp no está en silencio.'
+					'Cucuto solo sustituye un sonido que iba a sonar. Comprueba que el chat no está silenciado, que No molestar está desactivado y que el tono de notificación de WhatsApp o Signal no está en silencio.'
 			},
 			{
 				q: 'El móvil no arranca después de activar el módulo.',
@@ -412,7 +412,7 @@ export const es: Messages = {
 		] satisfies QA[] as QA[],
 		removeTitle: 'Desactivar o desinstalar',
 		removeHtml:
-			'Para pausar Cucuto, apaga el interruptor de voces en la app: todos los chats vuelven al tono de WhatsApp al momento. Para quitarlo del todo, desactiva el módulo en LSPosed, reinicia y desinstala la app. Al desinstalarla se borran los packs importados y las asignaciones.'
+			'Para pausar Cucuto, apaga el interruptor de voces en la app: todos los chats vuelven al tono de WhatsApp o Signal al momento. Para quitarlo del todo, desactiva el módulo en LSPosed, reinicia y desinstala la app. Al desinstalarla se borran los packs importados y las asignaciones.'
 	},
 	authors: {
 		title: 'Crear packs',
@@ -557,19 +557,19 @@ export const es: Messages = {
 			'<strong>Tus packs</strong>: los archivos de packs que importas o descargas.',
 			'<strong>Tus asignaciones</strong>: qué personaje habla por cada chat, y tus ajustes.',
 			'<strong>Chats recientes</strong>: cuando llega una notificación de WhatsApp o Signal, el módulo anota el nombre del chat, el nombre de quien escribe y el identificador interno de la app para ese chat (en Signal, si es un contacto guardado, cuál de tus contactos es), para que la gente nueva aparezca en la app lista para recibir una voz. Guarda los 1000 chats más recientes.',
-			'<strong>El registro de decisiones</strong>: qué hizo Cucuto con cada notificación reciente (qué voz sonó, o por qué sonó el tono de WhatsApp). Guarda las 500 entradas más recientes, para que puedas ver por qué sonó algo.'
+			'<strong>El registro de decisiones</strong>: qué hizo Cucuto con cada notificación reciente (qué voz sonó, o por qué sonó el tono de la propia app). Guarda las 500 entradas más recientes, para que puedas ver por qué sonó algo.'
 		],
 		storedNoteHtml:
-			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Cucuto nunca abre las bases de datos, los chats ni los archivos multimedia de WhatsApp: solo conoce un chat por sus notificaciones o por un contacto que vinculas o añades tú. Al desinstalar la app se borra todo.',
+			'El módulo nunca lee el texto de los mensajes ni escribe nombres o identificadores de chat en los registros del sistema. Cucuto nunca abre las bases de datos, los chats ni los archivos multimedia de WhatsApp ni de Signal: solo conoce un chat por sus notificaciones o por un contacto que vinculas o añades tú. Al desinstalar la app se borra todo.',
 		moduleTitle: 'Cómo funciona el módulo',
 		moduleHtml:
-			'El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las notificaciones de WhatsApp, WhatsApp Business, Signal y Molly. Lo que anota se lo pasa a la app por un canal privado que rechaza a cualquier otra app. Nunca se conecta a internet y nunca toca la app de WhatsApp.',
+			'El módulo funciona dentro del proceso del sistema de Android, donde se gestionan las notificaciones, y solo mira las notificaciones de WhatsApp, WhatsApp Business, Signal y Molly. Lo que anota se lo pasa a la app por un canal privado que rechaza a cualquier otra app. Nunca se conecta a internet y nunca toca las apps de WhatsApp ni de Signal.',
 		networkTitle: 'Cuándo se conecta la app',
 		networkHtml:
 			'Solo para acceder a los repositorios de packs de tu lista (el de esta web viene por defecto): para mostrar sus packs, buscar actualizaciones y descargar los packs que elijas. Las descargas pueden venir del servidor del propio repositorio, como GitHub en el caso de los packs de esta web. Si un repositorio privado necesita contraseña o token, se guarda cifrado con el almacén de claves de Android y solo se envía al servidor de ese repositorio.',
 		backupTitle: 'Copias de seguridad',
 		backup: [
-			'Cucuto puede guardar su propia copia de seguridad en un archivo, para que un móvil nuevo lo recupere todo. Incluye los chats que Cucuto conoce (nombres, números de teléfono, los identificadores de chat de WhatsApp y el contacto con el que está vinculado cada uno), sus voces y tonos de llamada, el interruptor de voces, tu lista de repositorios y los packs que usas, y también los archivos de los packs, salvo que los dejes fuera.',
+			'Cucuto puede guardar su propia copia de seguridad en un archivo, para que un móvil nuevo lo recupere todo. Incluye los chats que Cucuto conoce (nombres, números de teléfono, los identificadores de chat de WhatsApp y Signal y el contacto con el que está vinculado cada uno), sus voces y tonos de llamada, el interruptor de voces, tu lista de repositorios y los packs que usas, y también los archivos de los packs, salvo que los dejes fuera.',
 			'Nunca va en una copia: tu ubicación para el día y la noche, ni las contraseñas o tokens de los repositorios, salvo que los añadas a una copia que protejas con una contraseña tuya. Entonces todo el archivo va cifrado. Las copias automáticas nunca se cifran, así que nunca llevan contraseñas.',
 			'Las copias van solo adonde tú elijas: un archivo que guardas a mano, o una carpeta o un archivo que eliges para las copias automáticas. Si eliges Google Drive, es la app de Drive la que sube el archivo; Cucuto nunca sube nada.',
 			'La copia de seguridad en la nube de Android y la transferencia entre dispositivos están desactivadas para Cucuto, así que por esa vía no se copia nada a Google.'
@@ -584,7 +584,7 @@ export const es: Messages = {
 			'<strong>Micrófono</strong>: solo mientras grabas un sonido en el creador de packs.'
 		],
 		permissionsNoteHtml:
-			'Contactos, teléfono, ubicación y micrófono se piden solo cuando usas la función que los necesita, y todo lo demás sigue funcionando si dices que no. Sin acceso a tu cámara, a tus archivos (eliges tú cada archivo que abres o guardas) ni a los datos de WhatsApp. Si una función futura necesita más, la app lo pedirá antes y esta página explicará por qué.',
+			'Contactos, teléfono, ubicación y micrófono se piden solo cuando usas la función que los necesita, y todo lo demás sigue funcionando si dices que no. Sin acceso a tu cámara, a tus archivos (eliges tú cada archivo que abres o guardas) ni a los datos de WhatsApp ni de Signal. Si una función futura necesita más, la app lo pedirá antes y esta página explicará por qué.',
 		checkTitle: 'Compruébalo tú',
 		checkHtml:
 			'La web y la app son de código abierto: lee el código en <a href="{repo}" rel="external">GitHub</a>. ¿Dudas sobre privacidad? <a href="{issues}" rel="external">Abre una incidencia</a>.'

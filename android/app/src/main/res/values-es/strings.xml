@@ -46,9 +46,9 @@
         <item quantity="other">Espera %d segundos: Android silencia las notificaciones que una app envía con menos de 10 segundos de diferencia.</item>
     </plurals>
     <string name="diag_switch">Voces de Cucuto</string>
-    <string name="diag_switch_body">El interruptor de voces. Apagado: todos los chats mantienen el tono de WhatsApp.</string>
+    <string name="diag_switch_body">El interruptor de voces. Apagado: todos los chats mantienen el tono de WhatsApp o Signal.</string>
     <string name="diag_test_voice">Dar una voz de prueba al último remitente</string>
-    <string name="diag_test_voice_no_sender">Aún no ha escrito nadie por WhatsApp. Primero recibe un mensaje de WhatsApp.</string>
+    <string name="diag_test_voice_no_sender">Aún no te ha escrito nadie. Primero recibe un mensaje de WhatsApp o Signal.</string>
     <string name="diag_test_voice_assigned">Voz de prueba asignada a %1$s. Su próximo mensaje sonará con un gorjeo.</string>
     <string name="diag_failed">Error: %1$s</string>
     <string name="diag_decisions_header">Últimas 50 decisiones</string>
@@ -80,7 +80,7 @@
     <string name="status_check_packs">Al menos un pack instalado</string>
     <string name="status_module_active">El módulo ha informado desde system_server en este arranque. Hooks: %1$s.</string>
     <string name="status_module_active_update">El módulo está activo, pero aún ejecuta la versión anterior a tu última actualización de Cucuto. Reinicia para cargar la nueva.</string>
-    <string name="status_module_hooks_missing">El módulo está cargado, pero estos hooks no se han podido instalar en esta versión de Android: %1$s. Suena el tono de WhatsApp. Abre Diagnóstico e infórmalo en GitHub.</string>
+    <string name="status_module_hooks_missing">El módulo está cargado, pero estos hooks no se han podido instalar en esta versión de Android: %1$s. Suena el tono de WhatsApp o Signal. Abre Diagnóstico e infórmalo en GitHub.</string>
     <string name="status_module_awaiting">Activado, pero el módulo no ha informado en este arranque. Envía una notificación de prueba: con el módulo activo oirás un gorjeo de dos tonos en lugar del sonido predeterminado.</string>
     <string name="status_module_reboot">Activado en LSPosed, pero aún no se ha cargado en el sistema. Reinicia el móvil.</string>
     <string name="status_module_reboot_update">Cucuto se ha actualizado desde el último arranque y el sistema aún ejecuta el módulo antiguo. Reinicia el móvil.</string>
@@ -138,9 +138,9 @@
     <string name="onboarding_requirement_lsposed">LSPosed con libxposed API 102, ya funcionando</string>
     <string name="onboarding_risks_title">La parte sincera: los riesgos</string>
     <string name="onboarding_risks_body">Cucuto ejecuta un pequeño módulo dentro de system_server, el núcleo de Android. Eso es lo que lo hace fiable, y también lo que lo hace arriesgado.</string>
-    <string name="onboarding_risk_bootloop">Un fallo en un módulo del sistema puede bloquear Android o impedir que el móvil arranque. Cucuto captura todos los errores y vuelve al tono de WhatsApp, pero ningún código es perfecto.</string>
+    <string name="onboarding_risk_bootloop">Un fallo en un módulo del sistema puede bloquear Android o impedir que el móvil arranque. Cucuto captura todos los errores y vuelve al tono de WhatsApp o Signal, pero ningún código es perfecto.</string>
     <string name="onboarding_risk_root">El root y LSPosed debilitan la seguridad de Android y pueden romper apps de bancos, Google Play Integrity y tu garantía. Pasa con cualquier módulo de LSPosed.</string>
-    <string name="onboarding_risk_updates">Una actualización de Android puede mover el código que engancha Cucuto. Entonces el módulo deja de cambiar los sonidos y suena el tono de WhatsApp hasta que Cucuto se actualice.</string>
+    <string name="onboarding_risk_updates">Una actualización de Android puede mover el código que engancha Cucuto. Entonces el módulo deja de cambiar los sonidos y suena el tono de WhatsApp o Signal hasta que Cucuto se actualice.</string>
     <string name="onboarding_risk_privacy">Para elegir una voz, el módulo lee quién envió cada notificación de WhatsApp o Signal (nombre e ID del chat). Eso se queda en el almacenamiento privado de Cucuto en este móvil.</string>
     <string name="onboarding_risk_recovery">Aprende a recuperarlo antes de activarlo: la guía de instalación explica cómo desactivar el módulo o LSPosed si el móvil no arranca.</string>
 
@@ -333,9 +333,9 @@
         <item quantity="other">%1$d contactos usan sus personajes: %2$s.</item>
     </plurals>
     <string name="packs_remove_keep">Mantener sus personajes</string>
-    <string name="packs_remove_keep_body">Por ahora suenan con el tono de WhatsApp. Si vuelves a importar este pack, recuperan sus personajes.</string>
+    <string name="packs_remove_keep_body">Por ahora suenan con el tono de WhatsApp o Signal. Si vuelves a importar este pack, recuperan sus personajes.</string>
     <string name="packs_remove_clear">Quitar sus personajes</string>
-    <string name="packs_remove_clear_body">Vuelven al tono de WhatsApp. Puedes elegirles personajes nuevos más tarde.</string>
+    <string name="packs_remove_clear_body">Vuelven al tono de WhatsApp o Signal. Puedes elegirles personajes nuevos más tarde.</string>
     <string name="packs_remove_confirm">Quitar</string>
     <string name="packs_removed">Se ha quitado %1$s</string>
     <string name="packs_remove_failed">No se ha podido quitar %1$s. Inténtalo de nuevo.</string>
@@ -375,9 +375,9 @@
     <string name="import_action_reinstall">La versión %1$s ya está instalada. Si instalas, se reemplaza.</string>
     <string name="import_action_downgrade">Está instalada la versión %1$s. Este archivo trae la versión anterior %2$s.</string>
     <plurals name="import_orphaned">
-        <item quantity="one">Esta versión quita un personaje que usa %d contacto. Ese contacto sonará con el tono de WhatsApp.</item>
-        <item quantity="many">Esta versión quita personajes que usan %d contactos. Sonarán con el tono de WhatsApp.</item>
-        <item quantity="other">Esta versión quita personajes que usan %d contactos. Sonarán con el tono de WhatsApp.</item>
+        <item quantity="one">Esta versión quita un personaje que usa %d contacto. Ese contacto sonará con el tono de WhatsApp o Signal.</item>
+        <item quantity="many">Esta versión quita personajes que usan %d contactos. Sonarán con el tono de WhatsApp o Signal.</item>
+        <item quantity="other">Esta versión quita personajes que usan %d contactos. Sonarán con el tono de WhatsApp o Signal.</item>
     </plurals>
     <string name="import_install">Instalar</string>
     <string name="import_update">Actualizar</string>
@@ -469,12 +469,12 @@
     <string name="contact_speaks_as">Habla como %1$s</string>
     <string name="contact_from_pack">De %1$s</string>
     <string name="contact_no_voice">Aún sin voz: suena el tono predeterminado.</string>
-    <string name="contact_voice_missing">Su personaje venía de un pack que ya no está instalado. Suena el tono de WhatsApp hasta que elijas otro.</string>
+    <string name="contact_voice_missing">Su personaje venía de un pack que ya no está instalado. Suena el tono de WhatsApp o Signal hasta que elijas otro.</string>
     <string name="contact_change">Cambiar personaje</string>
     <string name="contact_choose">Elegir un personaje</string>
     <string name="contact_remove">Quitar voz</string>
     <string name="contact_remove_title">¿Quitar esta voz?</string>
-    <string name="contact_remove_body">Los mensajes de %1$s volverán a sonar con el tono de WhatsApp. Puedes elegir un personaje cuando quieras.</string>
+    <string name="contact_remove_body">Los mensajes de %1$s volverán a sonar con el tono de WhatsApp o Signal. Puedes elegir un personaje cuando quieras.</string>
     <string name="contact_remove_confirm">Quitar</string>
     <string name="contact_remove_cancel">Mantener</string>
     <string name="contact_failed">No se ha podido guardar. Inténtalo de nuevo.</string>
@@ -483,19 +483,19 @@
     <string name="contact_simulate_label">Reproduce lo que hará el próximo mensaje de este chat</string>
     <string name="contact_simulate_checking">Comprobando el módulo…</string>
     <string name="contact_simulate_needs_voice">Elige un personaje para simular un mensaje.</string>
-    <string name="contact_simulate_module">A través del módulo: una notificación real reproduce el próximo clip y la vibración de este chat, igual que un mensaje de WhatsApp.</string>
+    <string name="contact_simulate_module">A través del módulo: una notificación real reproduce el próximo clip y la vibración de este chat, igual que un mensaje entrante.</string>
     <string name="contact_simulate_inapp_reboot">Vista previa en la app: el módulo ejecuta código antiguo hasta el próximo reinicio. Mismas reglas de clips, reproducido por Cucuto.</string>
     <string name="contact_simulate_inapp_off">Vista previa en la app: el módulo no está activo. Mismas reglas de clips, reproducido por Cucuto.</string>
     <string name="contact_simulate_inapp_hooks">Vista previa en la app: el módulo no ha podido engancharse a esta versión de Android. Mismas reglas de clips, reproducido por Cucuto.</string>
     <string name="contact_simulate_inapp_unconfirmed">Vista previa en la app: Cucuto no puede confirmar que el módulo ejecute esta versión. La autoprueba de Diagnóstico lo comprueba.</string>
     <string name="contact_sim_sent">Enviado a través del módulo. Su informe llega en unos segundos.</string>
     <string name="contact_sim_report">El módulo ha reproducido %1$s.</string>
-    <string name="contact_sim_report_whatsapp">El módulo ha mantenido el tono de WhatsApp: %1$s.</string>
+    <string name="contact_sim_report_whatsapp">El módulo ha mantenido el tono de WhatsApp o Signal: %1$s.</string>
     <string name="contact_sim_inapp">Se ha reproducido %1$s en la app. %2$s</string>
     <string name="contact_sim_haptic_custom">Su vibración también ha sonado.</string>
-    <string name="contact_sim_haptic_whatsapp">Un mensaje real mantiene la vibración de WhatsApp.</string>
+    <string name="contact_sim_haptic_whatsapp">Un mensaje real mantiene la vibración de WhatsApp o Signal.</string>
     <string name="contact_sim_haptic_off">Este chat no vibra.</string>
-    <string name="contact_sim_whatsapp_tone">Un mensaje sonaría con el tono de WhatsApp: %1$s.</string>
+    <string name="contact_sim_whatsapp_tone">Un mensaje sonaría con el tono de WhatsApp o Signal: %1$s.</string>
     <string name="contact_sim_too_soon">Espera %1$d s: Android silencia el segundo aviso de una app tan seguido.</string>
     <string name="contact_sim_blocked">Las notificaciones de Cucuto están desactivadas. Actívalas para simular a través del módulo.</string>
     <string name="contact_sim_failed">No se ha podido reproducir la simulación.</string>
@@ -598,7 +598,7 @@
     <string name="haptic_override_custom">Propia</string>
     <string name="haptic_override_pack_auto">La vibración del personaje según su pack: sube y baja con cada clip.</string>
     <string name="haptic_override_pack_custom">La vibración del personaje según su pack: su propio patrón.</string>
-    <string name="haptic_override_pack_keep">El pack del personaje no trae vibración, así que se mantiene la de WhatsApp.</string>
+    <string name="haptic_override_pack_keep">El pack del personaje no trae vibración, así que se mantiene la de WhatsApp o Signal.</string>
     <string name="haptic_override_pack_missing">La vibración del personaje según su pack.</string>
     <string name="haptic_override_auto_body">La vibración sube y baja con cada clip.</string>
     <string name="haptic_override_off_body">Los mensajes de este chat no vibran.</string>

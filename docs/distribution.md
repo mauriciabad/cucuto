@@ -97,11 +97,11 @@ What its [App Inclusion Policy](https://izzyondroid.org/docs/general/AppInclusio
 | No trackers or ads; apps that request root must have no tracking at all | None. Met. |
 | No self-updater, or an opt-in one | No update checker at all. Met. |
 | Avoid `usesCleartextTraffic` | Not set (HTTPS only). Met. |
-| "Apps for Facebook, WhatsApp & Co" won't be accepted | **Not met.** Cucuto only works with WhatsApp's notifications. |
+| "Apps for Facebook, WhatsApp & Co" won't be accepted | **Probably met now.** Since #374 ([ADR 0081](decisions/0081-signal-support.md)) Cucuto works fully with Signal or Molly, so WhatsApp is optional. Until then it only worked with WhatsApp's notifications. |
 | "Vibe-coded apps will be rejected"; "the code itself should be free of" LLM-generated text | **Not met.** Cucuto's code is written by AI agents. |
 | Reproducible builds | Encouraged, not required. See [reproducible-builds.md](reproducible-builds.md). |
 
-So a request would most likely be refused today on two grounds the project can't change. If the owner still wants to
+So a request would most likely be refused today on the AI-written code, which the project can't change (the WhatsApp ground likely fell with Signal support). If the owner still wants to
 ask (the policy is applied case by case), the request goes to the [repodata issue
 tracker](https://codeberg.org/IzzyOnDroid/repodata/issues) with its new-app template, pointing at the GitHub
 releases; IzzyOnDroid then pins the signing certificate from the first APK it sees. Nothing has been submitted.

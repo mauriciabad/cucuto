@@ -578,3 +578,10 @@ phone, so choices waited behind it. Fixed in #369; ADR 0039 and 0073 amended.)
 
 (Feasible from `system_server` alone, because Signal's notification names the Android contact. Built in #374
 (ADR 0081): Signal and Molly join WhatsApp, and the F-Droid recipe drops `NonFreeDep`.)
+
+## 2026-10-24 (night): Signal everywhere
+
+> make sure signal is mentioned in other places such as web and repo
+
+(After #376 added Signal and Molly. #377 sweeps the website, the docs, the brand texts and the app strings that still
+read as WhatsApp-only.)

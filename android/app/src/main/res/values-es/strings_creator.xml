@@ -100,7 +100,7 @@
     <string name="creator_haptic_none">Desactivada</string>
     <string name="creator_haptic_custom">Personalizada</string>
     <string name="creator_haptic_auto_hint">La vibración sigue el volumen de cada sonido.</string>
-    <string name="creator_haptic_none_hint">El pack no vibra: se queda la vibración de WhatsApp.</string>
+    <string name="creator_haptic_none_hint">El pack no vibra: se queda la vibración de WhatsApp o Signal.</string>
     <string name="creator_haptic_custom_hint">Un patrón de vibración propio.</string>
     <string name="creator_haptic_try">Probar</string>
     <string name="creator_haptic_edit">Editar patrón</string>

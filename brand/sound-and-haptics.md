@@ -72,7 +72,7 @@ Never use `createOneShot`, `vibrate(long)` or legacy waveforms for UI feedback: 
 
 ### Character haptics
 
-Character vibrations (what plays with a WhatsApp notification) follow the pack haptic schema in the
+Character vibrations (what plays with a WhatsApp or Signal notification) follow the pack haptic schema in the
 [project brief](../docs/project-brief.md#haptics): `VibrationEffect.Builder` presets and basic envelopes,
 "haptics follow the voice" in auto mode, at most 2 s, always ending at zero intensity. They are the one place where
 longer patterns are welcome, because a notification must be felt in a pocket.
