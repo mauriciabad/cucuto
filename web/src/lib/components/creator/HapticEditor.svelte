@@ -205,64 +205,66 @@
 							</button>
 						</div>
 						{#if event.envelope}
-							<table class="points">
-								<thead>
-									<tr>
-										<th scope="col"><span class="visually-hidden">#</span></th>
-										<th scope="col" class="body-small">{t.intensity}</th>
-										<th scope="col" class="body-small">{t.sharpness}</th>
-										<th scope="col" class="body-small">{t.duration}</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each event.envelope as point, p (p)}
-										{@const label = fill(t.point, { n: p + 1 })}
+							<div class="points-scroll">
+								<table class="points">
+									<thead>
 										<tr>
-											<th scope="row" class="body-small">{label}</th>
-											<td>
-												<input
-													type="range"
-													min="0"
-													max="1"
-													step="0.05"
-													bind:value={point.intensity}
-													aria-label="{t.intensity}, {label}"
-												/>
-											</td>
-											<td>
-												<input
-													type="range"
-													min="0"
-													max="1"
-													step="0.05"
-													bind:value={point.sharpness}
-													aria-label="{t.sharpness}, {label}"
-												/>
-											</td>
-											<td>
-												<input
-													type="number"
-													min="1"
-													max={targets.hapticMaxMs}
-													step="10"
-													bind:value={point.ms}
-													aria-label="{t.duration}, {label}"
-												/>
-												{#if event.envelope.length > 1}
-													<button
-														type="button"
-														class="icon-button small"
-														aria-label={fill(t.removePoint, { n: p + 1 })}
-														onclick={() => removePoint(event, p)}
-													>
-														<Icon name="close" />
-													</button>
-												{/if}
-											</td>
+											<th scope="col"><span class="visually-hidden">#</span></th>
+											<th scope="col" class="body-small">{t.intensity}</th>
+											<th scope="col" class="body-small">{t.sharpness}</th>
+											<th scope="col" class="body-small">{t.duration}</th>
 										</tr>
-									{/each}
-								</tbody>
-							</table>
+									</thead>
+									<tbody>
+										{#each event.envelope as point, p (p)}
+											{@const label = fill(t.point, { n: p + 1 })}
+											<tr>
+												<th scope="row" class="body-small">{label}</th>
+												<td>
+													<input
+														type="range"
+														min="0"
+														max="1"
+														step="0.05"
+														bind:value={point.intensity}
+														aria-label="{t.intensity}, {label}"
+													/>
+												</td>
+												<td>
+													<input
+														type="range"
+														min="0"
+														max="1"
+														step="0.05"
+														bind:value={point.sharpness}
+														aria-label="{t.sharpness}, {label}"
+													/>
+												</td>
+												<td>
+													<input
+														type="number"
+														min="1"
+														max={targets.hapticMaxMs}
+														step="10"
+														bind:value={point.ms}
+														aria-label="{t.duration}, {label}"
+													/>
+													{#if event.envelope.length > 1}
+														<button
+															type="button"
+															class="icon-button small"
+															aria-label={fill(t.removePoint, { n: p + 1 })}
+															onclick={() => removePoint(event, p)}
+														>
+															<Icon name="close" />
+														</button>
+													{/if}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
 							{#if event.envelope.length < targets.hapticMaxPoints}
 								<button type="button" class="button tonal small" onclick={() => addPoint(event)}>
 									<Icon name="add" />
@@ -474,6 +476,10 @@
 
 	.inline input[type='number'] {
 		width: 5.5rem;
+	}
+
+	.points-scroll {
+		overflow-x: auto;
 	}
 
 	.points {
