@@ -90,7 +90,7 @@ others and "automatic" are one tap away, and the character page previews them in
 **Duplicate and edit.** `PackDuplicator` copies the active version of an installed pack into a new draft: new pack ID,
 version `1.0.0`, name "… (copy)". It keeps the character IDs, names, sprites, colors, clips (labels, weights, files in
 their own formats) and custom haptics. Ringtones and animated sprites are not edited by the creator yet, so they are
-dropped and the user is told. The Packs screen gets "Create a pack" (top bar and empty state) and the detail sheet gets
+dropped and the user is told (since #185, ADR 0049, they are kept as pass-through data). The Packs screen gets "Create a pack" (top bar and empty state) and the detail sheet gets
 "Duplicate and edit"; the creator is one Navigation 3 destination, `CucutoDestination.Creator(sourcePackId)`, with its
 pages (pack, character, framing, recording, clip editor) stacked inside it.
 
@@ -102,6 +102,6 @@ pages (pack, character, framing, recording, clip editor) stacked inside it.
   reference signals. Encoding and the Ogg muxer can only run on a device; the probe check and the AAC fallback make a
   bad muxer a lower-quality clip instead of a broken pack. Needs a device pass (`needs-device`).
 - `RECORD_AUDIO` joins the manifest. It is asked for only on the Record tap, and nothing records in the background.
-- Ringtones are not edited by the creator, and duplicated packs lose them (#185). "Simulate message" (posting a real
+- Ringtones are not edited by the creator; duplicated packs keep them since #185 (ADR 0049). "Simulate message" (posting a real
   notification) is not built; the preview plays as a notification without posting one.
 - Open defaults (ID scheme, default license, mono 96 kb/s, WebP) are listed in #184 for the owner.

@@ -74,7 +74,7 @@ class HapticContentTest {
                     state =
                         HapticEditorState(
                             loading = false,
-                            chat = ChatKey("com.whatsapp", "100000000000001@lid"),
+                            target = HapticTarget.Chat(ChatKey("com.whatsapp", "100000000000001@lid")),
                             draft =
                                 HapticDraft(
                                     listOf(
@@ -158,7 +158,11 @@ class HapticContentTest {
         compose.setContent {
             CucutoTheme(dynamicColor = false) {
                 HapticEditorContent(
-                    state = HapticEditorState(loading = false, chat = ChatKey("com.whatsapp", "100000000000001@lid")),
+                    state =
+                        HapticEditorState(
+                            loading = false,
+                            target = HapticTarget.Chat(ChatKey("com.whatsapp", "100000000000001@lid")),
+                        ),
                     actions = HapticEditorActions(),
                 )
             }

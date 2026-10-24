@@ -53,6 +53,7 @@ import app.mauri.cucuto.ui.haptics.HapticDraft
 import app.mauri.cucuto.ui.haptics.HapticEditorActions
 import app.mauri.cucuto.ui.haptics.HapticEditorContent
 import app.mauri.cucuto.ui.haptics.HapticEditorState
+import app.mauri.cucuto.ui.haptics.HapticTarget
 import app.mauri.cucuto.ui.onboarding.OnboardingContent
 import app.mauri.cucuto.ui.onboarding.OnboardingStep
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneActions
@@ -391,7 +392,7 @@ internal object A11yScreens {
             state =
                 HapticEditorState(
                     loading = false,
-                    chat = ChatKey("com.whatsapp", "100000000000001@lid"),
+                    target = HapticTarget.Chat(ChatKey("com.whatsapp", "100000000000001@lid")),
                     draft =
                         HapticDraft(
                             events =

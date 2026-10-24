@@ -38,6 +38,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URI
 import java.net.URISyntaxException
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -80,11 +81,15 @@ sealed interface ModuleSimulation {
 
 /** Result of [MessageSimulator.inApp]. */
 sealed interface InAppSimulation {
-    /** [clipName] played with [haptic] (what the module would do with the vibration). */
+    /**
+     * [clipName] played with [haptic] (what the module would do with the vibration). [clipUri] is the clip's URI, to
+     * look up its label in the pack.
+     */
     data class Played(
         val clipName: String,
         val haptic: HapticPlayback,
         val durationMs: Long,
+        val clipUri: String? = null,
     ) : InAppSimulation
 
     /** Nothing to swap: a real message would play WhatsApp's own tone, for [outcome]'s reason. */
@@ -148,8 +153,19 @@ internal fun clipFile(
     }
 }
 
-/** The clip's file name without its extension, for the UI (`characters/frog/clips/ribbit.ogg` → `ribbit`). */
-internal fun clipName(pathOrUri: String): String = pathOrUri.substringAfterLast('/').substringBeforeLast('.')
+/**
+ * A readable name for a clip without a label, from its path or URI, the way `packer` labels clips: the file name
+ * without its extension, hyphens and underscores as spaces, first letter capitalized ("pond-song_2.ogg" becomes
+ * "Pond song 2"). A name with nothing left keeps the file name.
+ */
+internal fun clipName(pathOrUri: String): String {
+    val stem = pathOrUri.substringAfterLast('/').substringBeforeLast('.')
+    return stem
+        .replace(Regex("[-_]+"), " ")
+        .trim()
+        .replaceFirstChar { it.titlecase(Locale.ROOT) }
+        .ifEmpty { stem }
+}
 
 /**
  * [MessageSimulator] for the device. The module path posts on [Targets.SIMULATE_CHANNEL] with the chat named in
@@ -237,7 +253,7 @@ class SystemMessageSimulator
                 withContext(Dispatchers.IO) { clipFile(uri, File(context.filesDir, ClipProvider.PACKS_DIR)) }
                     ?: return InAppSimulation.Failed
             val duration = preview.playClip(file, decision.haptic) ?: return InAppSimulation.Failed
-            return InAppSimulation.Played(clipName(uri), decision.haptic.playback(), duration)
+            return InAppSimulation.Played(clipName(uri), decision.haptic.playback(), duration, uri)
         }
 
         override fun stop() = preview.stop()

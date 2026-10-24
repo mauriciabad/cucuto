@@ -20,6 +20,7 @@ import java.io.File
  * One clip of the chat's character, with its per-contact toggle.
  *
  * @property path The clip's path from `pack.json` (what the toggle stores).
+ * @property name The clip's label from the pack, else a name made from its file ([clipDisplayName]).
  * @property canToggle False for the last enabled clip: switching it off would silence the voice.
  * @property moment When the clip plays outside the rotation (rare, first of the day, a burst; ADR 0059).
  */
@@ -160,13 +161,27 @@ fun clipRows(
         val enabled = path !in off
         ClipRow(
             path = path,
-            name = clipName(path),
+            name = character.clipLabels.getOrNull(i) ?: clipName(path),
             file = character.clips[i],
             enabled = enabled,
             canToggle = !enabled || enabledCount > 1,
             moment = character.clipMoments.getOrNull(i) ?: Moment.NONE,
         )
     }
+}
+
+/**
+ * What contact detail calls a clip given by its pack path or its clip URI (which ends with the path): its label in
+ * [character]'s pack, else a name made from its file ([clipName]).
+ */
+fun clipDisplayName(
+    character: VoiceCharacter?,
+    pathOrUri: String,
+): String {
+    val labels = character?.clipLabels.orEmpty()
+    val index =
+        character?.clipPaths?.indexOfFirst { path -> pathOrUri == path || pathOrUri.endsWith("/$path") } ?: -1
+    return labels.getOrNull(index) ?: clipName(pathOrUri)
 }
 
 /** Reads the per-contact override like the routing table builder does ([HapticJson.fromOverride]). */
@@ -188,6 +203,7 @@ fun decisionsForChat(
     chatKey: ChatKey,
     chat: Chat?,
     limit: Int = RECENT_DECISIONS,
+    clipName: (String) -> String = ::clipName,
 ): List<DecisionRow> {
     val keys = chat?.keys?.toSet() ?: setOf(chatKey)
     val keyValues = keys.mapTo(HashSet()) { it.conversationKey }
@@ -202,7 +218,7 @@ fun decisionsForChat(
                 else -> key != null && ChatKey(entry.packageName, key) in keys
             }
         }.take(limit)
-        .map { it.toRow() }
+        .map { it.toRow(clipName) }
         .toList()
 }
 
@@ -220,12 +236,12 @@ private const val REPORT_MARGIN_MILLIS = 2_000L
 private fun DecisionLogEntity.isSimulation(): Boolean =
     packageName == Targets.SELF_PACKAGE && detail?.startsWith(AlertRouter.SIMULATED_DETAIL) == true
 
-private fun DecisionLogEntity.toRow() =
+private fun DecisionLogEntity.toRow(clipName: (String) -> String) =
     DecisionRow(
         id = id,
         timestamp = timestamp,
         outcome = outcome,
-        clipName = clipUri?.let(::clipName),
+        clipName = clipUri?.let(clipName),
         simulated = isSimulation(),
         perSender = detail?.removePrefix("${AlertRouter.SIMULATED_DETAIL}, ") == AlertRouter.DETAIL_PER_SENDER,
     )

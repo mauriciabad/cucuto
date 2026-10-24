@@ -824,8 +824,8 @@ internal fun previewContactDetailState(): ContactDetailState {
         clips = clipRows(frog, settings.disabledClips),
         decisions =
             listOf(
-                DecisionRow(2, 0L, DecisionOutcome.SWAPPED, "ribbit", simulated = true, perSender = false),
-                DecisionRow(1, 0L, DecisionOutcome.SWAPPED, "croak", simulated = false, perSender = false),
+                DecisionRow(2, 0L, DecisionOutcome.SWAPPED, "Ribbit", simulated = true, perSender = false),
+                DecisionRow(1, 0L, DecisionOutcome.SWAPPED, "Croak", simulated = false, perSender = false),
             ),
         path = SimulatePath.InApp(InAppReason.RebootNeeded),
     )
