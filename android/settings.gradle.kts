@@ -40,6 +40,8 @@ includeBuild("../shared/pack-spec")
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include(":app")
+// Generates the app's Baseline Profile on a device (#226, docs/baseline-profile.md).
+include(":baselineprofile")
 include(":xposed")
 include(":core:pack")
 include(":core:repo")

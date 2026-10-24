@@ -3,6 +3,7 @@ package app.mauri.cucuto.a11y
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -73,8 +74,8 @@ import java.io.File
 
 /**
  * Every screen of the accessibility pass (#29) with made-up content, for the accessibility checks and the large-font
- * screenshots. Screens that only exist with a view model (Diagnostics) are not here. A new screen joins every check
- * with one line in [all].
+ * screenshots, plus [A11yMoreScreens] (#226). A new screen joins every check with one line in [all] (and one test in
+ * `LargeFontScreenshotTest` for its golden).
  */
 internal object A11yScreens {
     val all: List<Pair<String, @Composable () -> Unit>> =
@@ -95,7 +96,7 @@ internal object A11yScreens {
             "creator-character" to { CreatorCharacterScreen() },
             "creator-recorder" to { CreatorRecorderScreen() },
             "creator-clip-editor" to { CreatorClipEditorScreen() },
-        ) + A11yPushedScreens.all
+        ) + A11yPushedScreens.all + A11yMoreScreens.all
 
     /** The screen called [name] in [all]. */
     fun content(name: String): @Composable () -> Unit = all.first { it.first == name }.second
@@ -117,7 +118,13 @@ internal object A11yScreens {
     @Composable
     private fun PhoneRingtoneScreen() {
         // Inside the contact detail's scrolling column on the device.
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        ) {
             PhoneRingtoneContent(
                 state =
                     PhoneRingtoneUiState(

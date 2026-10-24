@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.room3.gradlePlugin)
     implementation(libs.spotless.gradlePlugin)
     implementation(libs.roborazzi.gradlePlugin)
+    implementation(libs.baselineprofile.gradlePlugin)
 }
 
 gradlePlugin {
@@ -45,6 +46,10 @@ gradlePlugin {
         register("androidScreenshots") {
             id = "cucuto.android.screenshots"
             implementationClass = "app.mauri.cucuto.buildlogic.AndroidScreenshotsConventionPlugin"
+        }
+        register("androidBaselineProfile") {
+            id = "cucuto.android.baselineprofile"
+            implementationClass = "app.mauri.cucuto.buildlogic.AndroidBaselineProfileConventionPlugin"
         }
         register("androidRoom") {
             id = "cucuto.android.room"

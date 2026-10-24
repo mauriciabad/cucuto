@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -69,6 +70,7 @@ import app.mauri.cucuto.core.ringtone.PhoneRingtoneRestore
 import app.mauri.cucuto.navigation.CucutoDestination
 import app.mauri.cucuto.ui.components.BottomActionBar
 import app.mauri.cucuto.ui.components.PushedScreen
+import app.mauri.cucuto.ui.components.isLargeFont
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.ringtone.rememberContactsPermissionFlow
@@ -322,46 +324,56 @@ private fun PackRowItem(
     actions: RestoreActions,
 ) {
     val status = row.status
+    val button: (@Composable () -> Unit)? =
+        when {
+            status is PackStatus.Done -> {
+                null
+            }
+
+            row.item.action == PackRestoreAction.PICK_FILE && status !is PackStatus.Working -> {
+                {
+                    FilledTonalButton(onClick = { actions.onPickPack(row.id) }, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(R.string.restore_pack_pick_button))
+                    }
+                }
+            }
+
+            status is PackStatus.Failed -> {
+                {
+                    OutlinedButton(onClick = { actions.onRetryPack(row.id) }, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(R.string.restore_pack_retry))
+                    }
+                }
+            }
+
+            else -> {
+                null
+            }
+        }
+    // With large fonts the button goes under the text, which would otherwise be squeezed a word per line (#226).
+    val buttonBelow = isLargeFont()
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
         Column {
             ListItem(
                 headlineContent = { Text(row.name) },
                 supportingContent = { Text(packStatusText(row), color = packStatusColor(status)) },
                 trailingContent = {
-                    when {
-                        status is PackStatus.Done -> {
-                            Icon(
-                                Icons.Rounded.CheckCircle,
-                                contentDescription = stringResource(R.string.restore_pack_installed),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-
-                        row.item.action == PackRestoreAction.PICK_FILE && status !is PackStatus.Working -> {
-                            FilledTonalButton(
-                                onClick = { actions.onPickPack(row.id) },
-                                shapes = ButtonDefaults.shapes(),
-                            ) {
-                                Text(stringResource(R.string.restore_pack_pick_button))
-                            }
-                        }
-
-                        status is PackStatus.Failed -> {
-                            OutlinedButton(
-                                onClick = { actions.onRetryPack(row.id) },
-                                shapes = ButtonDefaults.shapes(),
-                            ) {
-                                Text(stringResource(R.string.restore_pack_retry))
-                            }
-                        }
-
-                        else -> {
-                            Unit
-                        }
+                    if (status is PackStatus.Done) {
+                        // The status line already says "Installed" in words.
+                        Icon(
+                            Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    } else if (!buttonBelow) {
+                        button?.invoke()
                     }
                 },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             )
+            if (buttonBelow && button != null) {
+                Box(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) { button() }
+            }
             if (status is PackStatus.Working) {
                 val fraction = status.fraction
                 val bar = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
@@ -448,10 +460,14 @@ private fun ConflictsStep(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     StepTitle(R.string.restore_conflicts_title)
                     Text(pluralStringResource(R.plurals.restore_conflicts_body, step.rows.size, step.rows.size))
+                    // 48 dp tall: the checkbox alone is 24 dp, too small to tap next to the first row (#226).
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier =
-                            Modifier.fillMaxWidth().toggleable(step.allSelected, role = Role.Checkbox) {
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(
+                                step.allSelected,
+                                role = Role.Checkbox,
+                            ) {
                                 feedback.fire(if (it) Feedback.ToggleOn else Feedback.ToggleOff)
                                 actions.onSelectAll(it)
                             },

@@ -202,6 +202,10 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material.color.utilities)
+    // Compiles the Baseline Profile at install time outside Play (F-Droid, Obtainium, GitHub); :baselineprofile
+    // generates it on a device (#226, docs/baseline-profile.md).
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(projects.baselineprofile)
 
     // Compose UI tests on the JVM (Robolectric) live in src/testDebug: the test activity comes from the
     // debug-only ui-test-manifest.
