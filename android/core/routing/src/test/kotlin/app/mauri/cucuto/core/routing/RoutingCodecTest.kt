@@ -51,6 +51,37 @@ class RoutingCodecTest {
     }
 
     @Test
+    fun roundTripsMirroredClipsAndTheSelfTestClipAlongsideClipEnvelopes() {
+        val mirror = "file:///storage/emulated/0/Android/media/app.mauri.cucuto/clips"
+        val mirrored =
+            sample.copy(
+                voices =
+                    sample.voices.map { voice ->
+                        voice.copy(
+                            clips =
+                                voice.clips.map {
+                                    it.copy(uri = it.uri.replace("content://app.mauri.cucuto.clips", "$mirror/x"))
+                                },
+                        )
+                    },
+                selfTestClip = "$mirror/selftest/chirp.wav",
+            )
+        val encoded = RoutingCodec.encode(mirrored)
+        assertEquals(mirrored, RoutingCodec.decode(encoded))
+        val lines = encoded.split('\n')
+        // Right after the header, so a reader that predates it skips one unknown line.
+        assertEquals("S\t$mirror/selftest/chirp.wav", lines[1])
+        assertTrue(lines.any { it.contains("\t$mirror/x/app.mauri.demo.critters/frog/characters/frog/clips/\t3\t") })
+        // The clip envelope dictionary (H lines, h fields) still carries the auto haptics of mirrored clips.
+        assertTrue(mirrored.voices.any { voice -> voice.clips.any { it.haptic != null } })
+        assertTrue(lines.any { it.startsWith("H\t") })
+        assertTrue(lines.any { it.startsWith("V\t") && it.contains("\th") })
+        // Without one, nothing is written and the module keeps the provider's chirp.
+        assertFalse(RoutingCodec.encode(sample).contains("\nS\t"))
+        assertNull(RoutingCodec.decode(RoutingCodec.encode(sample)).selfTestClip)
+    }
+
+    @Test
     fun peeksGenerationWithoutDecoding() {
         assertEquals(1_761_000_000_123, RoutingCodec.peekGeneration(RoutingCodec.encode(sample)))
         assertNull(RoutingCodec.peekGeneration("nope"))

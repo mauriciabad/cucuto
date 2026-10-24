@@ -17,7 +17,7 @@ import org.junit.Test
 
 class RoutingTableBuilderTest {
     private val catalog = FakeCatalog()
-    private val builder = RoutingTableBuilder(catalog)
+    private val builder = RoutingTableBuilder(catalog, ProviderClips)
     private val packs = mapOf(CRITTERS to installedPack())
 
     private fun row(
@@ -67,6 +67,29 @@ class RoutingTableBuilderTest {
             assertEquals(listOf(Route("com.whatsapp", "a@s.whatsapp.net", 0, 10, 0, 1)), table.routes)
             assertEquals(0L, table.generation)
             assertTrue(table.enabled)
+        }
+
+    @Test
+    fun mirroredClipsGetFileUrisAndTheRestKeepTheProvider() =
+        runTest {
+            val mirror =
+                FakeMirror(
+                    mirrored = setOf("characters/frog/clips/ribbit.ogg"),
+                    selfTest = "file:///mirror/selftest/chirp.wav",
+                )
+            val table = RoutingTableBuilder(catalog, mirror).build(listOf(row("a@s.whatsapp.net", 1)), packs, true)
+            assertEquals(
+                listOf(
+                    "file:///mirror/$CRITTERS/1.0.0/characters/frog/clips/ribbit.ogg",
+                    "content://app.mauri.cucuto.clips/$CRITTERS/frog/characters/frog/clips/croak.ogg",
+                ),
+                table.voices
+                    .single()
+                    .clips
+                    .map { it.uri },
+            )
+            assertEquals("file:///mirror/selftest/chirp.wav", table.selfTestClip)
+            assertEquals(table, RoutingCodec.decode(RoutingCodec.encode(table)))
         }
 
     @Test

@@ -76,6 +76,7 @@ import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.routing.Haptic
+import app.mauri.cucuto.ui.chat.chatSupportingText
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.feedback.Feedback
@@ -449,7 +450,7 @@ private fun ChatListItem(
         headlineContent = { Text(row.chat.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingContent = {
             Text(
-                text = if (row.chat.isGroup) stringResource(R.string.home_chat_group, supporting) else supporting,
+                text = chatSupportingText(row.chat, supporting),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

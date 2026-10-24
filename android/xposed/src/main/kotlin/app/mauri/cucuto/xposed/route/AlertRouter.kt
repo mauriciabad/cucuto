@@ -4,6 +4,7 @@ import app.mauri.cucuto.core.haptics.forClip
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
+import app.mauri.cucuto.core.routing.Route
 import app.mauri.cucuto.core.routing.RoutingTable
 import app.mauri.cucuto.xposed.events.Outcome
 
@@ -18,7 +19,10 @@ object Targets {
     /** Channel of the test notification; nothing else from [SELF_PACKAGE] is touched. */
     const val SELF_TEST_CHANNEL: String = "cucuto_self_test"
 
-    /** Clip the provider synthesises for the self-test. `selftest` is not a valid pack ID, so it cannot collide. */
+    /**
+     * Clip the provider synthesises for the self-test, used when the table names no mirrored copy
+     * ([RoutingTable.selfTestClip], ADR 0018). `selftest` is not a valid pack ID, so it cannot collide.
+     */
     const val SELF_TEST_CLIP: String = "content://app.mauri.cucuto.clips/selftest/chirp.wav"
 
     /** A two-beat signature (the M0 spike's): a firm click, then a lighter tick. */
@@ -67,7 +71,7 @@ class AlertRouter(
         table: RoutingTable,
     ): Decision? {
         val pkg = snapshot.packageName
-        if (pkg == Targets.SELF_PACKAGE) return selfTest(snapshot)
+        if (pkg == Targets.SELF_PACKAGE) return selfTest(snapshot, table)
         if (pkg !in Targets.MESSENGERS) return null
 
         val identity = ConversationKeys.identify(snapshot)
@@ -106,28 +110,55 @@ class AlertRouter(
                 contactId = speaker.contactId,
                 clipUri = clip.uri,
                 haptic = haptic,
-                detail = if (speaker !== match.conversation) "per-sender" else null,
+                detail = groupDetail(match.conversation, speaker, identity.senderKey),
             )
         }
         val known = identity.keys.firstOrNull { table.route(pkg, it) != null }
+        val knownRoute = known?.let { table.route(pkg, it) }
         return Decision(
             Outcome.UNASSIGNED,
             pkg,
             identity,
             matchedKey = known,
-            contactId = known?.let { table.route(pkg, it)?.contactId },
-            detail = if (known != null) "contact has no voice" else null,
+            contactId = knownRoute?.contactId,
+            detail =
+                when {
+                    knownRoute == null -> null
+                    !knownRoute.isPerSender -> DETAIL_NO_VOICE
+                    identity.senderKey == null -> DETAIL_NO_SENDER_NO_GROUP_VOICE
+                    else -> DETAIL_SENDER_UNASSIGNED_NO_GROUP_VOICE
+                },
         )
     }
 
-    private fun selfTest(snapshot: NotificationSnapshot): Decision? {
+    /**
+     * Why a per-sender group sounded the way it did, for the decision log and the device check (#20): whether the
+     * alerting record carried a sender at all, and whether that sender has a voice. Constant strings: nothing is
+     * allocated on the notification path. Null for everything that is not a per-sender group.
+     */
+    private fun groupDetail(
+        conversation: Route,
+        speaker: Route,
+        senderKey: String?,
+    ): String? =
+        when {
+            !conversation.isPerSender -> null
+            speaker !== conversation -> DETAIL_PER_SENDER
+            senderKey == null -> DETAIL_NO_SENDER
+            else -> DETAIL_SENDER_UNASSIGNED
+        }
+
+    private fun selfTest(
+        snapshot: NotificationSnapshot,
+        table: RoutingTable,
+    ): Decision? {
         if (snapshot.channelId != Targets.SELF_TEST_CHANNEL) return null
         return Decision(
             outcome = Outcome.SWAPPED,
             packageName = snapshot.packageName,
             identity = ConversationIdentity(listOf(SELF_TEST_KEY), false, "Cucuto self-test", null, null),
             matchedKey = SELF_TEST_KEY,
-            clipUri = Targets.SELF_TEST_CLIP,
+            clipUri = table.selfTestClip ?: Targets.SELF_TEST_CLIP,
             haptic = Targets.SELF_TEST_HAPTIC,
             detail = "self-test",
         )
@@ -135,5 +166,23 @@ class AlertRouter(
 
     companion object {
         const val SELF_TEST_KEY: String = "cucuto:self-test"
+
+        /** A per-sender group played its sender's own voice. */
+        const val DETAIL_PER_SENDER: String = "per-sender"
+
+        /** A per-sender group played its own voice because the notification named no sender. */
+        const val DETAIL_NO_SENDER: String = "per-sender, no sender on the notification: group voice"
+
+        /** A per-sender group played its own voice because the sender has none. */
+        const val DETAIL_SENDER_UNASSIGNED: String = "per-sender, sender has no voice: group voice"
+
+        /** A per-sender group without a voice of its own, and the notification named no sender. */
+        const val DETAIL_NO_SENDER_NO_GROUP_VOICE: String = "per-sender, no sender on the notification"
+
+        /** A per-sender group without a voice of its own, and the sender has none either. */
+        const val DETAIL_SENDER_UNASSIGNED_NO_GROUP_VOICE: String = "per-sender, sender has no voice"
+
+        /** A contact (or a default-policy group) that is known but has no voice. */
+        const val DETAIL_NO_VOICE: String = "contact has no voice"
     }
 }
