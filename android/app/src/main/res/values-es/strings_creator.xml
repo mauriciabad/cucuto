@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El creador de packs de la app (#47, ui/creator/). Español de España, de tú; mismos términos que strings.xml. -->
+<resources>
+    <!-- Puntos de entrada en Packs -->
+    <string name="packs_create">Crear un pack</string>
+    <string name="packs_duplicate">Duplicar y editar</string>
+    <string name="packs_duplicate_hint">Crea tu propia copia para cambiarla. Este pack se queda como está.</string>
+
+    <!-- Página del pack -->
+    <string name="creator_title">Crear un pack</string>
+    <string name="creator_title_copy">Edita tu copia</string>
+    <string name="creator_subtitle_copy">Copia de %1$s</string>
+    <string name="creator_copy_name">%1$s (copia)</string>
+    <string name="creator_untitled">tu pack sin nombre</string>
+    <string name="creator_intro">Dale a tus contactos una voz propia: fotos de tu galería, sonidos que grabas o eliges. Todo se queda en tu móvil hasta que lo compartas.</string>
+    <string name="creator_more">Más opciones</string>
+    <string name="creator_pack_name">Nombre del pack</string>
+    <string name="creator_author">Tu nombre</string>
+    <string name="creator_author_hint">Aparece como autor del pack.</string>
+    <string name="creator_description">Descripción (opcional)</string>
+    <string name="creator_license">Quién puede usarlo</string>
+    <string name="creator_license_cc0">Cualquiera (CC0)</string>
+    <string name="creator_license_cc_by">Citándote (CC BY)</string>
+    <string name="creator_license_personal">Solo uso personal</string>
+    <string name="creator_license_other">Otra</string>
+    <string name="creator_license_cc0_hint">Dominio público: cualquiera puede usar, cambiar y compartir el pack sin citarte. Elígela solo para sonidos e imágenes que hayas hecho tú.</string>
+    <string name="creator_license_cc_by_hint">Cualquiera puede usarlo, cambiarlo y compartirlo siempre que te cite (Creative Commons Reconocimiento 4.0).</string>
+    <string name="creator_license_personal_hint">Para ti y para quien se lo pases en privado. Es la opción correcta para clips e imágenes que no has hecho tú.</string>
+    <string name="creator_license_custom">Licencia</string>
+    <string name="creator_license_custom_hint">Un identificador SPDX como MIT, o tus propias palabras.</string>
+    <string name="creator_cover">Portada</string>
+    <string name="creator_cover_hint">Opcional. Sin portada se muestra la imagen del primer personaje.</string>
+    <string name="creator_cover_add">Añadir portada</string>
+    <string name="creator_cover_change">Cambiar</string>
+    <string name="creator_remove">Quitar</string>
+    <string name="creator_cancel">Cancelar</string>
+    <plurals name="creator_characters">
+        <item quantity="one">%d personaje</item>
+        <item quantity="many">%d personajes</item>
+        <item quantity="other">%d personajes</item>
+    </plurals>
+    <plurals name="creator_clips">
+        <item quantity="one">%d clip</item>
+        <item quantity="many">%d clips</item>
+        <item quantity="other">%d clips</item>
+    </plurals>
+    <string name="creator_characters_empty">Un personaje es cualquiera que pueda hablar por un contacto: una mascota, un amigo, el héroe de un juego, una canción.</string>
+    <string name="creator_add_character">Añadir un personaje</string>
+    <string name="creator_character_unnamed">Personaje sin nombre</string>
+    <string name="creator_character_needs_picture">Le falta una imagen</string>
+    <string name="creator_character_needs_clips">Le falta un sonido</string>
+    <string name="creator_check">Comprobar y terminar</string>
+    <string name="creator_start_over">Empezar un pack nuevo</string>
+    <string name="creator_start_over_title">¿Empezar un pack nuevo?</string>
+    <string name="creator_start_over_body">Este pack, sus imágenes y sus sonidos se borran del creador. Los packs que ya instalaste o guardaste se quedan.</string>
+    <string name="creator_start_over_confirm">Empezar de nuevo</string>
+
+    <!-- Preguntas al empezar -->
+    <string name="creator_resume_title">¿Sigues donde lo dejaste?</string>
+    <string name="creator_resume_body">Estabas haciendo %1$s.</string>
+    <string name="creator_resume_continue">Seguir</string>
+    <string name="creator_resume_new">Pack nuevo</string>
+    <string name="creator_replace_title">¿Sustituir tu pack sin terminar?</string>
+    <string name="creator_replace_body">Estabas haciendo %1$s. La copia lo sustituye en el creador. Los packs que ya instalaste o guardaste se quedan.</string>
+    <string name="creator_replace_confirm">Sustituir</string>
+    <string name="creator_replace_keep">Quedarme el mío</string>
+
+    <!-- Página del personaje -->
+    <string name="creator_character_new">Personaje nuevo</string>
+    <string name="creator_character_name">Nombre</string>
+    <string name="creator_character_remove">Quitar personaje</string>
+    <string name="creator_character_remove_title">¿Quitar a %1$s?</string>
+    <string name="creator_character_remove_body">Su imagen y sus sonidos se borran del creador.</string>
+    <string name="creator_character_number">Personaje %1$d</string>
+    <string name="creator_sprite">Imagen del personaje</string>
+    <string name="creator_sprite_choose">Elegir una imagen</string>
+    <string name="creator_sprite_change">Cambiar imagen</string>
+    <string name="creator_colors">Colores</string>
+    <string name="creator_colors_hint">Sacados de la imagen. Cucuto viste a este personaje con ellos.</string>
+    <string name="creator_color">Color</string>
+    <string name="creator_color_auto">Color automático</string>
+    <string name="creator_color_auto_short">Auto</string>
+    <string name="creator_clips_title">Sonidos</string>
+    <string name="creator_clips_hint">Cada mensaje reproduce uno de ellos al azar.</string>
+    <string name="creator_clips_empty">Graba un sonido o elige un archivo de audio. Un personaje necesita al menos uno.</string>
+    <string name="creator_record">Grabar</string>
+    <string name="creator_pick_audio">Archivo de audio</string>
+    <string name="creator_clip_play">Reproducir con vibración</string>
+    <string name="creator_clip_label">Nombre (opcional)</string>
+    <string name="creator_clip_weight">Frecuencia: %1$s</string>
+    <string name="creator_clip_remove">Quitar sonido</string>
+    <string name="creator_seconds">%1$s s</string>
+    <string name="creator_weight_rare">Pocas veces</string>
+    <string name="creator_weight_normal">Normal</string>
+    <string name="creator_weight_often">A menudo</string>
+    <string name="creator_weight_very_often">Muy a menudo</string>
+    <string name="creator_long_clip_hint">Los sonidos largos se reproducen hasta el final y bajan el resto del audio mientras suenan. Los cortos (hasta 5 s) quedan mejor.</string>
+    <string name="creator_haptics">Vibración</string>
+    <string name="creator_haptic_auto">Sigue la voz</string>
+    <string name="creator_haptic_none">Desactivada</string>
+    <string name="creator_haptic_custom">Personalizada</string>
+    <string name="creator_haptic_auto_hint">La vibración sigue el volumen de cada sonido.</string>
+    <string name="creator_haptic_none_hint">El pack no vibra: se queda la vibración de WhatsApp.</string>
+    <string name="creator_haptic_custom_hint">Un patrón de vibración propio.</string>
+    <string name="creator_haptic_try">Probar</string>
+    <string name="creator_haptic_edit">Editar patrón</string>
+
+    <!-- Encuadre de la imagen -->
+    <string name="creator_crop_title">Encuadra la imagen</string>
+    <string name="creator_crop_hint">Pellizca para hacer zoom y arrastra para moverla. El contorno muestra cómo se verá el personaje.</string>
+    <string name="creator_crop_frame">Marco de la imagen. Pellizca para hacer zoom, arrastra para moverla.</string>
+    <string name="creator_crop_zoom">Zoom</string>
+    <string name="creator_crop_done">Usar esta</string>
+
+    <!-- Grabación -->
+    <string name="creator_record_title">Graba un sonido</string>
+    <string name="creator_record_hint">Toca el botón y haz tu sonido. Hasta 30 segundos.</string>
+    <string name="creator_record_recording">Grabando… toca para parar.</string>
+    <string name="creator_record_start">Empezar a grabar</string>
+    <string name="creator_record_stop">Parar de grabar</string>
+    <string name="creator_record_time">%1$s / %2$s s</string>
+
+    <!-- Editor de clips -->
+    <string name="creator_clip_title">Recorta el sonido</string>
+    <string name="creator_clip_waveform">Forma de onda del sonido, con la parte que te quedas resaltada</string>
+    <string name="creator_clip_truncated">Este archivo dura más de 6 minutos: solo se ha abierto el principio.</string>
+    <string name="creator_clip_play_selection">Reproducir la parte que te quedas</string>
+    <string name="creator_clip_stop">Parar</string>
+    <string name="creator_clip_selection">%1$s s seleccionados</string>
+    <string name="creator_clip_from_to">De %1$s s a %2$s s</string>
+    <string name="creator_clip_zoom_in">Acercar la selección</string>
+    <string name="creator_clip_zoom_out">Ver todo el sonido</string>
+    <string name="creator_clip_too_short">Quédate con al menos 0,2 segundos.</string>
+    <string name="creator_clip_too_long">Los sonidos pueden durar hasta 30 segundos. Acorta la selección.</string>
+    <string name="creator_clip_maybe_too_long">Pasa de 30 segundos. Quizá baste con recortar el silencio; si no, acórtala.</string>
+    <string name="creator_clip_trim">Recortar silencio</string>
+    <string name="creator_clip_trim_hint">Quita las partes calladas del principio y del final.</string>
+    <string name="creator_clip_normalize">Igualar el volumen</string>
+    <string name="creator_clip_normalize_hint">Hace que todos los sonidos suenen más o menos igual de alto.</string>
+    <string name="creator_clip_save">Quedarme este sonido</string>
+    <string name="creator_clip_result_short">Tras recortar el silencio dura %1$s s, menos de 0,2 s. Quédate con un poco más.</string>
+    <string name="creator_clip_result_long">Tras recortar el silencio aún dura %1$s s, más de 30 s. Acórtalo.</string>
+    <string name="creator_clip_result_silent">Esta parte está en silencio. Elige la parte que tiene el sonido.</string>
+    <string name="creator_clip_result_failed">No se ha podido guardar el sonido. Vuelve a intentarlo o elige otro archivo.</string>
+
+    <!-- Trabajando -->
+    <string name="creator_busy_picture">Abriendo la imagen…</string>
+    <string name="creator_busy_saving_picture">Guardando la imagen…</string>
+    <string name="creator_busy_audio">Abriendo el sonido…</string>
+    <string name="creator_busy_copying">Guardando el pack…</string>
+
+    <!-- Terminar -->
+    <string name="creator_checking">Comprobando tu pack con las mismas reglas que usan todas las apps de Cucuto…</string>
+    <string name="creator_incomplete_title">Casi está</string>
+    <string name="creator_keep_editing">Seguir editando</string>
+    <string name="creator_problem_name">Ponle un nombre al pack.</string>
+    <string name="creator_problem_author">Añade tu nombre como autor.</string>
+    <string name="creator_problem_license">Elige quién puede usar el pack.</string>
+    <string name="creator_problem_no_characters">Añade al menos un personaje.</string>
+    <string name="creator_problem_too_many_characters">Un pack admite hasta 500 personajes.</string>
+    <string name="creator_problem_character_name">%1$s necesita un nombre.</string>
+    <string name="creator_problem_sprite">%1$s necesita una imagen.</string>
+    <string name="creator_problem_clips">%1$s necesita al menos un sonido.</string>
+    <string name="creator_problem_too_many_clips">%1$s tiene más de 200 sonidos.</string>
+    <string name="creator_problem_file">%1$s tiene un archivo de un tipo que los packs no admiten.</string>
+    <string name="creator_problem_cover_file">La portada es un archivo de un tipo que los packs no admiten.</string>
+    <string name="creator_invalid_title">El pack no ha superado las comprobaciones</string>
+    <string name="creator_ready_title">%1$s está listo</string>
+    <string name="creator_ready_summary">%1$s, %2$s, versión %3$s.</string>
+    <string name="creator_ready_body">Instálalo para empezar a dar estas voces a tus contactos, o guárdalo como archivo para compartirlo. Cualquiera con Cucuto puede abrirlo.</string>
+    <string name="creator_install">Instalar en Cucuto</string>
+    <string name="creator_installing">Instalando…</string>
+    <string name="creator_installed_line">Instalado. Asigna sus personajes desde Inicio. Cambia lo que quieras y vuelve a instalarlo para actualizarlo.</string>
+    <string name="creator_done">Hecho</string>
+    <string name="creator_export">Guardar como archivo</string>
+    <string name="creator_share">Compartir</string>
+    <string name="creator_share_title">Compartir el pack</string>
+    <string name="creator_file_name">Archivo: %1$s</string>
+
+    <!-- Mensajes -->
+    <string name="creator_message_installed">%1$s está instalado</string>
+    <string name="creator_message_exported">Pack guardado</string>
+    <string name="creator_message_export_failed">No se ha podido guardar el pack. Prueba en otro sitio.</string>
+    <string name="creator_message_install_failed">No se ha instalado: %1$s</string>
+    <string name="creator_message_picture_failed">No se ha podido abrir esa imagen. Prueba con otra.</string>
+    <string name="creator_message_audio_failed">No se ha podido abrir ese archivo como audio. Prueba con otro.</string>
+    <string name="creator_message_audio_too_large">Ese archivo pasa de 100 MB. Elige uno más pequeño.</string>
+    <string name="creator_message_mic_unavailable">El micrófono está ocupado o no está disponible.</string>
+    <string name="creator_message_mic_denied">Para grabar hace falta el micrófono. Puedes permitirlo en los ajustes de la app.</string>
+    <string name="creator_message_clip_saved">Sonido añadido</string>
+    <string name="creator_message_duplicated">Tu copia está lista para editar</string>
+    <string name="creator_message_duplicated_partly">Tu copia está lista. Los tonos de llamada y las imágenes animadas aún no se copian.</string>
+    <string name="creator_message_duplicate_failed">No se ha podido copiar ese pack.</string>
+</resources>
