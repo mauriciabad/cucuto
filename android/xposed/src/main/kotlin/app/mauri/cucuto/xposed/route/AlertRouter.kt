@@ -16,8 +16,22 @@ object Targets {
     /** The app itself, which posts the Diagnostics screen's test notification. */
     const val SELF_PACKAGE: String = "app.mauri.cucuto"
 
-    /** Channel of the test notification; nothing else from [SELF_PACKAGE] is touched. */
+    /** Channel of the test notification. Only this channel and [SIMULATE_CHANNEL] of [SELF_PACKAGE] are touched. */
     const val SELF_TEST_CHANNEL: String = "cucuto_self_test"
+
+    /**
+     * Channel of "Simulate message" (contact detail, #26): the app asks the module to play one chat's next alert on
+     * its own notification. The chat is named by [EXTRA_SIMULATE_PACKAGE] and [EXTRA_SIMULATE_KEY]. Only a
+     * notification that `system_server` attributes to [SELF_PACKAGE] is read, and only its own sound and vibration
+     * change, so no other app can trigger this or affect anyone else's notifications (ADR 0025).
+     */
+    const val SIMULATE_CHANNEL: String = "cucuto_simulate"
+
+    /** String extra of a simulate notification: the messenger package of the chat to simulate. */
+    const val EXTRA_SIMULATE_PACKAGE: String = "app.mauri.cucuto.simulate.package"
+
+    /** String extra of a simulate notification: the chat's conversation key, as stored in the routing table. */
+    const val EXTRA_SIMULATE_KEY: String = "app.mauri.cucuto.simulate.key"
 
     /**
      * Clip the provider synthesises for the self-test, used when the table names no mirrored copy
@@ -71,10 +85,23 @@ class AlertRouter(
         table: RoutingTable,
     ): Decision? {
         val pkg = snapshot.packageName
-        if (pkg == Targets.SELF_PACKAGE) return selfTest(snapshot, table)
+        if (pkg == Targets.SELF_PACKAGE) {
+            return when (snapshot.channelId) {
+                Targets.SELF_TEST_CHANNEL -> selfTest(snapshot, table)
+                Targets.SIMULATE_CHANNEL -> simulate(snapshot, table)
+                else -> null
+            }
+        }
         if (pkg !in Targets.MESSENGERS) return null
+        return route(pkg, ConversationKeys.identify(snapshot), table)
+    }
 
-        val identity = ConversationKeys.identify(snapshot)
+    /** The messenger path: [identity]'s keys against the table, drawing from the speaker's shuffle bag. */
+    private fun route(
+        pkg: String,
+        identity: ConversationIdentity,
+        table: RoutingTable,
+    ): Decision {
         if (!table.enabled) return Decision(Outcome.DISABLED, pkg, identity, detail = "global switch off")
         if (identity.keys.isEmpty()) return Decision(Outcome.NO_KEY, pkg, identity, detail = "no shortcut or title")
 
@@ -132,6 +159,32 @@ class AlertRouter(
     }
 
     /**
+     * "Simulate message": decides exactly as for a real alert of the named chat, with the same table and the same
+     * shuffle bag, so the simulated clip counts as played and the chat's next real message will not repeat it. The
+     * decision is reported under [Targets.SELF_PACKAGE], so the app never mistakes it for a real message.
+     */
+    private fun simulate(
+        snapshot: NotificationSnapshot,
+        table: RoutingTable,
+    ): Decision {
+        val target = snapshot.simulatePackage?.takeIf { it in Targets.MESSENGERS }
+        val key =
+            snapshot.simulateKey
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() && it.length <= ConversationKeys.MAX_KEY_LENGTH }
+        if (target == null || key == null) {
+            return Decision(Outcome.NO_KEY, Targets.SELF_PACKAGE, NO_IDENTITY, detail = SIMULATED_DETAIL)
+        }
+        val isGroup = table.route(target, key)?.isGroup ?: key.endsWith(ConversationKeys.GROUP_JID_SUFFIX)
+        val decision = route(target, ConversationIdentity(listOf(key), isGroup, null, null, null), table)
+        return decision.copy(
+            packageName = Targets.SELF_PACKAGE,
+            matchedKey = decision.matchedKey ?: key,
+            detail = listOfNotNull(SIMULATED_DETAIL, decision.detail).joinToString(", "),
+        )
+    }
+
+    /**
      * Why a per-sender group sounded the way it did, for the decision log and the device check (#20): whether the
      * alerting record carried a sender at all, and whether that sender has a voice. Constant strings: nothing is
      * allocated on the notification path. Null for everything that is not a per-sender group.
@@ -151,9 +204,8 @@ class AlertRouter(
     private fun selfTest(
         snapshot: NotificationSnapshot,
         table: RoutingTable,
-    ): Decision? {
-        if (snapshot.channelId != Targets.SELF_TEST_CHANNEL) return null
-        return Decision(
+    ): Decision =
+        Decision(
             outcome = Outcome.SWAPPED,
             packageName = snapshot.packageName,
             identity = ConversationIdentity(listOf(SELF_TEST_KEY), false, "Cucuto self-test", null, null),
@@ -162,10 +214,14 @@ class AlertRouter(
             haptic = Targets.SELF_TEST_HAPTIC,
             detail = "self-test",
         )
-    }
 
     companion object {
         const val SELF_TEST_KEY: String = "cucuto:self-test"
+
+        /** First word of every simulated decision's detail; the app recognises simulations by it. */
+        const val SIMULATED_DETAIL: String = "simulated"
+
+        private val NO_IDENTITY = ConversationIdentity(emptyList(), false, null, null, null)
 
         /** A per-sender group played its sender's own voice. */
         const val DETAIL_PER_SENDER: String = "per-sender"
