@@ -25,8 +25,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -35,9 +33,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,41 +54,77 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.mauri.cucuto.BuildConfig
 import app.mauri.cucuto.R
 import app.mauri.cucuto.navigation.CucutoDestination
-import app.mauri.cucuto.navigation.PreviewDestinations
-import app.mauri.cucuto.navigation.screenInfo
 import app.mauri.cucuto.ui.components.CuckooDoor
 import app.mauri.cucuto.ui.components.CuckooDoorStill
+import app.mauri.cucuto.ui.components.CucutoTopBar
 import app.mauri.cucuto.ui.components.ParticleBurst
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.FeedbackBeat
 import app.mauri.cucuto.ui.feedback.LocalFeedback
+import app.mauri.cucuto.ui.motion.SharedBounds
 import app.mauri.cucuto.ui.theme.CharacterAccentSeeds
 import app.mauri.cucuto.ui.theme.CharacterTheme
 import app.mauri.cucuto.ui.theme.CucutoTheme
 
 /**
- * Status (#24): one card that turns green when everything works (module active in `system_server`, LSPosed scope,
- * WhatsApp, a pack), with a one-tap fix or a clear instruction under each failing check. Turning green fires
- * `Feedback.Success` and pops the cuckoo door open with a particle burst, all from the same beat.
+ * Settings → Setup (#24, #153): the status card that turns green when everything works (module active in
+ * `system_server`, LSPosed scope, WhatsApp, a pack), with a one-tap fix or a clear instruction under each failing
+ * check, plus the setup guide and Diagnostics. Until the card is green for the first time it also sits on top of Home
+ * ([SetupCardSection]). Turning green fires `Feedback.Success` and pops the cuckoo door open with a particle burst,
+ * all from the same beat.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatusScreen(
+fun SetupScreen(
     onNavigate: (CucutoDestination) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StatusViewModel = hiltViewModel(),
 ) {
+    val setup = rememberSetupCardState(viewModel, onNavigate)
+    SetupContent(
+        report = setup.report,
+        beat = setup.beat,
+        selfTest = setup.selfTest,
+        onAction = setup.onAction,
+        onNavigate = onNavigate,
+        onBack = onBack,
+        modifier = modifier,
+    )
+}
+
+/** What the status card needs, wired to [viewModel]: live checks, the celebration beat and the one-tap fixes. */
+@Stable
+class SetupCardState(
+    val report: StatusReport?,
+    val beat: FeedbackBeat?,
+    val selfTest: SelfTestMessage,
+    val onAction: (CheckAction) -> Unit,
+)
+
+/**
+ * Collects [viewModel] for a status card: re-checks on every resume (scope and installed apps change in other apps),
+ * fires `Feedback.Success` when the card turns green, and handles the fixes (posting the self-test asks for the
+ * notification permission first; Diagnostics and importing a pack navigate).
+ */
+@Composable
+fun rememberSetupCardState(
+    viewModel: StatusViewModel,
+    onNavigate: (CucutoDestination) -> Unit,
+    onCelebrate: () -> Unit = {},
+): SetupCardState {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val selfTest by viewModel.selfTest.collectAsStateWithLifecycle()
     val feedback = LocalFeedback.current
     var beat by remember { mutableStateOf<FeedbackBeat?>(null) }
+    val celebrate by rememberUpdatedState(onCelebrate)
     LaunchedEffect(viewModel, feedback) {
-        viewModel.celebrations.collect { beat = feedback.fire(Feedback.Success) }
+        viewModel.celebrations.collect {
+            beat = feedback.fire(Feedback.Success)
+            celebrate()
+        }
     }
-    // Scope and installed apps change in other apps (LSPosed, the Play Store): re-check whenever Cucuto comes back.
     LifecycleResumeEffect(viewModel) {
         viewModel.refresh()
         onPauseOrDispose {}
@@ -104,24 +140,21 @@ fun StatusScreen(
                 else -> Unit
             }
         }
-    StatusContent(
-        report = state.report,
-        beat = beat,
-        selfTest = selfTest,
-        onAction = onAction,
-        onNavigate = onNavigate,
-        modifier = modifier,
-    )
+    return SetupCardState(state.report, beat, selfTest, onAction)
 }
+
+/** Key of the status card in shared-element transitions: Home's setup card grows into the Setup screen's. */
+data object SetupCardKey
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StatusContent(
+private fun SetupContent(
     report: StatusReport?,
     beat: FeedbackBeat?,
     selfTest: SelfTestMessage,
     onAction: (CheckAction) -> Unit,
     onNavigate: (CucutoDestination) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -129,10 +162,10 @@ private fun StatusContent(
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
-                subtitle = { Text(stringResource(R.string.status_title)) },
+            CucutoTopBar(
+                title = stringResource(R.string.screen_setup),
                 scrollBehavior = scrollBehavior,
+                onBack = onBack,
             )
         },
     ) { innerPadding ->
@@ -147,15 +180,16 @@ private fun StatusContent(
                 ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { StatusCard(report, beat, selfTest, onAction) }
-            item { ScreenButtons(onNavigate) }
-            item { SectionHeader(R.string.status_screens_header) }
-            item { ScreenLinks(onNavigate) }
+            item { SharedBounds(SetupCardKey) { StatusCard(report, beat, selfTest, onAction) } }
+            item { SetupButtons(onNavigate) }
         }
     }
 }
 
-/** The card: brand colors while something is missing, cross-fading to the leaf character's green when ready. */
+/**
+ * The card: brand colors while something is missing, cross-fading to the leaf character's green when ready.
+ * [compact] (Home) lists only the checks that still need the user, and leaves packs to Home's own first-run prompt.
+ */
 @Composable
 fun StatusCard(
     report: StatusReport?,
@@ -163,6 +197,7 @@ fun StatusCard(
     selfTest: SelfTestMessage,
     onAction: (CheckAction) -> Unit,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
     val ready = report?.allPassed == true
     CharacterTheme(seed = if (ready) CharacterAccentSeeds.Leaf else null) {
@@ -181,7 +216,9 @@ fun StatusCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     StatusHero(report, ready, beat)
-                    checkRows(report).forEach { CheckRow(it, onAction) }
+                    val rows = checkRows(report)
+                    val shown = if (compact) rows.dropLast(1).filter { it.outcome != CheckOutcome.Pass } else rows
+                    shown.forEach { CheckRow(it, onAction) }
                     SelfTestText(selfTest)
                 }
                 ParticleBurst(beat, Modifier.matchParentSize())
@@ -334,59 +371,16 @@ fun SelfTestText(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ScreenButtons(onNavigate: (CucutoDestination) -> Unit) {
+private fun SetupButtons(onNavigate: (CucutoDestination) -> Unit) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FilledTonalButton(onClick = { onNavigate(CucutoDestination.Diagnostics) }, shapes = ButtonDefaults.shapes()) {
-            Text(stringResource(R.string.screen_diagnostics))
-        }
-        OutlinedButton(onClick = { onNavigate(CucutoDestination.Onboarding) }, shapes = ButtonDefaults.shapes()) {
+        FilledTonalButton(onClick = { onNavigate(CucutoDestination.Onboarding) }, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.status_setup_guide))
         }
-        if (BuildConfig.DEBUG) {
-            OutlinedButton(onClick = { onNavigate(CucutoDestination.Gallery) }, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.screen_gallery))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SectionHeader(
-    @StringRes text: Int,
-) {
-    Text(
-        text = stringResource(text),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier =
-            Modifier
-                .padding(start = 8.dp, top = 12.dp)
-                .semantics { heading() },
-    )
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ScreenLinks(onNavigate: (CucutoDestination) -> Unit) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        PreviewDestinations.forEach { destination ->
-            val info = destination.screenInfo() ?: return@forEach
-            FilledTonalButton(
-                onClick = { onNavigate(destination) },
-                shapes = ButtonDefaults.shapes(),
-                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-            ) {
-                Icon(info.icon, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text(stringResource(info.title))
-            }
+        OutlinedButton(onClick = { onNavigate(CucutoDestination.Diagnostics) }, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.screen_diagnostics))
         }
     }
 }
@@ -414,16 +408,16 @@ private val PreviewReady =
 
 @Preview(showBackground = true, heightDp = 1400)
 @Composable
-private fun StatusNotReadyPreview() {
+private fun SetupNotReadyPreview() {
     CucutoTheme(dynamicColor = false) {
-        StatusContent(PreviewNotReady, beat = null, SelfTestMessage.None, onAction = {}, onNavigate = {})
+        SetupContent(PreviewNotReady, beat = null, SelfTestMessage.None, onAction = {}, onNavigate = {}, onBack = {})
     }
 }
 
 @Preview(showBackground = true, heightDp = 1200)
 @Composable
-private fun StatusReadyPreview() {
+private fun SetupReadyPreview() {
     CucutoTheme(dynamicColor = false) {
-        StatusContent(PreviewReady, beat = null, SelfTestMessage.None, onAction = {}, onNavigate = {})
+        SetupContent(PreviewReady, beat = null, SelfTestMessage.None, onAction = {}, onNavigate = {}, onBack = {})
     }
 }

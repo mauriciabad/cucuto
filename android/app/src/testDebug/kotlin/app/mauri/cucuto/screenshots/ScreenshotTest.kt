@@ -50,7 +50,7 @@ import kotlin.math.roundToInt
  * ```kotlin
  * class PacksScreenshotTest(variant: Variant) : ScreenshotTest(variant) {
  *     @Test
- *     fun packs() = screenshot("packs") { PacksContent(state = …, onBack = {}, …) }
+ *     fun packs() = screenshot("packs") { PacksContent(state = …, onDiscover = {}, …) }
  * }
  * ```
  *
@@ -66,8 +66,8 @@ import kotlin.math.roundToInt
  *   position) to `fastlane/metadata/android/<en-US|es-ES>/images/phoneScreenshots/`, light theme, full resolution
  *   (ADR 0046). F-Droid, IzzyOnDroid and Obtainium show them in that order.
  *
- * Screens still to cover, one subclass each, as soon as they are on `main`:
- * - TODO(#153): the app shell (navigation bar with Home, Packs, Discover and Settings) around Home.
+ * Tab roots (Home, Packs, Settings) are captured inside the app shell with [InShell], so the navigation bar shows;
+ * [ShellScreenshotTest] covers the first-run journey on Home (#153).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
