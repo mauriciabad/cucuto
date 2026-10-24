@@ -35,7 +35,7 @@
 	{#if !data.appRelease}
 		<p class="callout">
 			<Icon name="info" />
-			<span><Html text={t.preReleaseHtml} /></span>
+			<span><Html text={t.releaseFallbackHtml} /></span>
 		</p>
 	{/if}
 

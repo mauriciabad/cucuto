@@ -37,11 +37,11 @@ export const es: Messages = {
 	},
 	download: {
 		button: 'Descargar APK',
-		comingSoon: 'APK muy pronto',
+		fallbackButton: 'Descargar de GitHub',
 		metaHtml:
 			'Versión {version} · {size} · <a href="{notes}" rel="external">notas de la versión</a>',
-		soonHtml:
-			'Cucuto está en desarrollo y la primera versión está en camino. Síguela en la <a href="{releases}" rel="external">página de versiones</a>.'
+		fallbackHtml:
+			'Descarga el último APK desde la <a href="{releases}" rel="external">página de versiones</a>.'
 	},
 	clock: {
 		replay: 'Volver a reproducir la animación del reloj de cuco',
@@ -306,8 +306,8 @@ export const es: Messages = {
 		description:
 			'Instala Cucuto en un móvil con Android 17 y root: APK, módulo de LSPosed con ámbito System Framework, reinicio y comprobaciones de estado.',
 		lead: 'Cinco pasos, unos cinco minutos. Necesitas Android 17, root y LSPosed con libxposed API 102 ya funcionando en tu móvil.',
-		preReleaseHtml:
-			'<strong>Cucuto aún no ha publicado su primera versión.</strong> Esta guía describe la instalación de la versión 1. El botón de descarga aparecerá aquí en cuanto salga; síguela en la <a href="{releases}" rel="external">página de versiones</a>.',
+		releaseFallbackHtml:
+			'Descarga el último APK desde la <a href="{releases}" rel="external">página de versiones</a> de GitHub.',
 		beforeTitle: 'Antes de empezar',
 		before: iconItems([
 			{

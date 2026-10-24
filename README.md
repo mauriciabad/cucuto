@@ -1,10 +1,22 @@
 <p align="center"><img src="brand/logo/cucuto-logo.svg" alt="cucuto" width="320"></p>
 
+<p align="center"><b>Give each contact a voice.</b></p>
+
+<p align="center">
+  <a href="https://cucuto.mauri.app"><img src="https://img.shields.io/badge/Website-cucuto.mauri.app-A33700?style=for-the-badge" alt="Website: cucuto.mauri.app"></a>
+  <a href="https://github.com/mauriciabad/cucuto/releases/latest"><img src="https://img.shields.io/github/v/release/mauriciabad/cucuto?style=for-the-badge&label=Download%20APK&color=FF6B2C" alt="Download the latest APK"></a>
+</p>
+
+<p align="center">
+  <b><a href="https://cucuto.mauri.app">cucuto.mauri.app</a></b>: the install guide, free demo packs and the pack creator.<br>
+  F-Droid: coming soon (submitted, waiting for review).
+</p>
+
 # Cucuto
 
 [![ci](https://github.com/mauriciabad/cucuto/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mauriciabad/cucuto/actions/workflows/ci.yml)
 
-**Give each contact a voice.** Cucuto (koo-KOO-toe, from Catalan *cucut*, cuckoo) is an open-source Android 17 app that
+Cucuto (koo-KOO-toe, from Catalan *cucut*, cuckoo) is an open-source Android 17 app that
 plays a random clip from the character you assigned to a contact whenever they message you on WhatsApp or Signal (and
 Molly), with that character's own vibration. One voice per person covers both apps. Like a cuckoo clock, it announces who's there.
 
@@ -25,13 +37,24 @@ Molly), with that character's own vibration. One voice per person covers both ap
 > Cucuto needs **Android 17, root and LSPosed (libxposed API 102)**. It runs as a tiny module inside `system_server` and
 > never touches the WhatsApp or Signal process. No content ships with the app; you are responsible for the packs you import.
 
-<!-- Screenshot slot: app screenshots made from the demo packs go here (#41). -->
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1-home.png" alt="Home: chats and recent senders" width="150">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2-picker.png" alt="Picking a character" width="150">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3-contact-detail.png" alt="A contact with its voice and ringtone" width="150">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4-packs.png" alt="Installed packs" width="150">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5-discover.png" alt="Discover packs from repositories" width="150">
+</p>
 
-Cucuto is an early test version: see the [changelog](CHANGELOG.md) for what each release brings. The website is [cucuto.mauri.app](https://cucuto.mauri.app).
+<p align="center">
+  <a href="https://cucuto.mauri.app/#video-title"><img src="web/src/lib/assets/images/explainer-poster.png" alt="Watch the explainer video on cucuto.mauri.app" width="640"></a><br>
+  <a href="https://cucuto.mauri.app/#video-title">Watch the explainer video</a> (or <a href="https://cucuto.mauri.app/video/explainer.mp4">download the MP4</a>)
+</p>
+
+What each release brings: [changelog](CHANGELOG.md).
 
 ## Install
 
-1. Install the APK from [GitHub Releases](https://github.com/mauriciabad/cucuto/releases).
+1. Install the APK from the [latest release](https://github.com/mauriciabad/cucuto/releases/latest) or the [website](https://cucuto.mauri.app/install/).
 2. In the LSPosed manager, enable **Cucuto** with the **System Framework** scope only.
 3. Reboot.
 4. Open Cucuto: the setup guide and the status card check that everything works.

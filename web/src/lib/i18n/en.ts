@@ -62,10 +62,10 @@ export const en = {
 	},
 	download: {
 		button: 'Download APK',
-		comingSoon: 'APK coming soon',
+		fallbackButton: 'Download from GitHub',
 		metaHtml: 'Version {version} · {size} · <a href="{notes}" rel="external">release notes</a>',
-		soonHtml:
-			'Cucuto is in development and the first release is on its way. Follow the <a href="{releases}" rel="external">releases page</a>.'
+		fallbackHtml:
+			'Get the latest APK from the <a href="{releases}" rel="external">releases page</a>.'
 	},
 	clock: {
 		replay: 'Play the cuckoo clock animation again',
@@ -330,8 +330,8 @@ export const en = {
 		description:
 			'Install Cucuto on a rooted Android 17 phone: APK, LSPosed module with System Framework scope, reboot, status checks.',
 		lead: 'Five steps, about five minutes. You need Android 17, root and LSPosed with libxposed API 102 already working on your phone.',
-		preReleaseHtml:
-			'<strong>Cucuto hasn’t had its first release yet.</strong> This guide describes setting up version 1. The download button appears here as soon as it’s out; follow the <a href="{releases}" rel="external">releases page</a>.',
+		releaseFallbackHtml:
+			'Download the latest APK from the <a href="{releases}" rel="external">releases page</a> on GitHub.',
 		beforeTitle: 'Before you start',
 		before: iconItems([
 			{

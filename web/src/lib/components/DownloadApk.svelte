@@ -1,6 +1,6 @@
 <!--
 	The "Download APK" button: the APK asset of the latest app release (version and size from the GitHub Releases
-	API at build time), or "coming soon" with a link to the releases page before the first release.
+	API at build time), or a link to the releases page when the API gave no release at build time.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
@@ -24,7 +24,7 @@
 {:else}
 	<a class="button" href={RELEASES_URL} rel="external">
 		<Icon name="download" />
-		{t.comingSoon}
+		{t.fallbackButton}
 	</a>
 {/if}
 
@@ -39,7 +39,7 @@
 			}}
 		/>
 	{:else}
-		<Html text={t.soonHtml} />
+		<Html text={t.fallbackHtml} />
 	{/if}
 </p>
 
