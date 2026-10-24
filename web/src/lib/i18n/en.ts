@@ -511,8 +511,12 @@ export const en = {
 		networkHtml:
 			'Only to reach the pack repositories in your list (this site’s is there by default): to show their packs, check for updates and download the packs you choose. Downloads may come from the repository’s own host, such as GitHub for this site’s packs. If a private repository needs a password or token, it is stored encrypted with the Android Keystore and only ever sent to that repository’s own server.',
 		backupTitle: 'Backups',
-		backupHtml:
-			'Android’s cloud backup and device-to-device transfer are turned off for Cucuto, so nothing is copied to Google. A Cucuto backup file, saved wherever you choose, is planned.',
+		backup: [
+			'Cucuto can save its own backup file, so a new phone gets everything back. It holds the chats Cucuto knows (names, phone numbers, WhatsApp’s chat IDs and the contact each one is linked to), their voices and phone ringtones, the voices switch, your repository list and which packs you use, and the pack files themselves unless you leave them out.',
+			'Never in a backup: your day-and-night location, and repository passwords or tokens, unless you add them to a backup you lock with a password of your own. Then the whole file is encrypted. Automatic backups are never encrypted, so they never hold passwords.',
+			'Backups go only where you choose: a file you save by hand, or a folder or file you pick for automatic backups. If you pick Google Drive, the Drive app uploads the file; Cucuto itself never uploads anything.',
+			'Android’s own cloud backup and device-to-device transfer are turned off for Cucuto, so nothing is copied to Google that way.'
+		],
 		permissionsTitle: 'Permissions',
 		permissions: [
 			'<strong>Internet</strong>: for the pack repositories above.',
