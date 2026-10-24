@@ -61,7 +61,7 @@ export const es: Messages = {
 		video: {
 			soonBadge: 'Próximamente',
 			posterAlt:
-				'Ilustración: un móvil muestra el selector de personajes de Cucuto, donde se asigna la rana Bleep entre una lluvia de confeti. Al lado, el reloj de cuco canta y tres chats tienen cada uno su personaje.',
+				'Ilustración: un móvil muestra el selector de personajes de Cucuto, «Voice for Ada», donde se asigna la rana Bleep entre una lluvia de confeti, sobre Tweet, Mew, Bzz, Bong, Ting, Swish y Tootle.',
 			label: 'Vídeo explicativo de Cucuto',
 			play: 'Reproducir el vídeo',
 			unsupported:

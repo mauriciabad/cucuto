@@ -13,7 +13,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
-	import poster from '#lib/assets/images/explainer-poster.svg?picture';
+	import poster from '#lib/assets/images/explainer-poster.png?picture';
 	import Icon from '#lib/components/Icon.svelte';
 	import Picture from '#lib/components/Picture.svelte';
 	import { messages, type Locale } from '#lib/i18n/index.js';

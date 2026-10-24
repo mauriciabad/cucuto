@@ -69,6 +69,17 @@ test.describe('explainer video player', () => {
 		await expect(video.locator('track[srclang="en"]')).toHaveAttribute('default', '');
 		await expect(slot.getByText('Read the transcript')).toBeVisible();
 	});
+
+	test('plays the English cut with Spanish captions on /es/', async ({ page }) => {
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await page.goto('/es/');
+		const slot = section(page);
+		await slot.getByRole('button', { name: 'Reproducir el vídeo' }).click();
+		const video = slot.locator('video');
+		await expect(video.locator('source').first()).toHaveAttribute('src', '/video/explainer.webm');
+		await expect(video.locator('track[srclang="es"]')).toHaveAttribute('default', '');
+		await expect(slot.getByText('Leer la transcripción')).toBeVisible();
+	});
 });
 
 test('serves the draft captions as WebVTT', async ({ request }) => {

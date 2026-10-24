@@ -1,6 +1,7 @@
 # 0070. Explainer video: an illustrated, AI-voiced project in `android/video`
 
-- Status: accepted; supersedes the screen recording part of [ADR 0060](0060-explainer-video-draft-pipeline.md)
+- Status: accepted; supersedes the screen recording part of [ADR 0060](0060-explainer-video-draft-pipeline.md);
+  amended 2026-10-24 by the owner's answer on #302 ([Published](#published-2026-10-24-302))
 - Date: 2026-10-24
 - Issues: #271 (this work), #194 (owner's answer), #195 and #260 (the draft pipeline it replaces), #42 and
   [ADR 0042](0042-explainer-video-and-slot.md) (brief and the website's slot), #278 (docs updated for #194)
@@ -134,11 +135,11 @@ English and Spanish SDH captions come from the timeline. `tools/video/explainer.
 and the brief's `explainer.webm` (SVT-AV1 + Opus), `explainer.mp4` (H.264 + AAC), `explainer-poster.png` (00:32.8)
 and a review MP4 with both caption tracks. **One English cut**: the Spanish cut and `-Pexplainer.languages` are gone.
 
-The manual `explainer-video` workflow renders, speaks, mixes and uploads the files as an artifact. Nothing is
-committed. The flat illustrations compress well: about 2.4 MB for the WebM and 3.9 MB for the MP4, far under the
+The manual `explainer-video` workflow renders, speaks, mixes and uploads the files as an artifact. The workflow
+commits nothing; an approved cut is published by hand (see [Published](#published-2026-10-24-302)). The flat illustrations compress well: about 2.4 MB for the WebM and 3.9 MB for the MP4, far under the
 brief's 10 and 16 MB budgets.
 
-### The website keeps "coming soon" for now
+### ~~The website keeps "coming soon" for now~~ (superseded: see [Published](#published-2026-10-24-302))
 
 #271 leaves publishing out of scope ("a separate decision once a cut with voice exists"). The video is now a full
 cut with an AI voice, and its pictures look finished. But no human has watched it or heard the voice yet: this agent
@@ -157,3 +158,42 @@ files (`explainer.webm`, `explainer.mp4`, the poster) into the site, as ADR 0042
 - The voice depends on two pinned downloads (about 370 MB, cached). A new Kokoro or sherpa-onnx release only
   changes the voice when someone updates the pins and the digests.
 - The app keeps `FeedbackController`'s injectable clock from ADR 0060. It's harmless, and tests can still step beats.
+
+## Published (2026-10-24, #302)
+
+The owner watched the workflow's artifact and answered (verbatim in [`docs/owner-log.md`](../owner-log.md)):
+
+> the video is ready to be published it is a moment
+
+**How the site serves it: the files are committed as website assets**, as ADR 0042 planned. They come unchanged
+from the artifact of run [40092869144](https://github.com/mauriciabad/cucuto/actions/runs/40092869144) (commit
+`3b426cd`), the cut the owner watched. Nothing that shapes the picture, voice, sounds or captions has changed since,
+so no re-render was needed.
+
+| File | Size |
+| --- | --- |
+| `web/static/video/explainer.webm` (AV1 + Opus) | 2.3 MB |
+| `web/static/video/explainer.mp4` (H.264 + AAC) | 4.0 MB |
+| `web/src/lib/assets/images/explainer-poster.png` (00:32.8; `?picture` encodes it to JPEG XL, AVIF and PNG) | 0.15 MB |
+
+The site finds the cut at build time and swaps "coming soon" for the player, the captions and the transcript. The
+illustrated `explainer-poster.svg` stand-in is deleted. The player itself is unchanged (ADR 0042): no `<video>`
+element and no video bytes until it plays; a muted preview with captions only when it is half in view and the viewer
+allows motion and doesn't save data; sound only after the play button; `/es/` with Spanish captions on; and the
+service worker never caches `/video/`.
+
+Why not the alternatives:
+
+- **A release asset that the site build downloads**: the build would depend on the network and on a release
+  existing, and one checkout could no longer reproduce the site. It saves about 6 MB of history once, not per
+  visitor.
+- **A link to the workflow artifact**: artifacts expire after 30 days and need a GitHub login.
+- **Large file storage**: GitHub Pages and every CI checkout would need it for 6 MB.
+
+The media guard stays meaningful: `web/static/` was already on its allowlist for site assets, and the video is
+made from the project's own material (illustrations from `brand/` and the CC0 demo packs, CC0 sounds, a Kokoro
+voice whose output has no licence conditions). The allowlist didn't change, so a stray video anywhere else in the
+repository still fails CI.
+
+Cost: about 6.3 MB of history per published cut (ADR 0042 expected 25 MB). Republish only a cut someone has watched
+and approved, not every run; [`docs/explainer-video.md`](../explainer-video.md#publishing) has the steps.
