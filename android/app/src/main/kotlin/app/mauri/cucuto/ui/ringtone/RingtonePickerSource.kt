@@ -38,6 +38,9 @@ data class RingtoneVariantItem(
     val file: String get() = variant.file
 
     val label: String get() = variant.label ?: variant.file.substringAfterLast('/').substringBeforeLast('.')
+
+    /** What a preview rings: the file with the loop and fade-in its ring file gets (#242). */
+    fun sound(): RingSound? = audio?.let { RingSound(it, variant.loop, variant.fadeInMs) }
 }
 
 /** A character with ringtones: an album cover in the picker. */
@@ -75,10 +78,15 @@ data class RingtonePickerData(
 interface RingtonePickerSource {
     fun observe(chat: ChatKey): Flow<RingtonePickerData>
 
-    /** Stores [contactId]'s choice: [voice] null follows the message character. */
+    /**
+     * Stores [chat]'s choice (ADR 0063): [character] null rings with the message character; [followsVoice] says whether
+     * it keeps following the voice (false: the user's own pick). A chat without a contact ([contactId] null) gets one.
+     */
     suspend fun save(
-        contactId: Long,
-        voice: ChatVoice?,
+        chat: ChatKey,
+        contactId: Long?,
+        character: ChatVoice?,
+        followsVoice: Boolean,
         mode: RingtoneMode,
         variant: String?,
     )
@@ -130,11 +138,16 @@ class AppRingtonePickerSource
                 }.flowOn(Dispatchers.IO)
 
         override suspend fun save(
-            contactId: Long,
-            voice: ChatVoice?,
+            chat: ChatKey,
+            contactId: Long?,
+            character: ChatVoice?,
+            followsVoice: Boolean,
             mode: RingtoneMode,
             variant: String?,
-        ) = ringtones.choose(contactId, voice?.packId, voice?.characterId, mode, variant)
+        ) {
+            val id = contactId ?: chats.ensureContact(chat)
+            ringtones.choose(id, character?.packId, character?.characterId, mode, variant, followsVoice)
+        }
 
         override fun canReadPhoneState(): Boolean = ringtones.canReadPhoneState()
     }

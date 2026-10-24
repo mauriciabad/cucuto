@@ -1,1 +1,1 @@
-A voice for each WhatsApp contact: their own sound and vibration. Needs root.
+A voice for each contact: their own sound and vibration in WhatsApp. Needs root.

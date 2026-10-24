@@ -167,8 +167,11 @@ Importer rules for bundles:
 | `ringtones` | see note | up to 50 ringtones | Call ringtones and their variants. |
 | `haptic` | no | haptic | Default `{ "mode": "auto" }`. |
 
-A character needs at least one clip or one ringtone. A character with only ringtones (a song) is valid; apps then
-cut a notification clip from it only if the user asks.
+A character needs at least one clip or one ringtone. A character with only clips (a creature) or only ringtones (a
+song) is valid, and most packs hold just one kind. Apps offer a character for messages only when it has clips, and
+for calls only when it has ringtones; a contact's message character and ringtone character are chosen separately, so
+a clip-only character's contacts take their ringtone from another pack ([ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
+Apps cut a notification clip from a song-only character only if the user asks.
 
 ### Clips
 
@@ -547,7 +550,8 @@ it; see [the repository schema](../spec/repository.schema.json).
       "license": "CC0-1.0",
       "cover": "previews/app.mauri.demo.chiptune-critters/cover.svg",
       "characters": [
-        { "id": "frog", "name": "Bleep the frog", "sprite": "previews/app.mauri.demo.chiptune-critters/frog.svg", "sample": "previews/app.mauri.demo.chiptune-critters/frog-sample.ogg", "seedColor": "#4CAF50" }
+        { "id": "frog", "name": "Bleep the frog", "sprite": "previews/app.mauri.demo.chiptune-critters/frog.svg", "sample": "previews/app.mauri.demo.chiptune-critters/frog-sample.ogg", "seedColor": "#4CAF50",
+          "x-haptic": { "mode": "custom", "events": [{ "at": 0, "preset": "CLICK", "scale": 0.9 }, { "at": 200, "preset": "CLICK", "scale": 0.7 }] } }
       ],
       "sizeUnpacked": 180533,
       "download": { "url": "packs/app.mauri.demo.chiptune-critters-1.0.0.soundpack.zip", "size": 171458, "sha256": "8d63…" }
@@ -575,6 +579,14 @@ Rules:
   Redirects are capped, and credentials are never sent to a different host than the repository's.
 - **Previews** are small files (covers, sprites and one short sample clip per character) so browsing stays fast. They
   follow the same media rules as pack files.
+- **Haptic previews.** A character preview may carry `x-haptic`, the character's [`haptic`](#haptics) object from
+  `pack.json` as is, so apps can play the vibration with the sample. `packer index` writes it for every character with
+  a sample: the pattern for `custom`, `{ "mode": "none" }`, and `{ "mode": "auto" }` when the pack uses auto (explicit
+  or by default). For `auto`, apps compute the envelope from the sample clip (the character's first clip) as they would
+  at install, so the index carries no envelopes. Absent means unknown, not auto: apps play the sample without
+  vibration. The `x-` name is deliberate. Apps released before it validate indexes strictly and accept only `x-` keys
+  beyond the known fields, so they keep reading indexes that have it. The schema checks its shape; the [timeline rules](#haptics)
+  are checked when the pack is imported ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 
 ## Backups
 
@@ -609,8 +621,10 @@ authority: readers detect the type from the contents.
   numbers in E.164, the linked Android contact lookup key, group policy, the message assignment (pack ID, character
   ID, disabled clip paths, haptic override) and the phone ringtone (pack ID, character ID, variant rule).
   Contact IDs are unique within a backup (`DUPLICATE_ID`).
-  - `ringtone.followsVoice: true` means the ringtone follows the message character. Its pack and character IDs still
-    name the voice's character at backup time, for readers that ignore the flag.
+  - The message character and the ringtone character are independent; a contact can have either one, or both.
+  - `ringtone.followsVoice: true` means the ringtone follows the message character whenever that character has
+    ringtones. Its pack and character IDs name the character that rang at backup time: the voice's, or the one it
+    kept while the voice had no ringtones ([ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
   - `ringtone.undo` is device-local: the Android contact's own ringtone before Cucuto (`originalRingtone`, absent for
     the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
     contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later

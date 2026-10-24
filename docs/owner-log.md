@@ -377,3 +377,36 @@ open yet). The other defaults stand. The two later defaults from #266 on that is
 > testing sounds and pictures is taking more than i would expect. but dont fix it asap
 
 (Filed as roadmap issue #279. The speedups from #269 and #277 ship in v0.1.7.)
+
+> in the kk pack the radio should be the default.
+>
+> i should be able to view the pack'rules and to edit if i want
+> and when picking a character there should be some kind of folding on the packs because there are soo many that it is hard to get to the one i want. and i would also like a button to pick (select) a random sound from a pack, and a random from every pack
+
+(The private K.K. pack was rebuilt with Radio as the default, version 1.2.0, outside the repo. The app items went into the roadmap as issues: #288 view and edit the pack's rules (M9), #289 fold packs in the pickers (M3), #290 random character from a pack or from every pack (M3).)
+
+> how can i set characters or ringtones to people that hasnt messaged me yet?
+
+(Not possible yet; the lead explained the two options in #254.)
+
+> contacts
+
+(Owner answer on #254: ADR 0065's contacts-based option is accepted, and Cucuto never reads WhatsApp's files. Implementation is #292 in M2.)
+
+> Remove the live versions from the kk pack, i wont use them
+
+(The private K.K. pack is rebuilt as version 1.3.0 with only the Radio versions, outside the repo. The 3 hidden songs keep their only take.)
+
+> delete them. just keep the latest version of each pack
+
+(Old K.K. zips and a duplicate demo zip were removed from the phone's Download folder; one file per pack remains.)
+
+> but in the app when i chose a voice for a notification sound i still see the kk songs. i dont want that. they are only ringtones. i think this flow has to be revisited because the usual will be that a pack is either notifications or ringtones, it will be rare that a character has both to select only once. mos of the times user needs to pick the notification and then the ringtone (this also includes not using the pack ringtone and using the default android one. or also just picking a ringtone). and would be nice to also see the ringtone in the header part of the person chat details (and in the home list)
+
+(Seen on v0.1.7. #281, merged and shipping in v0.1.8, removes ringtone-only characters from the voice picker and separates the two rows. The rest went into the roadmap as #298 (M9): two picks as the main flow, "Android default" and "no change" ringtone options, and the ringtone shown in the contact header and the Home list.)
+
+## 2026-10-24: final boost before agents become sporadic
+
+> we should be towards the end of development, please do a boost to finish important stuff. now i have many agents working, but tomorrow i wont have any, only sporadic ones from time to time to do small features. if this is not feasable to finish let me know
+
+(The lead started the roadmap items that can finish without the owner in parallel: the sound flow rethink #298, pack rules #288, import speed #279, the review sample chat #285, the remaining Drive backup work #163, a handoff guide for sporadic agents, and fixes for the open PRs. Work that needs the owner's phone, a second phone or the Play account can't finish without them; the lead listed it in the reply.)

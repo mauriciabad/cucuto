@@ -7,7 +7,7 @@ Oct 23, 2026 · @Mauri
 Build **Cucuto** (koo-KOO-toe), an open-source Android 17 app that gives each contact a voice. The name comes from *cucut*, Catalan for cuckoo: like a cuckoo clock, it announces who's there. When a contact messages, the phone plays a random clip from the character assigned to them and fires that character's custom vibration; when they call, their ringtone plays. Write the name as "Cucuto" in prose (owner update 2026-10-23; originally lowercase); identifiers stay lowercase. Identifiers: GitHub repo `cucuto`, application ID `app.mauri.cucuto`, website `cucuto.mauri.app` (the owner points DNS there once the repo exists).
 
 - **Content comes from sound packs, never from the code.** The app ships empty. Users import pack files, or browse and download them from pack repositories. Anyone can build and share packs of anything: animals, game SFX, a friend's voice, a game's songs.
-- **Notifications and ringtones.** The same packs can carry message sounds and call ringtones. A contact can get a K.K. Slider song with its album art as ringtone, Pikachu's cries for messages, or both from one character. Ringtones can have variants (day, night, seasons, sped-up, radio) of the same song, picked by rules.
+- **Notifications and ringtones.** The same packs can carry message sounds and call ringtones. A contact can get a K.K. Slider song with its album art as ringtone, Pikachu's cries for messages, or both from one character. The message character and the ringtone character are separate choices, and most packs offer only one of the two (owner update 2026-10-24 (#245), [ADR 0063](decisions/0063-independent-voice-and-ringtone.md)). Ringtones can have variants (day, night, seasons, sped-up, radio) of the same song, picked by rules.
 - **Anyone can make packs.** A pack creator in the app and in the website (an installable PWA) lets people build packs without tools: pick images, record or import clips and songs, trim them, set haptics, export.
 - **Packs travel alone or bundled.** One file can hold a single pack or a bundle of several.
 - **Pack repositories.** Users add a repository URL (a static website, a cloud folder, optionally password-protected), browse its packs, preview them, and download the ones they like. The project website is the default repository.
@@ -187,7 +187,7 @@ Packs can carry call ringtones too, so a contact gets one look and sound across 
 - **Variants** are ringtone entries of the same song: day and night versions, seasons, sped-up, underwater, "action", live versus radio. Each entry has free `tags` and an optional `when` condition (`time`: day, night or an hour range; `season`; `weekday`). Day and night follow local sunrise and sunset, computed on the phone for a place the user sets (a city, coordinates, or one approximate location fix they ask for; 07:00 to 19:00 until they set one), never tracked (owner update 2026-10-23, #75; #118, [ADR 0037](decisions/0037-day-and-night-clips.md)).
 - **Clips can carry the same `when`** (#118): a night-only or day-only clip joins the random pool only while its condition holds, so a character can hop by day and croak at night. The app compiles each condition into instants for the routing table; the module only compares the clock against them.
 - Per contact, the user picks the variant rule: one fixed variant, random per call, by time of day, by season, or follow the pack's `when` conditions.
-- **Linking:** assigning a character assigns both its notification clips and its ringtones. Users can also mix: messages from Pikachu, ringtone from K.K. Slider.
+- **Linking:** the message character and the ringtone character are independent choices (owner update 2026-10-24 (#245); originally "assigning a character assigns both its notification clips and its ringtones"). Users mix freely: messages from Tweet the bird, ringtone from K.K. Slider. Until the user picks a ringtone, it follows the message character when that character has ringtones; a message character without ringtones leaves the ringtone empty or keeps the one that rang before; changing the message character never changes a ringtone the user picked ([ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
 
 Where ringtones apply:
 
@@ -201,9 +201,9 @@ Contacts: each app contact links to an Android contact for phone ringtones. Matc
 
 Audio for ringtones: any supported format, 5 s to 6 min, looping by default with optional seamless loop points (`loop.startMs`, `loop.endMs`), an optional fade-in, and loudness normalized for ringtone volume. The creator and the packer can cut a 2 to 3 s notification clip from a song (for example its hook) automatically.
 
-In the UI: the ringtone picker is a grid or carousel of album covers; tapping one plays it with a spinning-record animation, variant chips switch versions, and the contact detail shows both the message sound and the ringtone. Owner update 2026-10-24 (#242): a ringtone preview plays exactly what a call would (the same ring file, from the beginning, looping like the call), with no time limit, and can be paused ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md), built in #246).
+In the UI: the ringtone picker is a grid or carousel of album covers; tapping one plays it with a spinning-record animation, variant chips switch versions, and the contact detail shows the message sound and the ringtone as two rows, "Messages" and "Phone calls", each one tap from its picker. The character picker lists only characters with notification clips and the ringtone picker only characters with ringtones, with pack filters that offer only packs that have such characters (owner update 2026-10-24 (#245), [ADR 0063](decisions/0063-independent-voice-and-ringtone.md)). Owner update 2026-10-24 (#242): a ringtone preview plays exactly what a call would (the same ring file, from the beginning, looping like the call), with no time limit, and can be paused ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md), built in #246: also on contact detail and the Packs screens, never from a loop point or a cut clip). Notification previews stay short.
 
-**The owner's K.K. Slider pack (private).** The source is the [K.K. Slider Complete Songs Collection](https://downloads.khinsider.com/game-soundtracks/album/animal-crossing-k.k.-slider-complete-songs-collection) on KHInsider: 193 files, 98 songs plus 95 "(Radio)" versions, 502 MB as MP3 or 981 MB as FLAC. One character per song, with "live" and "radio" as variants, plus an auto-cut clip for messages. Album covers come from a fan wiki. Transcoding to Opus roughly halves the size. Like the Pokémon pack, it stays in the owner's private Google Drive.
+**The owner's K.K. Slider pack (private).** The source is the [K.K. Slider Complete Songs Collection](https://downloads.khinsider.com/game-soundtracks/album/animal-crossing-k.k.-slider-complete-songs-collection) on KHInsider: 193 files, 98 songs plus 95 "(Radio)" versions, 502 MB as MP3 or 981 MB as FLAC. One character per song, with "live" and "radio" as variants. Owner update 2026-10-24 (#246): the songs are ringtones only, with no auto-cut clip for messages ("the sounds should be ringtones, not notifications"); contacts take their message voice from another pack. Album covers come from a fan wiki. Transcoding to Opus roughly halves the size. Like the Pokémon pack, it stays in the owner's private Google Drive.
 
 ## Backup and restore
 
@@ -357,7 +357,7 @@ In the app (Discover screen):
 
 1. **Repositories:** the default one plus user-added ones. Add by URL, QR code, or the deep link `cucuto://repo/add?url=…` from a website.
 2. **Browse:** pack grid with covers, search, tag filters, and "installed" or "update available" badges. A bundle is one card with its packs inside, each with its own badge, and a pack the repository also lists on its own shows only there, so nothing appears twice (owner report 2026-10-24, #247, [ADR 0064](decisions/0064-bundles-in-discover.md)).
-3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched.
+3. **Preview:** play sample clips and haptics before downloading; only the small preview files are fetched. The index carries each character's haptic (`x-haptic`) and the phone computes auto envelopes from the sample (owner update 2026-10-24 (#272), [ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 4. **Download:** animated progress, then size and SHA-256 checks, then the standard importer (bundles show their pack checklist).
 5. **Updates:** repositories are checked when the app opens, with ETag caching. No background jobs.
 
@@ -437,8 +437,8 @@ Screens:
 
 1. **Status and onboarding.** One card that turns green when everything works: module active in `system_server`, correct LSPosed scope, WhatsApp detected, at least one pack installed. Each failing check has a one-tap fix or a clear instruction.
 2. **Home (contacts).** A list of chats with their character's sprite as avatar. A "recent senders" strip shows people who messaged recently and have no character yet. Search, filter by pack, and a FAB to assign.
-3. **Character picker.** A grid of sprites or album covers grouped by pack. Tap previews (sprite bounces, clip plays, haptic fires). A second tap assigns.
-4. **Contact detail.** Assigned character, the clip pool with per-clip toggles, the ringtone with its variant rule and linked Android contact, haptic override, group policy (one character for the group, or per sender), and a "Simulate message" button that runs the real pipeline.
+3. **Character picker.** A grid of sprites or album covers grouped by pack, with only the characters that have notification clips (owner update 2026-10-24 (#245)). Tap previews (sprite bounces, clip plays, haptic fires). A second tap assigns.
+4. **Contact detail.** Two rows, "Messages" (the assigned character) and "Phone calls" (the ringtone), each one tap from its picker (owner update 2026-10-24 (#245)); the clip pool with per-clip toggles, the ringtone's variant rule and linked Android contact, haptic override, group policy (one character for the group, or per sender), and a "Simulate message" button that runs the real pipeline.
 5. **Packs.** Installed packs as a carousel, import from a file, create a new pack (see Pack creator), pack detail with all characters, update and remove.
 6. **Discover.** Browse pack repositories, preview and download packs, manage repositories and their credentials (see Pack repositories).
 7. **Haptic editor.** See the Haptics section.
@@ -559,7 +559,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 ### M5 — Pack repositories and bundles
 
 - [ ] `repository.json` schema and `packer index`; `packer bundle` for multi-pack files.
-- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews need haptic data in `repository.json`; the owner wants them done eventually (#175, item 7): #272.
+- [ ] Discover screen: add repositories by URL, QR code or deep link; browse, preview samples and haptics, download, update badges. Haptic previews: the owner wanted them done eventually (#175, item 7), built in #272 ([ADR 0069](decisions/0069-haptic-previews-in-discover.md)).
 - [ ] Basic auth and bearer tokens stored with a Keystore key; credentials never sent across hosts.
 - [ ] SHA-256 and size verification; malicious-index tests (huge sizes, redirect loops, bad hashes).
 - [ ] v1.1 follow-up: Google Drive folder source with read-only access, tested against the owner's private Drive.
@@ -578,7 +578,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] Backup and restore: manual export, automatic backups to a chosen folder, optional encryption, and a tested restore on a wiped phone.
 - [ ] CI green, including the media allowlist guard.
 - [ ] Signed release APK on GitHub Releases, linked from the website.
-- [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
+- [ ] Google Play as an extra channel (owner update 2026-10-24, #211): app bundle, listing and review notes (#274, ready: [ADR 0071](decisions/0071-google-play-bundle-and-listing.md), [google-play.md](google-play.md)); the owner's account, signing key and closed test (#276). Approval is not guaranteed ([distribution.md](distribution.md#google-play)).
 - [ ] After v1: F-Droid, reproducible and signed with Cucuto's key (#275).
 - [ ] The owner imports the private packs from Google Drive on a clean install and everything works end to end.
 
@@ -596,6 +596,7 @@ A throwaway module plus a debug screen, run on the owner's phone.
 - [ ] `ringtones` in the pack schema, loop points, variants with `when` conditions; packer and creator support including auto-cut notification clips.
 - [ ] Phone ringtones through `CUSTOM_RINGTONE` with MediaStore export; rule-based variants rewritten at boundaries.
 - [x] Album-cover ringtone picker with preview and variant chips; contact linking by phone number ([ADR 0057](decisions/0057-ringtone-picker-and-ringtone-backups.md)).
+- [x] Message character and ringtone chosen independently, pickers filtered by what each character offers, ringtone previews that play like the call from the start (owner, #245, #246 and #242; [ADR 0063](decisions/0063-independent-voice-and-ringtone.md)).
 - [ ] Automatic WhatsApp call ringtones through an optional, opt-in WhatsApp scope (owner, #145; ADR 0051; spike #215: static phase in the [WhatsApp ringtone spike](whatsapp-ringtone-spike.md), ADR 0052; device run #228; build #273), compatible with WaEnhancer X, for WhatsApp and WhatsApp Business (owner update 2026-10-24, #229). Without the scope, the guided per-chat ringtone.
 - [ ] The owner's K.K. Slider pack assigned to several contacts, with day and night variants switching correctly.
 

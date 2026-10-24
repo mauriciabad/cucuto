@@ -11,7 +11,8 @@
     "motion": "bun build-motion.mjs",
     "sounds": "bun build-sounds.mjs",
     "preview": "bun build-preview.mjs",
-    "build": "bun run tokens && bun run assets && bun run motion && bun run sounds && bun run preview"
+    "store": "bun build-store.mjs",
+    "build": "bun run tokens && bun run assets && bun run motion && bun run sounds && bun run preview && bun run store"
   },
   "dependencies": {
     "@material/material-color-utilities": "0.4.0",

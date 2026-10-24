@@ -1,7 +1,8 @@
 # 0046. Distribution: store metadata, release notes, Obtainium and reproducible builds
 
 - Status: accepted; amended by the owner's answer on #211 (Google Play added, F-Droid after v1, see
-  [Owner update](#owner-update-2026-10-24-211-google-play-too-f-droid-after-v1))
+  [Owner update](#owner-update-2026-10-24-211-google-play-too-f-droid-after-v1)); the Play
+  bundle, listing format and Console answers are ADR 0071
 - Date: 2026-10-24
 - Issues: #206 (this work), #44 / ADR 0021 (signed release on tag), #41 / ADR 0032 (screenshot tests)
 
@@ -103,7 +104,8 @@ Decisions:
 - **GitHub Releases and Obtainium stay the main channel.** A rejection or a removal on Play changes nothing for them.
 - **Android developer verification** (worldwide from 2027, including APKs installed from outside Play) is handled by
   the same Play Console account, which registers `app.mauri.cucuto` and the release certificate.
-- Work: agent side #274 (bundle, optional upload to the testing track, listing, review notes, Data safety answers),
+- Work: agent side #274 (bundle, listing, review notes, Data safety answers; built in ADR 0071, with an owner-run
+  `fastlane supply` config instead of an upload from CI),
   owner side #276 (account, signing, closed test with 12 testers for 14 days, submission).
 
 **F-Droid after v1** (#275), through F-Droid's reproducible-build route, so it ships the APK signed with Cucuto's

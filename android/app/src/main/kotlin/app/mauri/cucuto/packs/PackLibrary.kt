@@ -17,6 +17,7 @@ import app.mauri.cucuto.core.pack.PreparedImport
 import app.mauri.cucuto.packspec.ErrorCode
 import app.mauri.cucuto.packspec.PackManifest
 import app.mauri.cucuto.packspec.SpecJson
+import app.mauri.cucuto.ui.ringtone.RingSound
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -315,6 +316,12 @@ internal fun characters(
             seedColor = parseSeedColor(c.seedColor),
             clips = if (folder == null) emptyList() else c.clips.map { File(folder, it.file) },
             ringtoneCount = c.ringtones.size,
+            ringtones =
+                if (folder == null) {
+                    emptyList()
+                } else {
+                    c.ringtones.map { RingSound(File(folder, it.file), it.loopRange, it.fadeInMs?.toLong() ?: 0L) }
+                },
         )
     }
 

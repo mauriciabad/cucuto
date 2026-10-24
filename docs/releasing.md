@@ -2,7 +2,7 @@
 
 A release is a signed APK on [GitHub Releases](https://github.com/mauriciabad/cucuto/releases), built by
 [`.github/workflows/release.yml`](../.github/workflows/release.yml) when a `v*` tag is pushed. The website's Download
-APK button follows it automatically. Why it works this way: [ADR 0021](decisions/0021-signed-release-apk.md); release notes, store metadata and the reproducibility check: [ADR 0046](decisions/0046-distribution.md). Key setup status: #140. Where the APK goes from there (Obtainium, IzzyOnDroid, F-Droid): [distribution.md](distribution.md).
+APK button follows it automatically. Why it works this way: [ADR 0021](decisions/0021-signed-release-apk.md); release notes, store metadata and the reproducibility check: [ADR 0046](decisions/0046-distribution.md). Key setup status: #140. Where the APK goes from there (Obtainium, IzzyOnDroid, F-Droid): [distribution.md](distribution.md). The Google Play bundle and upload: [Google Play bundle](#google-play-bundle) and [Upload to Google Play](#upload-to-google-play) (ADR 0071).
 
 ## Once: create the signing key (owner only)
 
@@ -81,7 +81,8 @@ gh variable set RELEASE_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprin
 
 4. The workflow checks the tag and the secrets, builds `:app:assembleRelease` with the key, verifies the signature
    (one signer, not a debug key, the pinned certificate) and the version with `apksigner` and `aapt2`, then publishes
-   the release `Cucuto 0.2.0` with `cucuto-0.2.0.apk` and `cucuto-0.2.0.apk.sha256`. The notes start with the AI
+   the release `Cucuto 0.2.0` with `cucuto-0.2.0.apk` and `cucuto-0.2.0.apk.sha256` (plus `cucuto-0.2.0.aab` and
+   its checksum for Google Play once the upload key exists, see [Google Play bundle](#google-play-bundle)). The notes start with the AI
    banner, list the checksum and the certificate fingerprint, and end with the changes since the previous tag,
    grouped into New, Fixes and Docs, from the same script (`--notes`). If the tag has no store changelog for its
    versionCode (step 2 skipped), the run warns and puts the generated files in its summary as a patch to commit.
@@ -91,6 +92,8 @@ gh variable set RELEASE_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprin
 6. The `reproducible` job rebuilds the tag unsigned on a fresh runner and compares it with the published APK
    ([reproducible-builds.md](reproducible-builds.md)). A red result doesn't undo the release; open an issue with the
    job summary.
+7. Google Play (owner, optional): upload `cucuto-0.2.0.aab` to the internal testing track and promote it in Play
+   Console ([Upload to Google Play](#upload-to-google-play)).
 
 ### Release notes
 
@@ -136,6 +139,80 @@ cd android && ./gradlew :app:assembleRelease -Pcucuto.version=0.1.0 --no-configu
 
 Without `CUCUTO_RELEASE_KEYSTORE` the release build stays unsigned (`app-release-unsigned.apk`), as in CI. With it set
 but one of the other three missing, the build stops with a message naming them.
+
+## Google Play bundle
+
+Google Play takes an app bundle, not an APK ([google-play.md](google-play.md), ADR 0071). Once the owner has set up
+Play App Signing with the release key and created a separate **upload key** ([google-play.md →
+Signing](google-play.md#signing), #276), every release also gets `cucuto-<version>.aab` and its `.sha256`: the same
+build and version as the APK, signed with the upload key. Play re-signs what it serves with the release key, so Play
+installs and GitHub installs share one certificate.
+
+Once, owner only (agents never touch these):
+
+```sh
+base64 -i ~/cucuto-release-key/cucuto-upload.jks | gh secret set PLAY_UPLOAD_KEYSTORE_BASE64 --repo mauriciabad/cucuto
+gh secret set PLAY_UPLOAD_KEYSTORE_PASSWORD --repo mauriciabad/cucuto   # prompts for the value
+gh secret set PLAY_UPLOAD_KEY_PASSWORD --repo mauriciabad/cucuto        # the same password (PKCS12)
+gh secret set PLAY_UPLOAD_KEY_ALIAS --repo mauriciabad/cucuto --body upload
+keytool -list -v -keystore ~/cucuto-release-key/cucuto-upload.jks -alias upload | grep SHA256:
+gh variable set PLAY_UPLOAD_CERT_SHA256 --repo mauriciabad/cucuto --body <fingerprint, lowercase, no colons>
+```
+
+What the workflow does with them:
+
+- no `PLAY_UPLOAD_*` secret: the release ships the APK only, with a notice;
+- some but not all four: the run fails before building;
+- all four: after the APK, `:app:bundleRelease` signs the bundle with the upload key. The run checks one signer, not
+  a debug key, not the release key (a warning; see #287), the `PLAY_UPLOAD_CERT_SHA256` pin, the version
+  (bundletool), Play's 16 KB setting and the LSPosed metadata. Then it attaches the bundle to the release.
+
+Back up `cucuto-upload.jks` and its password like the release key. If it's ever lost or leaked, Google can reset it:
+Play Console → Play app signing → Request upload key reset with a new certificate, then replace the four secrets and
+the pin.
+
+A bundle on your machine works like the APK, with the upload key in the same variables:
+
+```sh
+export CUCUTO_RELEASE_KEYSTORE=~/cucuto-release-key/cucuto-upload.jks CUCUTO_RELEASE_KEY_ALIAS=upload
+read -rs CUCUTO_RELEASE_KEYSTORE_PASSWORD && export CUCUTO_RELEASE_KEYSTORE_PASSWORD
+export CUCUTO_RELEASE_KEY_PASSWORD=$CUCUTO_RELEASE_KEYSTORE_PASSWORD
+cd android && ./gradlew :app:bundleRelease -Pcucuto.version=0.1.0 --no-configuration-cache
+```
+
+## Upload to Google Play
+
+Nothing in CI uploads to Play. Either way, the release starts as a draft on the **internal testing** track, and
+promotion (closed testing for the 14-day, 12-tester test, then production) is a click in Play Console.
+
+**By hand:** download `cucuto-<version>.aab` from the GitHub release, then in Play Console open Test and release →
+Testing → Internal testing → Create new release, upload it, and paste the store changelog
+(`fastlane/metadata/android/<locale>/changelogs/<versionCode>.txt`) as the release notes. The first time, also copy
+the listing from `fastlane/metadata/android/` and the App content answers from [google-play.md](google-play.md).
+
+**With fastlane** (optional, the owner's machine). `fastlane/Supplyfile` sets the package, the metadata folder, the
+internal track and draft status:
+
+1. Once: `brew install fastlane` (2.241.1 or later). In Google Cloud (the Cucuto project from #188), create a service
+   account and a JSON key, and keep the key outside the repository (for example in `~/cucuto-release-key/`). Enable
+   the Google Play Android Developer API. In Play Console → Users and permissions, invite the service account's
+   email with release permissions for Cucuto only.
+2. Each release, from the repository root on the tagged commit (so the listing matches the release):
+
+   ```sh
+   gh release download v1.0.0 --pattern 'cucuto-1.0.0.aab*' --dir /tmp/cucuto
+   (cd /tmp/cucuto && sha256sum -c cucuto-1.0.0.aab.sha256)   # macOS: shasum -a 256 -c
+   SUPPLY_JSON_KEY=~/cucuto-release-key/play-service-account.json fastlane supply --aab /tmp/cucuto/cucuto-1.0.0.aab
+   ```
+
+   It uploads the bundle, the release notes for its versionCode, the titles, descriptions and images in both
+   languages, as a draft. `--skip_upload_images true --skip_upload_screenshots true` keeps the current images;
+   `--validate_only true` checks without changing anything.
+
+**Later, from CI** (not wired; only if the owner asks): a step after "Publish the release" would install fastlane
+(`ruby/setup-ruby` and `gem install fastlane -v 2.241.1`) and run the command above with
+`SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}`, skipped when the secret is empty. Drafts only, so a
+bad upload never reaches anyone.
 
 ## If the signing key changes
 
