@@ -33,7 +33,8 @@ class StatusChecksTest {
         moduleStatus: ReceivedStatus? = status(),
         messengers: Map<String, Boolean> = mapOf("com.whatsapp" to true),
         packCount: Int = 1,
-    ) = StatusInputs(connection, framework, moduleStatus, boot, messengers, packCount)
+        appUpdatedSinceBoot: Boolean = false,
+    ) = StatusInputs(connection, framework, moduleStatus, boot, messengers, packCount, appUpdatedSinceBoot)
 
     @Test
     fun everythingWorkingTurnsTheCardGreen() {
@@ -138,6 +139,67 @@ class StatusChecksTest {
             ModuleCheck.Active(listOf("playSound", "playVibration"), updatePending = true),
             StatusChecks.evaluate(inputs(framework = stale)).module,
         )
+    }
+
+    @Test
+    fun noFrameworkServiceAfterAnUpdateNeedsAReboot() {
+        val lost = ModuleCheck.NeedsReboot(afterUpdate = true, frameworkLost = true)
+        // LSPosed 2.2.1 hands the service over again only after a reboot (ADR 0043); the module may still report.
+        val reported =
+            StatusChecks.evaluate(
+                inputs(connection = SinkConnection.Disconnected, framework = null, appUpdatedSinceBoot = true),
+            )
+        assertEquals(lost, reported.module)
+        assertFalse(reported.allPassed)
+        assertEquals(emptyList<CheckAction>(), reported.module.actions())
+        assertEquals(
+            lost,
+            StatusChecks
+                .evaluate(
+                    inputs(
+                        connection = SinkConnection.Disconnected,
+                        framework = null,
+                        moduleStatus = null,
+                        appUpdatedSinceBoot = true,
+                    ),
+                ).module,
+        )
+        assertEquals(OnboardingStep.Reboot, OnboardingStep.resumeAt(lost))
+    }
+
+    @Test
+    fun anUpdateDoesNotMatterWhileTheServiceIsThere() {
+        assertEquals(
+            ModuleCheck.Active(listOf("playSound", "playVibration"), updatePending = false),
+            StatusChecks.evaluate(inputs(appUpdatedSinceBoot = true)).module,
+        )
+        // Missing hooks stay the more useful answer.
+        val missing = status(hooks = listOf("playSound"), missing = listOf("playVibration"))
+        assertEquals(
+            ModuleCheck.HooksMissing(listOf("playVibration")),
+            StatusChecks
+                .evaluate(
+                    inputs(
+                        connection = SinkConnection.Disconnected,
+                        framework = null,
+                        moduleStatus = missing,
+                        appUpdatedSinceBoot = true,
+                    ),
+                ).module,
+        )
+    }
+
+    @Test
+    fun onlyAnUpdateAfterBootCounts() {
+        val day = 86_400_000L
+        // Updated after boot.
+        assertTrue(StatusChecks.updatedSinceBoot(boot - day, boot + 60_000, boot))
+        // Updated before boot.
+        assertFalse(StatusChecks.updatedSinceBoot(boot - day, boot - 60_000, boot))
+        // Fresh install after boot: the module was never enabled, so "not enabled" stays the answer.
+        assertFalse(StatusChecks.updatedSinceBoot(boot + 60_000, boot + 60_000, boot))
+        // Installed and then updated, both after boot.
+        assertTrue(StatusChecks.updatedSinceBoot(boot + 60_000, boot + 120_000, boot))
     }
 
     @Test
