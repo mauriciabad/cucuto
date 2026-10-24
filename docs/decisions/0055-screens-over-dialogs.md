@@ -1,6 +1,6 @@
 # 0055. Screens over dialogs: flows and long content are destinations
 
-- Status: accepted (defaults the owner may override are in the `question` issue linked from #218)
+- Status: accepted (defaults the owner may override: #237)
 - Date: 2026-10-24
 - Issue: #218 (the owner's answer on #166, item 9)
 
