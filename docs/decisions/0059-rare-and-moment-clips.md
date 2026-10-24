@@ -1,6 +1,6 @@
 # 0059. Rare, first of the day, burst and date clips
 
-- Status: accepted (the owner may override the defaults below, see the `question` issue linked from #120)
+- Status: accepted (the owner may override the defaults below, #257)
 - Date: 2026-10-24
 - Issues: #120 (battery-free condition ideas), #75 (owner: "more conditions that allow for fun, enjoyable and
   creative experiences, and that dont drain the battery"), extends [ADR 0037](0037-day-and-night-clips.md)
