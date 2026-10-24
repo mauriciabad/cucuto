@@ -6,7 +6,10 @@ import app.mauri.cucuto.core.repo.RepositorySnapshot
 import app.mauri.cucuto.navigation.TopLevelTab
 import app.mauri.cucuto.packspec.BundledPack
 import app.mauri.cucuto.packspec.CharacterPreview
+import app.mauri.cucuto.packspec.ControlPoint
 import app.mauri.cucuto.packspec.Download
+import app.mauri.cucuto.packspec.Haptic
+import app.mauri.cucuto.packspec.HapticEvent
 import app.mauri.cucuto.packspec.RepositoryEntry
 import app.mauri.cucuto.packspec.RepositoryIndex
 import app.mauri.cucuto.ui.discover.DEMO_BUNDLE_ID
@@ -25,7 +28,8 @@ import java.io.File
 /**
  * Discover, a tab of the app shell: the default repository as the website publishes it, the demo bundle and each demo
  * pack on its own (#247, ADR 0064), with Chiptune critters installed. Covers and sprites come from `packs/` through a
- * fake [PreviewLoader]: nothing is downloaded.
+ * fake [PreviewLoader]: nothing is downloaded. Each character's `x-haptic` mirrors its `pack.yaml`, so the badges
+ * draw the demo vibrations (#301).
  */
 class DiscoverScreenshotTest(
     variant: Variant,
@@ -118,6 +122,7 @@ class DiscoverScreenshotTest(
                 name = c.name,
                 sprite = "${pack.folder}/${c.id}/sprite.svg",
                 seedColor = "#%06X".format(c.seedColor.toInt() and RGB),
+                haptic = demoHaptics[c.id],
             )
         }
 
@@ -125,6 +130,35 @@ class DiscoverScreenshotTest(
         id: String,
         size: Long,
     ) = Download("packs/$id-1.0.0.soundpack.zip", size, "0".repeat(SHA256_HEX))
+
+    /** The demo characters' haptics as `packer index` writes them (`packs/<pack>/pack.yaml`). */
+    private val demoHaptics: Map<String, Haptic> =
+        mapOf(
+            "frog" to presets("CLICK", 0L to 0.9, 200L to 0.7),
+            "bird" to presets("TICK", 0L to 0.6, 120L to 0.6, 240L to 0.8),
+            "cat" to Haptic("auto"),
+            "bee" to
+                envelope(
+                    sharpness = 0.2,
+                    ControlPoint(0.6, 0.3, 150),
+                    ControlPoint(0.4, 0.3, 300),
+                    ControlPoint(0.0, 0.2, 200),
+                ),
+            "pot" to envelope(sharpness = 0.1, ControlPoint(1.0, 0.1, 40), ControlPoint(0.0, 0.1, 400)),
+            "glass" to presets("TICK", 0L to 1.0, 150L to 0.7),
+            "whisk" to Haptic("auto"),
+            "kettle" to presets("LOW_TICK", 0L to 0.6, 120L to 0.6, 240L to 0.6),
+        )
+
+    private fun presets(
+        preset: String,
+        vararg taps: Pair<Long, Double>,
+    ) = Haptic("custom", taps.map { (at, scale) -> HapticEvent(at = at, preset = preset, scale = scale) })
+
+    private fun envelope(
+        sharpness: Double,
+        vararg points: ControlPoint,
+    ) = Haptic("custom", listOf(HapticEvent(at = 0, initialSharpness = sharpness, envelope = points.toList())))
 
     /** `/repo/<path>` on the site is the same file in `packs/`. */
     private fun localFile(path: String): File? =

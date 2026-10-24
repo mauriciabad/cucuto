@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import HapticPreview from '#lib/components/HapticPreview.svelte';
 	import Html from '#lib/components/Html.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Seo from '#lib/components/Seo.svelte';
@@ -76,7 +77,10 @@
 										{#if character.sprite}
 											<img src={character.sprite} alt="" width="48" height="48" loading="lazy" />
 										{/if}
-										<span class="body-medium">{character.name}</span>
+										<div class="character-text">
+											<span class="body-medium">{character.name}</span>
+											<HapticPreview haptic={character['x-haptic']} />
+										</div>
 										{#if character.sample}
 											{@const sample = character.sample}
 											<button
@@ -199,8 +203,12 @@
 		flex: none;
 	}
 
-	.character span {
+	.character-text {
+		display: flex;
 		flex: 1;
+		flex-direction: column;
+		gap: 0.125rem;
+		min-width: 0;
 	}
 
 	.play {

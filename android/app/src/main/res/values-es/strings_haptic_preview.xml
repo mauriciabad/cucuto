@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- La vibración de un personaje dibujada bajo su nombre en Descubrir (#301, ADR 0069). -->
+    <string name="haptic_preview_custom">Vibración: patrón propio, %1$s segundos</string>
+    <string name="haptic_preview_auto">Sigue la voz</string>
+    <string name="haptic_preview_auto_spoken">La vibración sigue la voz</string>
+    <string name="haptic_preview_none">Sin vibración</string>
+</resources>

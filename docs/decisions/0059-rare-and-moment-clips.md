@@ -35,7 +35,9 @@ decision log in the app and a republish per message). They stay in #120.
 each rare clip tries its chance in manifest order; else the bag draws from the ordinary clips as before. Joining the
 pool would make a "good morning" clip one draw among many, which is not the point. Moment clips repeat by nature only
 once per day or per burst, and a rare clip never plays twice in a row, so the brief's no-repeat rule still holds.
-A voice whose ordinary clips are all switched off rotates its special clips, so it never goes silent.
+A voice whose ordinary clips are all switched off rotates its special clips, so it never goes silent, and still
+never plays one twice in a row: the bag skips the special clip that just played, and a burst or rare clip skips the
+one the bag just drew. Only a greeting may follow itself, on a chat's only message of two days (#323).
 
 **`firstOfDay` and `burst` live in the clip's `when`**, next to the time keys they combine with (a good-morning clip is
 `{ "firstOfDay": true, "time": { "from": "05:00", "to": "12:00" } }`). Ringtones use their own `when` without them
