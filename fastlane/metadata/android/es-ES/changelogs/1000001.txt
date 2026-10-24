@@ -1,0 +1,3 @@
+Cucuto 1.0.1
+• Listo para F-Droid: el APK ya no lleva el bloque de metadatos de dependencias de Google.
+Más: https://github.com/mauriciabad/cucuto/releases/tag/v1.0.1
