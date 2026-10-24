@@ -629,8 +629,10 @@ authority: readers detect the type from the contents.
     the default) and the ring file Cucuto wrote last (`writtenUri`). A restore uses it only when the linked Android
     contact still rings with exactly `writtenUri`: the same phone after a reinstall. Turning the ringtone off later
     then gives the contact its own ringtone back. Every other phone ignores it.
-  - On restore, Android contacts are matched again by phone number, then by lookup key, then by exact name. A contact
-    with no match on the new phone keeps its ringtone choice and waits for the user to link it.
+  - `androidContact` is device-local too: lookup keys differ per phone. On restore, every linked contact (with or
+    without a phone ringtone) is matched again by phone number, then by lookup key, then by exact name. A contact with
+    no match on the new phone is unlinked, keeps its voice and ringtone choice, and waits for the user to pick its
+    contact.
 
 Restore is idempotent: running it twice gives the same result, and it never overwrites assignments made on the new
 phone without asking.
