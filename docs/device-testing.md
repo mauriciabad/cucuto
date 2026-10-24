@@ -206,6 +206,23 @@ tables`; `Ignoring an incomplete routing file` on every toggle (an occasional on
 the next nudge reads the complete file); or "Table in the module" still says "Not yet the app's latest" a minute
 after the last toggle. Also check `adb logcat -b crash -d` for anything from `system_server`.
 
+## 4c. Settings, backup and restore (#28, #43)
+
+- **Quick Settings tile:** edit the tiles, add **Cucuto voices**, tap it. It turns off and on like the switch in
+  Settings (the routing table moves to a new generation each time).
+- **Back up to a file:** Settings → Back up to a file → (optionally) a password → save to Downloads. The file is
+  `cucuto-backup-YYYY-MM-DD.zip`. With "Include sound packs" it holds `packs/*.soundpack.zip`.
+- **Automatic backups:** Settings → Choose folder → pick an empty folder. A backup appears within a few seconds; change
+  a voice and another one replaces today's file about 10 s later. "Back up now" with nothing changed says "Nothing
+  changed since the last backup" only for the automatic run, never for the button (the button always writes).
+- **Restore:** Settings → Restore from backup → pick the file (and type the password). The pack checklist installs
+  what it can by itself; a local-only pack asks for its file. Give one contact a different voice first: the restore
+  lists it as a conflict and keeps this phone's voice unless ticked. The summary ends with the LSPosed checklist.
+  Running the same restore twice changes nothing.
+
+**Never** restore on the owner's phone without asking: it adds contacts and repositories (it never overwrites voices
+without a tick, but it is still their data).
+
 ## 5. Report and clean up
 
 Record in issue #15 (redacted): hook lines, self-test result, the 1:1/group key domains, whether per-message clips
