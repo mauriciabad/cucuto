@@ -530,6 +530,22 @@ val backupJson = """
       "ringtone": { "packId": "com.example.private.songs.day", "characterId": "bubblegum", "rule": { "mode": "random" } }
     },
     {
+      "id": "c5",
+      "displayName": "Elena",
+      "phoneNumbers": ["+34600999000"],
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "500000000000005@lid" }],
+      "androidContact": { "lookupKey": "0r5-MNO", "displayName": "Elena" },
+      "message": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "bird" },
+      "ringtoneChoice": "android-default"
+    },
+    {
+      "id": "c6",
+      "displayName": "Fede",
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "600000000000006@lid" }],
+      "message": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "frog" },
+      "ringtoneChoice": "unchanged"
+    },
+    {
       "id": "g1",
       "displayName": "Family",
       "isGroup": true,
@@ -540,7 +556,7 @@ val backupJson = """
 }
 """
 
-document("valid/backup.json", "backup", "Backup with repositories, pack references, contacts and phone ringtones (one follows the voice and keeps its undo record, one follows a voice without ringtones and keeps the song that rang, one rings with no message voice).", backupJson)
+document("valid/backup.json", "backup", "Backup with repositories, pack references, contacts and phone ringtones (one follows the voice and keeps its undo record, one follows a voice without ringtones and keeps the song that rang, one rings with no message voice, one rings with the Android default and one is left as is).", backupJson)
 
 document("valid/envelope.json", "backup-envelope", "Encrypted backup envelope with Argon2id parameters.", """
 {
@@ -911,6 +927,11 @@ document(
     backupJson.substringBefore("  \"contacts\": [").trimEnd().removeSuffix(",") + "\n}\n", listOf("SCHEMA_VIOLATION"),
 )
 document("invalid/backup-duplicate-contact.json", "backup", "Two contacts with the same ID.", backupJson.replace("\"id\": \"g1\"", "\"id\": \"c1\""), listOf("DUPLICATE_ID"))
+document(
+    "invalid/backup-ringtone-and-choice.json", "backup", "A contact with both a character ringtone and a ringtone choice.",
+    backupJson.replace("\"ringtoneChoice\": \"unchanged\"", "\"ringtone\": { \"packId\": \"com.example.private.songs.day\", \"characterId\": \"bubblegum\", \"rule\": { \"mode\": \"pack\" } },\n      \"ringtoneChoice\": \"unchanged\""),
+    listOf("SCHEMA_VIOLATION"),
+)
 document(
     "invalid/backup-ringtone-fixed-without-variant.json", "backup", "A fixed phone ringtone rule without its variant.",
     backupJson.replace("\"rule\": { \"mode\": \"fixed\", \"variant\": \"characters/bubblegum/ringtones/live.ogg\" }", "\"rule\": { \"mode\": \"fixed\" }"),

@@ -48,6 +48,22 @@
       "ringtone": { "packId": "com.example.private.songs.day", "characterId": "bubblegum", "rule": { "mode": "random" } }
     },
     {
+      "id": "c5",
+      "displayName": "Elena",
+      "phoneNumbers": ["+34600999000"],
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "500000000000005@lid" }],
+      "androidContact": { "lookupKey": "0r5-MNO", "displayName": "Elena" },
+      "message": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "bird" },
+      "ringtoneChoice": "android-default"
+    },
+    {
+      "id": "c6",
+      "displayName": "Fede",
+      "keys": [{ "package": "com.whatsapp", "conversationKey": "600000000000006@lid" }],
+      "message": { "packId": "app.mauri.demo.chiptune-critters", "characterId": "frog" },
+      "ringtoneChoice": "unchanged"
+    },
+    {
       "id": "c1",
       "displayName": "Family",
       "isGroup": true,

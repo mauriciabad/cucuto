@@ -2,7 +2,9 @@
 
 - Status: accepted (defaults the owner may override: #242); previews amended by the owner (#242 item 3, see
   [Owner update](#owner-update-2026-10-24-242-previews-play-like-the-call)); mixing and the meaning of
-  `followsVoice` amended by [ADR 0063](0063-independent-voice-and-ringtone.md) (owner update 2026-10-24, #245)
+  `followsVoice` amended by [ADR 0063](0063-independent-voice-and-ringtone.md) (owner update 2026-10-24, #245); "Stop using
+  for calls" replaced by the picker's "Leave as is", "Android default" added, and `ringtoneChoice` in backups by
+  [ADR 0073](0073-sound-flow-message-then-ringtone.md) (owner update 2026-10-24, #298)
 - Date: 2026-10-24
 - Issues: #53 (ringtone picker UI), #198 (back up and restore phone ringtones)
 

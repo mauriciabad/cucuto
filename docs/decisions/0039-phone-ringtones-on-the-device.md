@@ -1,7 +1,8 @@
 # 0039. Phone ringtones: ring files rendered on the phone, MediaStore, contact undo record, re-roll receiver
 
 - Status: accepted (defaults; the owner may override them in #196); the "follow the voice" data is amended by
-  [ADR 0063](0063-independent-voice-and-ringtone.md)
+  [ADR 0063](0063-independent-voice-and-ringtone.md); the `choice` column (Android default, Leave as is) and the
+  `cucuto:default` undo marker come from [ADR 0073](0073-sound-flow-message-then-ringtone.md)
 - Date: 2026-10-24
 - Issue: #52 (picker UI: #53; device run: #143)
 

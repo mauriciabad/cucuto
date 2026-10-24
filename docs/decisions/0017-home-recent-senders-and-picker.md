@@ -1,7 +1,8 @@
 # 0017. Home, recent senders and the character picker
 
 - Status: accepted (the owner may override the defaults below, #129); the picker's character list is amended by
-  [ADR 0063](0063-independent-voice-and-ringtone.md)
+  [ADR 0063](0063-independent-voice-and-ringtone.md); Home rows show the ringtone and assigning from Home offers the
+  ringtone as a second step since [ADR 0073](0073-sound-flow-message-then-ringtone.md) (owner update 2026-10-24, #298)
 - Date: 2026-10-24
 - Issues: #25 (Home and character picker), #18 (recent senders feed with one-tap assignment)
 
