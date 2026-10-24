@@ -207,17 +207,24 @@ fun PickerContent(
             },
             topBar = {
                 MediumFlexibleTopAppBar(
-                    title = { Text(stringResource(R.string.picker_title), Modifier.semantics { heading() }) },
-                    subtitle = {
+                    // Without a chat nothing can be chosen, so the title says what the screen does: the same words as
+                    // Home's "Hear the characters" button that opens it.
+                    title = {
                         Text(
-                            text =
-                                when {
-                                    !state.canAssign -> stringResource(R.string.picker_subtitle_preview)
-                                    else -> stringResource(R.string.picker_subtitle_for, state.chatName())
-                                },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            stringResource(
+                                if (state.canAssign) R.string.picker_title else R.string.picker_subtitle_preview,
+                            ),
+                            Modifier.semantics { heading() },
                         )
+                    },
+                    subtitle = {
+                        if (state.canAssign) {
+                            Text(
+                                text = stringResource(R.string.picker_subtitle_for, state.chatName()),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {

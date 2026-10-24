@@ -434,6 +434,23 @@ The app should feel like a small game: every action answers with synchronized mo
 
 Screens over dialogs (owner, #166): a flow or a body of content gets a real screen with predictive back; dialogs and bottom sheets are only for very minimal, temporary content (a confirmation, a short choice, a blocking progress card). Conversions: #218 (ADR 0055).
 
+Words (update 2026-10-24 (#343)): the app uses one word for each thing, in every screen, in English and Spanish
+(`values-es/strings.xml` lists the Spanish shared terms):
+
+| Thing | English | Spanish |
+| --- | --- | --- |
+| A figure from a pack, with its sprite or album cover | character | personaje |
+| The character whose clips play when a chat messages you; giving one is "give a voice" | voice | voz |
+| One sound a character plays for a message | clip | clip |
+| What rings when a contact calls; the song a character can have | ringtone | tono |
+| The two sounds of a chat, as rows and section titles (contact detail, sample chat, Settings) | Messages · Phone calls | Mensajes · Llamadas |
+| The ringtone choices that are not a character | Android default · Leave as is | Predeterminado de Android · Dejar como está |
+| What plays without a voice | WhatsApp's tone | el tono de WhatsApp |
+| A file of characters · several packs in one file | pack · bundle | pack · colección |
+
+"Message sound" and "notification sound" are not used in the app: say "voice" or "clip". A call is "calls you", not
+"phones you". Buttons that open a file say "Choose …".
+
 Screens:
 
 1. **Status and onboarding.** One card that turns green when everything works: module active in `system_server`, correct LSPosed scope, WhatsApp detected, at least one pack installed. Each failing check has a one-tap fix or a clear instruction.

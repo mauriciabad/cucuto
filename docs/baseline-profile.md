@@ -47,7 +47,7 @@ The profile should follow a user who finished setup, so the emulator is prepared
 
 2. **The app, set up like a user's.** Build and install `:app:assembleNonMinifiedRelease`, skip onboarding, and
    import the demo packs: build the bundle with the packer (`packer bundle --id app.mauri.demo.all ... packs/*`, see
-   `tools/packer/README.md`), `adb push` it to `/sdcard/Download/`, then use Home's "Pick a file from Downloads".
+   `tools/packer/README.md`), `adb push` it to `/sdcard/Download/`, then use Home's "Choose a file from Downloads".
 3. **Chats.** On an emulator no module reports senders, so add a few made-up ones to the app's database as root (never
    real names or numbers):
 
