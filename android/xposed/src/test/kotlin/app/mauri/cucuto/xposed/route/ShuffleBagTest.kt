@@ -40,6 +40,23 @@ class ShuffleBagTest {
     }
 
     @Test
+    fun theBagStaysBoundedWhenOneClipOutweighsTheRest() {
+        // The frog by day (#207): ribbit (weight 2) and hop (weight 1) alternate, so ribbit's extra copies are left
+        // over at every refill. They must not pile up.
+        for (weights in listOf(intArrayOf(2000, 1000), intArrayOf(100_000, 1000, 500), intArrayOf(3000, 500, 500))) {
+            val bag = bag(*weights)
+            val full = weights.sumOf { ShuffleBag.copiesFor(it) }
+            var previous = -1
+            repeat(50_000) {
+                val next = bag.next()
+                assertNotEquals(previous, next)
+                previous = next
+                assertTrue("${weights.toList()}: ${bag.pending} copies pending", bag.pending < 2 * full)
+            }
+        }
+    }
+
+    @Test
     fun equalWeightsPlayEveryClipOncePerRound() {
         val bag = bag(1000, 1000, 1000, 1000, seed = 7)
         // Every window of four draws aligned to a refill holds each clip once, except where the no-repeat rule
@@ -103,7 +120,6 @@ class ShuffleBagTest {
         val clips = listOf("a.ogg", "b.ogg")
         // Fill four speakers; the oldest is evicted, so its no-repeat memory is gone, but nothing grows past 3.
         for (speaker in listOf("s1", "s2", "s3", "s4")) bags.next(speaker, clips, intArrayOf(1000, 1000), 1)
-        val field = ShuffleBags::class.java.getDeclaredField("entries").apply { isAccessible = true }
-        assertEquals(3, (field.get(bags) as Map<*, *>).size)
+        assertEquals(3, bags.size)
     }
 }
