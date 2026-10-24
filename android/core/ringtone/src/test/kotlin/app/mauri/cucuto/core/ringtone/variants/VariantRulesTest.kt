@@ -206,4 +206,46 @@ class VariantRulesTest {
         put("from", from)
         put("to", to)
     }
+
+    @Test
+    fun datesPickHolidayVariantsAndWrapTheNewYear() {
+        val holidays =
+            RingtoneVariant(
+                "holidays.ogg",
+                condition =
+                    When(
+                        date =
+                            JsonArray(
+                                listOf(
+                                    buildJsonObject {
+                                        put("from", "12-24")
+                                        put("to", "01-06")
+                                    },
+                                    JsonPrimitive("10-31"),
+                                ),
+                            ),
+                    ),
+            )
+        val variants = listOf(plain, holidays)
+        assertEquals(plain, VariantRules.followPack(variants, at(12)))
+        assertEquals(holidays, VariantRules.followPack(variants, at(12, date = "2026-10-31")))
+        assertEquals(holidays, VariantRules.followPack(variants, at(0, date = "2026-12-24")))
+        assertEquals(holidays, VariantRules.followPack(variants, at(23, 59, date = "2027-01-06")))
+        assertEquals(plain, VariantRules.followPack(variants, at(0, date = "2027-01-07")))
+        // A date is a condition key: more specific than a plain day variant.
+        val dayOnly =
+            listOf(
+                day,
+                RingtoneVariant(
+                    "xmas-day.ogg",
+                    condition = When(time = JsonPrimitive("day"), date = JsonPrimitive("12-25")),
+                ),
+            )
+        assertEquals("xmas-day.ogg", VariantRules.followPack(dayOnly, at(12, date = "2026-12-25")).file)
+        // The pick may change at midnight.
+        assertEquals(
+            LocalDateTime.parse("2026-10-25T00:00"),
+            VariantRules.nextBoundary(variants, RingtoneMode.PACK, at(12)),
+        )
+    }
 }

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "id": "app.mauri.demo.chiptune-critters",
   "name": "Chiptune critters",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "Cucuto contributors",
   "license": "CC0-1.0",
   "homepage": "https://cucuto.mauri.app",
-  "description": "Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog hops by day, croaks at night and also sings a pond song as a ringtone, bright by day and sleepy at night.",
+  "description": "Four tiny 8-bit friends that blip, chirp, mew and buzz. Bleep the frog hops by day, croaks at night and also sings a pond song as a ringtone, bright by day and sleepy at night. Tweet the bird greets the first message of the day with a dawn chorus, squawks at the third message in a row and, once in a blue moon, calls like a cuckoo.",
   "cover": "cover.svg",
   "tags": [
     "chiptune",
@@ -106,6 +106,25 @@
         {
           "file": "characters/bird/clips/whistle.ogg",
           "label": "Whistle"
+        },
+        {
+          "file": "characters/bird/clips/dawn-chorus.ogg",
+          "label": "Dawn chorus",
+          "when": {
+            "firstOfDay": true
+          }
+        },
+        {
+          "file": "characters/bird/clips/squawk.ogg",
+          "label": "Squawk",
+          "when": {
+            "burst": 3
+          }
+        },
+        {
+          "file": "characters/bird/clips/cuckoo.ogg",
+          "label": "Cuckoo",
+          "oneIn": 25
         }
       ],
       "haptic": {

@@ -70,6 +70,7 @@ internal data class ClipDto(
     val label: String? = null,
     val weight: Double? = null,
     val `when`: When? = null,
+    val oneIn: Int? = null,
 )
 
 @Serializable
@@ -137,7 +138,7 @@ private fun DraftDto.toDraft() =
                     name = c.name,
                     sprite = c.sprite?.toDraft(),
                     seedColor = c.seedColor,
-                    clips = c.clips.map { ClipDraft(it.file.toDraft(), it.label, it.weight, it.`when`) },
+                    clips = c.clips.map { ClipDraft(it.file.toDraft(), it.label, it.weight, it.`when`, it.oneIn) },
                     haptic = c.haptic,
                     description = c.description,
                     tags = c.tags,
@@ -169,7 +170,7 @@ private fun draftDto(
                 name = c.name,
                 sprite = c.sprite?.toDto(root),
                 seedColor = c.seedColor,
-                clips = c.clips.map { ClipDto(it.file.toDto(root), it.label, it.weight, it.`when`) },
+                clips = c.clips.map { ClipDto(it.file.toDto(root), it.label, it.weight, it.`when`, it.oneIn) },
                 haptic = c.haptic,
                 description = c.description,
                 tags = c.tags,

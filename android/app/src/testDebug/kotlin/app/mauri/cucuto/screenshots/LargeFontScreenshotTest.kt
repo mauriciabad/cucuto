@@ -78,7 +78,8 @@ class LargeFontScreenshotTest(
     @Test fun sampleChat() = largeFont("sample-chat")
 
     private fun largeFont(screen: String) =
-        screenshot(screen, fontScale = LARGEST_FONT_SCALE) {
+        // The onboarding's wavy progress bar never stops moving.
+        screenshot(screen, fontScale = LARGEST_FONT_SCALE, animated = screen.startsWith("onboarding-")) {
             A11yScreens.content(screen)()
         }
 

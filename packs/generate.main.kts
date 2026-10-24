@@ -22,6 +22,7 @@ data class Sound(val path: String, val seconds: Double, val expr: String, val bi
 fun sq(phase: String) = "sgn(sin(2*PI*($phase)))"
 fun saw(phase: String) = "(2*(($phase)-floor(($phase)+0.5)))"
 fun tri(phase: String) = "(2*abs(${saw(phase)})-1)"
+fun sine(phase: String) = "sin(2*PI*($phase))"
 
 /** A note of [seconds] starting at [start] with frequency [f], shaped by an exponential decay. */
 fun blip(start: Double, seconds: Double, phase: String, decay: Double, wave: (String) -> String = ::sq): String {
@@ -44,6 +45,19 @@ val sounds = listOf(
     Sound("$critters/bird/clips/chirp.ogg", 0.36, "0.4*sin(2*PI*(2000*mod(t,0.12)+10000*mod(t,0.12)^2))*exp(-mod(t,0.12)*25)"),
     Sound("$critters/bird/clips/trill.ogg", 0.5, "0.22*${sq("if(lt(mod(t,0.08),0.04),1200,1500)*t")}*(1-t/0.5)"),
     Sound("$critters/bird/clips/whistle.ogg", 0.6, "0.4*sin(2*PI*1500*t+3*sin(2*PI*6*t))*sin(PI*t/0.6)"),
+    // Special clips (#120): a dawn chorus for the chat's first message of the day, three rising chirps and a trill;
+    // an impatient squawk for the third message in a row; and a rare cuckoo call, the bird's easter egg.
+    Sound(
+        "$critters/bird/clips/dawn-chorus.ogg", 1.3,
+        "0.35*(" + blip(0.0, 0.25, "1500*T+3000*T*T", 8.0, ::sine) + "+" + blip(0.3, 0.25, "1800*T+3500*T*T", 8.0, ::sine) + "+" +
+            blip(0.6, 0.25, "2200*T+4000*T*T", 8.0, ::sine) + "+between(t,0.9,1.3)*sin(2*PI*if(lt(mod(t,0.06),0.03),2600,3000)*t)*(1.3-t)*2)",
+    ),
+    Sound(
+        "$critters/bird/clips/squawk.ogg", 0.5,
+        "0.4*(" + blip(0.0, 0.12, "1100*T-2000*T*T", 10.0, ::saw) + "+" + blip(0.16, 0.12, "1200*T-2000*T*T", 10.0, ::saw) + "+" +
+            blip(0.32, 0.16, "1300*T-2000*T*T", 8.0, ::saw) + ")",
+    ),
+    Sound("$critters/bird/clips/cuckoo.ogg", 0.95, "0.4*(" + blip(0.0, 0.32, "784*T", 5.0, ::sine) + "+" + blip(0.42, 0.5, "622*T", 4.0, ::sine) + ")"),
     Sound("$critters/cat/clips/mew.ogg", 0.5, "0.35*(sin(2*PI*(600*t-63.66*cos(2*PI*t)))+0.3*sin(4*PI*(600*t-63.66*cos(2*PI*t))))*sin(PI*t/0.5)"),
     Sound("$critters/cat/clips/purr.ogg", 1.2, "0.5*sin(2*PI*80*t)*(0.5+0.5*sin(2*PI*25*t))*sin(PI*t/1.2)"),
     Sound("$critters/cat/clips/mrrp.ogg", 0.4, "0.25*${sq("400*t+300*t*t")}*(0.6+0.4*sin(2*PI*30*t))*sin(PI*t/0.4)"),
