@@ -75,6 +75,8 @@ class LargeFontScreenshotTest(
 
     @Test fun ringtonePicker() = largeFont("ringtone-picker")
 
+    @Test fun sampleChat() = largeFont("sample-chat")
+
     private fun largeFont(screen: String) =
         // The onboarding's wavy progress bar never stops moving.
         screenshot(screen, fontScale = LARGEST_FONT_SCALE, animated = screen.startsWith("onboarding-")) {
