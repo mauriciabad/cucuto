@@ -226,3 +226,14 @@ The defaults stand. Automatic backups skip a backup identical to the last one, a
 > check that all agents are unblocked
 
 > i go to sleep i leave you working alone
+
+## 2026-10-24 — Answer on #145 (WhatsApp call ringtones set by hand in WhatsApp for v1?)
+
+> Not hooking the WhatsApp app is a preference, not a requirement. My main concern is that users may think the app could spy them or something, that was why the no hooking rule (in adition to being compatible with WA Enhancer X). but if we inform the user why we need each permision they will understand, and ultimately they dont have to give the permission if they wont use ringtones. we have to think how to inform them well and proof we wont hack them, maybe telling them that the code is open source and they can read it (or their AI agent) may be a good point.
+>
+> It is pretty important that ringtones can be set automatically in whatsapp calls too. so i would change the rule just for this feature.
+
+(Phone ringtones, #52 / ADR 0039, follow the first part: each permission is asked only when the feature is used,
+after a plain explanation that points to the open-source code. WhatsApp call ringtones stay guided by hand in that PR;
+making them automatic, with a WhatsApp-side change allowed for this feature only, is left to the lead as a separate
+issue.)
