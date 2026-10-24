@@ -72,7 +72,8 @@ ringtone and a vibration.
 
 Cucuto is built by AI agents (Claude) working from GitHub issues. The owner sets the scope, answers questions and has
 the final say; the agents write the code, docs and reviews. Everything an agent writes on GitHub is labeled as AI
-work. Human contributors are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
+work. Human contributors are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Agents (or people) picking up a small
+change start with [docs/maintaining.md](docs/maintaining.md) and the [decision index](docs/decisions/README.md).
 
 ## License
 
