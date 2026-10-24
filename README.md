@@ -17,7 +17,6 @@ character's own vibration. Like a cuckoo clock, it announces who's there.
   eggs and play night or holiday clips, all decided on the phone with no battery cost.
 - **Chats before they write.** Add people from your contacts; their voice plays from their second message.
 - **Easy to pick.** Big packs fold into sections, with search and a "Surprise me" dice in both pickers.
-- **Try it without root.** The sample chat plays a character's sound, vibration and ringtone in the app.
 - **Make your own.** Build packs in the app or on the website, no tools needed, or with the `packer` CLI.
 - **Feels like a game.** Sound, motion and haptics on every interaction, built on Material 3 Expressive.
 
@@ -38,8 +37,8 @@ Cucuto is an early test version: see the [changelog](CHANGELOG.md) for what each
 5. Import a pack and give a contact a character.
 
 Details, troubleshooting and recovery: [install guide](docs/install.md) (also on the
-[website](https://cucuto.mauri.app/install/)). Cucuto never checks for updates itself: watch the releases, or let [Obtainium](https://github.com/ImranR98/Obtainium) do it (the website's Install page has a one-tap setup). Where else it is distributed: [docs/distribution.md](docs/distribution.md). A Google Play listing is being prepared;
-Play and GitHub installs share one signing certificate, so they update each other.
+[website](https://cucuto.mauri.app/install/)). Cucuto never checks for updates itself: watch the releases, or let [Obtainium](https://github.com/ImranR98/Obtainium) do it (the website's Install page has a one-tap setup). Where else it is distributed: [docs/distribution.md](docs/distribution.md). Cucuto isn't on Google Play
+([ADR 0080](docs/decisions/0080-no-google-play.md)).
 
 ## Build
 

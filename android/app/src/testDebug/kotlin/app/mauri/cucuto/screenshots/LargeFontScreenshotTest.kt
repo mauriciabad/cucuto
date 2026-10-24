@@ -89,8 +89,6 @@ class LargeFontScreenshotTest(
 
     @Test fun homeFromContacts() = largeFont("home-from-contacts")
 
-    @Test fun sampleChat() = largeFont("sample-chat")
-
     @Test fun pickerRolled() = largeFont("picker-rolled")
 
     @Test fun pickerSearch() = largeFont("picker-search")
@@ -102,8 +100,6 @@ class LargeFontScreenshotTest(
     @Test fun ringtonePickerRolled() = largeFont("ringtone-picker-rolled")
 
     @Test fun ringtoneRulesViewOnly() = largeFont("ringtone-rules-view-only")
-
-    @Test fun sampleChatEmpty() = largeFont("sample-chat-empty")
 
     @Test fun discoverHaptics() = largeFont("discover-haptics")
 

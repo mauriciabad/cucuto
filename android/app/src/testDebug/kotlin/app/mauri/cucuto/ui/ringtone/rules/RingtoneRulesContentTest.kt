@@ -11,7 +11,6 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.db.RingtoneMode
-import app.mauri.cucuto.ui.ringtone.RingtoneSelection
 import app.mauri.cucuto.ui.theme.CucutoTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -71,15 +70,19 @@ class RingtoneRulesContentTest {
     }
 
     @Test
-    fun anotherCharacterOnlyShowsTheRules() {
+    fun aCharacterThatDoesNotRingYetCanBeSavedWithItsRule() {
         val base = previewRingtoneRulesState()
-        show(base.copy(saved = RingtoneSelection(base.voice.copy(characterId = "kettle"), followsVoice = false)))
+        show(base.copy(saved = base.saved!!.copy(mode = RingtoneMode.PACK, rules = emptyList()), ringsNow = false))
         compose
             .onNodeWithText(
-                "Bubblegum K.K. doesn't ring for Iris yet. Save it in the ringtone picker first, then change its rules here.",
+                "Bubblegum K.K. doesn't ring for Iris yet. Choose its rules and save: from then on, Bubblegum K.K. " +
+                    "rings when Iris calls you.",
             ).performScrollTo()
             .assertIsDisplayed()
-        compose.onNodeWithText("Random per call").assertDoesNotExist()
+        compose.onNodeWithText("Random per call").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Reset to the pack's rules").assertDoesNotExist()
+        compose.onNodeWithText("Ring with Bubblegum K.K.").performClick()
+        assertEquals(listOf("save"), events)
     }
 
     @Test

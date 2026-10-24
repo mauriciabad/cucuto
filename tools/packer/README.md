@@ -104,9 +104,10 @@ site/repo/
 └── packs/<file>.soundpack.zip          (only without --download-base-url)
 ```
 
-Each character preview has the character's sprite, its first clip as `sample` (ringtone-only characters have none
-yet, #325) and, next to a sample, `x-haptic`: the character's `haptic` from `pack.json` (`{ "mode": "auto" }` when
+Each character preview has the character's sprite, its first clip as `sample` and, next to a sample, `x-haptic`: the character's `haptic` from `pack.json` (`{ "mode": "auto" }` when
 the pack leaves it out), so apps can vibrate with the sample ([ADR 0069](../../docs/decisions/0069-haptic-previews-in-discover.md)).
+A ringtone-only character (a song, no clips) gets a 2.5 s sample cut from its first ringtone, at the hook `packer cut`
+would find within the ringtone's loop (needs ffmpeg; without it, `index` warns and leaves that sample out).
 
 Folder inputs contribute every `.zip` in them. Every input is validated first. Entries are sorted by ID; if an ID appears twice the higher version wins. Each
 download has its exact size and SHA-256. Preview URLs are relative, so the folder can be hosted anywhere (they resolve

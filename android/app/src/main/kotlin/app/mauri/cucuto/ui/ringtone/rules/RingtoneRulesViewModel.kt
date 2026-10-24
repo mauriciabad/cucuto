@@ -50,7 +50,9 @@ data class RulesEdit(
  * What the ringtone rules screen (ADR 0074) shows.
  *
  * @property entries The character's ringtone entries, `pack.json` order: the pack's rules.
- * @property saved What rings for the chat: its stored ringtone, or its voice's own while it has none (null: nothing).
+ * @property saved This character's ringtone for the chat as the rules start from: what is stored when it rings
+ *   ([ringsNow]), else the character with the pack's rules, which saving makes ring (#347). Null without a 1:1 chat.
+ * @property ringsNow The character rings for the chat now (stored, or the voice's own while nothing is stored).
  * @property edit The changes not saved yet.
  * @property now The moment "Ringing now" is computed for (day from 07:00 to 19:00 here; the sync uses the place).
  */
@@ -64,6 +66,7 @@ data class RingtoneRulesState(
     val entries: List<RingtoneVariantItem> = emptyList(),
     val chat: Chat? = null,
     val saved: RingtoneSelection? = null,
+    val ringsNow: Boolean = false,
     val edit: RulesEdit = RulesEdit(),
     val preview: PreviewPlaying<String>? = null,
     val saving: Boolean = false,
@@ -83,11 +86,14 @@ data class RingtoneRulesState(
 
     val isGroup: Boolean get() = chat?.isGroup ?: (chatKey?.isGroupKey == true)
 
-    /** This character rings for the chat, so its rules can be changed for it. */
+    /**
+     * A 1:1 chat: the rule can be chosen for it. When the character does not ring for it yet ([otherCharacter]),
+     * saving makes it ring with that rule (#347, ADR 0074).
+     */
     val editable: Boolean get() = chatKey != null && !isGroup && saved?.voice == voice && entries.isNotEmpty()
 
-    /** A chat whose ringtone is another character (or none): the screen only shows the rules. */
-    val otherCharacter: Boolean get() = chatKey != null && !isGroup && !editable && character != null
+    /** The chat rings with another character, Android default, Leave as is, or nothing: saving changes that. */
+    val otherCharacter: Boolean get() = editable && !ringsNow
 
     /** The rules worth offering: the picker's ([PhoneRingtoneViewModel.modesFor]) and "Your own rules". */
     val modes: List<RingtoneMode>
@@ -153,9 +159,9 @@ data class RingtoneRulesState(
                 }
             }
 
-    val canSave: Boolean get() = editable && !saving && !done && selection != storedSelection
+    val canSave: Boolean get() = editable && !saving && !done && (!ringsNow || selection != storedSelection)
 
-    val canReset: Boolean get() = editable && !saving && !done && saved?.mode != RingtoneMode.PACK
+    val canReset: Boolean get() = editable && ringsNow && !saving && !done && saved?.mode != RingtoneMode.PACK
 
     /** The version the chosen rule rings with now, or null for "Random per call" (a new one after every call). */
     val ringingNow: RingtoneVariant?
@@ -192,13 +198,15 @@ class RingtoneRulesViewModel
 
         val state: StateFlow<RingtoneRulesState> =
             combine(source.observe(voice, chatKey), local, playback.playing) { data, current, playing ->
+                val (saved, ringsNow) = ringing(data)
                 current.copy(
                     loading = false,
                     character = data.character,
                     packName = data.packName,
                     entries = data.entries,
                     chat = data.chat,
-                    saved = ringing(data),
+                    saved = saved,
+                    ringsNow = ringsNow,
                     preview = playing,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), local.value)
@@ -300,22 +308,20 @@ class RingtoneRulesViewModel
             LocalDateTime.ofInstant(Instant.ofEpochMilli(clock.now()), ZoneId.systemDefault())
 
         /**
-         * What rings for the chat: its stored ringtone, else its voice's own (which then rings by the pack's rules).
-         * Nothing for "Android default" and "Leave as is" (ADR 0073): no character rings, even when the voice has
-         * ringtones, so the rules can only be changed once a character is saved in the picker.
+         * This character's ringtone for the chat, and whether it rings now: the stored ringtone when it is this
+         * character, else the voice's own while nothing is stored (it rings by the pack's rules). Otherwise (another
+         * character, "Android default" or "Leave as is", ADR 0073) the character with the pack's rules, which saving
+         * makes ring (#347): following the voice when it is the voice's own character (ADR 0063).
          */
-        private fun ringing(data: RingtoneRulesData): RingtoneSelection? {
+        private fun ringing(data: RingtoneRulesData): Pair<RingtoneSelection?, Boolean> {
+            if (chatKey == null || data.entries.isEmpty()) return null to false
             val chat = data.chat
-            if (data.saved != null && data.saved.choice != RingtoneChoice.CHARACTER) return null
-            RingtonePickerViewModel.saved(data.saved, chat?.voice)?.let { return it }
-            val voice = chat?.voice ?: return null
-            return if (voice == this.voice &&
-                data.entries.isNotEmpty()
-            ) {
-                RingtoneSelection(voice, followsVoice = true)
-            } else {
-                null
-            }
+            val character = data.saved == null || data.saved.choice == RingtoneChoice.CHARACTER
+            val stored = if (character) RingtonePickerViewModel.saved(data.saved, chat?.voice) else null
+            if (stored?.voice == voice) return stored to true
+            val ownVoice = chat?.voice == voice
+            if (stored == null && character && ownVoice) return RingtoneSelection(voice, followsVoice = true) to true
+            return RingtoneSelection(voice, followsVoice = ownVoice) to false
         }
 
         override fun onCleared() {

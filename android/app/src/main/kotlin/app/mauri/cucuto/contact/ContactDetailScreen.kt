@@ -85,6 +85,7 @@ import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.core.routing.Moment
 import app.mauri.cucuto.home.ChatAvatarKey
+import app.mauri.cucuto.home.ChatRingtoneBadgeKey
 import app.mauri.cucuto.home.name
 import app.mauri.cucuto.ui.chat.GroupPolicySetting
 import app.mauri.cucuto.ui.components.VoiceAvatar
@@ -92,6 +93,7 @@ import app.mauri.cucuto.ui.components.adaptiveMaxLines
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
 import app.mauri.cucuto.ui.haptics.HapticOverrideSection
+import app.mauri.cucuto.ui.motion.SharedCompanion
 import app.mauri.cucuto.ui.motion.SharedElement
 import app.mauri.cucuto.ui.ringtone.PhoneCallsRow
 import app.mauri.cucuto.ui.ringtone.PhoneRingtoneSection
@@ -118,7 +120,6 @@ fun ContactDetailScreen(
     onEditPattern: () -> Unit,
     modifier: Modifier = Modifier,
     onChooseRingtone: () -> Unit = {},
-    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<ContactDetailViewModel, ContactDetailViewModel.Factory>(
@@ -139,8 +140,8 @@ fun ContactDetailScreen(
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
         hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
-        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone, onOpenRules = onOpenRules) },
-        phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone, Modifier.padding(top = 16.dp)) },
+        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone) },
+        phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone) },
         onUnassign = viewModel::unassign,
         onSimulate = {
             if (state.path is SimulatePath.InApp) {
@@ -260,6 +261,11 @@ fun ContactDetailContent(
                         phoneCalls = phoneCalls.takeIf { state.chat?.isGroup != true && !state.isGroup },
                     )
                 }
+                // The phone ringtone set-up, right under the Phone calls row, only when it asks for something (#348).
+                // Phone calls come from people: groups have no phone ringtone (#52).
+                if (phoneRingtone != null && state.chat?.isGroup == false) {
+                    item(key = "phone-ringtone") { phoneRingtone() }
+                }
                 item(key = "simulate") { SimulateCard(state, onSimulate) }
                 if (state.clips.isNotEmpty()) {
                     clipSection(state, onPlayClip) { clip, on ->
@@ -271,10 +277,6 @@ fun ContactDetailContent(
                     item(key = "haptic") {
                         if (hapticOverride != null) hapticOverride() else HapticSection(state.hapticSource)
                     }
-                }
-                // Phone calls come from people: groups have no phone ringtone (#52).
-                if (phoneRingtone != null && state.chat?.isGroup == false) {
-                    item(key = "phone-ringtone") { phoneRingtone() }
                 }
                 state.groupPolicy?.let { policy ->
                     item(key = "group") {
@@ -345,12 +347,15 @@ private fun Header(
                         onBitmap = onBitmap,
                     )
                 }
-                state.ringtone?.let {
-                    RingtoneBadge(
-                        it,
-                        RINGTONE_BADGE_SIZE,
+                // Its own shared element above the avatar's, so the pair flies as one group (#339).
+                val ringtone = state.ringtone
+                if (ringtone != null) {
+                    SharedCompanion(
+                        ChatRingtoneBadgeKey(state.chatKey),
                         Modifier.align(Alignment.BottomEnd).offset(x = 12.dp, y = 4.dp),
-                    )
+                    ) { RingtoneBadge(ringtone, RINGTONE_BADGE_SIZE) }
+                } else {
+                    SharedCompanion(ChatRingtoneBadgeKey(state.chatKey), Modifier.align(Alignment.BottomEnd))
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {

@@ -35,8 +35,7 @@ how-to.
 - **Never block.** For a decision the owner should own, apply a sensible default, document it, and open a
   `question` issue that states the default (format in `CLAUDE.md`).
 - **Minimum intrusion** (owner, #67): fewest hooks, permissions and reads. New permissions also need the CI
-  allowlist (`ALLOWED_PERMISSIONS` in `ci.yml`), the website's privacy page and the Data safety answers in
-  [`google-play.md`](google-play.md).
+  allowlist (`ALLOWED_PERMISSIONS` in `ci.yml`) and the website's privacy page.
 
 ## 3. Build and test
 
@@ -58,6 +57,41 @@ Full requirements: [CONTRIBUTING.md](../CONTRIBUTING.md#building).
 
 Run Playwright with `CI=1`: without it, Playwright reuses whatever preview server already listens on port 4173.
 Run the builds for every area you touched before pushing.
+
+### End-to-end smoke tests (emulator)
+
+Before pushing any app change, run the smoke suite (#340). It drives the real app (Room database, importer,
+routing publisher, backups, navigation) through the main journeys with the CC0 demo packs. In about 2 minutes it
+tells you whether you broke one of them:
+
+| Test (`android/app/src/androidTest/.../smoke/`) | Journey |
+| --- | --- |
+| `FirstRunSmokeTest` | onboarding ends on Home; the demo pack imports from the file picker; "Open with" imports a download (a media provider `content:` URI) |
+| `VoiceSmokeTest` | message voice then the optional ringtone step (#318), then "Android default" and "Leave as is"; own ringtone rules saved and reset; "Surprise me" in the picker; each change checked in the routing table the publisher writes for the module |
+| `BackupSmokeTest` | full backup export, wipe, restore from Home; the voice is back in the routing table |
+
+Pick one way to run it (both build the demo packs with the packer first, the `demoPacks` task):
+
+- **Gradle Managed Device:** `cd android && ./gradlew :app:smokeTest`. Gradle downloads the API 37 AOSP ATD image
+  once, then boots it, runs the suite and shuts it down.
+- **Any running emulator:** `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`. Always set
+  `ANDROID_SERIAL`: without it, Gradle installs on every device attached, the owner's phone included. Never run it on
+  the phone (`62240DLCH0005W`): the Orchestrator clears the app's data before each test.
+
+How it works, so you can extend it:
+
+- Each test runs in its own process on a cleared app (Android Test Orchestrator with `clearPackageData`). It starts
+  like a fresh install on Hilt's test application (`HiltTestRunner`). `SmokeTest.startApp` starts what
+  `CucutoApplication.onCreate` would (the routing publisher), then opens `MainActivity`.
+- Setup goes through the app's real classes: `installDemoPack` (the importer, as Install does) and `messageFrom` (a
+  sender, as the module reports one). System file pickers are answered with Espresso-Intents (`answerFilePicker`).
+- No sleeps. Compose idling covers the UI. `waitFor`, `waitForText` and `scrollListTo` wait for a node after
+  background work. `waitForPublishedTable` reads the publisher's own copy of the table.
+- Nodes are found by string resource (`R.string.…`), so a renamed string fails to compile and reworded text still
+  matches. If you change a journey on purpose, update its test in the same PR.
+- **Not in CI:** it needs the full APK (NDK and Rust for `:core:jxl`), an API 37 emulator image download and a boot
+  on every app PR, more than 10 minutes on a GitHub runner. A slow or flaky required check would also block
+  auto-merge with nobody around to retry it. Run it yourself before pushing app changes.
 
 ## 4. Screenshot goldens (Roborazzi)
 
@@ -114,7 +148,7 @@ Details: [releasing.md](releasing.md). In short:
   It publishes the packs in `packs/`, the demo bundle and `repository.zip`, and the website serves the newest one at
   `/repo/index.json`, the app's default repository. Do this after changing `packs/` or the index format (for
   example `x-haptic`, ADR 0069).
-- **Google Play** uploads are the owner's (#276).
+- **Google Play:** none. Cucuto isn't on Play (ADR 0080).
 
 The owner allows agents to make releases ("i allow you making releases", owner log) and expects one whenever
 `main` has user-visible progress and CI is green. Installing a release on the phone is fine; the module side
@@ -180,7 +214,7 @@ updates; what stays open carries `deps:major` (ADR 0004).
 
 ## 11. What only the owner can do
 
-`gh issue list --label owner-action` lists it: Google Play account and signing (#276), the Google Cloud project for
+`gh issue list --label owner-action` lists it: Android developer verification (#358), the Google Cloud project for
 Drive sign-in (#188), supervised device runs that need a second phone or LSPosed changes (#143, #228), and checks
 that need real incoming messages or a wiped phone (#12, #157, #43, #46). Leave these alone unless the owner is
 present and says go. When your work creates a new one, label it `owner-action` and write the exact steps in the

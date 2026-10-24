@@ -49,7 +49,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.ChatKey
-import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.sync.RingtoneProblem
@@ -79,10 +78,11 @@ private fun phoneRingtoneViewModel(chat: ChatKey): PhoneRingtoneViewModel =
     )
 
 /**
- * The phone ringtone (#52) of [chat], as a self-contained card for the contact detail screen, under the "Phone calls"
- * row ([PhoneCallsRow]) that shows and changes what rings: turn the feature on (with the contacts permission explained
- * first), link the Android contact (suggested by phone number, or picked), and see what rings. Nothing to set up
- * while no character with ringtones is chosen.
+ * The phone ringtone set-up (#52) of [chat], as a self-contained card for the contact detail screen, right under the
+ * Sounds card whose "Phone calls" row ([PhoneCallsRow]) shows and changes what rings. The card shows up only when it
+ * asks for something (#348, ADR 0073): turn the feature on (with the contacts permission explained first), link the
+ * Android contact (suggested by phone number, or picked), use the ringtone, allow the phone permission, or fix a
+ * problem.
  */
 @Composable
 fun PhoneRingtoneSection(
@@ -133,16 +133,16 @@ fun PhoneRingtoneContent(
             feedback.fire(Feedback.Tap)
             action()
         }
-    // What rings is the "Phone calls" row's: this card only sets it up, once there is something to ring (or a
-    // ringtone of the contact's own to clear for Android default, ADR 0073).
-    if (state.loading || state.contactId == null || !state.needsSetUp) return
+    // What rings is the "Phone calls" row's: this card only asks for what is missing (#348), once there is something
+    // to ring (or a ringtone of the contact's own to clear for Android default, ADR 0073).
+    if (state.loading || state.contactId == null || !state.needsAction) return
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                stringResource(R.string.ringtone_title),
+                stringResource(R.string.contact_row_calls),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() },
             )
@@ -163,7 +163,7 @@ fun PhoneRingtoneContent(
                 }
 
                 else -> {
-                    Linked(state, actions, ::tap)
+                    NeedsAction(state, actions, ::tap)
                 }
             }
         }
@@ -195,42 +195,29 @@ private fun LinkPrompt(
     }
 }
 
+/** Linked: using the ringtone, the phone permission, or a problem (the contact and its "Change" sit under the row). */
 @Composable
-private fun Linked(
+private fun NeedsAction(
     state: PhoneRingtoneUiState,
     actions: PhoneRingtoneActions,
     tap: (() -> Unit) -> () -> Unit,
 ) = Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            state.linkedName?.let { stringResource(R.string.ringtone_linked, it) }
-                ?: stringResource(R.string.ringtone_linked_unnamed),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(onClick = tap(actions.onUnlink)) { Text(stringResource(R.string.ringtone_change_contact)) }
-    }
     if (!state.using) {
         FilledTonalButton(onClick = tap(actions.onUse)) {
             Text(stringResource(R.string.ringtone_use, state.characterName.orEmpty()))
         }
         return@Column
     }
-    Text(
-        status(state),
-        style = MaterialTheme.typography.bodyMedium,
-        color =
-            if (state.problem !=
-                null
-            ) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-    )
-    if (state.problem == RingtoneProblem.ChangedElsewhere) {
-        FilledTonalButton(onClick = tap(actions.onTakeOver)) { Text(stringResource(R.string.ringtone_take_over)) }
+    state.shownProblem?.let { problem ->
+        Text(
+            problemText(problem),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        if (problem == RingtoneProblem.ChangedElsewhere) {
+            FilledTonalButton(onClick = tap(actions.onTakeOver)) { Text(stringResource(R.string.ringtone_take_over)) }
+        }
     }
     if (state.needsPhonePermission) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -238,29 +225,20 @@ private fun Linked(
             TextButton(onClick = tap(actions.onAllowPhone)) { Text(stringResource(R.string.ringtone_phone_allow)) }
         }
     }
-    // "Leave as is" in the ringtone picker replaces "Stop using for calls" (ADR 0073).
-    if (!state.isDefault) {
-        Text(
-            state.exportTitle?.let { stringResource(R.string.ringtone_whatsapp_hint, it) }
-                ?: stringResource(R.string.ringtone_whatsapp_hint_generic),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
 }
 
 /**
- * The "Phone calls" row of contact detail (ADR 0063): the character that rings when [chat] phones (or "Android
- * default", or "Left as is", ADR 0073), one tap from the ringtone picker ([onChoose]), and a play button that previews
- * the version that rings now from its start (#246).
- * Shares [PhoneRingtoneSection]'s view model.
+ * The "Phone calls" row of contact detail (ADR 0063), the one place to see and change what rings when [chat] calls you
+ * (#348): the character with its rule (or "Android default", or "Left as is", ADR 0073), one tap from the ringtone
+ * picker ([onChoose]), whose "Which version rings" row opens the rules screen (#347); a play button that previews the
+ * version that rings now from its start (#246); and, once linked, the Android contact with "Change" and the WhatsApp
+ * hint. Shares [PhoneRingtoneSection]'s view model.
  */
 @Composable
 fun PhoneCallsRow(
     chat: ChatKey,
     onChoose: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel = phoneRingtoneViewModel(chat)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -283,10 +261,9 @@ fun PhoneCallsRow(
             viewModel.stopPreview()
         },
         modifier = modifier,
-        onOpenRules = { voice ->
+        onChangeContact = {
             feedback.fire(Feedback.Tap)
-            viewModel.stopPreview()
-            onOpenRules(voice)
+            viewModel.unlink()
         },
     )
 }
@@ -299,7 +276,7 @@ fun PhoneCallsRowContent(
     onTogglePreview: () -> Unit,
     modifier: Modifier = Modifier,
     onStopPreview: () -> Unit = {},
-    onOpenRules: (ChatVoice) -> Unit = {},
+    onChangeContact: () -> Unit = {},
 ) {
     val character = state.ringingCharacter
     val name = state.characterName.takeIf { state.hasRingtone && !state.isDefault && !state.isUnchanged }
@@ -347,12 +324,38 @@ fun PhoneCallsRowContent(
                 }
             },
         )
-        // The rules of a character with several versions, in plain words and editable (ADR 0074).
-        if (character != null && name != null && state.modes.isNotEmpty()) {
-            TextButton(
-                onClick = { onOpenRules(character.voice) },
-                modifier = Modifier.padding(start = 76.dp),
-            ) { Text(stringResource(R.string.ringtone_rules_open)) }
+        // The linked Android contact and the WhatsApp hint, once there is a contact to ring (#348). The rule is the
+        // picker's and the rules screen's (#347).
+        if (state.showsLink) LinkLines(state, onChangeContact)
+    }
+}
+
+/** "Android contact: Ada · Change" and, for a ringtone of Cucuto's, how to hear it on WhatsApp calls too (#145). */
+@Composable
+private fun LinkLines(
+    state: PhoneRingtoneUiState,
+    onChangeContact: () -> Unit,
+) {
+    Column(Modifier.padding(start = 76.dp, end = 12.dp, bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                state.linkedName?.let { stringResource(R.string.ringtone_linked, it) }
+                    ?: stringResource(R.string.ringtone_linked_unnamed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onChangeContact) {
+                Text(stringResource(R.string.ringtone_change_contact))
+            }
+        }
+        if (!state.isDefault && state.using && state.hasRingtone) {
+            Text(
+                state.exportTitle?.let { stringResource(R.string.ringtone_whatsapp_hint, it) }
+                    ?: stringResource(R.string.ringtone_whatsapp_hint_generic),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -453,46 +456,30 @@ internal val CallIcon: ImageVector by lazy {
 }
 
 @Composable
-private fun status(state: PhoneRingtoneUiState): String =
-    when {
-        state.problem == RingtoneProblem.ContactMissing -> {
-            stringResource(R.string.ringtone_problem_contact_missing)
-        }
+private fun problemText(problem: RingtoneProblem): String =
+    stringResource(
+        when (problem) {
+            RingtoneProblem.ContactMissing -> {
+                R.string.ringtone_problem_contact_missing
+            }
 
-        state.problem == RingtoneProblem.ChangedElsewhere -> {
-            stringResource(R.string.ringtone_problem_changed)
-        }
+            RingtoneProblem.ChangedElsewhere -> {
+                R.string.ringtone_problem_changed
+            }
 
-        state.problem == RingtoneProblem.NoPermission -> {
-            stringResource(R.string.ringtone_problem_permission)
-        }
+            RingtoneProblem.NoPermission -> {
+                R.string.ringtone_problem_permission
+            }
 
-        state.problem == RingtoneProblem.WriteFailed -> {
-            stringResource(R.string.ringtone_problem_write)
-        }
+            RingtoneProblem.WriteFailed -> {
+                R.string.ringtone_problem_write
+            }
 
-        state.isDefault -> {
-            stringResource(R.string.ringtone_status_default)
-        }
-
-        state.syncing && state.ringingWith == null -> {
-            stringResource(R.string.ringtone_status_preparing)
-        }
-
-        state.problem == RingtoneProblem.RenderFailed && state.ringingWith == null -> {
-            stringResource(
-                R.string.ringtone_problem_render,
-            )
-        }
-
-        state.ringingWith != null -> {
-            stringResource(R.string.ringtone_status_ringing, state.ringingWith)
-        }
-
-        else -> {
-            stringResource(R.string.ringtone_status_preparing)
-        }
-    }
+            RingtoneProblem.RenderFailed, RingtoneProblem.NotLinked, RingtoneProblem.NoRingtones -> {
+                R.string.ringtone_problem_render
+            }
+        },
+    )
 
 @Composable
 private fun Body(

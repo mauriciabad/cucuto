@@ -459,3 +459,87 @@ visit. The lead opened #337: the explainer now shows only while the contacts per
 Android's settings once Android stops asking. ADR 0065's design details updated.)
 
 > add from contact shoudl not show the warning every time, just the first time
+
+## 2026-10-24 — Chat with an agent (no Google Play)
+
+> I decided i wont publish to the Play store because of the closed testing requirement is too hard to meet. close all isues that now are not needed and comment the ones related, and document this decision
+
+(ADR 0080: Cucuto is not published on Google Play, which reverts the #211 plan and supersedes ADR 0071. The Play
+bundle in `release.yml`, `:app:bundleRelease` in CI, `docs/google-play.md`, `fastlane/Supplyfile` and the Gradle
+`bundle {}` block were removed; CI keeps the 16 KB, target SDK and permission checks, now on the APK. #276 and #286
+closed as not planned; #275, #308, #274 and #211 commented. Android developer verification, which #276 covered
+through Play Console, is now #358 (Android Developer Console). The brief, distribution.md, releasing.md, install.md,
+maintaining.md, the README and ADRs 0021, 0046 and 0075 updated.)
+
+## 2026-10-24 — Chat with the lead (#302, publishing the explainer video)
+
+(The owner had watched the AI-voiced cut from the `explainer-video` workflow's artifact, run 40092869144, and
+answered #302 in chat. The lead read it as yes, publish now. The cut and its poster are committed as website assets
+in `web/static/video/` and `web/src/lib/assets/images/`, so Home plays it instead of "coming soon". ADR 0070
+(Published), ADR 0042 and docs/explainer-video.md (Publishing) updated; #302 closed.)
+
+> the video is ready to be published it is a moment
+
+## 2026-10-24 — Chat with an agent (remove the sample chat)
+
+(After ADR 0080, the agent said the sample chat stays for people without the module, and the owner asked about it.)
+
+> did you cancel the simple chat?
+
+(The agent answered that it was kept, as a "try before you set up" preview.)
+
+> but they can hear means that it will work or that is just a demo?
+
+(The agent answered that it is only a demo: it plays in the app and changes nothing in WhatsApp.)
+
+> if it is just a demo is a completely useless feature that is a waste of time to develop and a burden to mantain!
+
+> speak with the other session about the simple chat. i want it completely removed
+
+(The sample chat is removed: the `sample` package, its settings store, its destination, Home's "Try a sample chat"
+button, its strings, tests and goldens, and its mentions in the README, install guide, device testing, website and
+store descriptions. "Hear the characters" is now the main action of Home's "Your characters are ready" card. ADR 0075
+withdrawn. The lead session agreed; PR #364 and issues #346 and #308 closed.)
+
+## 2026-10-24 — Testing v0.2.0 on the phone (ringtone badge in the Home → contact detail transition, #339)
+
+> the animation that moves the character from the list to the contact detail is smooth but the image of the ringtone has an issue with the zposition, while moving charavter is avobe but when stops (begining and end) the ringtone pops avobe the character. i think it should move along with the character as a group
+
+(#339: the ringtone cover became a shared element of its own, drawn above the avatar's, so the pair flies as one
+group; ADR 0073 and brand/motion.md updated.)
+
+## 2026-10-24 (evening): wrapping up, agent efficiency, the v1 plan
+
+> when the current agents end, dont lunch more. only the minimum ones to release all code and wrap up development
+
+(The lead stopped launching new agents and let the running ones finish.)
+
+> what effort is using each agent model?
+
+(Every agent ran on Opus 5.5, inherited from the lead, at the general-purpose agent's default effort. The owner then set the session effort to medium.)
+
+> are the agents working effiently? i feel like they are speending too much time on their task. i dont want to rush theb, but i also dont want to waste time
+
+(The Mac was overloaded: load about 36 on 10 cores, with about 9 agents each running full Gradle builds and emulators. The lead told agents to run only the tests they touch, merge `main` once before pushing and leave the full check to CI, and to keep about 5 heavy agents at once.)
+
+> Why do you stop? the app has to be finished to enter the low development stage
+
+(The lead resumed with four agents: #347 and #348 (ringtone screens), #346 (sample chat, later dropped), #350 (Baseline Profile and the contact detail header), #325 and #324 (creators).)
+
+> do you have a plan of that is needed to consider the app ready?
+
+(The plan is issue #357, "v1.0 readiness".)
+
+> what is the Sample chat? i dont understand
+
+> "Google Play reviewer has no root and no LSPosed," why are you planing stuff for google play?!
+
+(The sample chat was built for Google Play review before the owner decided against Play. The owner then had it removed completely, in another session: #365, ADR 0075 withdrawn.)
+
+> i answered all issue questions
+
+(Closed `question` issues keep their defaults. On #309 the owner answered item 2, 2026-10-24 17:19 UTC, verbatim:)
+
+> 2 "The explainer shows every time" NO. I completely disagree. this is making the UX worse and is a very bad idea.
+
+(Already changed by #337 / PR #344: the contacts explainer shows only while the permission is missing. #309 closed.)

@@ -5,12 +5,10 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -19,8 +17,6 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.picker.PickerContent
 import app.mauri.cucuto.picker.previewPickerState
-import app.mauri.cucuto.sample.SampleChatContent
-import app.mauri.cucuto.screenshots.demoSampleChatState
 import app.mauri.cucuto.ui.ringtone.PlayingVariant
 import app.mauri.cucuto.ui.ringtone.PreviewPlaying
 import app.mauri.cucuto.ui.ringtone.RingtonePickerActions
@@ -37,8 +33,8 @@ import org.robolectric.annotation.Config
 
 /**
  * What TalkBack users rely on in the screens added on 2026-10-24 (#226): the pickers' folding, search and "Surprise
- * me" (ADR 0072), the ringtone step and its saves (ADR 0073), the rules screen (ADR 0074) and the sample chat (ADR
- * 0075). The base checks (labels, one stop per thing, 48 dp, 200%) run on them through [A11yFlowScreens].
+ * me" (ADR 0072), the ringtone step and its saves (ADR 0073), and the rules screen (ADR 0074). The base checks
+ * (labels, one stop per thing, 48 dp, 200%) run on them through [A11yFlowScreens].
  */
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "w411dp-h891dp")
@@ -129,29 +125,6 @@ class NewScreensSemanticsTest {
             .performSemanticsAction(SemanticsActions.OnClick)
         compose.onNode(hasText("At night") and isSelected(true)).assertExists()
         compose.onNode(hasText("By day") and isSelected(false)).assertExists()
-    }
-
-    @Test
-    fun theSampleChatAnnouncesItsVoiceAndSaysWhenItPlays() {
-        compose.showScreen {
-            SampleChatContent(
-                state = demoSampleChatState().copy(speaking = true),
-                ringing = null,
-                onBack = {},
-                onChooseVoice = {},
-                onChooseRingtone = {},
-                onPlayMessage = {},
-                onToggleCall = {},
-                onGetDemoPacks = {},
-            )
-        }
-        compose.onNode(hasText("Demo", substring = true) and hasText("WhatsApp", substring = true)).assertExists()
-        compose.onNode(hasText("Voice: Bleep the frog") and isPoliteLiveRegion()).assertExists()
-        compose.onNodeWithText("Play a sample message").assert(hasState("Playing"))
-        compose.onAllNodesWithText("Chiptune critters").filterToOne(isHeading()).assertExists()
-        compose
-            .onNodeWithContentDescription("Bleep the frog")
-            .assert(hasState("Selected, Playing"))
     }
 
     private fun hasState(state: String) = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, state)

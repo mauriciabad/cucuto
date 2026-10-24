@@ -14,7 +14,6 @@ import app.mauri.cucuto.packs.ui.PackDetailScreen
 import app.mauri.cucuto.packs.ui.PacksImportReview
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
-import app.mauri.cucuto.sample.SampleChatScreen
 import app.mauri.cucuto.ui.contacts.AddFromContactsScreen
 import app.mauri.cucuto.ui.contacts.ConfirmLinkScreen
 import app.mauri.cucuto.ui.creator.CreatorFinishScreen
@@ -117,9 +116,6 @@ fun cucutoEntries(
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
                 onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
                 onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
-                onOpenRules = { voice ->
-                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
-                },
             )
         }
         entry<CucutoDestination.RingtonePicker>(
@@ -221,11 +217,6 @@ fun cucutoEntries(
             metadata = childOf(CucutoDestination.Home),
         ) { key ->
             ConfirmLinkScreen(chat = key.chat, onBack = goBack, onDone = { navigator.remove(key) })
-        }
-
-        // Home: the sample chat, a demo that plays in the app without the module (ADR 0075).
-        entry<CucutoDestination.SampleChat> {
-            SampleChatScreen(onBack = goBack, onOpenDiscover = { navigate(CucutoDestination.Discover) })
         }
 
         // Debug builds only: R8 drops these screens from release builds.
