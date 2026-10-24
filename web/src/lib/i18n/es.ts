@@ -52,6 +52,16 @@ export const es: Messages = {
 		videoSoonTitle: 'El vídeo explicativo está en camino',
 		videoSoonText:
 			'Un recorrido corto: llega un mensaje, el móvil reproduce el personaje de quien lo envía y sabes quién es sin mirar.',
+		video: {
+			soonBadge: 'Próximamente',
+			posterAlt:
+				'Ilustración: un móvil muestra el selector de personajes de Cucuto, donde se asigna la rana Bleep entre una lluvia de confeti. Al lado, el reloj de cuco canta y tres chats tienen cada uno su personaje.',
+			label: 'Vídeo explicativo de Cucuto',
+			play: 'Reproducir el vídeo',
+			unsupported:
+				'Tu navegador no puede reproducir este vídeo. La transcripción de abajo recoge todo lo que dice.',
+			transcript: 'Leer la transcripción'
+		},
 		howTitle: 'Cómo funciona',
 		steps: iconItems([
 			{
