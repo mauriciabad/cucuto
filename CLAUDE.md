@@ -4,6 +4,11 @@ Cucuto gives each WhatsApp contact a voice: an LSPosed module in `system_server`
 notification sound and vibration per contact, using clips from user-imported sound packs. The full spec is
 [`docs/project-brief.md`](docs/project-brief.md). Read it before starting any non-trivial task; it is the source of truth.
 
+**Working alone?** Since 2026-10-25 there is no lead agent, only occasional single agents. Start with
+[`docs/maintaining.md`](docs/maintaining.md): how to orient, scope a small feature, build, test, release and use the
+owner's phone. Where this file mentions "the lead", you take that role yourself. All decisions are indexed in
+[`docs/decisions/README.md`](docs/decisions/README.md).
+
 ## Ground rules
 
 - **Name: "Cucuto" with a capital C in prose** (owner, 2026-10-23). Lowercase only in identifiers (`cucuto` repo,
