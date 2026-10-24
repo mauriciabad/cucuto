@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- The Feedback engine's rich haptics (VibrationEffect compositions with USAGE_TOUCH). -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!--
+        Pack repositories (Discover, ADR 0029): only while Discover is open or the user adds a repository. No
+        background work, no analytics. The module in system_server never uses the network.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
         Package visibility (Android 11+): the status card checks that WhatsApp or WhatsApp Business is installed.
@@ -67,6 +72,18 @@
                 <data android:host="*" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:pathAdvancedPattern=".*\\.[zZ][iI][pP]" />
+            </intent-filter>
+            <!--
+                "Add to app" links from websites and QR codes: cucuto://repo/add?url=… (ADR 0011, ADR 0029). The link
+                only fills in Discover's add sheet; the user sees the host and confirms before anything is fetched.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="cucuto" />
+                <data android:host="repo" />
+                <data android:path="/add" />
             </intent-filter>
         </activity>
 

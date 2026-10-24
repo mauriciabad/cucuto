@@ -27,6 +27,7 @@ import app.mauri.cucuto.diagnostics.DiagnosticsScreen
 import app.mauri.cucuto.home.HomeScreen
 import app.mauri.cucuto.packs.ui.PacksScreen
 import app.mauri.cucuto.picker.PickerScreen
+import app.mauri.cucuto.ui.discover.DiscoverScreen
 import app.mauri.cucuto.ui.gallery.GalleryScreen
 import app.mauri.cucuto.ui.motion.SharedElementEntry
 import app.mauri.cucuto.ui.motion.SharedElementsHost
@@ -44,6 +45,7 @@ import kotlinx.coroutines.flow.filterNotNull
 fun CucutoNavDisplay(
     modifier: Modifier = Modifier,
     pendingImport: StateFlow<ImportSource?>? = null,
+    pendingRepoLink: StateFlow<String?>? = null,
     startViewModel: StartViewModel = hiltViewModel(),
 ) {
     val onboarded by startViewModel.onboarded.collectAsStateWithLifecycle()
@@ -72,6 +74,13 @@ fun CucutoNavDisplay(
     LaunchedEffect(pendingImport) {
         pendingImport?.filterNotNull()?.collect {
             if (backStack.lastOrNull() != CucutoDestination.Packs) backStack.add(CucutoDestination.Packs)
+        }
+    }
+
+    // An "Add to app" link opens Discover, which shows the add sheet (#36).
+    LaunchedEffect(pendingRepoLink) {
+        pendingRepoLink?.filterNotNull()?.collect {
+            if (backStack.lastOrNull() != CucutoDestination.Discover) backStack.add(CucutoDestination.Discover)
         }
     }
 
@@ -127,7 +136,7 @@ private fun entries(
     entry<CucutoDestination.Packs> {
         PacksScreen(onBack = goBack, onDiscover = { navigate(CucutoDestination.Discover) })
     }
-    entry<CucutoDestination.Discover> { PlaceholderScreen(it, onBack = goBack) }
+    entry<CucutoDestination.Discover> { DiscoverScreen(onBack = goBack) }
     entry<CucutoDestination.HapticEditor> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.Settings> { PlaceholderScreen(it, onBack = goBack) }
     entry<CucutoDestination.Diagnostics> { DiagnosticsScreen(onBack = goBack) }
