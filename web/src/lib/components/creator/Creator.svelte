@@ -55,6 +55,7 @@
 	let pack = $state<PackState>(emptyPack('', ''));
 	let licenseChoice = $state('');
 	let customLicense = $state('');
+	let tagsText = $state('');
 
 	let outcome = $state.raw<BuildOutcome | null>(null);
 	let builtFrom = $state('');
@@ -136,6 +137,7 @@
 			licenseChoice = 'other';
 			customLicense = next.license;
 		}
+		tagsText = next.tags.join(', ');
 		history.replaceState(history.state, '', `#draft=${id}`);
 	}
 
@@ -181,6 +183,8 @@
 			a: pack.author,
 			l: pack.license,
 			d: pack.description,
+			hp: pack.homepage,
+			tg: pack.tags,
 			o: pack.cover?.bytes.length,
 			c: pack.characters.map((c) => ({
 				n: c.name,
@@ -189,7 +193,16 @@
 				k: c.seedColor,
 				h: c.haptic,
 				m: c.spriteAnimated?.id,
-				x: c.clips.map((clip) => [clip.uid, clip.label, clip.weight, clip.encoded.bytes.length])
+				de: c.description,
+				x: c.clips.map((clip) => [
+					clip.uid,
+					clip.label,
+					clip.weight,
+					clip.encoded.bytes.length,
+					clip.when,
+					clip.oneIn
+				]),
+				r: c.ringtones.map((r) => [r.file.id, r.file.bytes.length, r.entry])
 			}))
 		})
 	);
@@ -226,6 +239,9 @@
 		pack.id ?? (spec ? spec.authoring.suggestPackId(pack.author, pack.name, pack.idSuffix) : '')
 	);
 	const stale = $derived(outcome !== null && builtFrom !== fingerprint);
+	const homepageInvalid = $derived(
+		pack.homepage !== null && spec !== null && !spec.authoring.isHomepage(pack.homepage)
+	);
 
 	// Opening pack files.
 	async function pickPackFile(event: Event & { currentTarget: HTMLInputElement }) {
@@ -489,9 +505,9 @@
 					/>
 					<span>{t.opening.copy}</span>
 				</label>
-				{#if kept && (kept.ringtones > 0 || kept.animations > 0)}
+				{#if kept && kept.animations > 0}
 					<p class="body-small on-surface-variant">
-						{fill(t.opening.kept, { ringtones: kept.ringtones, animations: kept.animations })}
+						{fill(t.opening.kept, { animations: kept.animations })}
 					</p>
 				{/if}
 				{#if kept && kept.undecodable > 0}
@@ -565,6 +581,43 @@
 						>
 					</label>
 				{/if}
+				<details class="more" open={pack.homepage !== null || pack.tags.length > 0}>
+					<summary class="label-large">{t.more.title}</summary>
+					<div class="more-fields">
+						<label class="field">
+							<span class="label-large">{t.more.homepage}</span>
+							<input
+								type="url"
+								maxlength="2000"
+								placeholder="https://"
+								autocomplete="url"
+								value={pack.homepage ?? ''}
+								aria-describedby="homepage-hint"
+								aria-invalid={homepageInvalid}
+								oninput={(e) => (pack.homepage = e.currentTarget.value.trim() || null)}
+							/>
+							<span id="homepage-hint" class="body-small on-surface-variant">
+								{homepageInvalid ? t.more.homepageInvalid : t.more.homepageHint}
+							</span>
+						</label>
+						<label class="field">
+							<span class="label-large">{t.more.tags}</span>
+							<input
+								type="text"
+								maxlength="800"
+								autocomplete="off"
+								bind:value={tagsText}
+								aria-describedby="tags-hint"
+								oninput={() => (pack.tags = authoring.parseTags(tagsText))}
+							/>
+							<span id="tags-hint" class="body-small on-surface-variant">
+								{pack.tags.length > 0
+									? fill(t.more.tagsResult, { tags: pack.tags.join(', ') })
+									: t.more.tagsHint}
+							</span>
+						</label>
+					</div>
+				</details>
 				<p class="body-small on-surface-variant pack-id">
 					{t.details.packId}: <code>{packId}</code>
 					<br />{pack.id ? t.details.packIdKept : t.details.packIdHint}
@@ -690,6 +743,20 @@
 		margin: 0;
 		flex: none;
 		accent-color: var(--md-sys-color-primary);
+	}
+
+	.more summary {
+		cursor: pointer;
+		min-height: 2.5rem;
+		display: flex;
+		align-items: center;
+	}
+
+	.more-fields {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		margin-top: 0.75rem;
 	}
 
 	.pack-id code {

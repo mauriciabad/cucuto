@@ -48,6 +48,7 @@ import playArrow from '@material-symbols/svg-500/rounded/play_arrow-fill.svg?raw
 import playCircle from '@material-symbols/svg-500/rounded/play_circle.svg?raw';
 import powerSettings from '@material-symbols/svg-500/rounded/power_settings_new.svg?raw';
 import publicIcon from '@material-symbols/svg-500/rounded/public.svg?raw';
+import schedule from '@material-symbols/svg-500/rounded/schedule.svg?raw';
 import restart from '@material-symbols/svg-500/rounded/restart_alt.svg?raw';
 import shield from '@material-symbols/svg-500/rounded/shield.svg?raw';
 import stop from '@material-symbols/svg-500/rounded/stop-fill.svg?raw';
@@ -111,6 +112,7 @@ const sources = {
 	'power-settings': powerSettings,
 	public: publicIcon,
 	restart,
+	schedule,
 	shield,
 	stop,
 	terminal,

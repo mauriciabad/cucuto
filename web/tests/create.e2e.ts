@@ -201,7 +201,7 @@ test('lists what the draft still needs', async ({ page }) => {
 	await expect(card).toContainText('Give the pack a name.');
 	await expect(card).toContainText('Add an author.');
 	await expect(card).toContainText('Choose a picture for Character 1.');
-	await expect(card).toContainText('Add at least one clip to Character 1.');
+	await expect(card).toContainText('Add a clip or a ringtone to Character 1.');
 });
 
 test('writes WAV clips where the browser has no Opus encoder', async ({ page }) => {
@@ -271,4 +271,145 @@ test('takes the golden fixtures’ media formats as input (Spanish page)', async
 	const result = (await validator()).validateArchive(bytes);
 	expect(result.valid).toBe(true);
 	expect(result.packs[0].characters).toBe(sprites.length);
+});
+
+/** A 440 Hz tone of `seconds` as 16-bit mono WAV at 48 kHz (synthesized, CC0). */
+function toneWav(seconds: number): Buffer {
+	const rate = 48_000;
+	const frames = Math.round(rate * seconds);
+	const out = Buffer.alloc(44 + frames * 2);
+	out.write('RIFF', 0);
+	out.writeUInt32LE(36 + frames * 2, 4);
+	out.write('WAVEfmt ', 8);
+	out.writeUInt32LE(16, 16);
+	out.writeUInt16LE(1, 20);
+	out.writeUInt16LE(1, 22);
+	out.writeUInt32LE(rate, 24);
+	out.writeUInt32LE(rate * 2, 28);
+	out.writeUInt16LE(2, 32);
+	out.writeUInt16LE(16, 34);
+	out.write('data', 36);
+	out.writeUInt32LE(frames * 2, 40);
+	for (let i = 0; i < frames; i++) {
+		out.writeInt16LE(Math.round(8000 * Math.sin((2 * Math.PI * 440 * i) / rate)), 44 + i * 2);
+	}
+	return out;
+}
+
+test('sets when a clip plays: at night, on Saturdays, rarely', async ({ page }) => {
+	const errors = trackErrors(page);
+	await openCreator(page);
+	await fillDetails(page, 'Night frog');
+	await character(page, 0).getByLabel('Name').fill('Frog');
+	await addPicture(page, 0, join(fixtures, 'minimal-pack/characters/beep/sprite.png'));
+	await addClipFile(page, 0, join(fixtures, 'full-pack/characters/robin/clips/chirp.ogg'));
+
+	await character(page, 0).getByRole('button', { name: 'When it plays: chirp' }).click();
+	const dialog = page.getByRole('dialog', { name: /When it plays/ });
+	await expect(dialog).toBeVisible();
+	await dialog.getByRole('checkbox', { name: /Rare clip/ }).check();
+	await dialog.getByRole('spinbutton', { name: 'About one message in' }).fill('13');
+	await dialog.getByRole('radio', { name: 'At night' }).check();
+	await dialog.getByRole('button', { name: 'Saturday' }).click();
+	await expect(dialog.getByRole('button', { name: 'Saturday' })).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
+
+	// A date that is not a day of the year is named in plain words and blocks saving.
+	await dialog.getByRole('button', { name: 'Add a date' }).click();
+	await dialog.getByRole('textbox', { name: 'Date 1: Day' }).fill('02-30');
+	await expect(dialog).toContainText('Date 1 is not a day of the year.');
+	await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled();
+	await dialog.getByRole('button', { name: 'Remove date 1' }).click();
+
+	const axe = await new AxeBuilder({ page }).include('dialog').analyze();
+	expect(axe.violations).toEqual([]);
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(character(page, 0).locator('.clips li .condition')).toHaveText(
+		'At night · Saturday · Rare: about 1 in 13'
+	);
+
+	const file = await checkAndDownload(page);
+	const result = (await validator()).validateArchive(file.bytes);
+	expect(result.errorCodes).toEqual([]);
+	const manifest = JSON.parse(new TextDecoder().decode(unzipSync(file.bytes)['pack.json']));
+	expect(manifest.characters[0].clips[0]).toMatchObject({
+		label: 'chirp',
+		when: { time: 'night', weekday: 'sat' },
+		oneIn: 13
+	});
+	expect(errors).toEqual([]);
+});
+
+test('makes a ringtone-only character with two versions of one song', async ({ page }) => {
+	const errors = trackErrors(page);
+	await openCreator(page);
+	await fillDetails(page, 'Songs');
+	await page.getByText('More details (optional)').click();
+	await page.getByRole('textbox', { name: 'Homepage' }).fill('https://example.com/songs');
+	await page.getByRole('textbox', { name: 'Tags' }).fill('Songs, Calls');
+	await expect(page.getByText('Saved as: songs, calls')).toBeVisible();
+
+	const card = character(page, 0);
+	await card.getByLabel('Name').fill('Pond');
+	await addPicture(page, 0, join(fixtures, 'minimal-pack/characters/beep/sprite.png'));
+	await card.getByRole('textbox', { name: 'Description (optional)' }).fill('A tune for calls.');
+	const ringtoneInput = card.locator('input[type=file][accept^=".ogg"]');
+
+	// Too short for a ringtone: refused in plain words.
+	await ringtoneInput.setInputFiles({
+		name: 'blip.wav',
+		mimeType: 'audio/wav',
+		buffer: toneWav(2)
+	});
+	await expect(card).toContainText('Ringtones need at least 5 seconds.');
+
+	await ringtoneInput.setInputFiles({
+		name: 'pond-song.wav',
+		mimeType: 'audio/wav',
+		buffer: toneWav(6)
+	});
+	await expect(card.locator('.ringtones li')).toHaveCount(1);
+	await expect(card.locator('.ringtones li .condition')).toHaveText('Always');
+
+	await card.getByRole('button', { name: 'Add a version: pond-song' }).click();
+	const dialog = page.getByRole('dialog', { name: /Edit ringtone/ });
+	await expect(dialog).toBeVisible();
+	await dialog.getByRole('radio', { name: 'At night' }).check();
+	await dialog.getByRole('radio', { name: 'Play an intro once, then loop a section' }).check();
+	await dialog.getByRole('slider', { name: 'Loop starts' }).fill('1000');
+	const axe = await new AxeBuilder({ page }).include('dialog').analyze();
+	expect(axe.violations).toEqual([]);
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(card.locator('.ringtones li')).toHaveCount(2);
+	await expect(card.locator('.ringtones li .condition').nth(1)).toHaveText('At night');
+
+	const file = await checkAndDownload(page);
+	const result = (await validator()).validateArchive(file.bytes);
+	expect(result.errorCodes).toEqual([]);
+	const entries = unzipSync(file.bytes);
+	const manifest = JSON.parse(new TextDecoder().decode(entries['pack.json']));
+	expect(manifest.homepage).toBe('https://example.com/songs');
+	expect(manifest.tags).toEqual(['songs', 'calls']);
+	expect(manifest.characters[0]).toMatchObject({
+		name: 'Pond',
+		description: 'A tune for calls.',
+		ringtones: [
+			{ file: 'characters/pond/ringtones/pond-song.wav', label: 'pond-song' },
+			{
+				file: 'characters/pond/ringtones/pond-song.wav',
+				label: 'pond-song (version 2)',
+				when: { time: 'night' },
+				loop: { startMs: 1000, endMs: 6000 }
+			}
+		]
+	});
+	expect(manifest.characters[0].clips).toBeUndefined();
+	expect(Object.keys(entries).filter((p) => p.includes('/ringtones/'))).toEqual([
+		'characters/pond/ringtones/pond-song.wav'
+	]);
+	expect(errors).toEqual([]);
 });

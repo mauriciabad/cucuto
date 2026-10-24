@@ -84,6 +84,10 @@ The editors (each in the style of its creator: dialogs on the website, pages in 
 - **More details**: the pack's homepage and tags, and a character's description. A character's tags stay
   pass-through (no app feature reads them yet).
 - The website's bundle tool gains homepage and tags, like `packer bundle`.
+- On the website the editors are dialogs (`ConditionDialog`, `RingtoneDialog`, sharing `ConditionFields`); a version's
+  label is also edited in place in its row, like a clip's. The list summaries ("At night · Saturday · Rare: about 1 in
+  13") come from `web/src/lib/creator/conditions.ts`. Ringtone files keep their bytes; the browser decodes them only
+  to check their length and to play them.
 
 Animated sprites stay pass-through (#324): adding one needs an animated encoder on each platform. Ringtone-only
 characters get no preview sample in repository indexes yet (#325).
