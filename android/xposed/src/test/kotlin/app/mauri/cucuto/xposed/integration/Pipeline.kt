@@ -256,12 +256,15 @@ internal class Pipeline(
 
 /**
  * LSPosed, as the app and the module see it: Remote Preferences (the app's writes reach the module's change
- * listener unless [deliverPreferenceChanges] is off, as after an app update, ADR 0024), the routing remote file, and
- * the nudge broadcast, which reaches the module as [onNudge] with the published generation.
+ * listener unless [deliverPreferenceChanges] is off, as after an app update, ADR 0024; like Binder, they refuse a table
+ * over [RoutingContract.MAX_PREFERENCES_CHARS], ADR 0054), the routing remote file, and the nudge broadcast, which
+ * reaches the module as [onNudge] with the published generation.
  */
 internal class FakeXposedService : RoutingSink {
     override val connection = MutableStateFlow<SinkConnection>(SinkConnection.Connected("LSPosed", 102))
     val preferences = RemotePreferences()
+
+    /** Every table written to the remote file: always the full one. */
     val writes: MutableList<String> = CopyOnWriteArrayList()
 
     @Volatile var remoteFile: ByteArray? = null
@@ -274,30 +277,44 @@ internal class FakeXposedService : RoutingSink {
 
     override suspend fun read(): String? = preferences.value
 
+    override suspend fun publishedGeneration(): Long? = preferences.generation
+
     override suspend fun write(
         encoded: String,
         generation: Long,
+        forPreferences: String?,
     ) {
+        check(forPreferences == null || forPreferences.length <= RoutingContract.MAX_PREFERENCES_CHARS) {
+            "Binder transaction too large: ${forPreferences?.length} chars"
+        }
         writes += encoded
-        preferences.put(encoded, notify = deliverPreferenceChanges)
+        preferences.put(forPreferences, generation, notify = deliverPreferenceChanges)
         remoteFile = RoutingFile.frame(encoded)
     }
 
     override fun nudge(generation: Long) = onNudge(generation)
 
-    /** Remote Preferences as the module reads them: one string value, change listeners. */
+    /** Remote Preferences as the module reads them: the table, the published generation, change listeners. */
     class RemotePreferences : SharedPreferences {
         private val listeners = CopyOnWriteArrayList<SharedPreferences.OnSharedPreferenceChangeListener>()
 
         @Volatile var value: String? = null
             private set
 
+        @Volatile var generation: Long? = null
+            private set
+
+        /** Writes [encoded] (null leaves the table as it is) and [generation], as one commit. */
         fun put(
-            encoded: String,
+            encoded: String?,
+            generation: Long,
             notify: Boolean,
         ) {
-            value = encoded
-            if (notify) listeners.forEach { it.onSharedPreferenceChanged(this, RoutingContract.KEY_TABLE) }
+            if (encoded != null) value = encoded
+            this.generation = generation
+            if (!notify) return
+            if (encoded != null) listeners.forEach { it.onSharedPreferenceChanged(this, RoutingContract.KEY_TABLE) }
+            listeners.forEach { it.onSharedPreferenceChanged(this, RoutingContract.KEY_GENERATION) }
         }
 
         override fun getString(
@@ -332,7 +349,7 @@ internal class FakeXposedService : RoutingSink {
         override fun getLong(
             key: String?,
             defValue: Long,
-        ): Long = defValue
+        ): Long = if (key == RoutingContract.KEY_GENERATION) generation ?: defValue else defValue
 
         override fun getFloat(
             key: String?,
