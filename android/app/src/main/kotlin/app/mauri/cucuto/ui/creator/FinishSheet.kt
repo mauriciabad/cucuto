@@ -54,39 +54,56 @@ internal fun FinishSheet(
     modifier: Modifier = Modifier,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            when (finish) {
-                FinishUi.Checking -> {
-                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        LoadingIndicator(Modifier.size(56.dp))
-                    }
-                    Text(stringResource(R.string.creator_checking), style = MaterialTheme.typography.titleMedium)
-                }
+        FinishContent(finish, onInstall, onExport, onShare, onDone, onDismiss)
+    }
+}
 
-                is FinishUi.Incomplete -> {
-                    Text(
-                        stringResource(R.string.creator_incomplete_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                    finish.problems.forEach { Line(draftProblemText(it), warning = true) }
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.creator_keep_editing)) }
+/**
+ * What the "Check and finish" sheet shows, without the sheet: the accessibility checks and large-font goldens render
+ * it in the main window, which has their font size and language (a sheet's own window does not, on Robolectric).
+ */
+@Composable
+internal fun FinishContent(
+    finish: FinishUi,
+    onInstall: () -> Unit,
+    onExport: (fileName: String) -> Unit,
+    onShare: () -> Unit,
+    onDone: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        when (finish) {
+            FinishUi.Checking -> {
+                Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    LoadingIndicator(Modifier.size(56.dp))
                 }
+                Text(stringResource(R.string.creator_checking), style = MaterialTheme.typography.titleMedium)
+            }
 
-                is FinishUi.Invalid -> {
-                    InvalidContent(finish.problem)
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.creator_keep_editing)) }
-                }
+            is FinishUi.Incomplete -> {
+                Text(
+                    stringResource(R.string.creator_incomplete_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                finish.problems.forEach { Line(draftProblemText(it), warning = true) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.creator_keep_editing)) }
+            }
 
-                is FinishUi.Ready -> {
-                    ReadyContent(finish, onInstall, onExport, onShare, onDone)
-                }
+            is FinishUi.Invalid -> {
+                InvalidContent(finish.problem)
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.creator_keep_editing)) }
+            }
+
+            is FinishUi.Ready -> {
+                ReadyContent(finish, onInstall, onExport, onShare, onDone)
             }
         }
     }

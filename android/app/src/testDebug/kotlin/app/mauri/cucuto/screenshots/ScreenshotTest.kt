@@ -3,7 +3,9 @@ package app.mauri.cucuto.screenshots
 import android.content.Context
 import android.content.res.Configuration
 import android.view.ContextThemeWrapper
+import android.view.View
 import android.view.ViewGroup
+import android.view.inspector.WindowInspector
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -166,8 +168,10 @@ abstract class ScreenshotTest(
         compose.setContent { DeviceFrame(variant.dark, locale, fontScale) { content() } }
         compose.mainClock.advanceTimeByFrame()
         applySystemBarInsets()
-        compose.mainClock.advanceTimeBy(settleMillis)
+        // The last frame of the settle time is the fresh frame of the capture.
+        compose.mainClock.advanceTimeBy(settleMillis - FRAME_MILLIS)
         compose.waitForIdle()
+        redrawEverything()
 
         if (largeFont) {
             val language = if (variant.isEnglish) "" else "-${variant.language}"
@@ -190,6 +194,24 @@ abstract class ScreenshotTest(
         val activity = compose.activity
         val translated = activity.localized(locale).getString(R.string.home_fab)
         return translated != activity.localized(Locale.ENGLISH).getString(R.string.home_fab)
+    }
+
+    /**
+     * Records every view's drawing again and draws one frame, right before the capture. Robolectric's hardware capture
+     * replays the display lists the window recorded last. A screen with nothing animating records them only in its
+     * first frames, and in a full test run (hundreds of tests in one JVM) that replay sometimes came out as an empty
+     * window, status bar included, while drawing the same views in software showed the screen (#226: the phone
+     * ringtone card, the only still screen of the large-font goldens). A fresh frame makes the capture show what is
+     * on screen now.
+     */
+    private fun redrawEverything() {
+        fun invalidateTree(view: View) {
+            view.invalidate()
+            if (view is ViewGroup) for (i in 0 until view.childCount) invalidateTree(view.getChildAt(i))
+        }
+        compose.runOnUiThread { WindowInspector.getGlobalWindowViews().forEach(::invalidateTree) }
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitForIdle()
     }
 
     /** Gives the screen a status bar and a gesture navigation bar, like a phone drawing edge to edge. */
@@ -225,6 +247,9 @@ abstract class ScreenshotTest(
         const val SCREENSHOT_TIME_ZONE = "Europe/Madrid"
 
         private const val SETTLE_MILLIS = 3_000L
+
+        /** One frame of the Compose test clock. */
+        private const val FRAME_MILLIS = 16L
         private const val GOLDEN_SCALE = 0.5
         private const val WEB_SCALE = 0.6
         private const val PERCENT = 100

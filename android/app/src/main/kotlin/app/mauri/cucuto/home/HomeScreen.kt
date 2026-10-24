@@ -64,10 +64,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -183,7 +185,8 @@ fun HomeContent(
     }
 
     Scaffold(
-        modifier = modifier,
+        // Chat rows carry a resource ID, so the Baseline Profile generator can open one (#226).
+        modifier = modifier.semantics { testTagsAsResourceId = true },
         topBar = { HomeSearchBar(query, onQueryChange = { query = it }) },
         floatingActionButton = {
             if (state.totalChats > 0 && state.hasPacks) {
@@ -499,7 +502,10 @@ private fun ChatListItem(
             }
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.chat_open_label), onClick = onClick),
+        modifier =
+            Modifier
+                .testTag(CHAT_ROW_TAG)
+                .clickable(onClickLabel = stringResource(R.string.chat_open_label), onClick = onClick),
     )
 }
 
@@ -634,3 +640,6 @@ internal fun previewHomeState(now: Long = PREVIEW_NOW): HomeState {
 
 private const val WA = "com.whatsapp"
 private const val PREVIEW_NOW = 1_761_000_000_000L
+
+/** Test tag (and, on Home, resource ID) of each chat row; `baselineprofile/` opens one by it. */
+const val CHAT_ROW_TAG = "chat_row"

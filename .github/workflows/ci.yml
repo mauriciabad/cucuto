@@ -163,9 +163,14 @@ jobs:
         with:
           workspaces: android/core/jxl/rust -> target
 
-      # Debug and release APKs (R8, plus lintVital on release) and the instrumented test APKs.
+      # Debug and release APKs (R8, plus lintVital on release), the instrumented test APKs and the Baseline Profile
+      # generator (#226, docs/baseline-profile.md), which only runs on a device. Not plain `assemble`: the Baseline
+      # Profile plugin adds two more app build types (nonMinifiedRelease, benchmarkRelease) that only the generator
+      # needs; its own APK builds against nonMinifiedRelease.
       - name: Assemble
-        run: ./gradlew assemble assembleDebugAndroidTest --stacktrace
+        run: >-
+          ./gradlew assembleDebug assembleRelease assembleDebugAndroidTest
+          :baselineprofile:assembleNonMinifiedRelease --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
