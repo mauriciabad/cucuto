@@ -78,12 +78,12 @@ export interface PackDraftInput {
 	description?: string | null;
 	cover?: DraftFileRef | null;
 	characters: CharacterDraftInput[];
-	/** Pass-through data from an opened pack: the creator keeps it but does not edit it yet. */
+	/** The pack's homepage (https) and tags. */
 	homepage?: string | null;
 	tags?: string[];
 }
 
-/** A character of a `PackDraftInput`. Fields after `haptic` are pass-through data from an opened pack. */
+/** A character of a `PackDraftInput`. `tags` and `spriteAnimated` are pass-through data from an opened pack. */
 export interface CharacterDraftInput {
 	/** Null to derive a unique slug from the name. */
 	id: string | null;
@@ -97,7 +97,7 @@ export interface CharacterDraftInput {
 	tags?: string[];
 	/** A GIF, animated WebP or animated JPEG XL, kept from the opened pack. */
 	spriteAnimated?: DraftFileRef | null;
-	/** Ringtone variants kept from the opened pack: `entry` is written as it was, with only its file replaced. */
+	/** Ringtone variants (`RingtoneForm`, or as an opened pack had them): written with only `file` replaced. */
 	ringtones?: { file: DraftFileRef; entry: Record<string, unknown> }[];
 }
 
@@ -105,9 +105,9 @@ export interface ClipDraftInput {
 	file: DraftFileRef;
 	label: string | null;
 	weight?: number | null;
-	/** The clip's condition (day and night clips, moments), kept from an opened pack. */
+	/** The clip's condition (day and night clips, moments), as `writeCondition` makes it. */
 	when?: Record<string, unknown> | null;
-	/** A rare clip's chance, one in `oneIn` (docs/pack-format.md#special-clips), kept from an opened pack. */
+	/** A rare clip's chance, one in `oneIn` (docs/pack-format.md#special-clips). */
 	oneIn?: number | null;
 }
 
@@ -286,10 +286,69 @@ export interface AuthoringTargets {
 	clipHintMs: number;
 	maxSourceMs: number;
 	hookLengthMs: number;
+	/** Ringtones last 5 s to 6 min (the format's limits). */
+	ringtoneMinMs: number;
+	ringtoneMaxMs: number;
 	/** Custom haptics: the longest timeline, most events and most points per envelope. */
 	hapticMaxMs: number;
 	hapticMaxEvents: number;
 	hapticMaxPoints: number;
+}
+
+/** A span of a `when.date` as typed: `MM-DD`, `to` null (or equal) for one day. */
+export interface DateFormJson {
+	from: string;
+	to?: string | null;
+}
+
+/**
+ * A `when` (and a clip's `oneIn`) as the creators edit it: `ConditionForm` in shared/pack-spec, shared with the app's
+ * creator, so both read and write conditions alike.
+ */
+export interface ConditionFormJson {
+	time: 'ANY' | 'DAY' | 'NIGHT' | 'HOURS';
+	/** `HH:MM`, for `HOURS`. */
+	from: string;
+	to: string;
+	/** `spring` … `winter`; empty for all year. */
+	seasons: string[];
+	/** `mon` … `sun`; empty for every day. */
+	weekdays: string[];
+	dates: DateFormJson[];
+	/** Clips only. */
+	moment: 'ANY' | 'FIRST_OF_DAY' | 'BURST';
+	burst: number;
+	/** Clips only: about one message in `oneIn`; null for an ordinary clip. */
+	oneIn: number | null;
+}
+
+/** A ringtone version as the creators edit it (`RingtoneForm` in shared/pack-spec). */
+export interface RingtoneFormJson {
+	label: string;
+	condition: ConditionFormJson;
+	loop: 'WHOLE' | 'ONCE' | 'SECTION';
+	loopStartMs: number;
+	/** Null for the end of the file. */
+	loopEndMs: number | null;
+	fadeInMs: number;
+	weight: number;
+	tags: string[];
+}
+
+/** Something a condition or ringtone form still needs (`FormProblem.Kind`); `index` is the date concerned. */
+export interface FormProblem {
+	kind:
+		| 'TIME_INVALID'
+		| 'TIME_RANGE_EMPTY'
+		| 'DATE_INVALID'
+		| 'TOO_MANY_DATES'
+		| 'BURST_OUT_OF_RANGE'
+		| 'ONE_IN_OUT_OF_RANGE'
+		| 'RINGTONE_DURATION_OUT_OF_RANGE'
+		| 'LOOP_INVALID'
+		| 'FADE_IN_OUT_OF_RANGE'
+		| 'WEIGHT_OUT_OF_RANGE';
+	index: number | null;
 }
 
 export interface Authoring {
@@ -327,6 +386,25 @@ export interface Authoring {
 	hapticPatternJson(events: HapticEventJson[]): string;
 	/** "Paste pattern": the pattern in a text, checked with the pack format's haptic rules. */
 	parseHapticPattern(text: string): HapticParse;
+	/** The form for a clip's or ringtone's `when` (null for none) and a clip's `oneIn`. */
+	conditionForm(when: Record<string, unknown> | null, oneIn: number | null): ConditionFormJson;
+	/** The `when` (null for none) and `oneIn` a form stands for; `clip` keeps the clip-only fields. */
+	writeCondition(
+		form: ConditionFormJson,
+		clip: boolean
+	): { when: Record<string, unknown> | null; oneIn: number | null; problems: FormProblem[] };
+	/** The form for a pack's ringtone entry. */
+	ringtoneForm(entry: Record<string, unknown>): RingtoneFormJson;
+	/** The ringtone entry for `file`; `durationMs` (null when unknown) checks the length and the loop. */
+	writeRingtone(
+		form: RingtoneFormJson,
+		file: string,
+		durationMs: number | null
+	): { entry: Record<string, unknown>; problems: FormProblem[] };
+	/** Tags typed as text (`Animals, 8-bit games`), as the format's tags (`animals`, `8-bit-games`). */
+	parseTags(text: string): string[];
+	/** Whether `url` is an absolute https URL. */
+	isHomepage(url: string): boolean;
 }
 
 type Nullable<T> = T | null | undefined;
@@ -429,6 +507,23 @@ export interface PackSpecModule {
 		readonly eventsJson: Nullable<string>;
 		readonly problemJson: Nullable<string>;
 	};
+	conditionForm(whenJson: Nullable<string>, oneIn: Nullable<number>): string;
+	writeCondition(
+		formJson: string,
+		clip: boolean
+	): {
+		readonly whenJson: Nullable<string>;
+		readonly oneIn: Nullable<number>;
+		readonly problems: string[];
+	};
+	ringtoneForm(entryJson: string): string;
+	writeRingtone(
+		formJson: string,
+		file: string,
+		durationMs: number
+	): { readonly entryJson: string; readonly problems: string[] };
+	parseTags(text: string): string[];
+	isHomepage(url: string): boolean;
 }
 
 // Kotlin's ByteArray is an Int8Array: a view over the same memory, no copy.
@@ -490,6 +585,8 @@ function authoring(module: PackSpecModule): Authoring {
 			clipHintMs: t.clipHintMs,
 			maxSourceMs: t.maxSourceMs,
 			hookLengthMs: t.hookLengthMs,
+			ringtoneMinMs: t.ringtoneMinMs,
+			ringtoneMaxMs: t.ringtoneMaxMs,
 			hapticMaxMs: t.hapticMaxMs,
 			hapticMaxEvents: t.hapticMaxEvents,
 			hapticMaxPoints: t.hapticMaxPoints
@@ -587,6 +684,48 @@ function authoring(module: PackSpecModule): Authoring {
 				valid: false,
 				problem: JSON.parse(r.problemJson ?? '{"kind":"NotJson"}') as HapticProblem
 			};
-		}
+		},
+		conditionForm: (when, oneIn) =>
+			conditionFormOf(JSON.parse(module.conditionForm(when ? JSON.stringify(when) : null, oneIn))),
+		writeCondition(form, clip) {
+			const r = module.writeCondition(JSON.stringify(form), clip);
+			return {
+				when: r.whenJson ? (JSON.parse(r.whenJson) as Record<string, unknown>) : null,
+				oneIn: r.oneIn ?? null,
+				problems: r.problems.map(formProblem)
+			};
+		},
+		ringtoneForm(entry) {
+			const form = JSON.parse(module.ringtoneForm(JSON.stringify(entry))) as RingtoneFormJson;
+			return {
+				...form,
+				loopEndMs: form.loopEndMs ?? null,
+				condition: conditionFormOf(form.condition)
+			};
+		},
+		writeRingtone(form, file, durationMs) {
+			const r = module.writeRingtone(JSON.stringify(form), file, durationMs ?? Number.NaN);
+			return {
+				entry: JSON.parse(r.entryJson) as Record<string, unknown>,
+				problems: r.problems.map(formProblem)
+			};
+		},
+		parseTags: (text) => [...module.parseTags(text)],
+		isHomepage: (url) => module.isHomepage(url)
 	};
+}
+
+/** A form from Kotlin, whose JSON leaves nulls out, with every optional field present as null. */
+function conditionFormOf(form: ConditionFormJson): ConditionFormJson {
+	return {
+		...form,
+		oneIn: form.oneIn ?? null,
+		dates: form.dates.map((d) => ({ from: d.from, to: d.to ?? null }))
+	};
+}
+
+/** `KIND` or `KIND:<index>` from Kotlin. */
+function formProblem(code: string): FormProblem {
+	const [kind, index] = code.split(':');
+	return { kind: kind as FormProblem['kind'], index: index === undefined ? null : Number(index) };
 }

@@ -1,7 +1,8 @@
 // "Edit an existing pack" (#191): a .soundpack.zip becomes a draft. shared/pack-spec validates the archive and turns
 // its manifest into a draft with the app's "Duplicate and edit" pass-through rules (PackEditing), so nothing the
-// format allows is lost: ringtones, animated sprites, clip conditions, tags and descriptions come back unchanged even
-// though this page does not edit them yet. The browser only reads the files and decodes the clips for previews.
+// format allows is lost: ringtones, animated sprites, clip conditions, tags and descriptions come back unchanged (this
+// page edits all but animated sprites and character tags). The browser only reads the files and decodes the clips for
+// previews.
 import { unzipSync } from 'fflate';
 import { decodeToMono } from './audio.js';
 import type { EncodedClip } from './encode.js';
@@ -110,7 +111,13 @@ export async function openPackArchive(
 	const keep = (path: string): KeptFile => {
 		let file = kept.get(path);
 		if (!file) {
-			file = { id: uid('file'), bytes: read(path), extension: extensionOf(path) };
+			file = {
+				id: uid('file'),
+				bytes: read(path),
+				extension: extensionOf(path),
+				durationMs: opened.durations[path] ?? null,
+				name: path.slice(path.lastIndexOf('/') + 1)
+			};
 			kept.set(path, file);
 		}
 		return file;
@@ -164,7 +171,11 @@ export async function openPackArchive(
 			description: c.description ?? null,
 			tags: c.tags ?? [],
 			spriteAnimated: c.spriteAnimated ? keep(c.spriteAnimated.key) : null,
-			ringtones: (c.ringtones ?? []).map((r) => ({ file: keep(r.file.key), entry: r.entry }))
+			ringtones: (c.ringtones ?? []).map((r) => ({
+				uid: uid('ring'),
+				file: keep(r.file.key),
+				entry: r.entry
+			}))
 		});
 	}
 

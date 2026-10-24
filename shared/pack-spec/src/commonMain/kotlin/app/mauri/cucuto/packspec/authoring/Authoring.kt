@@ -135,6 +135,26 @@ object Authoring {
         return SemVer(theirs.major, theirs.minor, patch, emptyList()).toString()
     }
 
+    /** Most tags a pack or character carries, and the longest tag (the schema's `tags`). */
+    const val MAX_TAGS = 20
+    const val MAX_TAG_LENGTH = 32
+
+    /**
+     * Tags typed as text (`Animals, 8-bit games`): each one becomes a tag of the format (lowercase words joined by
+     * hyphens, up to [MAX_TAG_LENGTH] characters: `animals`, `8-bit-games`), duplicates are dropped and at most
+     * [MAX_TAGS] are kept.
+     */
+    fun tags(text: String): List<String> =
+        text
+            .split(',', ';', '\n')
+            .map { slug(it, MAX_TAG_LENGTH) }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .take(MAX_TAGS)
+
+    /** Whether [url] is a homepage the format accepts: an absolute `https://` URL (blank means none). */
+    fun isHomepage(url: String): Boolean = HTTPS_URL.matches(url.trim())
+
     /** Audio targets of the creators; the same as `packer --normalize --trim-silence --opus` for clips. */
     object Audio {
         /** Opus runs at 48 kHz; every clip is resampled to it. */
@@ -172,6 +192,8 @@ object Authoring {
         /** Sprites and covers are cropped square and written at this size (the bitmap limit). */
         const val SPRITE_SIZE_PX = Limits.MAX_BITMAP_SIDE_PX
     }
+
+    private val HTTPS_URL = Regex("^https://[^\\s/?#]+\\S*$")
 
     private const val ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789"
 

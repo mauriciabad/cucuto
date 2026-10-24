@@ -67,6 +67,10 @@ changes the voice (`RoomChatDirectory.assign` and `unassign`, through `PhoneRing
 | follows, stored character (kept) | follows it (stored character cleared) | keeps the stored character |
 | explicit | unchanged | unchanged |
 
+When a following row starts ringing with another character, "One version" and "Your own rules" (ADR 0074) go back to
+the pack's rules: they name the previous character's ringtone files. The other rules work for any character and stay
+(ringtone review, 2026-10-24).
+
 Whether a character has clips or ringtones comes from the installed `pack.json` (`VoiceCharacter.ringtoneCount`, next
 to `clips`).
 

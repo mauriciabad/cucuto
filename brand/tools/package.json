@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Generates the Cucuto color tokens (Material Color Utilities), logos, icons, motion demo, UI sounds and previews. Runs on Bun.",
   "license": "GPL-3.0-or-later",
-  "packageManager": "bun@1.4.3",
+  "packageManager": "bun@1.4.4",
   "scripts": {
     "tokens": "bun generate-tokens.mjs > /dev/null",
     "assets": "bun build-brand.mjs",
@@ -17,6 +17,6 @@
   "dependencies": {
     "@material/material-color-utilities": "0.4.0",
     "fontkit": "2.0.4",
-    "paper": "0.14.0"
+    "paper": "0.16.0"
   }
 }
