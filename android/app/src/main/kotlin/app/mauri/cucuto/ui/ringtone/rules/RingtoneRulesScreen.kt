@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -99,8 +100,9 @@ data class RingtoneRulesActions(
 
 /**
  * The ringtone rules screen (#288, ADR 0074) of [voice]'s character: which version rings when, in plain words, each
- * version playable like the call; with a [chat] it rings for, the rule for that chat, "Your own rules" included, and
- * "Reset to the pack's rules". Saving closes it ([onDone]).
+ * version playable like the call; with a 1:1 [chat], the rule for that chat, "Your own rules" included, and "Reset to
+ * the pack's rules". It is the one place where the rule is chosen (#347): saving stores it, and makes the character
+ * ring for the chat when it did not yet. Saving closes it ([onDone]).
  */
 @Composable
 fun RingtoneRulesScreen(
@@ -200,7 +202,8 @@ fun RingtoneRulesContent(
         ) { padding ->
             if (state.loading) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    LoadingIndicator(Modifier.size(56.dp))
+                    val loading = stringResource(R.string.a11y_loading)
+                    LoadingIndicator(Modifier.size(56.dp).semantics { contentDescription = loading })
                 }
                 return@PushedScreen
             }
@@ -227,12 +230,8 @@ fun RingtoneRulesContent(
                         Hint(stringResource(R.string.ringtone_rules_view_only))
                     }
 
-                    state.otherCharacter -> {
-                        Hint(stringResource(R.string.ringtone_rules_other_character, character.name, chatName))
-                    }
-
                     state.editable -> {
-                        ContactRules(state, chatName, text, actions)
+                        ContactRules(state, character.name, chatName, text, actions)
                     }
                 }
             }
@@ -336,6 +335,7 @@ private fun RuleLineRow(
 @Composable
 private fun ContactRules(
     state: RingtoneRulesState,
+    characterName: String,
     chatName: String,
     text: RuleText,
     actions: RingtoneRulesActions,
@@ -343,6 +343,8 @@ private fun ContactRules(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         SectionTitle(stringResource(R.string.ringtone_rules_contact_section, chatName))
+        // Saving here makes the character ring with the chosen rule (#347).
+        if (state.otherCharacter) Hint(stringResource(R.string.ringtone_rules_other_character, characterName, chatName))
         if (state.modes.isEmpty()) {
             Hint(stringResource(R.string.ringtone_rules_one_version))
         } else {
@@ -499,6 +501,8 @@ private fun <T> Menu(
             for ((value, text) in options) {
                 DropdownMenuItem(
                     text = { Text(text) },
+                    // The check mark is drawn only: TalkBack hears "selected" (#226).
+                    modifier = Modifier.semantics { this.selected = value == selected },
                     leadingIcon =
                         if (value == selected) {
                             ({ Icon(Icons.Rounded.Check, contentDescription = null) })
@@ -527,7 +531,14 @@ private fun SaveBar(
             }
         }
         Button(onClick = actions.onSave, enabled = state.canSave, shapes = ButtonDefaults.shapes()) {
-            Text(stringResource(R.string.ringtone_rules_save))
+            val name = state.character?.name
+            Text(
+                if (state.otherCharacter && name != null) {
+                    stringResource(R.string.ringtone_use, name)
+                } else {
+                    stringResource(R.string.ringtone_rules_save)
+                },
+            )
         }
     }
 }
@@ -616,6 +627,7 @@ internal fun previewRingtoneRulesState(
                 mode = RingtoneMode.CUSTOM,
                 rules = draft.rules,
             ),
+        ringsNow = true,
         now = LocalDateTime.parse("2026-10-24T12:00"),
     )
 }

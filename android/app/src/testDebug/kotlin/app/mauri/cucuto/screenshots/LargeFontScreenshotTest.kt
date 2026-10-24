@@ -63,6 +63,10 @@ class LargeFontScreenshotTest(
 
     @Test fun creatorCropper() = largeFont("creator-cropper")
 
+    @Test fun creatorClipConditions() = largeFont("creator-clip-conditions")
+
+    @Test fun creatorRingtone() = largeFont("creator-ringtone")
+
     @Test fun diagnostics() = largeFont("diagnostics")
 
     @Test fun dayNight() = largeFont("day-night")
@@ -86,6 +90,22 @@ class LargeFontScreenshotTest(
     @Test fun homeFromContacts() = largeFont("home-from-contacts")
 
     @Test fun sampleChat() = largeFont("sample-chat")
+
+    @Test fun pickerRolled() = largeFont("picker-rolled")
+
+    @Test fun pickerSearch() = largeFont("picker-search")
+
+    @Test fun ringtonePickerStep() = largeFont("ringtone-picker-step")
+
+    @Test fun ringtonePickerDefault() = largeFont("ringtone-picker-default")
+
+    @Test fun ringtonePickerRolled() = largeFont("ringtone-picker-rolled")
+
+    @Test fun ringtoneRulesViewOnly() = largeFont("ringtone-rules-view-only")
+
+    @Test fun sampleChatEmpty() = largeFont("sample-chat-empty")
+
+    @Test fun discoverHaptics() = largeFont("discover-haptics")
 
     private fun largeFont(screen: String) =
         // The onboarding's wavy progress bar never stops moving.

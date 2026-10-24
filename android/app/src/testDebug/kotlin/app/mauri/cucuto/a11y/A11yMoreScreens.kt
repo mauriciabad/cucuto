@@ -25,12 +25,22 @@ import app.mauri.cucuto.daynight.LocateStatus
 import app.mauri.cucuto.diagnostics.DiagnosticsContent
 import app.mauri.cucuto.diagnostics.DiagnosticsMessage
 import app.mauri.cucuto.diagnostics.DiagnosticsState
+import app.mauri.cucuto.packspec.authoring.ConditionForm
+import app.mauri.cucuto.packspec.authoring.DateForm
+import app.mauri.cucuto.packspec.authoring.LoopMode
+import app.mauri.cucuto.packspec.authoring.Moment
+import app.mauri.cucuto.packspec.authoring.RingtoneForm
+import app.mauri.cucuto.packspec.authoring.TimeOfDay
 import app.mauri.cucuto.provider.ReceivedStatus
 import app.mauri.cucuto.sample.SampleChatContent
 import app.mauri.cucuto.screenshots.demoSampleChatState
+import app.mauri.cucuto.ui.creator.ClipConditionsPage
+import app.mauri.cucuto.ui.creator.ConditionEditorUi
 import app.mauri.cucuto.ui.creator.CropperPage
 import app.mauri.cucuto.ui.creator.CropperUi
 import app.mauri.cucuto.ui.creator.PictureTarget
+import app.mauri.cucuto.ui.creator.RingtoneEditorPage
+import app.mauri.cucuto.ui.creator.RingtoneEditorUi
 import app.mauri.cucuto.ui.settings.restore.ConflictRow
 import app.mauri.cucuto.ui.settings.restore.PackRow
 import app.mauri.cucuto.ui.settings.restore.PackStatus
@@ -53,6 +63,8 @@ internal object A11yMoreScreens {
             "diagnostics" to { Diagnostics() },
             "day-night" to { DayNight() },
             "creator-cropper" to { CreatorCropper() },
+            "creator-clip-conditions" to { CreatorClipConditions() },
+            "creator-ringtone" to { CreatorRingtone() },
             "restore-passphrase" to { Restore(RestoreStep.Passphrase(wrong = true)) },
             "restore-packs" to { Restore(restorePacks) },
             "restore-conflicts" to { Restore(restoreConflicts) },
@@ -164,6 +176,60 @@ internal object A11yMoreScreens {
             onBack = {},
             onCrop = {},
             onDone = {},
+        )
+    }
+
+    /** "When it plays" for a good-morning clip that is also rare (#322). */
+    @Composable
+    private fun CreatorClipConditions() {
+        ClipConditionsPage(
+            editor =
+                ConditionEditorUi(
+                    characterKey = "frog",
+                    clipKey = "a",
+                    clipLabel = "Good morning",
+                    form =
+                        ConditionForm(
+                            moment = Moment.FIRST_OF_DAY,
+                            time = TimeOfDay.HOURS,
+                            from = "05:00",
+                            to = "12:00",
+                            weekdays = listOf("sat", "sun"),
+                            dates = listOf(DateForm("12-24", "01-06")),
+                            oneIn = 25,
+                        ),
+                ),
+            onBack = {},
+            onChange = {},
+            onSave = {},
+        )
+    }
+
+    /** A night version of a song: an intro, then a part that loops, with a fade-in (#322). */
+    @Composable
+    private fun CreatorRingtone() {
+        RingtoneEditorPage(
+            editor =
+                RingtoneEditorUi(
+                    characterKey = "frog",
+                    ringtoneKey = "night",
+                    file = "pond-song.ogg",
+                    durationMs = 32_000,
+                    form =
+                        RingtoneForm(
+                            label = "Pond song (night)",
+                            condition = ConditionForm(time = TimeOfDay.NIGHT, seasons = listOf("autumn", "winter")),
+                            loop = LoopMode.SECTION,
+                            loopStartMs = 4_000,
+                            loopEndMs = 28_000,
+                            fadeInMs = 1_500,
+                        ),
+                ),
+            playing = false,
+            onBack = {},
+            onChange = {},
+            onPlay = {},
+            onSave = {},
         )
     }
 

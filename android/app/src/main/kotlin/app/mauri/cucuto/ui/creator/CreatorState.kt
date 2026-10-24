@@ -10,7 +10,10 @@ import app.mauri.cucuto.packs.ImportProblem
 import app.mauri.cucuto.packs.ProblemItem
 import app.mauri.cucuto.packspec.PackManifest
 import app.mauri.cucuto.packspec.authoring.Authoring
+import app.mauri.cucuto.packspec.authoring.ConditionForm
 import app.mauri.cucuto.packspec.authoring.DraftProblem
+import app.mauri.cucuto.packspec.authoring.FormProblem
+import app.mauri.cucuto.packspec.authoring.RingtoneForm
 import java.io.File
 
 /** Everything the creator shows. */
@@ -24,6 +27,10 @@ data class CreatorUiState(
     val cropper: CropperUi? = null,
     val clipEditor: ClipEditorUi? = null,
     val recorder: RecorderUi? = null,
+    val conditionEditor: ConditionEditorUi? = null,
+    val ringtoneEditor: RingtoneEditorUi? = null,
+    /** The ringtone version playing ([RingtoneEditorUi.PLAYING_EDITOR] for the editor's preview), or null. */
+    val playingRingtone: String? = null,
     /** Seed color suggestions (ARGB, best first) for each character key, from its sprite. */
     val seedSuggestions: Map<String, List<Int>> = emptyMap(),
     val busy: Busy? = null,
@@ -45,6 +52,12 @@ sealed interface CreatorPage {
     data object Recorder : CreatorPage
 
     data object ClipEditor : CreatorPage
+
+    /** "When it plays" for a clip: [ConditionEditorUi]. */
+    data object ClipConditions : CreatorPage
+
+    /** A ringtone version: [RingtoneEditorUi]. */
+    data object RingtoneEditor : CreatorPage
 }
 
 /** A question before the creator starts. */
@@ -110,6 +123,37 @@ data class ClipEditorUi(
 ) {
     val selectionMs: Long get() = endMs - startMs
     val zoomed: Boolean get() = viewStartMs > 0 || viewEndMs < source.durationMs
+}
+
+/** "When it plays" for one clip (#322): the shared [ConditionForm], saved back to the clip on Save. */
+@Immutable
+data class ConditionEditorUi(
+    val characterKey: String,
+    val clipKey: String,
+    val clipLabel: String,
+    val form: ConditionForm,
+) {
+    val problems: List<FormProblem> get() = form.problems(clip = true)
+}
+
+/**
+ * One ringtone version being edited (#322): the shared [RingtoneForm] over the version's file of [durationMs] (0 when
+ * unknown), saved back to the version on Save.
+ */
+@Immutable
+data class RingtoneEditorUi(
+    val characterKey: String,
+    val ringtoneKey: String,
+    val file: String,
+    val durationMs: Long,
+    val form: RingtoneForm,
+) {
+    val problems: List<FormProblem> get() = form.problems(durationMs.takeIf { it > 0 })
+
+    companion object {
+        /** [CreatorUiState.playingRingtone] while the editor plays its version. */
+        const val PLAYING_EDITOR = "\u0000editor"
+    }
 }
 
 sealed interface ClipProblem {
@@ -184,10 +228,19 @@ sealed interface CreatorMessage {
 
     data object ClipSaved : CreatorMessage
 
-    /** A copy is ready; it kept [keptRingtones] ringtone variants and [keptAnimations] animated sprites as they are. */
+    /** A copy is ready; it kept [keptAnimations] animated sprites as they are (the creator does not edit them). */
     data class Duplicated(
-        val keptRingtones: Int,
         val keptAnimations: Int,
+    ) : CreatorMessage
+
+    data object RingtoneAdded : CreatorMessage
+
+    /** The picked file is not audio a pack can hold, or cannot be read. */
+    data object RingtoneUnsupported : CreatorMessage
+
+    /** The picked song lasts [durationMs], outside 5 s to 6 min. */
+    data class RingtoneOutOfRange(
+        val durationMs: Long,
     ) : CreatorMessage
 
     data object DuplicateFailed : CreatorMessage

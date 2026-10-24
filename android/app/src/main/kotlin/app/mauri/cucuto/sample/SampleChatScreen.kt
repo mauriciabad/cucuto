@@ -157,7 +157,11 @@ private fun DemoBanner() {
             ),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(16.dp)) {
+        // One TalkBack stop: "Demo" and what it means.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp).semantics(mergeDescendants = true) {},
+        ) {
             Icon(Icons.Rounded.Info, contentDescription = null, modifier = Modifier.padding(top = 2.dp))
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 DemoLabel()
@@ -217,12 +221,18 @@ private fun ChatHeader(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
+            // A new voice is a save: TalkBack says it (#226).
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
+        val playing = stringResource(R.string.a11y_playing)
         Button(
             onClick = onPlayMessage,
             enabled = character != null,
             shapes = ButtonDefaults.shapes(),
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth().semantics {
+                    if (state.speaking) stateDescription = playing
+                },
         ) {
             Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
             Spacer(Modifier.width(ButtonDefaults.IconSpacing))
@@ -251,6 +261,7 @@ private fun VoiceChoices(
                 text = pack.name,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { heading() },
             )
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -278,7 +289,11 @@ private fun CharacterChoice(
     onClick: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    val selectedLabel = stringResource(R.string.picker_state_selected)
+    val stateLabel =
+        listOfNotNull(
+            if (selected) stringResource(R.string.picker_state_selected) else null,
+            if (speaking) stringResource(R.string.a11y_playing) else null,
+        ).joinToString()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -296,7 +311,7 @@ private fun CharacterChoice(
             modifier =
                 Modifier.semantics {
                     this.selected = selected
-                    if (selected) stateDescription = selectedLabel
+                    if (stateLabel.isNotEmpty()) stateDescription = stateLabel
                 },
         )
         Text(

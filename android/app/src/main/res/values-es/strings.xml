@@ -126,7 +126,7 @@
     <string name="onboarding_door_description">El reloj de cuco de Cucuto: se abre una puertecita y un pájaro canta</string>
 
     <string name="onboarding_welcome_title">Dale voz a cada contacto</string>
-    <string name="onboarding_welcome_body">Cuando alguien te escribe por WhatsApp, tu móvil reproduce un clip del personaje que le elegiste, con su propia vibración.</string>
+    <string name="onboarding_welcome_body">Cuando alguien te escribe por WhatsApp, tu móvil reproduce un clip del personaje que le elegiste, con su propia vibración. Las llamadas también pueden sonar con el tono de un personaje.</string>
     <string name="onboarding_welcome_point_packs">Los personajes vienen de los packs de sonidos que importas. Cucuto viene vacío.</string>
     <string name="onboarding_welcome_point_android">Android sigue decidiendo cuándo suena: los chats silenciados, No molestar y el modo silencio funcionan como siempre.</string>
     <string name="onboarding_welcome_point_private">Todo se queda en tu móvil. Sin cuentas ni analíticas.</string>
@@ -447,7 +447,7 @@
     <string name="error_license_not_spdx">La licencia no es un nombre de licencia estándar, así que se muestra tal cual.</string>
     <string name="error_unreferenced_file">Algunos archivos no los usa ningún personaje y se han dejado fuera.</string>
     <string name="error_media_undecodable">Un sonido o una imagen está dañado o no se puede reproducir en este móvil.</string>
-    <string name="error_clip_duration_out_of_range">Un sonido de notificación es demasiado corto o demasiado largo. Tiene que durar entre 0,2 y 30 segundos.</string>
+    <string name="error_clip_duration_out_of_range">Un clip de mensaje es demasiado corto o demasiado largo. Tiene que durar entre 0,2 y 30 segundos.</string>
     <string name="error_ringtone_duration_out_of_range">Un tono de llamada es demasiado corto o demasiado largo. Tiene que durar entre 5 segundos y 6 minutos.</string>
     <string name="error_image_too_large">Una imagen es demasiado grande. Las imágenes pueden medir como máximo 512 píxeles por lado.</string>
     <string name="error_svg_unsafe">Una imagen (SVG) contiene scripts o enlaces externos, así que se ha bloqueado por seguridad.</string>

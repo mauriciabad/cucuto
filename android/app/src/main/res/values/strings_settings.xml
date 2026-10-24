@@ -7,7 +7,7 @@
     <string name="settings_title">Settings</string>
 
     <!-- Cucuto voices -->
-    <string name="settings_section_voices">Cucuto voices</string>
+    <string name="settings_section_voices">Messages</string>
     <string name="settings_voices_switch">Cucuto voices</string>
     <string name="settings_voices_on">On: each contact speaks with their character.</string>
     <string name="settings_voices_off">Off: every chat uses WhatsApp\'s own tone and vibration.</string>
@@ -97,7 +97,7 @@
     <string name="restore_problem_failed_title">The restore stopped</string>
     <string name="restore_problem_failed_body">Something went wrong while reading the file or restoring. Nothing was overwritten.</string>
     <string name="restore_problem_details">Details</string>
-    <string name="restore_pick_other">Pick another file</string>
+    <string name="restore_pick_other">Choose another file</string>
 
     <string name="restore_packs_title">Sound packs</string>
     <string name="restore_packs_body">Backup from %1$s. Cucuto gets the packs it can by itself; packs you imported from a file need that file again.</string>

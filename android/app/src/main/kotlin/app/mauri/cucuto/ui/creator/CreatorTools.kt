@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import androidx.core.graphics.get
 import app.mauri.cucuto.core.audio.AudioFileDecoder
@@ -21,6 +22,7 @@ import app.mauri.cucuto.core.creator.DraftStore
 import app.mauri.cucuto.core.creator.Duplicate
 import app.mauri.cucuto.core.creator.PackDuplicator
 import app.mauri.cucuto.core.creator.PackWriter
+import app.mauri.cucuto.core.creator.RingtoneImport
 import app.mauri.cucuto.core.creator.SpriteCrop
 import app.mauri.cucuto.core.creator.SpriteImages
 import app.mauri.cucuto.core.creator.WriteResult
@@ -201,6 +203,57 @@ class CreatorTools
             }
         }
 
+        /**
+         * "Add a ringtone": copies a picked song into the draft as it is, if a pack can hold it (#322).
+         *
+         * @throws SourceTooLargeException over [Limits.AUDIO_FILE_BYTES]; [IOException] when it cannot be read.
+         */
+        suspend fun importRingtone(uri: Uri): RingtoneImport.Result =
+            io {
+                val name = displayName(uri)
+                work.mkdirs()
+                val copy = File(work, "ringtone-source")
+                try {
+                    copyLimited(uri, copy)
+                    synchronized(lock) { RingtoneImport.import(drafts, copy, name) }
+                } finally {
+                    copy.delete()
+                }
+            }
+
+        /** The picked file's name, or one made from its MIME type (the extension says the format). */
+        private fun displayName(uri: Uri): String {
+            val name =
+                runCatching {
+                    context.contentResolver
+                        .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                        ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+                }.getOrNull()
+            if (name != null && name.contains('.')) return name
+            val ext = AUDIO_EXTENSIONS[context.contentResolver.getType(uri)].orEmpty()
+            return (name ?: "ringtone") + "." + ext
+        }
+
+        private fun copyLimited(
+            uri: Uri,
+            file: File,
+        ) {
+            val input = context.contentResolver.openInputStream(uri) ?: throw IOException("Cannot open the file")
+            input.use { stream ->
+                file.outputStream().use { out ->
+                    val buffer = ByteArray(COPY_BUFFER)
+                    var total = 0L
+                    while (true) {
+                        val read = stream.read(buffer)
+                        if (read < 0) break
+                        total += read
+                        if (total > Limits.AUDIO_FILE_BYTES) throw SourceTooLargeException()
+                        out.write(buffer, 0, read)
+                    }
+                }
+            }
+        }
+
         fun hasMicPermission(): Boolean =
             context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
@@ -285,6 +338,21 @@ class CreatorTools
             private const val ALPHA_SHIFT = 24
             private const val MIN_ALPHA = 128
             private const val OPAQUE = 0xFF000000.toInt()
+
+            /** File extensions for audio MIME types, for picked files without a name. */
+            private val AUDIO_EXTENSIONS =
+                mapOf(
+                    "audio/ogg" to "ogg",
+                    "audio/opus" to "opus",
+                    "audio/mpeg" to "mp3",
+                    "audio/mp4" to "m4a",
+                    "audio/x-m4a" to "m4a",
+                    "audio/aac" to "aac",
+                    "audio/flac" to "flac",
+                    "audio/x-flac" to "flac",
+                    "audio/wav" to "wav",
+                    "audio/x-wav" to "wav",
+                )
         }
     }
 

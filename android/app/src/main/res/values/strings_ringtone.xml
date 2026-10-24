@@ -2,8 +2,7 @@
 <!-- Phone ringtones (#52, ADR 0039). Kept apart from strings.xml so parallel UI work merges cleanly. -->
 <resources>
     <!-- Contact detail section -->
-    <string name="ringtone_title">Phone ringtone</string>
-    <string name="ringtone_off_body">When this person phones you, their character can ring instead of your usual ringtone. Cucuto sets it in Android\'s Contacts.</string>
+    <string name="ringtone_off_body">When this person calls you, their character can ring instead of your usual ringtone. Cucuto sets it in Android\'s Contacts.</string>
     <string name="ringtone_turn_on">Turn on phone ringtones</string>
     <string name="ringtone_no_ringtones">%1$s has no ringtone.</string>
     <string name="ringtone_linked">Android contact: %1$s</string>
@@ -23,8 +22,6 @@
     <string name="ringtone_rule_time_body">The day version from sunrise to sunset at your day and night place (7:00 to 19:00 until you choose one), the night version the rest of the time.</string>
     <string name="ringtone_rule_season_body">The version for the current season.</string>
     <string name="ringtone_rule_fixed_body">Always the version you pick.</string>
-    <string name="ringtone_status_ringing">Rings with %1$s</string>
-    <string name="ringtone_status_preparing">Preparing the ringtone…</string>
     <string name="ringtone_problem_contact_missing">The linked Android contact is gone. Link another one.</string>
     <string name="ringtone_problem_render">Cucuto couldn\'t prepare this ringtone. It tries again the next time you open the app.</string>
     <string name="ringtone_problem_write">Android didn\'t let Cucuto change this contact.</string>
@@ -49,7 +46,7 @@
     <string name="ringtone_picker_title">Ringtone</string>
     <string name="ringtone_picker_subtitle">When %1$s calls</string>
     <string name="ringtone_picker_hint">Tap a cover to hear it, then choose how its versions ring.</string>
-    <string name="ringtone_picker_follows_voice">Same character as the messages</string>
+    <string name="ringtone_picker_follows_voice">Same as the messages</string>
     <string name="ringtone_picker_mixed">Chosen for calls. Messages stay with %1$s</string>
     <string name="ringtone_picker_calls_only">Only for calls: messages have no voice yet</string>
     <string name="ringtone_picker_assigned">Rings when %1$s calls</string>
@@ -67,12 +64,12 @@
     <string name="ringtone_picker_current">Already chosen</string>
     <string name="ringtone_picker_pick_first">Pick a character</string>
     <string name="ringtone_picker_empty_title">No ringtones yet</string>
-    <string name="ringtone_picker_empty_body">None of your packs has ringtones. Import a pack with songs in Packs, or download one in Discover.</string>
+    <string name="ringtone_picker_empty_body">None of your packs has ringtones. Import a pack with ringtones in Packs, or download one in Discover.</string>
     <string name="ringtone_picker_failed">Couldn\'t save the ringtone. Try again.</string>
 
     <!-- Permission explanations -->
     <string name="ringtone_contacts_title">Let Cucuto set ringtones?</string>
-    <string name="ringtone_contacts_body">Android plays a contact\'s own ringtone when they phone you. To use your characters there, Cucuto needs the contacts permission:\n\n• It reads contacts only to find the person behind a chat.\n• It changes only the ringtone of contacts you link, and gives them their old one back when you stop.\n• Your contacts never leave your phone.\n\nCucuto is open source: you (or your AI assistant) can read exactly what it does at github.com/mauriciabad/cucuto.</string>
+    <string name="ringtone_contacts_body">Android plays a contact\'s own ringtone when they call you. To use your characters there, Cucuto needs the contacts permission:\n\n• It reads contacts only to find the person behind a chat.\n• It changes only the ringtone of contacts you link, and gives them their old one back when you stop.\n• Your contacts never leave your phone.\n\nCucuto is open source: you (or your AI assistant) can read exactly what it does at github.com/mauriciabad/cucuto.</string>
     <string name="ringtone_phone_title">Know when a call ends?</string>
     <string name="ringtone_phone_body">For “Random per call”, Cucuto picks the next version as soon as a call ends. Android tells it through the phone permission. Cucuto never reads who called, and it is only woken after calls while some contact uses this rule.</string>
     <string name="ringtone_continue">Continue</string>
@@ -83,7 +80,7 @@
     <string name="ringtone_close">Close</string>
 
     <!-- Settings -->
-    <string name="settings_section_ringtones">Phone ringtones</string>
+    <string name="settings_section_ringtones">Phone calls</string>
     <string name="settings_ringtones_switch">Characters ring for calls</string>
     <string name="settings_ringtones_on">On: linked contacts ring with their character.</string>
     <string name="settings_ringtones_off">Off: Android\'s ringtones stay as they are.</string>

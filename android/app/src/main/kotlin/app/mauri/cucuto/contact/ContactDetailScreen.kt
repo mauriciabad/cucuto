@@ -120,7 +120,6 @@ fun ContactDetailScreen(
     onEditPattern: () -> Unit,
     modifier: Modifier = Modifier,
     onChooseRingtone: () -> Unit = {},
-    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel =
         hiltViewModel<ContactDetailViewModel, ContactDetailViewModel.Factory>(
@@ -141,8 +140,8 @@ fun ContactDetailScreen(
         onBack = onBack,
         onChangeCharacter = onChangeCharacter,
         hapticOverride = { HapticOverrideSection(chat, onEditPattern, Modifier.padding(top = 16.dp)) },
-        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone, onOpenRules = onOpenRules) },
-        phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone, Modifier.padding(top = 16.dp)) },
+        phoneCalls = { PhoneCallsRow(chat, onChooseRingtone) },
+        phoneRingtone = { PhoneRingtoneSection(chat, onChooseRingtone) },
         onUnassign = viewModel::unassign,
         onSimulate = {
             if (state.path is SimulatePath.InApp) {
@@ -259,6 +258,11 @@ fun ContactDetailContent(
                         phoneCalls = phoneCalls.takeIf { state.chat?.isGroup != true && !state.isGroup },
                     )
                 }
+                // The phone ringtone set-up, right under the Phone calls row, only when it asks for something (#348).
+                // Phone calls come from people: groups have no phone ringtone (#52).
+                if (phoneRingtone != null && state.chat?.isGroup == false) {
+                    item(key = "phone-ringtone") { phoneRingtone() }
+                }
                 item(key = "simulate") { SimulateCard(state, onSimulate) }
                 if (state.clips.isNotEmpty()) {
                     clipSection(state, onPlayClip) { clip, on ->
@@ -270,10 +274,6 @@ fun ContactDetailContent(
                     item(key = "haptic") {
                         if (hapticOverride != null) hapticOverride() else HapticSection(state.hapticSource)
                     }
-                }
-                // Phone calls come from people: groups have no phone ringtone (#52).
-                if (phoneRingtone != null && state.chat?.isGroup == false) {
-                    item(key = "phone-ringtone") { phoneRingtone() }
                 }
                 state.groupPolicy?.let { policy ->
                     item(key = "group") {

@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
 
@@ -83,11 +84,22 @@ fun RingtonePlayButton(
                     if (ringing) R.string.ringtone_picker_pause else R.string.ringtone_picker_play,
                     name,
                 )
+            // "Playing" or "Paused" in words, not "on" and "off" (#226).
+            val stateLabel =
+                when {
+                    ringing -> stringResource(R.string.a11y_playing)
+                    active -> stringResource(R.string.a11y_paused)
+                    else -> null
+                }
             FilledTonalIconToggleButton(
                 checked = ringing,
                 onCheckedChange = { onToggle() },
                 enabled = enabled,
-                modifier = Modifier.semantics { contentDescription = label },
+                modifier =
+                    Modifier.semantics {
+                        contentDescription = label
+                        if (stateLabel != null) stateDescription = stateLabel
+                    },
             ) {
                 Icon(if (ringing) PauseIcon else Icons.Rounded.PlayArrow, contentDescription = null)
             }

@@ -1,6 +1,7 @@
 # 0073. The sound flow: the message sound, then the ringtone, with "Android default" and "Leave as is"
 
-- Status: accepted (owner update 2026-10-24, #298; the defaults below can be overridden on #282)
+- Status: accepted (owner update 2026-10-24, #298; the defaults below can be overridden on #282); contact detail's
+  Phone calls row and set-up card amended 2026-10-24 (#348), the rule chips moved to the rules screen (#347, ADR 0074)
 - Date: 2026-10-24
 - Issue: #298
 - Amends: [ADR 0063](0063-independent-voice-and-ringtone.md) (ringtone choices, first-assign flow, display),
@@ -101,7 +102,7 @@ ringtone back, as for ring files (ADR 0039).
   line and no cover for "Leave as is", or when nothing rings.
 - **Home list rows**: a small record cover (24 dp) tucked against the avatar for a character ringtone, or a call icon
   for Android default, as in the header, so the row's text keeps its width. TalkBack reads it with the row
-  ("Ringtone: K.K. Slider", "Ringtone: phone default").
+  ("Ringtone: K.K. Slider", "Ringtone: Android default").
 - **In transitions** (owner update 2026-10-24, #339): the avatar and its cover move as one group. The cover is its own
   shared element (`SharedCompanion`, keyed by the chat) drawn above the avatar's in the shared transition overlay, so
   it never hides under the flying avatar or pops above it when the transition starts or ends; its size and offset
@@ -109,8 +110,25 @@ ringtone back, as for ring files (ADR 0039).
   the recent senders strip) keeps an empty, zero-size anchor at the avatar's corner, so the cover shrinks into or
   grows out of the avatar.
 - The **Phone calls** row says what rings: the character with its rule, "Android default", "Left as is", or "No
-  ringtone yet". For a character with several versions, "See and edit the rules" under it opens the rules screen of
-  [ADR 0074](0074-ringtone-rules-screen.md).
+  ringtone yet". ~~For a character with several versions, "See and edit the rules" under it opens the rules screen of
+  [ADR 0074](0074-ringtone-rules-screen.md).~~
+
+#### Contact detail says it once (amended 2026-10-24, #348)
+
+Contact detail said what rings three times: in the header, in the Phone calls row, and in the "Phone ringtone" card
+further down ("Rings with …", with the linked contact and the WhatsApp hint). Now:
+
+- The **header** keeps "Rings with …" under the name: it is who the contact is, as "Speaks as …" is.
+- The **Phone calls** row is the one place to see and change the ringtone. A tap opens the ringtone picker; the
+  picker's "Which version rings" row opens the rules screen (#347, [ADR 0074](0074-ringtone-rules-screen.md#the-picker)).
+  The row has no rules link of its own. While the contact is linked and phone ringtones are on, two detail lines sit
+  under it: "Android contact: Ada Lovelace" with **Change** (link another contact), and, for a character ringtone, the
+  WhatsApp hint (#145).
+- The **set-up card** shows up only when it asks for something: turn phone ringtones on, link the Android contact,
+  "Ring with …" for a ringtone that is not in use yet, allow the phone permission ("Random per call"), or fix a problem
+  (the contact is gone, "Changed in Contacts", the contacts permission, a write or render failure). It has no
+  "Rings with …" line, is titled "Phone calls" like the row ("Phone ringtone" was a second name for the same thing),
+  and sits right under the Sounds card. "Preparing the ringtone…" is not shown: it lasts a moment and needs nothing.
 
 ### Pickers
 
@@ -138,6 +156,8 @@ Cucuto before 0.2.0 refuses the whole backup instead: its schema allows no unkno
   every write can be undone (ADR 0039).
 - `CucutoDestination.Picker` gains `ringtoneNext` (Home's flows set it), and `CucutoDestination.RingtonePicker` gains
   `step` (step 2 of the first-assign flow).
+- #348: `PhoneRingtoneUiState.needsAction` decides the card; `PhoneRingtoneContentTest` and `ContactDetailContentTest`
+  cover the card and the row's detail lines. Goldens: contact detail, phone ringtone.
 - Tests: the sync for Android default (clear, nothing to clear, user change after a clear, restore on Leave as is and
   on turning off), the picker's choices and saving, the follow rule leaving explicit choices alone, the backup export,
   restore and fixtures, the migration, the Home and header ringtone display. Goldens: Home, contact detail, ringtone

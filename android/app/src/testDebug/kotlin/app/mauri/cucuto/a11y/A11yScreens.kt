@@ -15,11 +15,13 @@ import app.mauri.cucuto.core.audio.PcmAudio
 import app.mauri.cucuto.core.creator.CreatorDraft
 import app.mauri.cucuto.core.creator.DraftCharacter
 import app.mauri.cucuto.core.creator.DraftClip
+import app.mauri.cucuto.core.creator.DraftRingtone
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.db.PackSource
 import app.mauri.cucuto.core.data.db.RepositoryAuthType
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.repo.RepositorySnapshot
+import app.mauri.cucuto.core.ringtone.sync.RingtoneProblem
 import app.mauri.cucuto.core.routing.ControlPoint
 import app.mauri.cucuto.core.routing.HapticEvent
 import app.mauri.cucuto.core.routing.HapticPreset
@@ -33,7 +35,9 @@ import app.mauri.cucuto.packs.LibraryPack
 import app.mauri.cucuto.packs.PacksUiState
 import app.mauri.cucuto.packs.ui.PacksContent
 import app.mauri.cucuto.packspec.RepositoryIndex
+import app.mauri.cucuto.packspec.Ringtone
 import app.mauri.cucuto.packspec.SpecJson
+import app.mauri.cucuto.packspec.When
 import app.mauri.cucuto.picker.PickerContent
 import app.mauri.cucuto.picker.previewPickerState
 import app.mauri.cucuto.ui.creator.CharacterPage
@@ -70,6 +74,7 @@ import app.mauri.cucuto.ui.status.SelfTestMessage
 import app.mauri.cucuto.ui.status.StatusCard
 import app.mauri.cucuto.ui.status.StatusReport
 import app.mauri.cucuto.ui.status.WhatsAppCheck
+import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.io.File
 
@@ -97,7 +102,7 @@ internal object A11yScreens {
             "creator-character" to { CreatorCharacterScreen() },
             "creator-recorder" to { CreatorRecorderScreen() },
             "creator-clip-editor" to { CreatorClipEditorScreen() },
-        ) + A11yPushedScreens.all + A11yMoreScreens.all
+        ) + A11yPushedScreens.all + A11yMoreScreens.all + A11yFlowScreens.all
 
     /** The screen called [name] in [all]. */
     fun content(name: String): @Composable () -> Unit = all.first { it.first == name }.second
@@ -142,6 +147,8 @@ internal object A11yScreens {
                         modes = listOf(RingtoneMode.PACK, RingtoneMode.RANDOM, RingtoneMode.TIME, RingtoneMode.FIXED),
                         ringingWith = "Morning croak",
                         exportTitle = "Bleep the frog · Morning croak",
+                        // The card shows up only when it asks for something (#348).
+                        problem = RingtoneProblem.ChangedElsewhere,
                     ),
                 actions = PhoneRingtoneActions(),
             )
@@ -155,8 +162,24 @@ internal object A11yScreens {
             seedColor = "#3A7D44",
             clips =
                 listOf(
-                    DraftClip(key = "a", file = "a.ogg", label = "Croak", durationMs = 1_200),
+                    DraftClip(
+                        key = "a",
+                        file = "a.ogg",
+                        label = "Croak",
+                        durationMs = 1_200,
+                        `when` = When(time = JsonPrimitive("night")),
+                        oneIn = 25,
+                    ),
                     DraftClip(key = "b", file = "b.ogg", label = "", weight = 2.0, durationMs = 2_400),
+                ),
+            ringtones =
+                listOf(
+                    DraftRingtone(
+                        file = "pond.ogg",
+                        entry = Ringtone("pond.ogg", label = "Pond song", `when` = When(time = JsonPrimitive("day"))),
+                        key = "pond",
+                        durationMs = 32_000,
+                    ),
                 ),
         )
 

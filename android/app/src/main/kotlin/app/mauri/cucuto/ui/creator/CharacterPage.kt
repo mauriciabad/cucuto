@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -54,7 +55,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -80,7 +80,10 @@ private val WEIGHTS =
         4.0 to R.string.creator_weight_very_often,
     )
 
-/** One character: picture, name, colors, clips (record or pick, label, weight) and vibration. In its own colors. */
+/**
+ * One character: picture, name, description, colors, clips (record or pick, label, weight, when it plays), ringtones
+ * (versions with their rules, #322) and vibration. In its own colors.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun CharacterPage(
@@ -102,6 +105,14 @@ internal fun CharacterPage(
     onEditHaptic: () -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    onDescription: (String) -> Unit = {},
+    onClipConditions: (String) -> Unit = {},
+    playingRingtone: String? = null,
+    onAddRingtone: () -> Unit = {},
+    onPlayRingtone: (String) -> Unit = {},
+    onEditRingtone: (String) -> Unit = {},
+    onAddRingtoneVersion: (String) -> Unit = {},
+    onRemoveRingtone: (String) -> Unit = {},
 ) {
     var confirmRemove by remember { mutableStateOf(false) }
     CharacterColors(character.seedColor) {
@@ -187,6 +198,16 @@ internal fun CharacterPage(
                     }
                 }
 
+                OutlinedTextField(
+                    value = character.description.orEmpty(),
+                    onValueChange = onDescription,
+                    label = { Text(stringResource(R.string.creator_description)) },
+                    minLines = 1,
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
                 // Colors.
                 Section(stringResource(R.string.creator_colors), stringResource(R.string.creator_colors_hint)) {
                     FlowRow(
@@ -208,14 +229,14 @@ internal fun CharacterPage(
 
                 // Clips.
                 Section(stringResource(R.string.creator_clips_title), stringResource(R.string.creator_clips_hint)) {
-                    if (character.ringtones.isNotEmpty() || character.spriteAnimated != null) {
+                    if (character.spriteAnimated != null) {
                         Text(
-                            passThroughNote(character.ringtones.size, character.spriteAnimated != null),
+                            stringResource(R.string.creator_kept_animation),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    // A song-only character from a duplicated pack is fine: the format asks for a clip or a ringtone.
+                    // A song-only character is fine: the format asks for a clip or a ringtone.
                     if (character.clips.isEmpty() && character.ringtones.isEmpty()) {
                         Text(
                             stringResource(R.string.creator_clips_empty),
@@ -230,6 +251,7 @@ internal fun CharacterPage(
                             onLabel = { onClipLabel(clip.key, it) },
                             onWeight = { onClipWeight(clip.key, it) },
                             onRemove = { onRemoveClip(clip.key) },
+                            onConditions = { onClipConditions(clip.key) },
                         )
                     }
                     FlowRow(
@@ -258,6 +280,34 @@ internal fun CharacterPage(
                                 Modifier.padding(start = ButtonDefaults.IconSpacing),
                             )
                         }
+                    }
+                }
+
+                // Ringtones.
+                Section(
+                    stringResource(R.string.creator_ringtones_title),
+                    stringResource(R.string.creator_ringtones_hint),
+                ) {
+                    character.ringtones.forEach { ringtone ->
+                        RingtoneRow(
+                            ringtone = ringtone,
+                            playing = playingRingtone == ringtone.key,
+                            onPlay = { onPlayRingtone(ringtone.key) },
+                            onEdit = { onEditRingtone(ringtone.key) },
+                            onAddVersion = { onAddRingtoneVersion(ringtone.key) },
+                            onRemove = { onRemoveRingtone(ringtone.key) },
+                        )
+                    }
+                    OutlinedButton(onClick = onAddRingtone, shapes = ButtonDefaults.shapes()) {
+                        Icon(
+                            painterResource(R.drawable.ic_creator_audio_file),
+                            contentDescription = null,
+                            modifier = Modifier.size(ButtonDefaults.IconSize),
+                        )
+                        Text(
+                            stringResource(R.string.creator_ringtone_add),
+                            Modifier.padding(start = ButtonDefaults.IconSpacing),
+                        )
                     }
                 }
 
@@ -332,26 +382,6 @@ internal fun CharacterPage(
         )
     }
 }
-
-/** What a duplicated pack's character keeps without the creator editing it (#185). */
-@Composable
-private fun passThroughNote(
-    ringtones: Int,
-    animated: Boolean,
-): String =
-    when {
-        ringtones > 0 && animated -> {
-            pluralStringResource(R.plurals.creator_kept_ringtones_and_animation, ringtones, ringtones)
-        }
-
-        ringtones > 0 -> {
-            pluralStringResource(R.plurals.creator_kept_ringtones, ringtones, ringtones)
-        }
-
-        else -> {
-            stringResource(R.string.creator_kept_animation)
-        }
-    }
 
 @Composable
 private fun Section(
@@ -437,7 +467,7 @@ private fun Swatch(
     }
 }
 
-/** One clip: play, label, how often it plays, length (with the gentle hint for long clips) and remove. */
+/** One clip: play, label, how often and when it plays, length (with the gentle hint for long clips) and remove. */
 @Composable
 private fun ClipRow(
     clip: DraftClip,
@@ -445,6 +475,7 @@ private fun ClipRow(
     onLabel: (String) -> Unit,
     onWeight: (Double) -> Unit,
     onRemove: () -> Unit,
+    onConditions: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var weightMenu by remember { mutableStateOf(false) }
@@ -496,6 +527,19 @@ private fun ClipRow(
             IconButton(onClick = onRemove) {
                 Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.creator_clip_remove))
             }
+        }
+        val summary = clipSummary(clip)
+        TextButton(onClick = onConditions, modifier = Modifier.padding(start = 4.dp)) {
+            Icon(
+                Icons.Rounded.DateRange,
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+            )
+            Text(
+                summary?.let { stringResource(R.string.creator_clip_when_summary, it) }
+                    ?: stringResource(R.string.creator_clip_when),
+                Modifier.padding(start = ButtonDefaults.IconSpacing),
+            )
         }
         if (clip.durationMs > ClipLimits.HINT_MS) {
             Row(

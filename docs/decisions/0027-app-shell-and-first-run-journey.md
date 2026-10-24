@@ -68,7 +68,7 @@ share bounds with the Setup screen's card. `setupCardMode` is a pure function.
 
 **First-run journey on Home** (`homeJourney`, pure):
 
-1. no pack: "Give your chats a voice" with **Get the demo packs** (and **Pick a file from Downloads**);
+1. no pack: "Give your chats a voice" with **Get the demo packs** (and **Choose a file from Downloads**);
 2. packs but no chats: "Your characters are ready" and **Hear the characters** (the preview-only picker);
 3. packs and chats but no voice: "Give Ada a voice", one tap to the picker for the newest recent sender;
 4. the first voice: the cuckoo door pops open on the new character (`Feedback.DoorOpen` with a burst in its colors),
@@ -76,7 +76,7 @@ share bounds with the Setup screen's card. `setupCardMode` is a pure function.
 
 **Demo packs: one tap through Discover, a file as the fallback, nothing bundled.** "Get the demo packs" calls
 `DemoPacksRequests.offer()` and switches to the Discover tab, which installs the demo bundle from the default
-repository through the usual review (#214, ADR 0045). Offline, **Pick a file from Downloads** opens the system file
+repository through the usual review (#214, ADR 0045). Offline, **Choose a file from Downloads** opens the system file
 picker (`OpenDocument`, initial location Downloads), and the file goes through `IncomingImports`, the same path as
 "Open with": the shell opens the Packs tab, which reviews and installs it (`Feedback.Success` there). The installed
 snackbar offers **Give voices**, back to Home. No storage permission and no pack in any APK. Bundling the demo packs

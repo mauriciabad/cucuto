@@ -2,7 +2,6 @@
 <!-- Tonos de llamada (#52, ADR 0039). Mismas claves y marcadores que values/strings_ringtone.xml. -->
 <resources>
     <!-- Contact detail section -->
-    <string name="ringtone_title">Tono de llamada</string>
     <string name="ringtone_off_body">Cuando esta persona te llame, puede sonar su personaje en lugar de tu tono de siempre. Cucuto lo configura en los Contactos de Android.</string>
     <string name="ringtone_turn_on">Activar tonos de llamada</string>
     <string name="ringtone_no_ringtones">%1$s no tiene tono de llamada.</string>
@@ -23,8 +22,6 @@
     <string name="ringtone_rule_time_body">La versión de día del amanecer al atardecer en tu lugar de día y noche (de 7:00 a 19:00 hasta que elijas uno), la de noche el resto del tiempo.</string>
     <string name="ringtone_rule_season_body">La versión de la estación actual.</string>
     <string name="ringtone_rule_fixed_body">Siempre la versión que elijas.</string>
-    <string name="ringtone_status_ringing">Suena con %1$s</string>
-    <string name="ringtone_status_preparing">Preparando el tono…</string>
     <string name="ringtone_problem_contact_missing">El contacto de Android vinculado ya no existe. Vincula otro.</string>
     <string name="ringtone_problem_render">Cucuto no ha podido preparar este tono. Lo volverá a intentar la próxima vez que abras la app.</string>
     <string name="ringtone_problem_write">Android no ha dejado que Cucuto cambie este contacto.</string>
@@ -49,7 +46,7 @@
     <string name="ringtone_picker_title">Tono de llamada</string>
     <string name="ringtone_picker_subtitle">Cuando llame %1$s</string>
     <string name="ringtone_picker_hint">Toca una portada para oírla y luego elige cómo suenan sus versiones.</string>
-    <string name="ringtone_picker_follows_voice">El mismo personaje que los mensajes</string>
+    <string name="ringtone_picker_follows_voice">El mismo que los mensajes</string>
     <string name="ringtone_picker_mixed">Elegido para las llamadas. Los mensajes siguen con %1$s</string>
     <string name="ringtone_picker_calls_only">Solo para llamadas: los mensajes aún no tienen voz</string>
     <string name="ringtone_picker_assigned">Sonará cuando llame %1$s</string>
@@ -68,7 +65,7 @@
     <string name="ringtone_picker_current">Ya elegido</string>
     <string name="ringtone_picker_pick_first">Elige un personaje</string>
     <string name="ringtone_picker_empty_title">Aún no hay tonos</string>
-    <string name="ringtone_picker_empty_body">Ninguno de tus packs tiene tonos. Importa un pack con canciones en Packs o descarga uno en Descubrir.</string>
+    <string name="ringtone_picker_empty_body">Ninguno de tus packs tiene tonos. Importa un pack con tonos en Packs o descarga uno en Descubrir.</string>
     <string name="ringtone_picker_failed">No se ha podido guardar el tono. Vuelve a intentarlo.</string>
 
     <!-- Permission explanations -->
@@ -84,7 +81,7 @@
     <string name="ringtone_close">Cerrar</string>
 
     <!-- Settings -->
-    <string name="settings_section_ringtones">Tonos de llamada</string>
+    <string name="settings_section_ringtones">Llamadas</string>
     <string name="settings_ringtones_switch">Los personajes suenan en las llamadas</string>
     <string name="settings_ringtones_on">Activado: los contactos vinculados suenan con su personaje.</string>
     <string name="settings_ringtones_off">Desactivado: los tonos de Android se quedan como están.</string>

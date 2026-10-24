@@ -22,8 +22,9 @@ import kotlin.random.Random
  * IDs follow the shared authoring rules ([Authoring]): while [packId] and a character's `id` are null they are derived
  * from the names; the first install or export fixes them ([withFixedIds]) because assignments refer to them.
  *
- * [homepage] and [tags] (like a character's description, tags, animated sprite and ringtones) are pass-through data:
- * the creator does not edit them yet, but a duplicated pack keeps them (#185).
+ * A character's tags and animated sprite are pass-through data: the creator does not edit them yet (#324), but a
+ * duplicated pack keeps them (#185). A [homepage] that is not an https URL is left out of the pack (the pack page
+ * says so).
  */
 @Serializable
 data class CreatorDraft(
@@ -75,7 +76,7 @@ data class CreatorDraft(
             license = license,
             description = description,
             cover = cover?.let { draftFile(mediaDir, it) },
-            homepage = homepage,
+            homepage = homepage?.takeIf(Authoring::isHomepage)?.trim(),
             tags = tags,
             characters =
                 characters.map { c ->
@@ -135,15 +136,15 @@ data class DraftCharacter(
     val haptic: HapticMode = HapticMode.AUTO,
     /** The custom timeline for [HapticMode.CUSTOM] (from the haptic editor, #32, or a duplicated pack). */
     val customHaptic: List<HapticEvent> = emptyList(),
-    /** Pass-through from a duplicated pack (not edited yet). */
     val description: String? = null,
+    /** Pass-through from a duplicated pack (not edited yet). */
     val tags: List<String> = emptyList(),
     /**
      * Media file name of the animated sprite, from a duplicated pack. The creator drops it when the sprite is replaced,
      * because it would show the old picture.
      */
     val spriteAnimated: String? = null,
-    /** Ringtone variants from a duplicated pack, kept as they are (the creator does not edit ringtones yet). */
+    /** Ringtone versions: added in the creator or kept from a duplicated pack. */
     val ringtones: List<DraftRingtone> = emptyList(),
 ) {
     fun haptic(): Haptic? =
@@ -161,21 +162,24 @@ data class DraftClip(
     val label: String = "",
     val weight: Double = 1.0,
     val durationMs: Long,
-    /** The clip's condition (day and night clips, moments), kept from a duplicated pack. */
+    /** The clip's condition (day and night clips, moments), from "When it plays" or a duplicated pack. */
     val `when`: When? = null,
-    /** A rare clip's chance, one in [oneIn], kept from a duplicated pack. */
+    /** A rare clip's chance, one in [oneIn]. */
     val oneIn: Int? = null,
 )
 
 /**
- * A ringtone variant from a duplicated pack: [entry] is the pack's entry as it was (label, tags, `when`, loop,
- * fade-in, weight), [file] the media file name in the draft that replaces its `file`. Variants that shared a file in
- * the pack share it here too.
+ * A ringtone version: [entry] is the pack entry (label, tags, `when`, loop, fade-in, weight; edited through
+ * [app.mauri.cucuto.packspec.authoring.RingtoneForm], or kept as it was from a duplicated pack), [file] the media file
+ * name in the draft that replaces its `file`. Versions of one song share a file. [durationMs] is the file's length
+ * (0 when unknown), for the loop editor.
  */
 @Serializable
 data class DraftRingtone(
     val file: String,
     val entry: Ringtone,
+    val key: String = CreatorDraft.newKey(),
+    val durationMs: Long = 0,
 )
 
 /** The character's vibration: follows the voice (the format's default), none, or a custom pattern. */
