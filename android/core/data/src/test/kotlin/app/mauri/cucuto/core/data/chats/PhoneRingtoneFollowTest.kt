@@ -4,11 +4,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.FakeClock
 import app.mauri.cucuto.core.data.db.CucutoDatabase
 import app.mauri.cucuto.core.data.db.PhoneRingtoneEntity
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.inMemoryDatabase
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
 import app.mauri.cucuto.core.data.repository.SeenSenderRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -42,6 +44,7 @@ class PhoneRingtoneFollowTest {
                 AssignmentRepository(db, db.assignmentDao(), clock),
                 SeenSenderRepository(db.seenSenderDao()),
                 PhoneRingtoneFollow(db.phoneRingtoneDao(), { it in ringing }, clock),
+                db.phoneRingtoneDao(),
             )
     }
 
@@ -174,6 +177,55 @@ class PhoneRingtoneFollowTest {
             assign(PIKACHU)
 
             assertEquals(before, row(id))
+        }
+
+    @Test
+    fun androidDefaultAndLeaveAsIsNeverChangeWithTheVoice() =
+        runTest {
+            for (choice in listOf(RingtoneChoice.ANDROID_DEFAULT, RingtoneChoice.UNCHANGED)) {
+                val id = assign(TWEET)
+                val chosen = PhoneRingtoneEntity(id, updatedAt = 1, followsVoice = false, choice = choice)
+                db.phoneRingtoneDao().upsert(chosen)
+
+                assign(PIKACHU)
+                directory.unassign(ada)
+
+                assertEquals(chosen, row(id))
+                assertNull(ringsWith(id))
+            }
+        }
+
+    @Test
+    fun chatsCarryTheirRingtoneChoice() =
+        runTest {
+            val id = assign(TWEET)
+            assertNull(
+                directory
+                    .observeChats()
+                    .first()
+                    .single()
+                    .ringtone,
+            )
+            assertEquals(
+                TWEET,
+                directory
+                    .observeChats()
+                    .first()
+                    .single()
+                    .ringingVoice,
+            )
+
+            db.phoneRingtoneDao().upsert(PhoneRingtoneEntity(id, KK.packId, KK.characterId, updatedAt = 1))
+            val picked = directory.observeChats().first().single()
+            assertEquals(ChatRingtone.Character(KK, followsVoice = false), picked.ringtone)
+            assertEquals(KK, picked.ringingVoice)
+
+            db.phoneRingtoneDao().upsert(
+                PhoneRingtoneEntity(id, updatedAt = 1, followsVoice = false, choice = RingtoneChoice.ANDROID_DEFAULT),
+            )
+            val default = directory.observeChats().first().single()
+            assertEquals(ChatRingtone.AndroidDefault, default.ringtone)
+            assertNull(default.ringingVoice)
         }
 
     @Test

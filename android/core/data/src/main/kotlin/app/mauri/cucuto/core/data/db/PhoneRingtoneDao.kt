@@ -21,16 +21,19 @@ interface PhoneRingtoneDao {
 
     /**
      * Every phone ringtone joined with its contact's Android link and voice: the input of the ringtone sync. Rows
-     * without a link are included (the UI shows them as "not linked yet").
+     * without a link are included (the UI shows them as "not linked yet"). "Leave as is" rows are left out, so the
+     * sync treats them like no row, and "Android default" rows have no character (ADR 0073).
      */
     @Query(
         """
         SELECT r.contactId AS contactId, c.androidLookupKey AS lookupKey, c.displayName AS displayName,
-               COALESCE(r.packId, a.packId) AS packId, COALESCE(r.characterId, a.characterId) AS characterId,
-               r.mode AS mode, r.variant AS variant, r.rules AS rules
+               CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.packId, a.packId) END AS packId,
+               CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.characterId, a.characterId) END AS characterId,
+               r.mode AS mode, r.variant AS variant, r.rules AS rules, r.choice AS choice
         FROM phone_ringtones AS r
         JOIN contacts AS c ON c.id = r.contactId
         LEFT JOIN assignments AS a ON a.contactId = r.contactId
+        WHERE r.choice != 'UNCHANGED'
         ORDER BY r.contactId
         """,
     )
@@ -40,11 +43,13 @@ interface PhoneRingtoneDao {
     @Query(
         """
         SELECT r.contactId AS contactId, c.androidLookupKey AS lookupKey, c.displayName AS displayName,
-               COALESCE(r.packId, a.packId) AS packId, COALESCE(r.characterId, a.characterId) AS characterId,
-               r.mode AS mode, r.variant AS variant, r.rules AS rules
+               CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.packId, a.packId) END AS packId,
+               CASE WHEN r.choice = 'CHARACTER' THEN COALESCE(r.characterId, a.characterId) END AS characterId,
+               r.mode AS mode, r.variant AS variant, r.rules AS rules, r.choice AS choice
         FROM phone_ringtones AS r
         JOIN contacts AS c ON c.id = r.contactId
         LEFT JOIN assignments AS a ON a.contactId = r.contactId
+        WHERE r.choice != 'UNCHANGED'
         ORDER BY r.contactId
         """,
     )
@@ -65,7 +70,7 @@ interface PhoneRingtoneDao {
 
 /**
  * One row of [PhoneRingtoneDao.observeSyncRows]: a phone ringtone with the character resolved (its own, or the
- * contact's voice) and the Android contact it rings through.
+ * contact's voice; none for [RingtoneChoice.ANDROID_DEFAULT]) and the Android contact it rings through.
  */
 data class PhoneRingtoneRow(
     val contactId: Long,
@@ -77,4 +82,5 @@ data class PhoneRingtoneRow(
     val variant: String?,
     /** [RingtoneMode.CUSTOM]'s rules as stored ([RingtoneRules]). */
     val rules: String? = null,
+    val choice: RingtoneChoice = RingtoneChoice.CHARACTER,
 )

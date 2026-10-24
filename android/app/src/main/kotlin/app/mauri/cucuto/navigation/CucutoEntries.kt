@@ -66,8 +66,16 @@ fun cucutoEntries(
             PickerScreen(
                 chat = key.chat,
                 onBack = goBack,
-                // Only this picker, and only if the user has not left it already.
-                onDone = { navigator.remove(key) },
+                // Only this picker, and only if the user has not left it already. From Home, a 1:1 chat goes on to
+                // its ringtone (step 2, ADR 0073); groups have no phone ringtone.
+                onDone = {
+                    val chat = key.chat
+                    if (key.ringtoneNext && chat != null && !chat.isGroupKey && navigator.current == key) {
+                        navigator.replace(key, CucutoDestination.RingtonePicker(chat, step = true))
+                    } else {
+                        navigator.remove(key)
+                    }
+                },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onOpenDiscover = { navigate(CucutoDestination.Discover) },
             )
@@ -109,6 +117,9 @@ fun cucutoEntries(
                 onChangeCharacter = { navigate(CucutoDestination.Picker(key.chat)) },
                 onEditPattern = { navigate(CucutoDestination.HapticEditor(HapticTarget.Chat(key.chat))) },
                 onChooseRingtone = { navigate(CucutoDestination.RingtonePicker(key.chat)) },
+                onOpenRules = { voice ->
+                    navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
+                },
             )
         }
         entry<CucutoDestination.RingtonePicker>(
@@ -120,6 +131,7 @@ fun cucutoEntries(
                 onDone = { navigator.remove(key) },
                 onOpenPacks = { navigate(CucutoDestination.Packs) },
                 onOpenDiscover = { navigate(CucutoDestination.Discover) },
+                step = key.step,
                 onOpenRules = { voice ->
                     navigate(CucutoDestination.RingtoneRules(voice.packId, voice.characterId, key.chat))
                 },
@@ -186,7 +198,7 @@ fun cucutoEntries(
         entry<CucutoDestination.AssignVoice>(metadata = childOf(CucutoDestination.Home)) { key ->
             AssignVoiceScreen(
                 onBack = goBack,
-                onPick = { chat -> navigator.replace(key, CucutoDestination.Picker(chat)) },
+                onPick = { chat -> navigator.replace(key, CucutoDestination.Picker(chat, ringtoneNext = true)) },
                 onAddFromContacts = { navigate(CucutoDestination.AddFromContacts) },
             )
         }

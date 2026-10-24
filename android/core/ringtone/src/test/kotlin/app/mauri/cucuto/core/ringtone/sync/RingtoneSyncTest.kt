@@ -3,6 +3,7 @@ package app.mauri.cucuto.core.ringtone.sync
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
 import app.mauri.cucuto.core.data.db.PhoneRingtoneRow
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContactRingtone
@@ -232,6 +233,100 @@ class RingtoneSyncTest {
             assertTrue(exports.files.isEmpty())
         }
 
+    private fun defaultRow(
+        contactId: Long = 1,
+        lookupKey: String = "ada",
+    ) = PhoneRingtoneRow(
+        contactId,
+        lookupKey,
+        "Ada",
+        null,
+        null,
+        RingtoneMode.PACK,
+        null,
+        choice = RingtoneChoice.ANDROID_DEFAULT,
+    )
+
+    @Test
+    fun androidDefaultClearsTheContactsOwnRingtoneAndLeaveAsIsGivesItBack() =
+        runTest {
+            contacts.people["ada"] = "content://original"
+            store.rows = listOf(defaultRow())
+            val sync = sync()
+
+            assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+            assertNull(contacts.people["ada"])
+            val write = store.writes.getValue("ada")
+            assertEquals("content://original", write.originalRingtone)
+            assertEquals(ContactRingtoneWriteEntity.DEFAULT_RINGTONE, write.writtenUri)
+            assertTrue(exports.files.isEmpty())
+
+            // A second run changes nothing.
+            sync.sync(SyncReason.Changed)
+            assertNull(contacts.people["ada"])
+
+            // "Leave as is" rows are not sync rows: the contact gets its own ringtone back.
+            store.rows = emptyList()
+            sync.sync(SyncReason.Changed)
+            assertEquals("content://original", contacts.people["ada"])
+            assertTrue(store.writes.isEmpty())
+        }
+
+    @Test
+    fun androidDefaultNeverWritesAContactWithoutARingtoneAndRespectsOneSetLater() =
+        runTest {
+            contacts.people["ada"] = null
+            store.rows = listOf(defaultRow())
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+            assertEquals(0, contacts.writes)
+            assertNull(store.writes.getValue("ada").originalRingtone)
+
+            contacts.people["ada"] = "content://users-own-choice"
+            val result = sync.sync(SyncReason.Changed)
+            assertEquals(RingtoneProblem.ChangedElsewhere, result.problems[1])
+            assertEquals("content://users-own-choice", contacts.people["ada"])
+
+            store.rows = emptyList()
+            sync.sync(SyncReason.Changed)
+            assertEquals("content://users-own-choice", contacts.people["ada"])
+            assertEquals(0, contacts.writes)
+        }
+
+    @Test
+    fun switchingBetweenACharacterAndTheDefaultKeepsTheOriginal() =
+        runTest {
+            contacts.people["ada"] = "content://original"
+            store.rows = listOf(row())
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+
+            store.rows = listOf(defaultRow())
+            assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+            assertNull(contacts.people["ada"])
+            assertTrue("the unused ring files go", exports.files.isEmpty())
+
+            store.rows = listOf(row())
+            assertTrue(sync.sync(SyncReason.Changed).problems.isEmpty())
+            assertEquals(exports.uriOf("day"), contacts.people["ada"])
+
+            assertTrue(sync.restoreAll())
+            assertEquals("content://original", contacts.people["ada"])
+        }
+
+    @Test
+    fun turningOffGivesAnAndroidDefaultContactItsRingtoneBack() =
+        runTest {
+            contacts.people["ada"] = "content://original"
+            store.rows = listOf(defaultRow())
+            val sync = sync()
+            sync.sync(SyncReason.Changed)
+
+            assertTrue(sync.restoreAll())
+            assertEquals("content://original", contacts.people["ada"])
+            assertTrue(store.writes.isEmpty())
+        }
+
     @Test
     fun turningOffRestoresEveryContactAndDeletesEveryFile() =
         runTest {
@@ -358,6 +453,9 @@ class RingtoneSyncTest {
         val people = LinkedHashMap<String, String?>()
         var allowed = true
 
+        /** Contact ringtone writes so far. */
+        var writes = 0
+
         override fun canReadAndWrite() = allowed
 
         override suspend fun find(lookupKey: String) =
@@ -375,6 +473,7 @@ class RingtoneSyncTest {
         ): Boolean {
             if (!allowed || lookupKey !in people) return false
             people[lookupKey] = uri
+            writes++
             return true
         }
 

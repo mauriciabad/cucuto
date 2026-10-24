@@ -47,6 +47,34 @@ class PhoneRingtoneDaoTest {
         }
 
     @Test
+    fun syncRowsLeaveOutLeaveAsIsAndRingNoCharacterForTheDefault() =
+        runTest {
+            contact(1, "ada")
+            contact(2, "bruno")
+            db.assignmentDao().upsert(AssignmentEntity(1, "pack.a", "frog", updatedAt = 1))
+            db.assignmentDao().upsert(AssignmentEntity(2, "pack.a", "frog", updatedAt = 1))
+            dao.upsert(
+                PhoneRingtoneEntity(1, updatedAt = 1, followsVoice = false, choice = RingtoneChoice.ANDROID_DEFAULT),
+            )
+            dao.upsert(PhoneRingtoneEntity(2, updatedAt = 1, followsVoice = false, choice = RingtoneChoice.UNCHANGED))
+
+            val row = dao.syncRows().single()
+            assertEquals(
+                PhoneRingtoneRow(
+                    1,
+                    "ada",
+                    "C1",
+                    null,
+                    null,
+                    RingtoneMode.PACK,
+                    null,
+                    choice = RingtoneChoice.ANDROID_DEFAULT,
+                ),
+                row,
+            )
+        }
+
+    @Test
     fun deletingAContactDropsItsRingtoneButKeepsTheUndoRecord() =
         runTest {
             contact(1, "ada")

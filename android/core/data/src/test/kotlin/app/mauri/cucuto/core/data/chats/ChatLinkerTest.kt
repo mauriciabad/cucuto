@@ -44,7 +44,13 @@ class ChatLinkerTest {
         seen = SeenSenderRepository(db.seenSenderDao())
         val assignments = AssignmentRepository(db, db.assignmentDao(), clock)
         directory =
-            RoomChatDirectory(contacts, assignments, seen, PhoneRingtoneFollow(db.phoneRingtoneDao(), { false }, clock))
+            RoomChatDirectory(
+                contacts,
+                assignments,
+                seen,
+                PhoneRingtoneFollow(db.phoneRingtoneDao(), { false }, clock),
+                db.phoneRingtoneDao(),
+            )
         linker = ChatLinker(contacts, seen, phone)
         sightings = AlertSightings(seen, contacts, linker)
         phone.entries = listOf(ana, bruno)

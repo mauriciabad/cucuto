@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.cucuto.R
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContact
 import app.mauri.cucuto.core.ringtone.sync.RingtoneProblem
@@ -63,9 +64,8 @@ data class PhoneRingtoneActions(
     val onPickContact: () -> Unit = {},
     val onUnlink: () -> Unit = {},
     val onUse: () -> Unit = {},
-    /** Opens the ringtone picker (#53): character, versions and rule. */
+    /** Opens the ringtone picker (#53): character, versions and rule, Android default or Leave as is. */
     val onChoose: () -> Unit = {},
-    val onStop: () -> Unit = {},
     val onTakeOver: () -> Unit = {},
     val onAllowPhone: () -> Unit = {},
 )
@@ -112,7 +112,6 @@ fun PhoneRingtoneSection(
                 onUnlink = viewModel::unlink,
                 onUse = viewModel::use,
                 onChoose = onChoose,
-                onStop = viewModel::stop,
                 onTakeOver = viewModel::takeOver,
                 onAllowPhone = allowPhone,
             ),
@@ -134,8 +133,9 @@ fun PhoneRingtoneContent(
             feedback.fire(Feedback.Tap)
             action()
         }
-    // What rings is the "Phone calls" row's: this card only sets it up, once there is something to ring.
-    if (state.loading || state.contactId == null || !state.hasRingtone) return
+    // What rings is the "Phone calls" row's: this card only sets it up, once there is something to ring (or a
+    // ringtone of the contact's own to clear for Android default, ADR 0073).
+    if (state.loading || state.contactId == null || !state.needsSetUp) return
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         modifier = modifier.fillMaxWidth(),
@@ -148,7 +148,11 @@ fun PhoneRingtoneContent(
             )
             when {
                 !state.enabled -> {
-                    Body(stringResource(R.string.ringtone_off_body))
+                    Body(
+                        stringResource(
+                            if (state.isDefault) R.string.ringtone_default_off_body else R.string.ringtone_off_body,
+                        ),
+                    )
                     FilledTonalButton(
                         onClick = tap(actions.onTurnOn),
                     ) { Text(stringResource(R.string.ringtone_turn_on)) }
@@ -234,18 +238,21 @@ private fun Linked(
             TextButton(onClick = tap(actions.onAllowPhone)) { Text(stringResource(R.string.ringtone_phone_allow)) }
         }
     }
-    Text(
-        state.exportTitle?.let { stringResource(R.string.ringtone_whatsapp_hint, it) }
-            ?: stringResource(R.string.ringtone_whatsapp_hint_generic),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    TextButton(onClick = tap(actions.onStop)) { Text(stringResource(R.string.ringtone_stop)) }
+    // "Leave as is" in the ringtone picker replaces "Stop using for calls" (ADR 0073).
+    if (!state.isDefault) {
+        Text(
+            state.exportTitle?.let { stringResource(R.string.ringtone_whatsapp_hint, it) }
+                ?: stringResource(R.string.ringtone_whatsapp_hint_generic),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 /**
- * The "Phone calls" row of contact detail (ADR 0063): the character that rings when [chat] phones, one tap from the
- * ringtone picker ([onChoose]), and a play button that previews the version that rings now from its start (#246).
+ * The "Phone calls" row of contact detail (ADR 0063): the character that rings when [chat] phones (or "Android
+ * default", or "Left as is", ADR 0073), one tap from the ringtone picker ([onChoose]), and a play button that previews
+ * the version that rings now from its start (#246).
  * Shares [PhoneRingtoneSection]'s view model.
  */
 @Composable
@@ -253,6 +260,7 @@ fun PhoneCallsRow(
     chat: ChatKey,
     onChoose: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val viewModel = phoneRingtoneViewModel(chat)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -275,6 +283,11 @@ fun PhoneCallsRow(
             viewModel.stopPreview()
         },
         modifier = modifier,
+        onOpenRules = { voice ->
+            feedback.fire(Feedback.Tap)
+            viewModel.stopPreview()
+            onOpenRules(voice)
+        },
     )
 }
 
@@ -286,48 +299,62 @@ fun PhoneCallsRowContent(
     onTogglePreview: () -> Unit,
     modifier: Modifier = Modifier,
     onStopPreview: () -> Unit = {},
+    onOpenRules: (ChatVoice) -> Unit = {},
 ) {
     val character = state.ringingCharacter
-    val name = state.characterName.takeIf { state.hasRingtone }
+    val name = state.characterName.takeIf { state.hasRingtone && !state.isDefault && !state.isUnchanged }
     val value =
         when {
             state.loading -> ""
+            state.isDefault -> stringResource(R.string.ringtone_row_default)
+            state.isUnchanged -> stringResource(R.string.ringtone_row_unchanged)
             name == null -> stringResource(R.string.ringtone_row_none)
             else -> stringResource(R.string.ringtone_row_value, name, rule(state))
         }
     val relation =
         when {
-            name == null || state.loading -> null
+            state.loading -> null
+            state.isDefault -> stringResource(R.string.ringtone_row_default_detail)
+            state.isUnchanged -> stringResource(R.string.ringtone_row_unchanged_detail)
+            name == null -> null
             state.mixed -> stringResource(R.string.ringtone_row_own)
             state.kept && state.voiceName != null -> stringResource(R.string.ringtone_row_kept, state.voiceName)
             state.kept -> null
             else -> stringResource(R.string.ringtone_row_follows)
         }
-    SoundRow(
-        label = stringResource(R.string.contact_row_calls),
-        value = value,
-        detail = relation,
-        clickLabel = stringResource(R.string.ringtone_choose),
-        onClick = onChoose,
-        leading = {
-            if (character != null && name != null) {
-                RecordCover(character, size = 48.dp, pulledOut = state.preview != null, spinning = state.previewing)
-            } else {
-                SoundRowIcon(CallIcon)
-            }
-        },
-        trailing = {
-            if (state.previewSound != null && name != null) {
-                RingtonePlayButton(
-                    preview = state.preview,
-                    name = name,
-                    onToggle = onTogglePreview,
-                    onStop = onStopPreview,
-                )
-            }
-        },
-        modifier = modifier,
-    )
+    Column(modifier) {
+        SoundRow(
+            label = stringResource(R.string.contact_row_calls),
+            value = value,
+            detail = relation,
+            clickLabel = stringResource(R.string.ringtone_choose),
+            onClick = onChoose,
+            leading = {
+                if (character != null && name != null) {
+                    RecordCover(character, size = 48.dp, pulledOut = state.preview != null, spinning = state.previewing)
+                } else {
+                    SoundRowIcon(state.choice?.icon ?: CallIcon)
+                }
+            },
+            trailing = {
+                if (state.previewSound != null && name != null) {
+                    RingtonePlayButton(
+                        preview = state.preview,
+                        name = name,
+                        onToggle = onTogglePreview,
+                        onStop = onStopPreview,
+                    )
+                }
+            },
+        )
+        // The rules of a character with several versions, in plain words and editable (ADR 0074).
+        if (character != null && name != null && state.modes.isNotEmpty()) {
+            TextButton(
+                onClick = { onOpenRules(character.voice) },
+                modifier = Modifier.padding(start = 76.dp),
+            ) { Text(stringResource(R.string.ringtone_rules_open)) }
+        }
+    }
 }
 
 /** How the version is picked, as the row says it. */
@@ -442,6 +469,10 @@ private fun status(state: PhoneRingtoneUiState): String =
 
         state.problem == RingtoneProblem.WriteFailed -> {
             stringResource(R.string.ringtone_problem_write)
+        }
+
+        state.isDefault -> {
+            stringResource(R.string.ringtone_status_default)
         }
 
         state.syncing && state.ringingWith == null -> {

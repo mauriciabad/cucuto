@@ -2,6 +2,8 @@ package app.mauri.cucuto.core.ringtone.sync
 
 import android.util.Log
 import app.mauri.cucuto.core.data.db.ContactRingtoneWriteEntity
+import app.mauri.cucuto.core.data.db.PhoneRingtoneRow
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.ringtone.contacts.AndroidContacts
@@ -62,6 +64,8 @@ data class SyncResult(
  * Makes Android contacts ring the way Cucuto's phone ringtones say (ADR 0039). Idempotent: every run compares what each
  * linked Android contact has with what it should have and changes only the difference.
  *
+ * - **Android default** (ADR 0073). A contact whose choice is the phone's default gets a ringtone of its own cleared,
+ *   recorded like any write; one without a ringtone is never written.
  * - **Undo.** Before the first write to an Android contact, its own ringtone is recorded ([ContactRingtoneWriteEntity]).
  *   A contact that no longer has a phone ringtone (removed, unlinked, linked elsewhere) gets that ringtone back, unless
  *   someone changed it in the meantime.
@@ -110,6 +114,10 @@ class RingtoneSync(
 
         for (row in linked) {
             val lookupKey = row.lookupKey!!
+            if (row.choice == RingtoneChoice.ANDROID_DEFAULT) {
+                syncDefault(row, lookupKey, writes, ours)?.let { problems[row.contactId] = it }
+                continue
+            }
             val character =
                 if (row.packId != null &&
                     row.characterId != null
@@ -133,7 +141,7 @@ class RingtoneSync(
                 continue
             }
             val current = android.ringtone
-            if (write?.writtenUri != null && current != write.writtenUri && current !in ours) {
+            if (write?.writtenUri != null && !write.stillOn(current, ours)) {
                 store.upsertWrite(write.copy(userChanged = true, writtenAt = wallClock()))
                 problems[row.contactId] = RingtoneProblem.ChangedElsewhere
                 continue
@@ -227,6 +235,55 @@ class RingtoneSync(
         )
     }
 
+    /**
+     * "Android default" (ADR 0073): the contact rings with the phone's default ringtone. A ringtone of its own (the
+     * user's, or one of Cucuto's files) is recorded for undo, then cleared. A contact without one is never written;
+     * the record alone notes that Cucuto stands behind "no ringtone", so a ringtone set later counts as the user's.
+     */
+    private suspend fun syncDefault(
+        row: PhoneRingtoneRow,
+        lookupKey: String,
+        writes: MutableMap<String, ContactRingtoneWriteEntity>,
+        ours: Set<String>,
+    ): RingtoneProblem? {
+        val android = contacts.find(lookupKey) ?: return RingtoneProblem.ContactMissing
+        val write = writes[lookupKey]
+        if (write?.userChanged == true) return RingtoneProblem.ChangedElsewhere
+        val current = android.ringtone
+        if (current == null) {
+            if (write?.writtenUri != DEFAULT) {
+                val record =
+                    (write ?: ContactRingtoneWriteEntity(lookupKey, row.contactId, null, writtenAt = 0)).copy(
+                        contactId = row.contactId,
+                        writtenUri = DEFAULT,
+                        variant = null,
+                        writtenAt = wallClock(),
+                    )
+                store.upsertWrite(record)
+                writes[lookupKey] = record
+            }
+            return null
+        }
+        if (write?.writtenUri != null && !write.stillOn(current, ours)) {
+            store.upsertWrite(write.copy(userChanged = true, writtenAt = wallClock()))
+            return RingtoneProblem.ChangedElsewhere
+        }
+        // Record first, as for ring files: a crash between the two writes leaves the contact as it was.
+        val record =
+            ContactRingtoneWriteEntity(
+                lookupKey = lookupKey,
+                contactId = row.contactId,
+                originalRingtone = write?.originalRingtone ?: current.takeIf { write == null && it !in ours },
+                writtenUri = DEFAULT,
+                variant = null,
+                userChanged = false,
+                writtenAt = wallClock(),
+            )
+        store.upsertWrite(record)
+        writes[lookupKey] = record
+        return if (contacts.setRingtone(lookupKey, null)) null else RingtoneProblem.WriteFailed
+    }
+
     private suspend fun restore(
         write: ContactRingtoneWriteEntity,
         ours: Set<String>,
@@ -234,14 +291,21 @@ class RingtoneSync(
         val android = contacts.find(write.lookupKey)
         if (android != null && !write.userChanged) {
             val current = android.ringtone
-            if (current == write.writtenUri ||
-                current in ours
-            ) {
+            if (write.stillOn(current, ours) && current != write.originalRingtone) {
                 contacts.setRingtone(write.lookupKey, write.originalRingtone)
             }
         }
         store.deleteWrite(write.lookupKey)
     }
+
+    /**
+     * Whether the contact still has what Cucuto left there: [ContactRingtoneWriteEntity.writtenUri], no ringtone after
+     * a clear ([DEFAULT]), or any of Cucuto's ring files. Anything else was set by someone else.
+     */
+    private fun ContactRingtoneWriteEntity.stillOn(
+        current: String?,
+        ours: Set<String>,
+    ): Boolean = current == writtenUri || (writtenUri == DEFAULT && current == null) || current in ours
 
     private suspend fun export(
         character: CharacterRingtones,
@@ -267,6 +331,9 @@ class RingtoneSync(
 
     companion object {
         private const val TAG = "cucuto"
+
+        /** The undo record's marker for a contact Cucuto cleared (ADR 0073). */
+        private const val DEFAULT = ContactRingtoneWriteEntity.DEFAULT_RINGTONE
 
         /** Bump when rendering changes, so every phone renders its ring files again. */
         const val RENDER_VERSION = 1

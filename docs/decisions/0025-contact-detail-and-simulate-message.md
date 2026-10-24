@@ -1,6 +1,7 @@
 # 0025. Contact detail and "Simulate message"
 
-- Status: accepted (defaults open for the owner in #169)
+- Status: accepted (defaults open for the owner in #169); the header shows the ringtone too since [ADR 0073](0073-sound-flow-message-then-ringtone.md)
+  (owner update 2026-10-24, #298)
 - Date: 2026-10-24
 - Issue: #26
 

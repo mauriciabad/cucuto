@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.db.RingtoneChoice
 import app.mauri.cucuto.core.data.db.RingtoneMode
 import app.mauri.cucuto.core.data.db.RingtoneRules
 import app.mauri.cucuto.core.data.di.WallClock
@@ -59,6 +60,7 @@ data class VariantChip(
  * @property voiceName The messages' character, when the chat has one.
  * @property previewSound The version that rings now, for the play button (#246); null when there is nothing to play.
  * @property preview Its preview while it rings or is paused, with its progress (owner update 2026-10-24, #242).
+ * @property choice The stored kind of ringtone (ADR 0073), null when nothing is stored.
  */
 @Immutable
 data class PhoneRingtoneUiState(
@@ -86,7 +88,17 @@ data class PhoneRingtoneUiState(
     val voiceName: String? = null,
     val previewSound: RingSound? = null,
     val preview: PreviewPlaying<RingSound>? = null,
+    val choice: RingtoneChoice? = null,
 ) {
+    /** "Android default": the phone's default ringtone (ADR 0073). */
+    val isDefault: Boolean get() = choice == RingtoneChoice.ANDROID_DEFAULT
+
+    /** "Leave as is": Cucuto doesn't touch the contact's ringtone (ADR 0073). */
+    val isUnchanged: Boolean get() = choice == RingtoneChoice.UNCHANGED
+
+    /** The set-up card has something to set up: a character that rings, or Android default (to clear one). */
+    val needsSetUp: Boolean get() = isDefault || (hasRingtone && !isUnchanged)
+
     /** The preview is ringing (not paused). */
     val previewing: Boolean get() = preview != null && !preview.paused
 
@@ -100,9 +112,10 @@ data class PhoneRingtoneUiState(
 
 /**
  * The phone ringtone of one chat (#52, ADR 0039): what rings (the "Phone calls" row of contact detail, with a preview
- * from the start of the song, #246), link its Android contact, stop it, or take a ringtone back after it was changed
- * in Contacts. The character, version and rule are chosen in the ringtone picker (#53), independently of the messages'
- * character (ADR 0063). Everything goes through [PhoneRingtones], whose sync writes Android contacts.
+ * from the start of the song, #246), link its Android contact, or take a ringtone back after it was changed in
+ * Contacts. The character, version and rule, or "Android default" and "Leave as is" (ADR 0073), are chosen in the
+ * ringtone picker (#53), independently of the messages' character (ADR 0063). Everything goes through
+ * [PhoneRingtones], whose sync writes Android contacts.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = PhoneRingtoneViewModel.Factory::class)
@@ -182,7 +195,7 @@ class PhoneRingtoneViewModel
                 variants = variants.distinctBy { it.file }.map { VariantChip(it.file, it.chipLabel()) },
                 linkedName = contact.linkedName,
                 linked = contact.linkedLookupKey != null,
-                using = contact.ringtone != null,
+                using = contact.ringtone.let { it != null && it.choice != RingtoneChoice.UNCHANGED },
                 mode = mode,
                 fixedVariant = contact.ringtone?.variant,
                 modes = modesFor(variants),
@@ -199,7 +212,9 @@ class PhoneRingtoneViewModel
                 syncing = contact.syncing,
                 suggestions = if (contact.linkedLookupKey == null) suggested else emptyList(),
                 needsPhonePermission =
-                    mode == RingtoneMode.RANDOM && contact.ringtone != null && !ringtones.canReadPhoneState(),
+                    mode == RingtoneMode.RANDOM &&
+                        contact.ringtone?.choice == RingtoneChoice.CHARACTER &&
+                        !ringtones.canReadPhoneState(),
                 ringingCharacter = ringing,
                 mixed = own && !follows,
                 kept = own && follows,
@@ -208,6 +223,7 @@ class PhoneRingtoneViewModel
                     previewVariant?.let { v ->
                         contact.character?.fileOf(v)?.let { RingSound(it, v.loop, v.fadeInMs) }
                     },
+                choice = contact.ringtone?.choice,
             )
         }
 
@@ -278,14 +294,10 @@ class PhoneRingtoneViewModel
                 loadSuggestions()
             }
 
+        /** Rings with the message character again, following it (ADR 0063). */
         fun use() =
             launchSafely {
-                ringtones.setRule(contactId ?: return@launchSafely, RingtoneMode.PACK)
-            }
-
-        fun stop() =
-            launchSafely {
-                ringtones.remove(contactId ?: return@launchSafely)
+                ringtones.choose(contactId ?: return@launchSafely, null, null, RingtoneMode.PACK, null)
             }
 
         fun takeOver() =

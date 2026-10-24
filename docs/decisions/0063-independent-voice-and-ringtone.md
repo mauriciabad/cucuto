@@ -3,7 +3,9 @@
 - Status: accepted (owner updates 2026-10-24, #245, #246 and #242; the defaults below can be overridden on those
   issues); both pickers' pack sections fold, with search and "Surprise me", in
   [ADR 0072](0072-picker-folding-and-surprise-me.md) (owner update 2026-10-24, #289 and #290); `phone_ringtones` gains
-  `rules` in [ADR 0074](0074-ringtone-rules-screen.md) (database version 5, #288)
+  `rules` in [ADR 0074](0074-ringtone-rules-screen.md) (database version 5, #288); the ringtone choices (Android
+  default, Leave as is), the first-assign flow and where the ringtone shows are amended by
+  [ADR 0073](0073-sound-flow-message-then-ringtone.md) (owner update 2026-10-24, #298; database version 6)
 - Date: 2026-10-24
 - Issues: #245 (independent choices, capability filters), #246 (ringtone previews), #242 (preview length, pause)
 - Amends: [ADR 0017](0017-home-recent-senders-and-picker.md) (picker), [ADR 0039](0039-phone-ringtones-on-the-device.md)
