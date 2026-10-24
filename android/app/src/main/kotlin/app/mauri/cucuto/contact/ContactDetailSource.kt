@@ -1,7 +1,6 @@
 package app.mauri.cucuto.contact
 
 import app.mauri.cucuto.core.data.db.DecisionLogEntity
-import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.repository.AssignmentRepository
 import app.mauri.cucuto.core.data.repository.ContactRepository
 import app.mauri.cucuto.core.data.repository.DecisionLogRepository
@@ -15,13 +14,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * A contact's per-chat settings, as contact detail shows them.
+ * A contact's per-chat voice settings, as contact detail shows them. The group policy is on
+ * [app.mauri.cucuto.core.data.chats.Chat.groupPolicy].
  *
  * @property disabledClips Clip paths from `pack.json` switched off for this contact.
  * @property hapticOverride The per-contact haptic in the pack `haptic` JSON shape, or null for the character's.
  */
 data class ChatSettings(
-    val groupPolicy: GroupPolicy,
     val disabledClips: List<String>,
     val hapticOverride: String?,
 )
@@ -53,12 +52,10 @@ class RoomContactDetailSource
     ) : ContactDetailSource {
         override fun observeSettings(contactId: Long): Flow<ChatSettings?> =
             combine(contacts.observeContact(contactId), assignments.observe(contactId)) { contact, assignment ->
-                contact?.let {
-                    ChatSettings(
-                        groupPolicy = it.contact.groupPolicy,
-                        disabledClips = assignment?.disabledClips.orEmpty(),
-                        hapticOverride = assignment?.hapticOverride,
-                    )
+                if (contact == null) {
+                    null
+                } else {
+                    ChatSettings(assignment?.disabledClips.orEmpty(), assignment?.hapticOverride)
                 }
             }
 

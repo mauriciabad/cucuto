@@ -153,6 +153,38 @@ its silent channel; that is expected and not a bug).
 - Another, unassigned chat still plays WhatsApp's tone (`UNASSIGNED`).
 - Note the `NNus` values; record the slowest.
 
+## 3b. Group messages and per-sender voices (#20), WhatsApp Business (#21)
+
+Design: [ADR 0031](decisions/0031-group-policy-and-whatsapp-business.md). You need a group with at least two other
+members (A and B) who agree to send a few messages. Keep messages a few seconds apart, as in section 3.
+
+1. **Does the summary carry the sender?** A sends a message to the group. Module log:
+   `alert com.whatsapp UNASSIGNED key=@g.us group=true sender=<shape>`. Record the shape:
+   - `@lid` (or `@s.whatsapp.net`): the sender is there and keyed like a 1:1 chat. Per-sender voices work.
+   - `<other>`: a sender key that is not a JID. Per-sender still routes, but members do not appear in recent senders.
+   - `<name only>` or `<none>`: the alerting summary has no usable sender. Per-sender groups fall back to the group's
+     voice; record it in the follow-up issue (reading the child notification would need another hook point).
+2. **Default policy.** Give the group a voice (Home → the group → a character). A writes: the group's voice plays
+   (`SWAPPED key=@g.us … contact=#<group>` with no `per-sender` detail), even if A has a voice of their own.
+3. **Per sender.** On the group's detail screen, switch "Who speaks in this group" to **Each sender** (the setting sits on
+   the contact detail screen, #26; run this step once that screen has shipped). The routing table moves to a new
+   generation. Then:
+   - A writes again. Within ~10 s A appears in Home's recent senders (if step 1 showed `@lid`). Give A a different
+     character.
+   - A writes: A's voice plays; log detail `(per-sender)`, `contact=#<A>`.
+   - B (no voice) writes: the group's voice plays; detail `(per-sender, sender has no voice: group voice)`.
+   - Remove the group's voice and have B write again: WhatsApp's tone; detail `(per-sender, sender has no voice)`.
+   - If A also has a 1:1 chat with the phone, A's direct messages now play the same voice, and the clips never repeat
+     back to back across the two chats.
+4. **Back to the group.** Switch to **The group**: A's group messages play the group's voice again (or WhatsApp's tone
+   if it has none).
+5. **WhatsApp Business** (only if it is installed and has a chat): a 1:1 or group message logs
+   `alert com.whatsapp.w4b …`. The chat appears on Home as "Business · …". Giving it a voice does not change the
+   WhatsApp chat of the same person, and the other way round.
+
+**Look for:** `NNus` stays in the same range as 1:1 alerts (the sender read adds one Bundle lookup), no `Slow
+playSound`, and no key or name in the module log (only `@g.us`, `@lid` and `<shape>` forms).
+
 ## 4. Global switch and parity
 
 - Diagnostics → switch **Cucuto voices** off. Module log: a new routing table generation. The assigned contact now

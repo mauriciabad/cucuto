@@ -127,7 +127,7 @@ data class ContactDetailState(
     val hapticSource: HapticSource get() = hapticSource(settings?.hapticOverride)
 
     /** The group's policy; null for 1:1 chats. */
-    val groupPolicy: GroupPolicy? get() = if (isGroup) settings?.groupPolicy ?: GroupPolicy.GROUP else null
+    val groupPolicy: GroupPolicy? get() = if (isGroup) chat?.groupPolicy ?: GroupPolicy.GROUP else null
 }
 
 /** How many of the chat's decisions contact detail lists. */
@@ -223,5 +223,5 @@ private fun DecisionLogEntity.toRow() =
         outcome = outcome,
         clipName = clipUri?.let(::clipName),
         simulated = isSimulation(),
-        perSender = detail?.contains("per-sender") == true,
+        perSender = detail?.removePrefix("${AlertRouter.SIMULATED_DETAIL}, ") == AlertRouter.DETAIL_PER_SENDER,
     )

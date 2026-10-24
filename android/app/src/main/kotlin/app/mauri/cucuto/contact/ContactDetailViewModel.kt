@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
+import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.voices.CharacterDirectory
 import app.mauri.cucuto.voice.VoicePreview
 import dagger.assisted.Assisted
@@ -196,6 +197,9 @@ class ContactDetailViewModel
 
         /** Removes the chat's voice: it keeps WhatsApp's tone again. */
         fun unassign() = write { chats.unassign(chatKey) }
+
+        /** Groups only: one voice for the group, or each sender's own voice (#20). Republishes the routing table. */
+        fun setGroupPolicy(policy: GroupPolicy) = write { chats.setGroupPolicy(chatKey, policy) }
 
         /** Clears a shown error. */
         fun clearFailure() = local.update { it.copy(failed = false) }

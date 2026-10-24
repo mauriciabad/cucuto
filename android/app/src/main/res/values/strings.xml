@@ -267,11 +267,6 @@
     <string name="contact_haptic_custom">A custom pattern for this chat</string>
     <string name="contact_haptic_editor">Vibration patterns for a single chat come with the haptic editor.</string>
 
-    <string name="contact_group_header">Group voice</string>
-    <string name="contact_group_one">One voice for the whole group</string>
-    <string name="contact_group_one_body">Every message in this group plays its character.</string>
-    <string name="contact_group_per_sender">Each sender\'s own voice</string>
-    <string name="contact_group_per_sender_body">Members with a voice of their own speak with it; everyone else uses the group\'s voice.</string>
 
     <string name="contact_decisions_header">Recent alerts</string>
     <string name="contact_decisions_empty">No alerts from this chat yet. Simulate a message, or wait for the next one.</string>

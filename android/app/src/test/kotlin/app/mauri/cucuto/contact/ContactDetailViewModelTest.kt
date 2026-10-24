@@ -70,7 +70,7 @@ class ContactDetailViewModelTest {
     @Test
     fun loadsTheCharacterClipsSettingsAndPath() =
         runTest(dispatcher) {
-            source.settings.value = mapOf(7L to ChatSettings(GroupPolicy.GROUP, listOf(frog.clipPaths[1]), null))
+            source.settings.value = mapOf(7L to ChatSettings(listOf(frog.clipPaths[1]), null))
             val vm = viewModel()
             collect(vm)
 
@@ -86,11 +86,14 @@ class ContactDetailViewModelTest {
         }
 
     @Test
-    fun groupsShowTheirPolicy() =
+    fun groupsShowAndChangeTheirPolicy() =
         runTest(dispatcher) {
-            source.settings.value = mapOf(9L to ChatSettings(GroupPolicy.PER_SENDER, emptyList(), null))
             val vm = viewModel(CLUB)
             collect(vm)
+            assertEquals(GroupPolicy.GROUP, vm.state.value.groupPolicy)
+
+            vm.setGroupPolicy(GroupPolicy.PER_SENDER)
+
             assertEquals(GroupPolicy.PER_SENDER, vm.state.value.groupPolicy)
         }
 
@@ -173,7 +176,7 @@ class ContactDetailViewModelTest {
     @Test
     fun clipsPlayAloneAndToggleButTheLastOneStaysOn() =
         runTest(dispatcher) {
-            source.settings.value = mapOf(7L to ChatSettings(GroupPolicy.GROUP, emptyList(), null))
+            source.settings.value = mapOf(7L to ChatSettings(emptyList(), null))
             val vm = viewModel()
             collect(vm)
             val (first, second) = vm.state.value.clips
@@ -205,7 +208,7 @@ class ContactDetailViewModelTest {
     @Test
     fun aFailedWriteIsShownOnce() =
         runTest(dispatcher) {
-            source.settings.value = mapOf(7L to ChatSettings(GroupPolicy.GROUP, emptyList(), null))
+            source.settings.value = mapOf(7L to ChatSettings(emptyList(), null))
             source.fail = true
             val vm = viewModel()
             collect(vm)

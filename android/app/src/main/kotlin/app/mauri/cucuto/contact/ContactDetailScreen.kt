@@ -79,6 +79,7 @@ import app.mauri.cucuto.core.data.voices.VoiceCharacter
 import app.mauri.cucuto.core.routing.Haptic
 import app.mauri.cucuto.home.ChatAvatarKey
 import app.mauri.cucuto.home.name
+import app.mauri.cucuto.ui.chat.GroupPolicySetting
 import app.mauri.cucuto.ui.components.VoiceAvatar
 import app.mauri.cucuto.ui.feedback.Feedback
 import app.mauri.cucuto.ui.feedback.LocalFeedback
@@ -128,6 +129,7 @@ fun ContactDetailScreen(
         },
         onPlayClip = viewModel::playClip,
         onToggleClip = viewModel::setClipEnabled,
+        onGroupPolicyChange = viewModel::setGroupPolicy,
         onConsumeFailure = viewModel::clearFailure,
         modifier = modifier,
     )
@@ -144,6 +146,7 @@ fun ContactDetailContent(
     onSimulate: () -> Unit,
     onPlayClip: (ClipRow) -> Unit,
     onToggleClip: (ClipRow, Boolean) -> Unit,
+    onGroupPolicyChange: (GroupPolicy) -> Unit,
     onConsumeFailure: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -229,7 +232,11 @@ fun ContactDetailContent(
                 if (state.character != null) {
                     item(key = "haptic") { HapticSection(state.hapticSource) }
                 }
-                state.groupPolicy?.let { policy -> item(key = "group") { GroupPolicySection(policy) } }
+                state.groupPolicy?.let { policy ->
+                    item(key = "group") {
+                        GroupPolicySetting(policy, onGroupPolicyChange, Modifier.padding(top = 16.dp))
+                    }
+                }
                 decisionSection(state.decisions)
             }
         }
@@ -263,7 +270,7 @@ private fun ContactDetailState.chatName(): String =
 
 @StringRes
 private fun ContactDetailState.kindLabel(): Int {
-    val business = chatKey.packageName == BUSINESS_PACKAGE
+    val business = chatKey.packageName == ChatKey.WHATSAPP_BUSINESS
     return when {
         business && isGroup -> R.string.contact_subtitle_business_group
         business -> R.string.contact_subtitle_business_chat
@@ -541,25 +548,6 @@ private fun HapticSection(source: HapticSource) {
     }
 }
 
-/** The group's policy, read-only. Slot for the group policy control (#20), which replaces this section. */
-@Composable
-private fun GroupPolicySection(policy: GroupPolicy) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        SectionHeader(R.string.contact_group_header, null)
-        val (title, body) =
-            when (policy) {
-                GroupPolicy.GROUP -> R.string.contact_group_one to R.string.contact_group_one_body
-                GroupPolicy.PER_SENDER -> R.string.contact_group_per_sender to R.string.contact_group_per_sender_body
-            }
-        Text(stringResource(title), style = MaterialTheme.typography.bodyLarge)
-        Text(
-            stringResource(body),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
 private fun LazyListScope.decisionSection(decisions: List<DecisionRow>) {
     item(key = "decisions-header") { SectionHeader(R.string.contact_decisions_header, null) }
     if (decisions.isEmpty()) {
@@ -638,7 +626,6 @@ private fun SectionHeader(
     }
 }
 
-private const val BUSINESS_PACKAGE = "com.whatsapp.w4b"
 private val AVATAR_SIZE = 96.dp
 
 @Preview(showBackground = true)
@@ -653,6 +640,7 @@ private fun ContactDetailPreview() {
             onSimulate = {},
             onPlayClip = {},
             onToggleClip = { _, _ -> },
+            onGroupPolicyChange = {},
             onConsumeFailure = {},
         )
     }
@@ -675,7 +663,7 @@ internal fun previewContactDetailState(): ContactDetailState {
             haptic = Haptic.Keep,
             clipPaths = paths,
         )
-    val settings = ChatSettings(GroupPolicy.GROUP, disabledClips = emptyList(), hapticOverride = null)
+    val settings = ChatSettings(disabledClips = emptyList(), hapticOverride = null)
     return ContactDetailState(
         chatKey = key,
         loading = false,

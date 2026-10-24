@@ -44,6 +44,7 @@ class ContactDetailContentTest {
                     onSimulate = { simulations++ },
                     onPlayClip = { played += it.name },
                     onToggleClip = { clip, on -> toggles += clip.name to on },
+                    onGroupPolicyChange = {},
                     onConsumeFailure = {},
                 )
             }

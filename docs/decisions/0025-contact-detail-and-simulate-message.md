@@ -72,8 +72,9 @@ reboot…"), and says when a real message would keep WhatsApp's vibration or ton
 **The rest of the screen.** The header (shared-element avatar from Home, "Speaks as …", the pack) leads to the picker
 ("Change character"). The trash action removes the voice after a confirmation. The clip pool lists every clip with a
 play button and a per-contact switch (`AssignmentEntity.disabledClips`); the last enabled clip can't be switched off,
-because that would silently drop the voice. Vibration and group policy are read-only sections, kept as slots for the
-haptic override (#32/#33) and the group policy control (#20), which other agents are building. "Recent alerts" shows
+because that would silently drop the voice. Groups show the group policy control from #20 (`GroupPolicySetting`,
+stored with `ChatDirectory.setGroupPolicy`). Vibration is a read-only section for now, the slot for the per-contact
+haptic override (#32/#33). "Recent alerts" shows
 the chat's last 8 decision log entries (its keys, its contact, and its simulations), each marked "Simulated" or
 "Message". When a simulation went through the module, its report replaces "Sent through the module" with "The module
 played <clip>".
