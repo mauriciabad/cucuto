@@ -201,7 +201,7 @@
           "properties": {
             "packId": true,
             "characterId": true,
-            "followsVoice": { "description": "The ringtone follows the message character: restored, it changes with the contact's voice. packId and characterId still name the voice's character at backup time, for readers that ignore this flag.", "type": "boolean", "default": false },
+            "followsVoice": { "description": "The ringtone follows the message character whenever that character has ringtones: restored, it changes with the contact's voice. packId and characterId name the character that rang at backup time: the voice's, or the one kept while the voice had no ringtones (ADR 0063). The message character and the ringtone character are independent; a contact may have either.", "type": "boolean", "default": false },
             "undo": {
               "description": "Device-local: the Android contact's own ringtone before Cucuto changed it, and the ring file Cucuto wrote last. A restore uses it only when the linked Android contact still rings with exactly writtenUri (the same phone, after a reinstall), so turning the ringtone off later gives the contact its own ringtone back. Other phones ignore it.",
               "type": "object",

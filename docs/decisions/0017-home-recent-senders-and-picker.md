@@ -1,6 +1,7 @@
 # 0017. Home, recent senders and the character picker
 
-- Status: accepted (the owner may override the defaults below, #129)
+- Status: accepted (the owner may override the defaults below, #129); the picker's character list is amended by
+  [ADR 0063](0063-independent-voice-and-ringtone.md)
 - Date: 2026-10-24
 - Issues: #25 (Home and character picker), #18 (recent senders feed with one-tap assignment)
 
@@ -38,7 +39,9 @@ matches the chat name, the character name and the pack name. Tapping a chat open
 (#26) takes over that tap later. A long press on a strip item hides it until that chat messages again. Status stays
 the start destination (#24 owns onboarding) and links to Home.
 
-**Picker.** A `LazyVerticalGrid` with one section per pack. The first tap selects a character and previews it: a
+**Picker.** A `LazyVerticalGrid` with one section per pack. Amended by [ADR 0063](0063-independent-voice-and-ringtone.md)
+(owner update 2026-10-24, #245): it lists only characters with notification clips, with pack filter chips (and counts)
+when two or more packs have some, and its empty state links to Packs and Discover. The first tap selects a character and previews it: a
 random clip, never the same one twice in a row, plus the character's haptic, and the sprite "speaks" (`CookieAvatar`
 morph) while the clip plays. A second tap on the selected character assigns it:
 `LocalFeedback.current.fire(Feedback.Assign(id))` returns the beat, the avatar morph and `ParticleBurst` start from
