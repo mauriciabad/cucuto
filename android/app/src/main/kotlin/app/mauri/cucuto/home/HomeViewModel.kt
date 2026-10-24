@@ -2,6 +2,7 @@ package app.mauri.cucuto.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.mauri.cucuto.contact.ContactDetailHandoff
 import app.mauri.cucuto.core.data.chats.ChatDirectory
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ContactChats
@@ -28,6 +29,7 @@ class HomeViewModel
         private val clock: WallClock,
         private val demoPacks: DemoPacksRequests,
         private val contactChats: ContactChats,
+        private val detailHandoff: ContactDetailHandoff,
     ) : ViewModel() {
         private val query = MutableStateFlow("")
         private val packFilter = MutableStateFlow<String?>(null)
@@ -64,6 +66,14 @@ class HomeViewModel
          * default repository. Nothing is fetched here.
          */
         fun requestDemoPacks() = demoPacks.offer()
+
+        /** Hands the row Home shows for [chat] to contact detail, which draws its header from it at once (#360). */
+        fun handOffDetail(chat: ChatKey) {
+            val state = state.value
+            (state.waiting.asSequence() + state.chats + state.recent).firstOrNull { it.key == chat }?.let(
+                detailHandoff::offer,
+            )
+        }
 
         private companion object {
             const val STOP_TIMEOUT_MS = 5_000L

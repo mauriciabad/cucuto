@@ -6,6 +6,7 @@ import app.mauri.cucuto.core.data.db.DecisionLogEntity
 import app.mauri.cucuto.core.data.db.DecisionOutcome
 import app.mauri.cucuto.core.data.db.GroupPolicy
 import app.mauri.cucuto.core.data.voices.VoicePack
+import app.mauri.cucuto.home.ChatRow
 import app.mauri.cucuto.testing.FakeCharacterDirectory
 import app.mauri.cucuto.testing.FakeChatDirectory
 import app.mauri.cucuto.testing.FakeVoicePreview
@@ -55,6 +56,7 @@ class ContactDetailViewModelTest {
     private val source = FakeContactDetailSource()
     private val simulator = FakeMessageSimulator()
     private val preview = FakeVoicePreview()
+    private val handoff = ContactDetailHandoff()
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -63,7 +65,7 @@ class ContactDetailViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun viewModel(chat: ChatKey = ADA) =
-        ContactDetailViewModel(chat, directory, characters, source, simulator, preview)
+        ContactDetailViewModel(chat, directory, characters, source, simulator, preview, handoff)
 
     private fun TestScope.collect(vm: ContactDetailViewModel) = backgroundScope.launch { vm.state.collect {} }
 
@@ -83,6 +85,38 @@ class ContactDetailViewModelTest {
             assertNull(state.groupPolicy)
             assertEquals(SimulatePath.InApp(InAppReason.RebootNeeded), state.path)
             assertTrue(state.canSimulate)
+        }
+
+    @Test
+    fun startsFromHomesRowSoTheHeaderIsThereAtOnce() =
+        runTest(dispatcher) {
+            val ada = chat(ADA, "Ada", ChatVoice(CRITTERS, "frog"), contactId = 7)
+            handoff.offer(ChatRow(ada, frog, "Chiptune critters"))
+            val vm = viewModel()
+
+            // Before anything is collected: the header's data, still loading the rest.
+            val first = vm.state.value
+            assertTrue(first.loading)
+            assertEquals("Ada", first.chat?.displayName)
+            assertEquals("Bleep the frog", first.character?.name)
+            assertEquals("Chiptune critters", first.packName)
+            assertTrue(first.clips.isEmpty())
+
+            collect(vm)
+            assertFalse(vm.state.value.loading)
+            assertEquals(2, vm.state.value.clips.size)
+            // One-shot: the next open of this chat loads as before.
+            assertNull(handoff.take(ADA))
+        }
+
+    @Test
+    fun ignoresARowHandedOffForAnotherChat() =
+        runTest(dispatcher) {
+            handoff.offer(ChatRow(chat(CLUB, "Book club", ChatVoice(CRITTERS, "owl"), contactId = 9), null, null))
+            val vm = viewModel()
+
+            assertTrue(vm.state.value.loading)
+            assertNull(vm.state.value.chat)
         }
 
     @Test

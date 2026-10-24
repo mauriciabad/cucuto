@@ -226,7 +226,8 @@ fun ContactDetailContent(
                 )
             },
         ) { innerPadding ->
-            if (state.loading) {
+            // Opened from Home, the header is known at once (#360): only a cold open waits with a bare indicator.
+            if (state.loading && state.chat == null) {
                 Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                     val label = stringResource(R.string.contact_loading)
                     LoadingIndicator(Modifier.semantics { contentDescription = label })
@@ -245,6 +246,8 @@ fun ContactDetailContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "header") { Header(state = state, onBitmap = { bitmap = it }) }
+                // The rest follows its data, so no row shows a made-up state (no clips, "Simulate" off) meanwhile.
+                if (state.loading) return@LazyColumn
                 if (state.chat?.awaitingLink == true) item(key = "not-linked") { NotLinkedCard(state.chatName()) }
                 item(key = "sounds") {
                     SoundsCard(

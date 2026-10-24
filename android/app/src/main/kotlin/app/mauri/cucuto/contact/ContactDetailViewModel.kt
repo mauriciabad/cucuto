@@ -44,8 +44,12 @@ class ContactDetailViewModel
         private val source: ContactDetailSource,
         private val simulator: MessageSimulator,
         private val preview: VoicePreview,
+        handoff: ContactDetailHandoff,
     ) : ViewModel() {
         private val local = MutableStateFlow(ContactDetailState(chatKey))
+
+        // Opened from Home: its row draws the header at once; the rest waits for the data (#360).
+        private val initial = handoff.take(chatKey)?.let { local.value.seededWith(it) } ?: local.value
         private var playJob: Job? = null
 
         private val chat =
@@ -85,7 +89,7 @@ class ContactDetailViewModel
                             }
                         },
                 )
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), local.value)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), initial)
 
         init {
             refreshPath()

@@ -1,6 +1,7 @@
 package app.mauri.cucuto.home
 
 import app.cash.turbine.test
+import app.mauri.cucuto.contact.ContactDetailHandoff
 import app.mauri.cucuto.core.data.chats.ChatKey
 import app.mauri.cucuto.core.data.chats.ChatVoice
 import app.mauri.cucuto.core.data.chats.LinkCandidate
@@ -41,7 +42,17 @@ class HomeViewModelTest {
 
     private val contactChats = FakeContactChats()
 
-    private fun viewModel() = HomeViewModel(directory, characters, WallClock { NOW }, DemoPacksRequests(), contactChats)
+    private fun viewModel() =
+        HomeViewModel(
+            directory,
+            characters,
+            WallClock {
+                NOW
+            },
+            DemoPacksRequests(),
+            contactChats,
+            ContactDetailHandoff(),
+        )
 
     @Test
     fun startsLoadingThenShowsChatsAndTheStrip() =

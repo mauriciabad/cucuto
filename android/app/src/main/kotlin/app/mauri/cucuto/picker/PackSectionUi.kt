@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -52,6 +53,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.mauri.cucuto.R
@@ -88,7 +90,11 @@ fun PackSectionHeader(
         } else {
             Modifier
         }
-    Surface(color = MaterialTheme.colorScheme.surface, modifier = modifier.fillMaxWidth()) {
+    // A resource ID, so the Baseline Profile generator can fold and unfold a pack (#350).
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier.fillMaxWidth().semantics { testTagsAsResourceId = true },
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -102,6 +108,7 @@ fun PackSectionHeader(
                         .weight(1f)
                         .heightIn(min = 48.dp)
                         .clip(MaterialTheme.shapes.medium)
+                        .testTag(PACK_HEADER_TAG)
                         .then(toggle)
                         .padding(start = 4.dp, end = 4.dp)
                         .semantics(mergeDescendants = true) {
@@ -238,6 +245,9 @@ fun PickerScrollToRoll(
         }
     }
 }
+
+/** Test tag (and resource ID) of a pack's section header in the pickers. */
+const val PACK_HEADER_TAG = "pack_header"
 
 /** Room for a pack's sticky header above a character the grid scrolls to. */
 private val STICKY_HEADER_ROOM = 64.dp

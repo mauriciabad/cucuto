@@ -20,13 +20,19 @@ class BaselineProfileGenerator {
     @Test
     fun startup() = rule.collect(packageName = TARGET_PACKAGE, includeInStartupProfile = true) { start() }
 
-    /** Home, the character picker and Packs. */
+    /** Home, contact detail with its ringtone picker and rules, the character picker, add from contacts and Packs. */
     @Test
     fun mainJourneys() =
         rule.collect(packageName = TARGET_PACKAGE) {
             start()
             home()
+            contactDetail()
             picker()
+            addFromContacts()
             packs()
         }
+
+    /** The sample chat, which Home offers only before the first chat (the step sets the chats aside, see Journeys). */
+    @Test
+    fun sampleChatJourney() = rule.collect(packageName = TARGET_PACKAGE) { sampleChat() }
 }
