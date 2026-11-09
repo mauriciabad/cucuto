@@ -58,7 +58,7 @@ androidx-test-core = "1.7.0"
 androidx-test-ext-junit = "1.3.0"
 androidx-test-runner = "1.7.0"
 androidx-test-espresso = "3.7.0"
-androidx-test-uiautomator = "2.4.0"
+androidx-test-uiautomator = "2.4.1"
 # End-to-end smoke tests (app/src/androidTest): one clean app process per test.
 androidx-test-orchestrator = "1.6.1"
 androidx-test-services = "1.6.0"
