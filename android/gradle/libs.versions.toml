@@ -6,7 +6,7 @@
 # Build toolchain
 agp = "9.4.1"
 kotlin = "2.4.21"
-ksp = "2.3.12"
+ksp = "2.3.13"
 jdk = "21"
 # SDK levels (Android 17). compileSdk is 37.2, the newest 37.x platform.
 sdk-compile = "37"
