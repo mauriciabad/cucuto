@@ -64,7 +64,7 @@ androidx-test-orchestrator = "1.6.1"
 androidx-test-services = "1.6.0"
 
 # Code style
-spotless = "8.10.4"
+spotless = "8.11.0"
 ktlint = "1.8.0"
 compose-rules = "0.6.8"
 
