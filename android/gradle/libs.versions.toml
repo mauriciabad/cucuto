@@ -37,7 +37,7 @@ compose-material-icons = "1.7.8"
 
 # Kotlin libraries
 kotlinx-coroutines = "1.11.0"
-kotlinx-serialization = "1.12.0"
+kotlinx-serialization = "1.13.0"
 
 # Third party
 hilt = "2.60.1"
