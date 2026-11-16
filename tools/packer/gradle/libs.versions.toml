@@ -1,7 +1,7 @@
 # Versions checked on Maven Central and gradle.org on 2026-10-23 (latest stable releases).
 [versions]
 kotlin = "2.4.21"
-kotlinx-serialization = "1.12.0"
+kotlinx-serialization = "1.13.0"
 clikt = "5.1.0"
 kaml = "0.104.0"
 junit = "6.1.3"
