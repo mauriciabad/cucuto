@@ -31,8 +31,8 @@ androidx-datastore = "1.3.0"
 # profile on sideloaded installs (F-Droid, Obtainium, GitHub), where Play's cloud profiles never arrive.
 androidx-benchmark = "1.5.0"
 androidx-profileinstaller = "1.4.1"
-compose-bom = "2026.09.00"
-compose-material3 = "1.5.0-rc01"
+compose-bom = "2026.11.01"
+compose-material3 = "1.6.0-alpha01"
 compose-material-icons = "1.7.8"
 
 # Kotlin libraries
